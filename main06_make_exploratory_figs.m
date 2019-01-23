@@ -45,10 +45,10 @@ if ap_flag
 end
 
 % Filter for samples meeting qc standards
-ft = dist_vec > dist_lim & ctrl_vec == 1;
-dist_vec_ctrl = dist_vec(ft);
-pt_null_vec_ctrl = pt_null_vec(ft);
-pt_spot_vec_ctrl = pt_spot_vec(ft);
+qc_ft = dist_vec > dist_lim & ctrl_vec == 1;
+dist_vec_ctrl = dist_vec(qc_ft);
+pt_null_vec_ctrl = pt_null_vec(qc_ft);
+pt_spot_vec_ctrl = pt_spot_vec(qc_ft);
 
 % Campare distributions
 [~, p] = kstest2(pt_spot_vec_ctrl,pt_null_vec_ctrl);
@@ -125,14 +125,8 @@ set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_m
 saveas(pt_snippet_null_fig,[FigPath 'mean_pt_snippet_null.png']);    
 
 % Make diff image
-pt_rel_snip = pt_spot_mean ./ pt_null_mean;
-if  ~(strcmp(gene_name,'snail')&&strcmp(protein_name,'Bcd'))
-    ub = round(prctile(pt_rel_snip(:),99),2);
-    lb = round(prctile(pt_rel_snip(:),1)-.01,2);
-else
-    ub = 1.08;
-    lb = .97;
-end
+ub = round(prctile(pt_rel_snip(:),99),2);
+lb = round(prctile(pt_rel_snip(:),1),2);
 
 diff_snippet_fig = figure;
 colormap(jet(128))
@@ -179,7 +173,6 @@ set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_m
 set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*pixel_size,2))
 saveas(fluo_snippet_null_fig,[FigPath 'mean_fluo_snippet_null.png']);    
 
-error('adsa')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%% Investigate Edge Artifact %%%%%%%%%%%%%%%%%%%%%%%%
@@ -244,15 +237,12 @@ error('adsa')
 % ylim([0 1.1*y_max])
 % saveas(fold_fig, [FigPath 'edge_dist_pt_profiles.png'])
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Probe mean difference between control and spot samples over time %%%%%%
-pt_spot_vec_dist = pt_spot_vec_ctrl(dist_vec_ctrl>dist_lim);
-pt_null_vec_dist = pt_null_vec_ctrl(dist_vec_ctrl>dist_lim);
-delta_vec_dist = pt_spot_vec_dist - pt_null_vec_dist;
 
-%%% make histogram of differences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%      Probe mean difference between control and spot samples      %%%%%%
+% make histogram of differences
 delta_hist = figure;
-histogram(delta_vec_dist)
+histogram(pt_spot_vec_ctrl-pt_null_vec_ctrl)
 xlabel('pointwise difference (au)')
 ylabel('counts')
 title('Distribution of Pointwise Differences Between Locus and Control')
@@ -262,25 +252,25 @@ saveas(delta_hist,[FigPath 'diff_hist.png'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
 time_vec = [nucleus_struct_ctrl.time];
-time_vec_dist = time_vec(ctrl_vec==1&dist_vec>dist_lim);
-
+time_vec_ctrl = time_vec(qc_ft);
+delta_vec_ctrl = pt_spot_vec_ctrl - pt_null_vec_ctrl;
 % take bootstrap samples
-time_mean = 0:20:round(max(time_vec_dist));
+time_mean = 0:20:round(max(time_vec_ctrl));
 time_delta_mat = NaN(numel(time_mean),n_boots);
 sp_dv_time_mat = NaN(numel(time_mean),n_boots);
 nn_dv_time_mat = NaN(numel(time_mean),n_boots);
-t_window = 120; % seconds
+t_sigma = 120; % seconds
 for n = 1:n_boots
-    s_ids = randsample(1:numel(delta_vec_dist),numel(delta_vec_dist),true);
-    dv_samp = delta_vec_dist(s_ids);    
-    nn_samp = pt_null_vec_dist(s_ids);
-    sp_samp = pt_spot_vec_dist(s_ids);
-    time_samp = time_vec_dist(s_ids);
+    s_ids = randsample(1:numel(delta_vec_ctrl),numel(delta_vec_ctrl),true);
+    dv_samp = delta_vec_ctrl(s_ids);    
+    nn_samp = pt_null_vec_ctrl(s_ids);
+    sp_samp = pt_spot_vec_ctrl(s_ids);
+    time_samp = time_vec_ctrl(s_ids);
     for t = 1:numel(time_mean)
-        if time_mean(t) < min(time_vec_dist) || time_mean(t) > max(time_vec_dist)
+        if time_mean(t) < min(time_vec_ctrl) || time_mean(t) > max(time_vec_ctrl)
             continue
         end
-        t_weights = exp(-.5*((time_samp-time_mean(t))/t_window).^2);
+        t_weights = exp(-.5*((time_samp-time_mean(t))/t_sigma).^2);
         time_delta_mat(t,n) = nansum(dv_samp.*t_weights)/nansum(t_weights);        
         nn_dv_time_mat(t,n) =  nansum(nn_samp.*t_weights)/nansum(t_weights);
         sp_dv_time_mat(t,n) = nansum(sp_samp.*t_weights)/nansum(t_weights);
