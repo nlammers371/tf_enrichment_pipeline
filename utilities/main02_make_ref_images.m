@@ -14,20 +14,16 @@
 
 function ref_frame_struct = main02_make_ref_images(project,RawPath)
 
-%%% id variables
-% project = 'PolII_dynamics_fast';
-% keyword = 'HbMS2BcdGFPZoom2x';
-% keyword = '2018-11-13-Rpb1_GFP_eveMS2_C';
-% keyword = '2018-10-31-Rpb1_GFP_eveMS2';
-%%% Load trace data
+% id variables
+
+% Load trace data
 DataPath = ['../../dat/' project '/'];
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
 load([DataPath '/set_key.mat'],'set_key')
 WritePath = ['../../dat/' project '/mf_images/'];
 mkdir(WritePath)
 
-% keyword = 'BacKr';
-%%% generate indexing vectors
+% generate indexing vectors
 frame_ref = [nucleus_struct.frames];
 x_ref = [nucleus_struct.xPos];
 y_ref = [nucleus_struct.yPos];

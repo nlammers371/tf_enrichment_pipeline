@@ -30,12 +30,7 @@ mkdir(FigPath)
 
 % Start with some simple bulk analyses
 pixel_size = nucleus_struct_ctrl(1).PixelSize;
-if isfield(nucleus_struct_ctrl,'ap_flag')    
-    ap_flag = nucleus_struct_ctrl(1).ap_flag;
-else
-    ap_flag = 1;
-end
-
+ap_flag = nucleus_struct_ctrl(1).ap_flag;
 dist_vec = [nucleus_struct_ctrl.edgeDistSpot]*pixel_size;
 ctrl_vec = [nucleus_struct_ctrl.ctrl_flags]; 
 pt_null_vec = [nucleus_struct_ctrl.pt_null];
@@ -45,7 +40,7 @@ if ap_flag
 end
 
 % Filter for samples meeting qc standards
-ft = dist_vec > dist_lim & ctrl_vec == 1;
+ft = dist_vec < dist_lim & ctrl_vec == 1;
 dist_vec_ctrl = dist_vec(ft);
 pt_null_vec_ctrl = pt_null_vec(ft);
 pt_spot_vec_ctrl = pt_spot_vec(ft);
@@ -56,8 +51,8 @@ lb = prctile([pt_null_vec_ctrl pt_spot_vec_ctrl],1);
 ub = prctile([pt_null_vec_ctrl pt_spot_vec_ctrl],99);
 bins = linspace(lb,ub,100);
 
-spot_ct = histc(pt_spot_vec_ctrl,bins);
-null_ct = histc(pt_null_vec_ctrl,bins);
+spot_ct = histc(pt_spot_vec_plot,bins);
+null_ct = histc(pt_null_vec_plot,bins);
 spot_ct = spot_ct / sum(spot_ct);
 null_ct = null_ct / sum(null_ct);
 
@@ -79,7 +74,7 @@ ylabel('cumulative share')
 ax = gca;
 ax.YColor = 'black';
 
-legend('control',['active locus (' gene_name ')'], 'Location','best')
+legend('control',['active locus (' gene_name ')'])
 xlabel('concentration (au)')
 title(strvcat(['Distribution of ' protein_name '-' protein_fluor ' Concentrations'],...
        [ '    min dist: ' num2str(dist_lim) ' \mu m, p=' num2str(p)]))
@@ -90,10 +85,15 @@ saveas(hist_fig,[FigPath 'hist_plots_' gene_name '_' protein_name '_dist_' num2s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%% compare protein snippets %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 nan_ft = ~isnan([nucleus_struct_ctrl.pt_spot]);
-snip_ctrl_vec = snip_struct_ctrl.ctrl_flags_final;
+if strcmp(project,'Kr_GFP_eveBAC_mCherry')
+    snip_ctrl_vec = snip_struct_ctrl.ctrl_flags_final&dist_vec(nan_ft)>dist_lim&ap_vec(nan_ft)>.42&ap_vec(nan_ft)<.55;    
+else
+    snip_ctrl_vec = snip_struct_ctrl.ctrl_flags_final&dist_vec(nan_ft)>dist_lim;
+end
 
 pt_null_mean = nanmean(snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1),3);
 pt_spot_mean = nanmean(snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1),3);
+pt_diff_mean = nanmean(snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1)-snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1),3);
 
 ub = prctile([reshape(pt_null_mean,1,[]) reshape(pt_spot_mean,1,[])],99);
 lb = prctile([reshape(pt_null_mean,1,[]) reshape(pt_spot_mean,1,[])],1);
@@ -101,7 +101,7 @@ lb = prctile([reshape(pt_null_mean,1,[]) reshape(pt_spot_mean,1,[])],1);
 pt_snippet_spot_fig = figure;
 colormap(jet(128))
 imagesc(pt_spot_mean)
-% title(['Active Locus (' gene_name ')'])
+title(['Active Locus (' gene_name ')'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
@@ -114,7 +114,7 @@ saveas(pt_snippet_spot_fig,[FigPath 'mean_pt_snippet_spot.png']);
 pt_snippet_null_fig = figure;
 colormap(jet(128))
 imagesc(pt_null_mean)
-% title('Control')
+title('Control')
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
@@ -156,7 +156,7 @@ lb = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],1);
 fluo_snippet_spot_fig = figure;
 colormap(jet(128))
 imagesc(spot_mean_fluo)
-% title(['Active Locus (' gene_name ')'])
+title(['Active Locus (' gene_name ')'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
@@ -174,12 +174,10 @@ caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
-% ylabel(h,[gene_name ' expression (au)'],'FontSize',12)
+ylabel(h,[gene_name ' expression (au)'],'FontSize',12)
 set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*pixel_size,2))
 set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*pixel_size,2))
 saveas(fluo_snippet_null_fig,[FigPath 'mean_fluo_snippet_null.png']);    
-
-error('adsa')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%% Investigate Edge Artifact %%%%%%%%%%%%%%%%%%%%%%%%
