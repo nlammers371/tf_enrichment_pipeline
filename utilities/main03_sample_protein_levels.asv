@@ -15,7 +15,7 @@
 function [snip_struct, nucleus_struct_pt] = main03_sample_protein_levels(project,RawPath,zeiss_flag,pt_channel)
 
 %%% Load trace data
-DataPath = ['../../dat/' project '/'];
+DataPath = ['../../../dat/' project '/'];
 
 nucleus_struct = load([DataPath  'nucleus_struct.mat']);
 nucleus_struct = nucleus_struct.nucleus_struct;
@@ -35,8 +35,8 @@ for s = 1:numel(set_index)
 end
 % set snippet to be 3um in size
 pt_snippet_size = round(1.5 / mean(px_sizes));
-% set min separation between samples to 1um
-min_sample_sep = round(1 / mean(px_sizes));
+% set min separation between samples
+min_sample_sep = round(.5 / mean(px_sizes));
 
 % vectors to index ref frame
 ref_frame_sets = [ref_frame_struct.set]; 

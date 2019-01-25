@@ -59,8 +59,6 @@ for s = 1:numel(set_index)
 end
 % determine size of neighborhood to use
 nb_sizes = round(6 ./ px_sizes);
-% size of gaussian smoothing kernel 
-sm_kernels = round(.2 / px_sizes);
 % set min and max acceptable area
 min_areas = round(pi*(2 ./ px_sizes).^2);
 max_areas = round(pi*(4 ./ px_sizes).^2);
@@ -78,7 +76,7 @@ set_frame_array = unique([set_ref' frame_ref'],'row');
 ref_frame_struct = struct;
 %%% iterate
 
-parfor i = 1:size(set_frame_array,1)
+for i = 1:size(set_frame_array,1)
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
     % get nucleus positions
@@ -116,10 +114,8 @@ parfor i = 1:size(set_frame_array,1)
     % smooth and normalize
     mcp_sm = imgaussfilt(mcp_med_inv,sm_kernel);
     his_sm = mcp_sm / mean(mcp_sm(:));    
-    
+   
     % dist ref arrays
-    xDim = size(his_sm,2);
-    yDim = size(his_sm,1);
     [x_cp, y_cp] = meshgrid(1:xDim, 1:yDim);
     % assign neighborhoods to each nucleus using a (reverse?) greedy allocation
     % process
@@ -135,7 +131,7 @@ parfor i = 1:size(set_frame_array,1)
     end    
     % for each nucleus center, segment neighborhood define boundaries
     % nuclei near edges will be excluded 
-    new_frame = NaN(size(his_sm));
+    new_frame = NaN(size(his_slice));
     se = strel('disk',1);
     for j = 1:numel(nc_x_vec)
         xn = round(nc_x_vec(j));

@@ -1,21 +1,5 @@
-% main02_make_ref_images(project, RawPath, keyword)
-%
-% DESCRIPTION
-% Script to generate reference images used for nucleus segmentation 
-%
-% ARGUMENTS
-% project: master ID variable 
-%
-% RawPath: Full or relative path to PreProcessed folder (pr
-%               equivalent)
-%
-%
-% OUTPUT: ref_frame_struct: compiled data set
-
-function ref_frame_struct = main02_make_ref_images(project,RawPath)
-
-% id variables
-
+project = 'Bcd_GFP_hb_mCherry_Zoom3x_LowPower';
+RawPath = 'E:\Nick\LivemRNA\Data\PreProcessedData\';
 % Load trace data
 DataPath = ['../../dat/' project '/'];
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
@@ -116,10 +100,8 @@ parfor i = 1:size(set_frame_array,1)
     % smooth and normalize
     mcp_sm = imgaussfilt(mcp_med_inv,sm_kernel);
     his_sm = mcp_sm / mean(mcp_sm(:));    
-    
+   
     % dist ref arrays
-    xDim = size(his_sm,2);
-    yDim = size(his_sm,1);
     [x_cp, y_cp] = meshgrid(1:xDim, 1:yDim);
     % assign neighborhoods to each nucleus using a (reverse?) greedy allocation
     % process
@@ -135,7 +117,7 @@ parfor i = 1:size(set_frame_array,1)
     end    
     % for each nucleus center, segment neighborhood define boundaries
     % nuclei near edges will be excluded 
-    new_frame = NaN(size(his_sm));
+    new_frame = NaN(size(his_slice));
     se = strel('disk',1);
     for j = 1:numel(nc_x_vec)
         xn = round(nc_x_vec(j));
@@ -197,16 +179,3 @@ parfor i = 1:size(set_frame_array,1)
     ref_frame_struct(i).nn_vec = nn_vec;        
     ref_frame_struct(i).ind_vec = ind_vec;            
 end
-
-% save frames individually 
-for i = 1:numel(ref_frame_struct)
-    rf = ref_frame_struct(i).ref_frame;
-    set = ref_frame_struct(i).set;
-    frame = ref_frame_struct(i).frame;
-    ref_name = [WritePath '/ref_frame_' sprintf('%03d',frame) '_set' sprintf('%03d',set) '.mat'];
-    save(ref_name,'rf')
-end
-% remove ref frames
-ref_frame_struct = rmfield( ref_frame_struct , 'ref_frame');
-
-save(['../../dat/' project '/ref_frame_struct.mat'],'ref_frame_struct') 
