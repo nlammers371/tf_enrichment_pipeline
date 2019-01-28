@@ -43,7 +43,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % folders
-data_path = ['../../dat/' project '/']; % data mat directory
+data_path = ['../dat/' project '/']; % data mat directory
 %%% make filepath
 mkdir(data_path);
 %%% assign save names

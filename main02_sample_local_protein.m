@@ -18,6 +18,7 @@ tic
 zeiss_flag = 0;
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'zeiss')
+        disp('accounting for zeiss offset')
         zeiss_flag = 1;
     end
 end
@@ -35,8 +36,8 @@ mcp_channel = options(options~=protein_channel);
 frame_ref = [nucleus_struct.frames];
 nc_x_ref = [nucleus_struct.xPos];
 nc_y_ref = [nucleus_struct.yPos];
-spot_x_ref = [nucleus_struct.xPosParticle]+zeiss_flag;
-spot_y_ref = [nucleus_struct.yPosParticle]+zeiss_flag;
+spot_x_ref = [nucleus_struct.xPosParticle]-zeiss_flag;
+spot_y_ref = [nucleus_struct.yPosParticle]-zeiss_flag;
 spot_z_ref = [nucleus_struct.brightestZs];
 
 set_ref = [];
@@ -61,7 +62,7 @@ for s = 1:numel(set_index)
 end% determine size of neighborhood to use
 nb_sizes = round(10 ./ px_sizes);
 % size of gaussian smoothing kernel 
-sm_kernels = round(.2 / px_sizes);
+sm_kernels = round(.2 ./ px_sizes);
 % set min and max acceptable area
 min_areas = round(pi*(2 ./ px_sizes).^2);
 max_areas = round(pi*(4 ./ px_sizes).^2);
@@ -71,11 +72,15 @@ pt_snippet_size_vec = round(1.5 ./ px_sizes);
 min_sample_sep_vec = round(2 ./ px_sizes);
 
 % Designate fields ot be added to nucleus structure
-new_vec_fields = {'spot_protein_vec', 'null_protein_vec', 'spot_mcp_vec','null_mcp_vec',...
-    'qc_flag_vec', 'fov_edge_flag_vec', 'null_x_vec', 'null_y_vec', 'null_nc_vec',...
-    'spot_edge_dist_vec', 'spot_edge_dist_vec'};
+new_vec_fields = {'spot_protein_vec', 'edge_null_protein_vec','centroid_null_protein_vec',...
+    'spot_mcp_vec','edge_null_mcp_vec','centroid_null_mcp_vec',...
+    'edge_qc_flag_vec', 'centroid_qc_flag_vec', 'spot_fov_edge_flag_vec','edge_fov_edge_flag_vec', ...
+    'centroid_fov_edge_flag_vec','edge_null_x_vec', 'edge_null_y_vec', 'edge_null_nc_vec',...
+    'centroid_null_x_vec', 'centroid_null_y_vec', 'centroid_null_nc_vec',...
+    'spot_edge_dist_vec', 'spot_centroid_dist_vec'};
 
-new_snip_fields = {'spot_protein_snips', 'null_protein_snips','spot_mcp_snips','null_mcp_snips'};
+new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips','centroid_null_protein_snips',...
+    'spot_mcp_snips','edge_null_mcp_snips','centroid_null_mcp_snips'};
 % get most common snip size
 default_snip_size = mode(pt_snippet_size_vec);
 % Initialize fields
@@ -100,7 +105,7 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
-for i = 1:size(set_frame_array,1)
+for i = 25:30%1:size(set_frame_array,1)
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
     % get nucleus and particle positions
@@ -166,7 +171,7 @@ for i = 1:size(set_frame_array,1)
     
     % iterate through spots
     qc_mat = struct;
-    parfor j = 1:numel(nc_x_vec)        
+    for j = 1:numel(nc_x_vec)        
         % get location info
         xn = round(nc_x_vec(j));
         yn = round(nc_y_vec(j));   
@@ -176,13 +181,7 @@ for i = 1:size(set_frame_array,1)
         if isnan(xp)
             continue
         end
-        nc_bw_final = segment_nc_neighborhood(his_sm, xn, yn, xp, ...
-            yp, id_array, nb_sz, nc_index_vec(j));
-        % make sure size is reasonable and that spot is inside nucleus
-        if sum(nc_bw_final(:)) < min_area || sum(nc_bw_final(:)) > max_area || ~nc_bw_final(yp,xp)   
-            qc_flag_vec(j) = 0;
-            continue
-        end 
+        
         
         %%%%%%%%%%%%%%%%%%%%%% Sample protein levels %%%%%%%%%%%%%%%%%%%%%%
         % get frames
@@ -191,7 +190,17 @@ for i = 1:size(set_frame_array,1)
         % take locus samples
         spot_protein_vec(j) = protein_frame(yp,xp);
         spot_mcp_vec(j) = mcp_frame(yp,xp);
-        % pull snippets
+        
+        nc_bw_final = segment_nc_neighborhood(his_sm, xn, yn, xp, ...
+            yp, id_array, nb_sz, nc_index_vec(j));        
+        % make sure size is reasonable and that spot is inside nucleus
+        if sum(nc_bw_final(:)) < min_area || sum(nc_bw_final(:)) > max_area || ~nc_bw_final(yp,xp)   
+            edge_qc_flag_vec(j) = 0;
+            centroid_qc_flag_vec(j) = 0;
+            continue
+        end 
+        
+        % pull snippets     
         null_mask = nc_bw_final;
         temp_pt = protein_frame;
         temp_pt(~null_mask) = NaN;
@@ -202,108 +211,87 @@ for i = 1:size(set_frame_array,1)
         if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
             spot_protein_snips(:,:,j) = temp_pt(y_range,x_range);
             spot_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
-            fov_edge_flag_vec(j) = 0;
+            spot_fov_edge_flag_vec(j) = 0;
         else
-            fov_edge_flag_vec(j) = 1;
+            spot_fov_edge_flag_vec(j) = 1;
         end
-        % Now attempt to find control snip. First try same nucleus
-        % distance from edge        
-        dist_mat = bwdist(~nc_bw_final);        
-        spot_edge_dist = dist_mat(yp,xp);
+        % Now find locations from which to take control samples
+        % Currently entertaining two alternative metrics: distance from
+        % edge and distance from centroid. In principle, distance from edge
+        % should likely be a better metric, however, it is subject to
+        % systematic biases
+              
+        % Edge sampling first        
+        edge_dist_mat = bwdist(~nc_bw_final);        
+        spot_edge_dist = edge_dist_mat(yp,xp);        
+        edge_dist_vec = edge_dist_mat(nc_bw_final);
         spot_edge_dist_vec(j) = spot_edge_dist;
-        edge_dist_vec = dist_mat(nc_bw_final);
-        % distance from particle
-        x_pos_vec = x_ref(nc_bw_final);
-        x_sep_vec = x_pos_vec - xp;
-        y_pos_vec = y_ref(nc_bw_final);
-        y_sep_vec = y_pos_vec - yp;
-        r_sep_vec = sqrt(x_sep_vec.^2 + y_sep_vec.^2);
-        sample_index_vec = 1:numel(x_sep_vec);
-        % find closest pixel that meets criteria
-        cr_filter = r_sep_vec >= min_sample_sep & round(edge_dist_vec) == round(spot_edge_dist);
-        sample_distances = r_sep_vec(cr_filter);
-        sample_index_vec = sample_index_vec(cr_filter);
-        % if candidate found, then proceed. Else look to neighboring nuclei
-        if ~isempty(sample_distances)
-            [~, mi] = min(sample_distances);
-            null_x_vec(j) = x_pos_vec(sample_index_vec(mi));
-            null_y_vec(j) = y_pos_vec(sample_index_vec(mi));
-            null_nc_vec(j) = j;
-            qc_flag_vec(j) = 1;        
-        else
-            % Find nearest neighbor nucleus
-            r_vec = r_dist_mat(:,j);
-            r_vec(j) = Inf;
-            [~, mi] = min(r_vec);
-            % segment nn nucleus
-            xn_nn = round(nc_x_vec(mi));
-            yn_nn = round(nc_y_vec(mi));   
-            xp_nn = round(spot_x_vec(mi));
-            yp_nn = round(spot_y_vec(mi));   
-            
-            nc_bw_final_nn = segment_nc_neighborhood(his_sm, xn_nn, yn_nn, xp_nn, ...
-            yp_nn, id_array, nb_sz, nc_index_vec(mi));
         
-            null_mask = nc_bw_final_nn; % reassign null mask
-            if ~isnan(xp_nn)
-                nan_flag = isnan(nc_bw_final_nn(yp_nn,xp_nn));
-            end
-            % make sure size is reasonable 
-            if sum(nc_bw_final_nn(:)) >= min_area && sum(nc_bw_final_nn(:)) <= max_area &&...
-                    (isnan(xp_nn) || ~nan_flag)
-           
-                % look for potential control samples                
-                % distance from edge        
-                dist_mat_nn = bwdist(~nc_bw_final_nn);
-                edge_dist_vec = dist_mat_nn(nc_bw_final_nn);
-                x_pos_vec = x_ref(nc_bw_final_nn);
-                y_pos_vec = y_ref(nc_bw_final_nn);
-                % distance from particle
-                if ~isnan(xp_nn)                
-                    x_sep_vec = x_pos_vec - xp_nn;               
-                    y_sep_vec = y_pos_vec - yp_nn;
-                    r_sep_vec = sqrt(x_sep_vec.^2 + y_sep_vec.^2);
-                else                
-                    r_sep_vec = Inf(size(edge_dist_vec));
-                end            
-                sample_index_vec = 1:numel(r_sep_vec);
-                % find closest pixel that meets criteria
-                cr_filter = r_sep_vec >= min_sample_sep & round(edge_dist_vec) == round(spot_edge_dist);       
-                sample_index_vec = sample_index_vec(cr_filter);
-                if ~isempty(sample_index_vec)
-                    sample_index = randsample(sample_index_vec,1);
-                    null_x_vec(j) = x_pos_vec(sample_index);
-                    null_y_vec(j) = y_pos_vec(sample_index);
-                    null_nc_vec(j) = mi;
-                    qc_flag_vec(j) = 2;
-                else
-                    qc_flag_vec(j) = 0;
-                end
-            else
-                qc_flag_vec(j) = 0;      
-            end 
-        end
-        % phew. Now draw control samples (as appropriate)
-        xc = NaN;
-        yc = NaN;
-        if qc_flag_vec(j) > 0
-            xc = null_x_vec(j);
-            yc = null_y_vec(j);            
-            null_protein_vec(j) = protein_frame(yc,xc);
-            null_mcp_vec(j) = mcp_frame(yc,xc);
+        [edge_null_x_vec(j), edge_null_y_vec(j), edge_null_nc_vec(j), edge_qc_flag_vec(j), edge_null_mask, edge_dist_mat_nn]...
+            = find_control_sample(edge_dist_vec, x_ref, y_ref, xp, yp, spot_edge_dist,...
+                nc_x_vec, nc_y_vec, spot_x_vec, spot_y_vec, j, null_mask, r_dist_mat, min_sample_sep,his_sm,...
+                    id_array, nb_sz, nc_index_vec, [min_area max_area]);    
+               
+        % Draw control samples (as appropriate)    
+        if edge_qc_flag_vec(j) > 0
+            xc = edge_null_x_vec(j);
+            yc = edge_null_y_vec(j);            
+            edge_null_protein_vec(j) = protein_frame(yc,xc);
+            edge_null_mcp_vec(j) = mcp_frame(yc,xc);
             % draw snips
             temp_pt = protein_frame;
-            temp_pt(~null_mask) = NaN;
+            temp_pt(~edge_null_mask) = NaN;
             temp_mcp = mcp_frame;
-            temp_mcp(~null_mask) = NaN;
+            temp_mcp(~edge_null_mask) = NaN;
             x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
             y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
             if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
-                null_protein_snips(:,:,j) = temp_pt(y_range,x_range);
-                null_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
-                fov_edge_flag_vec(j) = 0;
+                edge_null_protein_snips(:,:,j) = temp_pt(y_range,x_range);
+                edge_null_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
+                edge_fov_edge_flag_vec(j) = 0;
             else
-                fov_edge_flag_vec(j) = 1;
+                edge_fov_edge_flag_vec(j) = 1;
+            end
+        end  
+        
+        % Now perform centroid sampling first  
+        x_centroid = round(mean(x_ref(nc_bw_final)));
+        y_centroid = round(mean(y_ref(nc_bw_final)));
+        centroid_mat = zeros(size(x_ref));
+        centroid_mat(y_centroid,x_centroid) = 1;
+        centroid_dist_mat = bwdist(centroid_mat); 
+%         centroid_dist_mat(~nc_bw_final) = NaN;
+                       
+        spot_centroid_dist = centroid_dist_mat(yp,xp);    
+        centroid_dist_vec = centroid_dist_mat(nc_bw_final);
+        spot_centroid_dist_vec(j) = spot_centroid_dist;
+        
+        [centroid_null_x_vec(j), centroid_null_y_vec(j), centroid_null_nc_vec(j), centroid_qc_flag_vec(j), centroid_null_mask, centroid_dist_mat_nn]...
+            = find_control_sample(centroid_dist_vec, x_ref, y_ref, xp, yp, spot_centroid_dist,...
+                nc_x_vec, nc_y_vec, spot_x_vec, spot_y_vec, j, null_mask, r_dist_mat, min_sample_sep,his_sm,...
+                    id_array, nb_sz, nc_index_vec,[min_area max_area]);    
+               
+        % Draw control samples (as appropriate)
+        xc = NaN;
+        yc = NaN;
+        if centroid_qc_flag_vec(j) > 0
+            xc = centroid_null_x_vec(j);
+            yc = centroid_null_y_vec(j);            
+            centroid_null_protein_vec(j) = protein_frame(yc,xc);
+            centroid_null_mcp_vec(j) = mcp_frame(yc,xc);
+            % draw snips
+            temp_pt = protein_frame;
+            temp_pt(~centroid_null_mask) = NaN;
+            temp_mcp = mcp_frame;
+            temp_mcp(~centroid_null_mask) = NaN;
+            x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
+            y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
+            if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
+                centroid_null_protein_snips(:,:,j) = temp_pt(y_range,x_range);
+                centroid_null_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
+                centroid_fov_edge_flag_vec(j) = 0;
+            else
+                centroid_fov_edge_flag_vec(j) = 1;
             end
         end  
         % save qc data                 
@@ -311,27 +299,32 @@ for i = 1:size(set_frame_array,1)
         qc_mat(j).frame = frame;
         qc_mat(j).nc_index = nc_index_vec(j);
         qc_mat(j).nc_sub_index = nc_sub_index_vec(j);
-        qc_mat(j).qc_flag = qc_flag_vec(j);            
+        qc_mat(j).qc_flag = edge_qc_flag_vec(j);            
         qc_mat(j).xp = xp;
         qc_mat(j).yp = yp;  
-        qc_mat(j).xc = xc;
-        qc_mat(j).yc = yc;
+        qc_mat(j).xc_edge = edge_null_x_vec(j);
+        qc_mat(j).yc_edge = edge_null_y_vec(j);
+        qc_mat(j).xc_centroid = centroid_null_x_vec(j);
+        qc_mat(j).xc_centroid = centroid_null_y_vec(j);
         qc_mat(j).ParticleID = particle_id_vec(j);
         sz = nb_sz;
 %         rescale = 1;
-        if qc_flag_vec(j) == 2
+        if edge_qc_flag_vec(j) == 2 || centroid_qc_flag_vec(j) == 2
             xd = abs(xn - xc);
             yd = abs(yn - yc);
-            sz = max([nb_sz,yd,xd]);
+            sz = max([nb_sz,abs(xn - edge_null_x_vec(j)),abs(yn - edge_null_y_vec(j))...
+                abs(xn - centroid_null_x_vec(j)),abs(yn - centroid_null_y_vec(j))]);
 %             rescale = sz / nb_sz;
-            dist_mat = dist_mat + dist_mat_nn;
+            edge_dist_mat = edge_dist_mat + edge_dist_mat_nn;
+            centroid_dist_mat = centroid_dist_mat + centroid_dist_mat_nn;
         end
         y_range = max(1,yn-sz):min(yDim,yn+sz);
         x_range = max(1,xn-sz):min(xDim,xn+sz);
         qc_mat(j).x_center = median(x_range);
         qc_mat(j).y_center = median(y_range);
         qc_mat(j).mcp_snip = his_sm(y_range,x_range);
-        qc_mat(j).dist_snip = dist_mat(y_range,x_range);        
+        qc_mat(j).edge_dist_snip = edge_dist_mat(y_range,x_range);        
+        qc_mat(j).centroid_dist_snip = centroid_dist_mat(y_range,x_range);        
     end 
     qc_structure(i).qc_mat = qc_mat;
     % map data back to nucleus_struct

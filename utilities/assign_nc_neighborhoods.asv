@@ -8,18 +8,15 @@ function [id_array, yDim, xDim, y_ref, x_ref] = assign_nc_neighborhoods(histone_
     % process
     min_dist_array = Inf(size(x_ref));
     id_array = NaN(size(x_ref));
-    temp_mat = Inf(size(x_ref));
+    temp_mat = Inf(size(x_r
     for j = 1:numel(nc_x_vec)
-        xn = round(nc_x_vec(j));
-        yn = round(nc_y_vec(j));
-        x_range = max(1,xn-round(max_r)):min(xDim,xn+round(max_r));
-        y_range = max(1,yn-round(max_r)):min(yDim,yn+round(max_r));
-       
+        xn = nc_x_vec(j);
+        yn = nc_y_vec(j);
+        x_range = max(1,xn-round(max_r)):max(xDim,xn+round(max_r));
+        y_range = max(1,yn-round(max_r)):max(yDim,yn+round(max_r));
         r_sub = sqrt((x_ref(y_range,x_range)-xn).^2 + (y_ref(y_range,x_range)-yn).^2);
-      
-        r_full = temp_mat;
-        r_full(y_range,x_range) = r_sub;
-        ids = find(r_full<=max_r&r_full<=min_dist_array);
-        min_dist_array(ids) = r_full(ids);
+        r_mat = sqrt((x_ref-xn).^2 + (y_ref-yn).^2);
+        ids = find(r_mat<=max_r&r_mat<=min_dist_array);
+        min_dist_array(ids) = r_mat(ids);
         id_array(ids) = nc_index_vec(j);
     end    
