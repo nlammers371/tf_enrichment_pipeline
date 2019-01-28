@@ -7,11 +7,21 @@
 % ARGUMENTS
 % project: master ID variable
 
-function main03_check_control_selection(project)
+function main03_check_control_selection(project,varargin)
 close all
 % specify paths
 DataPath = ['../dat/' project '/'];
+
+for i = 1:numel(varargin)    
+    if strcmpi(varargin{i}, 'DropboxFolder')        
+        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
+    end
+end
+
 SnipPath = [DataPath 'qc_images/'];
+
+
+
 % load data
 load([DataPath '/nucleus_struct_protein.mat']);
 % snip_files = dir([SnipPath '*.mat']);
@@ -21,10 +31,10 @@ if isfield(nucleus_struct_protein, 'qc_review_vec')
 else 
     qc_review_vec = NaN(size([nucleus_struct_protein.xPos]));
 end
-qc_flag_vec = [nucleus_struct_protein.qc_flag_vec];
+edge_qc_flag_vec = [nucleus_struct_protein.edge_qc_flag_vec];
 % set start frame
-all_frames = find(~isnan(qc_flag_vec));
-outstanding_frames = find(isnan(qc_review_vec)&(qc_flag_vec~=0&~isnan(qc_flag_vec)));
+all_frames = find(edge_qc_flag_vec~=0&~isnan(edge_qc_flag_vec));
+outstanding_frames = find(isnan(qc_review_vec)&(edge_qc_flag_vec~=0&~isnan(edge_qc_flag_vec)));
 % generate indexing vectors
 frame_index = [nucleus_struct_protein.frames];
 set_index = [];
@@ -51,23 +61,43 @@ while ~exit_flag
      
     cc = '';
     while ~strcmp(cc,'0')&&~strcmp(cc,'1')      
-        dist_snip = qc_spot.dist_snip;
-        dist_rescaled = 1 + ceil(dist_snip/max(dist_snip(:)) * 63);
+        edge_dist_snip = qc_spot.edge_dist_snip;
+        edge_dist_rescaled = 1 + ceil(edge_dist_snip/max(edge_dist_snip(:)) * 63);
         cm = [[1 1 1] ; cm(2:end,:)];
-        dist_rgb = ind2rgb(dist_rescaled,cm);
+        edge_dist_rgb = ind2rgb(edge_dist_rescaled,cm);
+        
+        centroid_dist_snip = qc_spot.centroid_dist_snip;
+        centroid_dist_snip(edge_dist_rescaled==1) = 0;
+        centroid_dist_rescaled = 1 + ceil(centroid_dist_snip/max(centroid_dist_snip(:)) * 63);               
+        centroid_dist_rgb = ind2rgb(centroid_dist_rescaled,cm);
         % get frame center
         x_center = qc_spot.x_center;
         y_center = qc_spot.y_center;
-        dim = ceil(size(dist_snip,1)/2);
+        yDim = ceil(size(edge_dist_snip,1)/2);
+        xDim = ceil(size(edge_dist_snip,2)/2);
+        
         qc_fig = figure;                 
+        subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
-        p = imshow(dist_rgb);        
+        p = imshow(edge_dist_rgb);        
         p.AlphaData = .4;        
-        s1 = scatter(qc_spot.xp-x_center+dim,qc_spot.yp-y_center+dim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-        s2 = scatter(qc_spot.xc-x_center+dim,qc_spot.yc-y_center+dim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+        s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+        legend([s1 s2], 'spot', 'control')          
+        title('Edge Distance Sample')
+        
+        subplot(1,2,2)
+        imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
+        hold on
+        p = imshow(centroid_dist_rgb);        
+        p.AlphaData = .4;        
+        s1 = scatter(qc_spot.xp-x_center+yDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+        s2 = scatter(qc_spot.xc_centroid-x_center+yDim,qc_spot.yc_centroid-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
         legend([s1 s2], 'spot', 'control')  
-        title(['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
+        title('Centroid Distance Sample')
+        
+        set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
         if qc_review_vec(all_frames(index)) == 1
             set(gcf, 'color', 'green')
         elseif qc_review_vec(all_frames(index)) == 0
@@ -99,4 +129,4 @@ while ~exit_flag
     end
 end
 % nucleus_struct_protein.qc_review_vec = qc_review_vec;
-save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein')
+save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3')

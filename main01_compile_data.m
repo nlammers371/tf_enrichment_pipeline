@@ -28,7 +28,7 @@ function nucleus_struct = main01_compile_data(project,FolderPath,keyword,varargi
 include_vec = [];
 nc = 14;
 exp_type = 'input_output';
-
+DataPath = ['../dat/' project '/']; % data mat directory
 for i = 1:numel(varargin)
     if strcmpi(varargin{i},'first_nc')
         nc = varargin{i+1};
@@ -36,6 +36,8 @@ for i = 1:numel(varargin)
         include_vec = varargin{i+1};
     elseif strcmpi(varargin{i}, 'exp_type')
         exp_type = varargin{i+1};
+    elseif strcmpi(varargin{i}, 'DropboxFolder')        
+        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];    
     end
 end
 
@@ -43,11 +45,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % folders
-data_path = ['../dat/' project '/']; % data mat directory
+
 %%% make filepath
-mkdir(data_path);
+mkdir(DataPath);
 %%% assign save names
-nucleus_name = [data_path 'nucleus_struct.mat']; % names for compiled elipse struct
+nucleus_name = [DataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +83,7 @@ end
 set_key = array2table(include_vec','VariableNames',{'setID'});
 dirs = {dirinfo(include_vec).name};
 set_key.prefix = dirs';
-save([data_path 'set_key.mat'],'set_key')
+save([DataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets

@@ -16,17 +16,20 @@
 function nucleus_struct_protein = main02_sample_local_protein(project,RawPath,protein_channel,varargin)
 tic
 zeiss_flag = 0;
+DataPath = ['../dat/' project '/'];
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'zeiss')
         disp('accounting for zeiss offset')
         zeiss_flag = 1;
+    elseif strcmpi(varargin{i}, 'DropboxFolder')        
+        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
     end
 end
 % Load trace data
-DataPath = ['../dat/' project '/'];
+
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
 load([DataPath '/set_key.mat'],'set_key')
-SnipPath = ['../dat/' project '/qc_images/'];
+SnipPath = [DataPath '/qc_images/'];
 mkdir(SnipPath)
 addpath('./utilities')
 % get MCP channel
@@ -105,7 +108,8 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
-for i = 25:30%1:size(set_frame_array,1)
+for i = 10:15%1:size(set_frame_array,1)
+    tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
     % get nucleus and particle positions
@@ -177,7 +181,7 @@ for i = 25:30%1:size(set_frame_array,1)
         yn = round(nc_y_vec(j));   
         xp = round(spot_x_vec(j));
         yp = round(spot_y_vec(j));           
-        zp = round(spot_z_vec(j));   
+        zp = round(spot_z_vec(j))-1;   
         if isnan(xp)
             continue
         end
@@ -293,7 +297,7 @@ for i = 25:30%1:size(set_frame_array,1)
             else
                 centroid_fov_edge_flag_vec(j) = 1;
             end
-        end  
+        end        
         % save qc data                 
         qc_mat(j).setID = setID;
         qc_mat(j).frame = frame;
@@ -305,16 +309,12 @@ for i = 25:30%1:size(set_frame_array,1)
         qc_mat(j).xc_edge = edge_null_x_vec(j);
         qc_mat(j).yc_edge = edge_null_y_vec(j);
         qc_mat(j).xc_centroid = centroid_null_x_vec(j);
-        qc_mat(j).xc_centroid = centroid_null_y_vec(j);
+        qc_mat(j).yc_centroid = centroid_null_y_vec(j);
         qc_mat(j).ParticleID = particle_id_vec(j);
         sz = nb_sz;
-%         rescale = 1;
-        if edge_qc_flag_vec(j) == 2 || centroid_qc_flag_vec(j) == 2
-            xd = abs(xn - xc);
-            yd = abs(yn - yc);
+        if edge_qc_flag_vec(j) == 2 || centroid_qc_flag_vec(j) == 2         
             sz = max([nb_sz,abs(xn - edge_null_x_vec(j)),abs(yn - edge_null_y_vec(j))...
                 abs(xn - centroid_null_x_vec(j)),abs(yn - centroid_null_y_vec(j))]);
-%             rescale = sz / nb_sz;
             edge_dist_mat = edge_dist_mat + edge_dist_mat_nn;
             centroid_dist_mat = centroid_dist_mat + centroid_dist_mat_nn;
         end
@@ -327,7 +327,8 @@ for i = 25:30%1:size(set_frame_array,1)
         qc_mat(j).centroid_dist_snip = centroid_dist_mat(y_range,x_range);        
     end 
     qc_structure(i).qc_mat = qc_mat;
-    % map data back to nucleus_struct
+    
+    % map data back to nucleus_struct    
     for j = 1:numel(nc_index_vec)
         nc_index = nc_index_vec(j);
         nc_sub_index = nc_sub_index_vec(j);
@@ -342,7 +343,8 @@ for i = 25:30%1:size(set_frame_array,1)
             end
             nucleus_struct(nc_index).(new_snip_fields{k})(:,:,nc_sub_index) = snip(:,:,j);
         end
-    end       
+    end
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(toc) 'seconds)'])
 end
 
 % save qc data
@@ -365,4 +367,4 @@ end
 toc
 % save updated nucleus structure
 nucleus_struct_protein = nucleus_struct;
-save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 
+save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3') 
