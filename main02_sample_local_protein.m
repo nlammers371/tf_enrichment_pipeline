@@ -26,7 +26,6 @@ for i = 1:numel(varargin)
     end
 end
 % Load trace data
-
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
 load([DataPath '/set_key.mat'],'set_key')
 SnipPath = [DataPath '/qc_images/'];
@@ -93,8 +92,9 @@ for i = 1:numel(nucleus_struct)
         nucleus_struct(i).(new_vec_fields{j}) = NaN(size(ref));
     end
     for j = 1:numel(new_snip_fields)
-        nucleus_struct(i).(new_snip_fields{j}) = NaN(2*default_snip_size+1,2*default_snip_size+1,numel(ref));
+        nucleus_struct(i).(new_snip_fields{j}) = [];%NaN(2*default_snip_size+1,2*default_snip_size+1,numel(ref));
     end
+    nucleus_struct(i).snip_frame_vec = [];
 end
 %%% make source key
 src_cell = {1,numel(set_index)};
@@ -108,7 +108,7 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
-for i = 10:15%1:size(set_frame_array,1)
+for i = 1:size(set_frame_array,1)
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
@@ -274,7 +274,8 @@ for i = 10:15%1:size(set_frame_array,1)
             = find_control_sample(centroid_dist_vec, x_ref, y_ref, xp, yp, spot_centroid_dist,...
                 nc_x_vec, nc_y_vec, spot_x_vec, spot_y_vec, j, null_mask, r_dist_mat, min_sample_sep,his_sm,...
                     id_array, nb_sz, nc_index_vec,[min_area max_area]);    
-               
+                
+
         % Draw control samples (as appropriate)
         xc = NaN;
         yc = NaN;
@@ -332,19 +333,24 @@ for i = 10:15%1:size(set_frame_array,1)
     for j = 1:numel(nc_index_vec)
         nc_index = nc_index_vec(j);
         nc_sub_index = nc_sub_index_vec(j);
+        frame = nucleus_struct(nc_index).frames(nc_sub_index);
         for k = 1:numel(new_vec_fields)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
         end
-        for k = 1:numel(new_snip_fields)
-            snip = eval(new_snip_fields{k});
-            if snip_scale_factor ~= 1
-                snip = imresize(snip,snip_scale_factor);
+        if centroid_qc_flag_vec(j) > 0 || edge_qc_flag_vec(j) > 0
+            for k = 1:numel(new_snip_fields)
+                snip = eval([new_snip_fields{k} '(:,:,j)']);
+                ind = numel(nucleus_struct(nc_index).snip_frame_vec)+1;
+                if snip_scale_factor ~= 1
+                    snip = imresize(snip,snip_scale_factor);
+                end
+                nucleus_struct(nc_index).(new_snip_fields{k})(:,:,ind) = snip;
             end
-            nucleus_struct(nc_index).(new_snip_fields{k})(:,:,nc_sub_index) = snip(:,:,j);
+            nucleus_struct(nc_index).snip_frame_vec(ind) = frame;
         end
     end
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(toc) 'seconds)'])
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(toc) ' seconds)'])
 end
 
 % save qc data

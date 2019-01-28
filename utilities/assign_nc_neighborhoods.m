@@ -12,6 +12,9 @@ function [id_array, yDim, xDim, y_ref, x_ref] = assign_nc_neighborhoods(histone_
     for j = 1:numel(nc_x_vec)
         xn = round(nc_x_vec(j));
         yn = round(nc_y_vec(j));
+        if xn < 2 || yn < 2 || xDim - xn < 2 || yDim - yn < 2
+            continue
+        end
         x_range = max(1,xn-round(max_r)):min(xDim,xn+round(max_r));
         y_range = max(1,yn-round(max_r)):min(yDim,yn+round(max_r));
        

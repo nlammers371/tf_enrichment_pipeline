@@ -76,7 +76,7 @@ while ~exit_flag
         yDim = ceil(size(edge_dist_snip,1)/2);
         xDim = ceil(size(edge_dist_snip,2)/2);
         
-        qc_fig = figure;                 
+        qc_fig = figure('Position',[0 0 1024 512]);                 
         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
@@ -92,8 +92,8 @@ while ~exit_flag
         hold on
         p = imshow(centroid_dist_rgb);        
         p.AlphaData = .4;        
-        s1 = scatter(qc_spot.xp-x_center+yDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-        s2 = scatter(qc_spot.xc_centroid-x_center+yDim,qc_spot.yc_centroid-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+        s2 = scatter(qc_spot.xc_centroid-x_center+xDim,qc_spot.yc_centroid-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
         legend([s1 s2], 'spot', 'control')  
         title('Centroid Distance Sample')
         
