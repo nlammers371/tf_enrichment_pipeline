@@ -13,15 +13,21 @@
 %
 % OUTPUT: ref_frame_struct: compiled data set
 
-function nucleus_struct_protein = main02_sample_local_protein(project,RawPath,protein_channel)
-
+function nucleus_struct_protein = main02_sample_local_protein(project,RawPath,protein_channel,varargin)
+tic
+zeiss_flag = 0;
+for i = 1:numel(varargin)
+    if strcmpi(varargin{i}, 'zeiss')
+        zeiss_flag = 1;
+    end
+end
 % Load trace data
-DataPath = ['../../dat/' project '/'];
+DataPath = ['../dat/' project '/'];
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
 load([DataPath '/set_key.mat'],'set_key')
-SnipPath = ['../../dat/' project '/qc_images/'];
+SnipPath = ['../dat/' project '/qc_images/'];
 mkdir(SnipPath)
-
+addpath('./utilities')
 % get MCP channel
 options = [1 2];
 mcp_channel = options(options~=protein_channel);
@@ -29,8 +35,8 @@ mcp_channel = options(options~=protein_channel);
 frame_ref = [nucleus_struct.frames];
 nc_x_ref = [nucleus_struct.xPos];
 nc_y_ref = [nucleus_struct.yPos];
-spot_x_ref = [nucleus_struct.xPosParticle];
-spot_y_ref = [nucleus_struct.yPosParticle];
+spot_x_ref = [nucleus_struct.xPosParticle]+zeiss_flag;
+spot_y_ref = [nucleus_struct.yPosParticle]+zeiss_flag;
 spot_z_ref = [nucleus_struct.brightestZs];
 
 set_ref = [];
@@ -106,8 +112,7 @@ for i = 1:size(set_frame_array,1)
     spot_z_vec = spot_z_ref(frame_set_filter);  
     particle_id_vec = pt_ref(frame_set_filter);
     % find indices for spots
-    spot_indices = find(~isnan(spot_x_vec));
-    if isempty(spot_indices)
+    if sum(~isnan(spot_x_vec)) == 0
         continue
     end
     % indexing variables
@@ -126,14 +131,9 @@ for i = 1:size(set_frame_array,1)
     max_r = round(sqrt(max_area/pi))'; % max nucleus neighborhood size
     % determine whether snips will need to be resampled
     snip_scale_factor =  default_snip_size / pt_snippet_size;
-    % load and invert MCP mCherry    
-    src = set_key(set_key.setID==setID,:).prefix{1};    
-    mcp_files = dir([RawPath src '/*' sprintf('%03d',frame) '*_ch0' num2str(mcp_channel) '.tif']);
-    mcp_stack = [];
-    for im = 2:numel(mcp_files)-1
-        image = double(mat2gray(imread([RawPath src '/' mcp_files(im).name])));
-        mcp_stack(:,:,im-1) = image;
-    end
+    % load and  MCP mCherry and protein stacks
+    src = set_key(set_key.setID==setID,:).prefix{1};        
+    [mcp_stack, protein_stack] = load_stacks(RawPath, src, frame, mcp_channel);
     
     % Invert image
     mcp_med = mat2gray(nanmedian(mcp_stack,3));
@@ -149,30 +149,13 @@ for i = 1:size(set_frame_array,1)
     mcp_sm = imgaussfilt(mcp_med_inv,sm_kernel);
     his_sm = mcp_sm / mean(mcp_sm(:));    
     
-    % dist ref arrays
-    xDim = size(his_sm,2);
-    yDim = size(his_sm,1);
-    [x_ref, y_ref] = meshgrid(1:xDim, 1:yDim);
-    % assign neighborhoods to each nucleus using a (reverse?) greedy allocation
-    % process
-    min_dist_array = Inf(size(x_ref));
-    id_array = NaN(size(x_ref));
-    for j = 1:numel(nc_x_vec)
-        xn = nc_x_vec(j);
-        yn = nc_y_vec(j);
-        r_mat = sqrt((x_ref-xn).^2 + (y_ref-yn).^2);
-        ids = find(r_mat<=max_r&r_mat<=min_dist_array);
-        min_dist_array(ids) = r_mat(ids);
-        id_array(ids) = nc_index_vec(j);
-    end    
+    [id_array, yDim, xDim, y_ref, x_ref] = assign_nc_neighborhoods(his_sm, nc_x_vec, nc_y_vec, max_r, nc_index_vec);
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
     r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);
     % for each spot, segment nearby nuclei and attempt to sample local
-    % protein levels  
-    se = strel('disk',1);
-    
+    % protein levels        
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
         eval([new_vec_fields{j} ' = NaN(size(spot_x_vec));']);
@@ -180,15 +163,10 @@ for i = 1:size(set_frame_array,1)
     for j = 1:numel(new_snip_fields)
         eval([new_snip_fields{j} ' = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(spot_x_vec));']);
     end    
-    % load protein frames      
-    protein_stack = NaN(size(mcp_stack));
-    protein_files = dir([RawPath src '/*' sprintf('%03d',frame) '*_ch0' num2str(protein_channel) '.tif']);
-    for im = 2:numel(protein_files) - 1
-        protein_stack(:,:,im-1) = double(imread([RawPath src '/' protein_files(im).name]));
-    end 
+    
     % iterate through spots
     qc_mat = struct;
-    parfor j = 1:numel(spot_indices)
+    parfor j = 1:numel(nc_x_vec)        
         % get location info
         xn = round(nc_x_vec(j));
         yn = round(nc_y_vec(j));   
@@ -198,24 +176,8 @@ for i = 1:size(set_frame_array,1)
         if isnan(xp)
             continue
         end
-        snip = his_sm(max(1,yn-nb_sz):min(yDim,yn+nb_sz),max(1,xn-nb_sz):min(xDim,xn+nb_sz));
-        % generate binary histone image
-        thresh = multithresh(snip(:));
-        his_bin = his_sm > thresh;                
-        his_lb = bwlabel(his_bin);
-        % generate mask from neighborhood matrix
-        id_mask = id_array==nc_index_vec(j);
-        id_mask = imerode(id_mask,se)~=0;
-        % make mask using binary histone image
-        ID = his_lb(yn,xn);             
-        nc_bw = his_lb==ID&(ID>0);          
-        % enforce neighborhood boundaries
-        nc_bw = nc_bw & id_mask;
-        % enforce condition that spots must be inside nucleus       
-        nc_bw(yp,xp) = true;    
-        nc_bw_hull = bwconvhull(nc_bw);
-        % prevent overlaps between nuclei
-        nc_bw_final = nc_bw_hull & id_mask;
+        nc_bw_final = segment_nc_neighborhood(his_sm, xn, yn, xp, ...
+            yp, id_array, nb_sz, nc_index_vec(j));
         % make sure size is reasonable and that spot is inside nucleus
         if sum(nc_bw_final(:)) < min_area || sum(nc_bw_final(:)) > max_area || ~nc_bw_final(yp,xp)   
             qc_flag_vec(j) = 0;
@@ -277,27 +239,11 @@ for i = 1:size(set_frame_array,1)
             xn_nn = round(nc_x_vec(mi));
             yn_nn = round(nc_y_vec(mi));   
             xp_nn = round(spot_x_vec(mi));
-            yp_nn = round(spot_y_vec(mi));               
-            snip = his_sm(max(1,yn_nn-nb_sz):min(yDim,yn_nn+nb_sz),max(1,xn_nn-nb_sz):min(xDim,xn_nn+nb_sz));
-            % generate binary histone image
-            thresh = multithresh(snip(:));
-            his_bin = his_sm > thresh;                
-            his_lb = bwlabel(his_bin);
-            % generate mask from neighborhood matrix
-            id_mask = id_array==nc_index_vec(mi);
-            id_mask = imerode(id_mask,se)~=0;
-            % make mask using binary histone image
-            ID = his_lb(yn_nn,xn_nn);             
-            nc_bw = his_lb==ID&(ID>0);          
-            % enforce neighborhood boundaries
-            nc_bw = nc_bw & id_mask;
-            % enforce condition that spots must be inside nucleus
-            if ~isnan(xp_nn)
-                nc_bw(yp_nn,xp_nn) = true;
-            end
-            nc_bw_hull = bwconvhull(nc_bw);
-            % prevent overlaps between nuclei
-            nc_bw_final_nn = nc_bw_hull & id_mask;
+            yp_nn = round(spot_y_vec(mi));   
+            
+            nc_bw_final_nn = segment_nc_neighborhood(his_sm, xn_nn, yn_nn, xp_nn, ...
+            yp_nn, id_array, nb_sz, nc_index_vec(mi));
+        
             null_mask = nc_bw_final_nn; % reassign null mask
             if ~isnan(xp_nn)
                 nan_flag = isnan(nc_bw_final_nn(yp_nn,xp_nn));
@@ -372,18 +318,18 @@ for i = 1:size(set_frame_array,1)
         qc_mat(j).yc = yc;
         qc_mat(j).ParticleID = particle_id_vec(j);
         sz = nb_sz;
-        rescale = 1;
+%         rescale = 1;
         if qc_flag_vec(j) == 2
             xd = abs(xn - xc);
             yd = abs(yn - yc);
             sz = max([nb_sz,yd,xd]);
-            rescale = sz / nb_sz;
+%             rescale = sz / nb_sz;
             dist_mat = dist_mat + dist_mat_nn;
         end
         y_range = max(1,yn-sz):min(yDim,yn+sz);
         x_range = max(1,xn-sz):min(xDim,xn+sz);
         qc_mat(j).x_center = median(x_range);
-        qc_mat(j).y_center = median(x_range);
+        qc_mat(j).y_center = median(y_range);
         qc_mat(j).mcp_snip = his_sm(y_range,x_range);
         qc_mat(j).dist_snip = dist_mat(y_range,x_range);        
     end 
@@ -418,13 +364,12 @@ for i = 1:numel(qc_structure)
         if isempty(ParticleID)
             continue
         end        
-        frame = qc_spot.frame;
-        setID = qc_spot.setID;
+        frame = qc_spot.frame;      
         save_name = [SnipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat'];
         save(save_name,'qc_spot');
     end
 end
-
+toc
 % save updated nucleus structure
 nucleus_struct_protein = nucleus_struct;
-save(['../../dat/' project '/nucleus_struct_protein.mat'],'nucleus_struct_protein') 
+save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 

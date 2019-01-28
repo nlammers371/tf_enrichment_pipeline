@@ -24,7 +24,7 @@
 
 function nucleus_struct = main01_compile_data(project,FolderPath,keyword,varargin)
 
-
+% set defaults
 include_vec = [];
 nc = 14;
 exp_type = 'input_output';
@@ -120,7 +120,7 @@ for i = 1:length(cp_filenames)
     end
     frames_raw = 1:length(time_raw); % Frame list   
     
-    first_frame = processed_data.(['nc' num2str(nc)]); % Default to start of nc14 for the moment    
+    first_frame = max([1, processed_data.(['nc' num2str(nc)])]); % Default to start of nc14 for the moment    
     % filter trace mat and time
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
