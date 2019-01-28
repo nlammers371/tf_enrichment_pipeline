@@ -77,7 +77,6 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 ref_frame_struct = struct;
 %%% iterate
-
 parfor i = 1:size(set_frame_array,1)
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
