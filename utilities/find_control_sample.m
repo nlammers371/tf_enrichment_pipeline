@@ -22,9 +22,10 @@ function [null_x, null_y, null_nc, qc_flag, null_mask,dist_mat_nn] = find_contro
     sample_index_vec = sample_index_vec(cr_filter);
     % if candidate found, then proceed. Else look to neighboring nuclei
     if ~isempty(sample_distances)
-        [~, mi] = min(sample_distances);
-        null_x = x_pos_vec_spot(sample_index_vec(mi));
-        null_y = y_pos_vec_spot(sample_index_vec(mi));
+%         [~, mi] = min(sample_distances);
+        sample_index = randsample(sample_index_vec,1);
+        null_x = x_pos_vec_spot(sample_index);
+        null_y = y_pos_vec_spot(sample_index);
         null_nc = index;
         qc_flag = 1;               
     else

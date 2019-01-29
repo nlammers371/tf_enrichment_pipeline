@@ -1,5 +1,5 @@
 % Script conduct locus enrichment analyses
-function main06_make_exploratory_figs(project)
+function main04_make_exploratory_figs(project)
 
 close all
 
@@ -20,10 +20,8 @@ n_boots = 100; % number of bootstraps to use to estimate standard error
 
 % Load analysis data
 ReadPath = ['../../dat/' project '/'];
-load([ReadPath 'snip_struct_ctrl.mat'])
-load([ReadPath 'nucleus_struct_ctrl.mat']);
+load([ReadPath 'nucleus_struct_protein.mat']);
 
-% pix_cutoffs = dist_cutoffs / PixelSize;
 % Set write path
 FigPath = ['../../fig/' project '/'];
 mkdir(FigPath)
@@ -32,7 +30,10 @@ mkdir(FigPath)
 PixelSize = nucleus_struct_ctrl(1).PixelSize;
 
 dist_vec = [nucleus_struct_ctrl.edgeDistSpot]*PixelSize;
-ctrl_vec = [nucleus_struct_ctrl.ctrl_flags]; 
+ctrl_vec = [nucleus_struct_ctrl.qc_flag_vec]; 
+review_vec = [nucleus_struct_ctrl.qc_flag_vec]; 
+ctrl_vec(review_vec==0) = 0;
+
 pt_null_vec = [nucleus_struct_ctrl.pt_null];
 pt_spot_vec = [nucleus_struct_ctrl.pt_spot];
 
