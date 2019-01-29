@@ -1,4 +1,4 @@
-% main02_sample_local_protein(project, RawPath, keyword)
+% main02_sample_local_protein(project, RawPath)
 %
 % DESCRIPTION
 % Script to generate samples of local protein contentration at active gene
@@ -10,8 +10,13 @@
 % RawPath: Full or relative path to PreProcessed folder (pr
 %               equivalent)
 %
+% Options:
+%       DropboxFolder: Path to data folder where you wish to save
+%                      pipeline-generated data sets and figures. If this
+%                      var is not specified, output will be saved one level
+%                      above git repo in the folder structure 
 %
-% OUTPUT: ref_frame_struct: compiled data set
+% OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
 function nucleus_struct_protein = main02_sample_local_protein(project,RawPath,protein_channel,varargin)
 tic

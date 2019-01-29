@@ -1,4 +1,4 @@
-% main04_check_control_selection(project)
+% main03_check_control_selection(project)
 %
 % DESCRIPTION
 % Generates figures overlaying segmentation results onto histone channel
