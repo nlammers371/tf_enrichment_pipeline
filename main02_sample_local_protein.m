@@ -355,7 +355,7 @@ for i = 1:size(set_frame_array,1)
             nucleus_struct(nc_index).snip_frame_vec(ind) = frame;
         end
     end
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(toc) ' seconds)'])
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed'])
 end
 
 % save qc data

@@ -56,9 +56,11 @@ else
     qc_review_vec = NaN(size([nucleus_struct_protein.xPos]));
 end
 edge_qc_flag_vec = [nucleus_struct_protein.edge_qc_flag_vec];
+centroid_qc_flag_vec = [nucleus_struct_protein.centroid_qc_flag_vec];
+frame_filter = edge_qc_flag_vec>0|centroid_qc_flag_vec>0;
 % set start frame
-all_frames = find(edge_qc_flag_vec~=0&~isnan(edge_qc_flag_vec));
-outstanding_frames = find(isnan(qc_review_vec)&(edge_qc_flag_vec~=0&~isnan(edge_qc_flag_vec)));
+all_frames = find(frame_filter);
+outstanding_frames = find(isnan(qc_review_vec)&(frame_filter));
 % generate indexing vectors
 frame_index = [nucleus_struct_protein.frames];
 set_index = [];
