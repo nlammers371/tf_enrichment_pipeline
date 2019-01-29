@@ -1,7 +1,20 @@
 % Script conduct locus enrichment analyses
-function main04_make_exploratory_figs(project)
+function main04_make_exploratory_figs(project, varargin)
 
 close all
+DataPath = ['../../dat/' project '/'];
+FigPath = ['../../fig/' project '/'];
+ControlType = 'edge';
+for i = 1:numel(varargin)
+    if strcmpi(varargin{i}, 'DropboxFolder')        
+        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
+        FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];
+    elseif strcmpi(varargin{i}, 'ControlType')  
+        ControlType = varargin{i+1};
+    end
+end
+FigPath = [FigPath ControlType '/'];
+mkdir(FigPath)
 
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
@@ -19,26 +32,25 @@ dist_lim = .6; % min distance from edge permitted (um)
 n_boots = 100; % number of bootstraps to use to estimate standard error
 
 % Load analysis data
-ReadPath = ['../../dat/' project '/'];
-load([ReadPath 'nucleus_struct_protein.mat']);
+load([DataPath 'nucleus_struct_protein.mat']);
 
 % Set write path
-FigPath = ['../../fig/' project '/'];
-mkdir(FigPath)
 
 %%%% Start with some simple bulk analyses
-PixelSize = nucleus_struct_ctrl(1).PixelSize;
+PixelSize = nucleus_struct_protein(1).PixelSize;
 
-dist_vec = [nucleus_struct_ctrl.edgeDistSpot]*PixelSize;
-ctrl_vec = [nucleus_struct_ctrl.qc_flag_vec]; 
-review_vec = [nucleus_struct_ctrl.qc_flag_vec]; 
-ctrl_vec(review_vec==0) = 0;
+dist_vec = [nucleus_struct_protein.(['spot_' ControlType '_dist_vec'])]*PixelSize;
+ctrl_vec = [nucleus_struct_protein.([ControlType '_qc_flag_vec'])]; 
+if isfield(nucleus_struct_protein, 'qc_review_vec')
+    review_vec = [nucleus_struct_protein.qc_review_vec]; 
+    ctrl_vec(review_vec==0) = 0;
+end
 
-pt_null_vec = [nucleus_struct_ctrl.pt_null];
-pt_spot_vec = [nucleus_struct_ctrl.pt_spot];
+pt_null_vec = [nucleus_struct_protein.([ControlType '_null_protein_vec'])];
+pt_spot_vec = [nucleus_struct_protein.spot_protein_vec];
 
 %%%% Filter for samples meeting qc standards
-qc_ft = dist_vec >= dist_lim & ctrl_vec == 1;
+qc_ft = dist_vec >= dist_lim & ctrl_vec > 0;
 dist_vec_ctrl = dist_vec(qc_ft);
 pt_null_vec_ctrl = pt_null_vec(qc_ft);
 pt_spot_vec_ctrl = pt_spot_vec(qc_ft);
@@ -83,8 +95,17 @@ saveas(hist_fig,[FigPath 'hist_plots_' gene_name '_' protein_name '_dist_' num2s
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%% compare protein snippets %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nan_ft = ~isnan([nucleus_struct_ctrl.pt_spot]);
-snip_ctrl_vec = snip_struct_ctrl.ctrl_flags_final&dist_vec(nan_ft)>dist_lim;
+% generate distance vector for protein snip filtering 
+snip_dist_vec = [];
+for i = 1:numel(nucleus_struct_protein)
+    snip_frame_vec = nucleus_struct_protein(i).snip_frame_vec;
+    nc_dist = nucleus_struct_protein(i).(['spot_' ControlType '_dist_vec']);
+    nc_frames = nucleus_struct_protein(i).frames;
+    snip_dist_vec = [snip_dist_vec PixelSize*nc_dist_vec(ismember(nc_frames,snip_frame_vec))];
+end    
+
+spot_protein_snip = cat(3,nucleus_struct_protein.spot_protein_snips);
+null_protein_snip = cat(3,nucleus_struct_protein.([ControlType '_null_protein_snips']));
 
 pt_null_mean = nanmean(snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1),3);
 pt_spot_mean = nanmean(snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1),3);
@@ -243,7 +264,7 @@ saveas(delta_hist,[FigPath 'diff_hist.png'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
-time_vec = [nucleus_struct_ctrl.time];
+time_vec = [nucleus_struct_protein.time];
 time_vec_dist = time_vec(ctrl_vec==1&dist_vec>dist_lim);
 
 % take bootstrap samples
