@@ -18,18 +18,18 @@
 % include_vec:  Vector specifying IDs within list of projects
 %               pulled by 'keyword' to keep. If passed as empty vector, all
 %               matching projects will be taken
-% Options:
-%       DropboxFolder: Path to data folder where you wish to save
-%                      pipeline-generated data sets and figures. If this
-%                      var is not specified, output will be saved one level
-%                      above git repo in the folder structure
-%       first_nc: script defaults to taking only nc14 traces. If you want
-%                 earlier traces, pass 'first_nc', followed by desired nuclear cycle
-%                 number
-%       exp_type: by default, code assumes input/output experiment. If no
-%                 protein channel exists, pass 'exp_type', follwed by any
-%                 other string. In future can add additional
-%                 functionalities for other exp types
+% OPTIONS
+% DropboxFolder: Path to data folder where you wish to save
+%                pipeline-generated data sets and figures. If this
+%                var is not specified, output will be saved one level
+%                above git repo in the folder structure
+% first_nc: script defaults to taking only nc14 traces. If you want
+%           earlier traces, pass 'first_nc', followed by desired nuclear cycle
+%           number
+% exp_type: by default, code assumes input/output experiment. If no
+%           protein channel exists, pass 'exp_type', follwed by any
+%           other string. In future can add additional
+%           functionalities for other exp types
 %
 % OUTPUT: nucleus_struct: compiled data set contain key nucleus and
 % particle attributes

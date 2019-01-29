@@ -6,6 +6,31 @@
 %
 % ARGUMENTS
 % project: master ID variable
+%
+% OPTIONS
+% DropboxFolder: Path to data folder where you wish to save
+%                pipeline-generated data sets and figures. If this
+%                var is not specified, output will be saved one level
+%                above git repo in the folder structure
+%
+% INTERFACE
+%
+% Movement:
+%
+% n: move back one sample
+% m: move forward one sample
+% j: jump to specified sample (entered in command line)
+%
+% Labels:
+%
+% 1: approve frame
+% 0: disapprove frame
+%
+% General instructions: For now this script is primarily intended as a
+% means to spot-check the segementation and sample selection for different
+% data sets and time points. If systematic issues are uncovered, we will
+% need to adapt a different component of the pipleine either to resolve
+% issue or to remove problematic observations
 
 function main03_check_control_selection(project,varargin)
 close all
@@ -19,7 +44,6 @@ for i = 1:numel(varargin)
 end
 
 SnipPath = [DataPath 'qc_images/'];
-
 
 
 % load data

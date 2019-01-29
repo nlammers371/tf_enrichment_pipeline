@@ -10,11 +10,11 @@
 % RawPath: Full or relative path to PreProcessed folder (pr
 %               equivalent)
 %
-% Options:
-%       DropboxFolder: Path to data folder where you wish to save
-%                      pipeline-generated data sets and figures. If this
-%                      var is not specified, output will be saved one level
-%                      above git repo in the folder structure 
+% OPTIONS
+% DropboxFolder: Path to data folder where you wish to save
+%                pipeline-generated data sets and figures. If this
+%                var is not specified, output will be saved one level
+%                above git repo in the folder structure 
 %
 % OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
