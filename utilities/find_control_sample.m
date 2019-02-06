@@ -1,8 +1,8 @@
-function [null_x, null_y, null_nc, qc_flag, null_mask,dist_mat_nn] = ...
-    find_control_sample(dist_vec, x_ref, y_ref, x_spot, y_spot, spot_dist,...
+function [null_x, null_y, null_nc, qc_flag,null_mask,dist_mat_nn] = find_control_sample(...
+    dist_vec, x_ref, y_ref, x_spot, y_spot, spot_dist,...
     nc_x_vec, nc_y_vec, spot_x_vec, spot_y_vec, index, null_mask_spot, ...
     r_dist_mat, min_sample_sep, histone_image,id_array, nb_sz, nc_index_vec, ...
-    area_bounds, centroid_flag)
+    area_bounds)
     
     % dist_mat_nn defaults to zero matrix
     dist_mat_nn = zeros(size(x_ref));
@@ -53,16 +53,8 @@ function [null_x, null_y, null_nc, qc_flag, null_mask,dist_mat_nn] = ...
         if sum(nc_bw_final_nn(:)) >= min_area && sum(nc_bw_final_nn(:)) <= max_area &&...
                 (isnan(x_spot_nn) || ~nan_flag)
 
-            % look for potential control samples                         
-            if centroid_flag
-                x_centroid = round(mean(x_ref(nc_bw_final_nn)));
-                y_centroid = round(mean(y_ref(nc_bw_final_nn)));
-                centroid_mat = zeros(size(x_ref));
-                centroid_mat(y_centroid,x_centroid) = 1;
-                dist_mat_nn = bwdist(centroid_mat);
-            else
-                dist_mat_nn = bwdist(~nc_bw_final_nn);
-            end
+            % look for potential control samples                                  
+            dist_mat_nn = bwdist(~nc_bw_final_nn);          
             dist_vec = dist_mat_nn(nc_bw_final_nn);
             x_pos_vec = x_ref(nc_bw_final_nn);
             y_pos_vec = y_ref(nc_bw_final_nn);
