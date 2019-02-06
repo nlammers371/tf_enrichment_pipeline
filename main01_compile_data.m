@@ -1,8 +1,8 @@
-% main01_compile_traces(project, FolderPath, keyword, include_vec)
+% main01_compile_data(project, FolderPath, keyword, include_vec)
 %
 % DESCRIPTION
 % Funcion to compile relevant outputs from image analysis pipeline across
-% multiple experi
+% multiple experiments
 
 %
 % ARGUMENTS
@@ -15,11 +15,12 @@
 %          compile. For instance: 'Eve2MS2', will full all projects
 %          containing this string
 %
+% OPTIONS
 % include_vec:  Vector specifying IDs within list of projects
 %               pulled by 'keyword' to keep. If passed as empty vector, all
 %               matching projects will be taken
-% OPTIONS
-% DropboxFolder: Path to data folder where you wish to save
+% DropboxFolder: Pass this option, followed by the path to data folder 
+%                where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
 %                above git repo in the folder structure

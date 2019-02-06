@@ -10,6 +10,8 @@
 % RawPath: Full or relative path to PreProcessed folder (pr
 %               equivalent)
 %
+% protein_channel: 
+%
 % OPTIONS
 % DropboxFolder: Path to data folder where you wish to save
 %                pipeline-generated data sets and figures. If this

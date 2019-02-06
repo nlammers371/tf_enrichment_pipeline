@@ -2,19 +2,35 @@
 function main04_make_exploratory_figs(project, varargin)
 
 close all
+
 DataPath = ['../../dat/' project '/'];
 FigPath = ['../../fig/' project '/'];
-ControlType = 'edge';
+ControlType = 'edge'; % specify type of control to use
+ROIRadius = .3; % radus (um) of region used to query and compare TF concentrations
+DistLim = .6; % min distance from edge permitted (um)
+NBoots = 100; % number of bootstrap samples to use for estimating SE
+ManualDistThreshold = 0;
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'DropboxFolder')        
         DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
         FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];
     elseif strcmpi(varargin{i}, 'ControlType')  
         ControlType = varargin{i+1};
-    end
+    elseif strcmpi(varargin{i}, 'ROIRadius')  
+        ROIRadius = varargin{i+1};
+    elseif strcmpi(varargin{i}, 'DistLim')  
+        DistLim = varargin{i+1};
+    elseif strcmpi(varargin{i}, 'NBoots')  
+        NBoots = varargin{i+1};        
+    elseif strcmpi(varargin{i}, 'ManualDistThreshold')  
+        ManualDistThreshold = 1;    
+    end    
 end
 FigPath = [FigPath ControlType '/'];
 mkdir(FigPath)
+
+% Load analysis data
+load([DataPath 'nucleus_struct_protein.mat']);
 
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
@@ -27,47 +43,130 @@ else
     ind = underscores(4)-1;
 end
 gene_fluor = project(underscores(3)+1:end);
-% parameters for plots
-dist_lim = .6; % min distance from edge permitted (um)
-n_boots = 100; % number of bootstraps to use to estimate standard error
 
-% Load analysis data
-load([DataPath 'nucleus_struct_protein.mat']);
-
-% Set write path
-
-%%%% Start with some simple bulk analyses
+id_string = [protein_name '-' protein_fluor ' : ' gene_name '-' gene_fluor]; 
+write_string = [protein_name '-' protein_fluor '__' gene_name '-' gene_fluor]; 
+% Generate distance vector for filtering snip stacks
 PixelSize = nucleus_struct_protein(1).PixelSize;
-
-dist_vec = [nucleus_struct_protein.(['spot_' ControlType '_dist_vec'])]*PixelSize;
-ctrl_vec = [nucleus_struct_protein.([ControlType '_qc_flag_vec'])]; 
-if isfield(nucleus_struct_protein, 'qc_review_vec')
-    review_vec = [nucleus_struct_protein.qc_review_vec]; 
-    ctrl_vec(review_vec==0) = 0;
+snip_dist_vec = [];
+snip_time_vec = [];
+snip_ap_vec = [];
+for i = 1:numel(nucleus_struct_protein)
+    snip_frame_vec = nucleus_struct_protein(i).snip_frame_vec;
+    nc_dist_vec = nucleus_struct_protein(i).(['spot_' ControlType '_dist_vec']);
+    time_vec = nucleus_struct_protein(i).time;
+    ap_vec = nucleus_struct_protein(i).ap_vector;
+    nc_frames = nucleus_struct_protein(i).frames;
+    snip_dist_vec = [snip_dist_vec PixelSize*nc_dist_vec(ismember(nc_frames,snip_frame_vec))];
+    snip_time_vec = [snip_time_vec time_vec(ismember(nc_frames,snip_frame_vec))];
+    snip_ap_vec = [snip_ap_vec ap_vec(ismember(nc_frames,snip_frame_vec))];
+end    
+% fixing error in a data set
+if strcmpi(project,'Hb_NbGFP_hbBAC_mCherry')
+    ap_ft = snip_ap_vec > .5;
+    snip_ap_vec(ap_ft) = 1 - snip_ap_vec(ap_ft);
 end
+% invert distance vector if we're using centroid metric
+if strcmpi(ControlType, 'centroid')
+    snip_dist_vec = max(snip_dist_vec) - snip_dist_vec;
+end
+% Snip stacks
+spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
+null_protein_snips = cat(3,nucleus_struct_protein.([ControlType '_null_protein_snips']));
+spot_mcp_snips = cat(3,nucleus_struct_protein.spot_mcp_snips);
+null_mcp_snips = cat(3,nucleus_struct_protein.([ControlType '_null_mcp_snips']));
 
-pt_null_vec = [nucleus_struct_protein.([ControlType '_null_protein_vec'])];
-pt_spot_vec = [nucleus_struct_protein.spot_protein_vec];
+% Make r reference array
+snip_size = size(spot_protein_snips,1);
+[y_ref, x_ref] = meshgrid(1:snip_size,1:snip_size);
+r_ref = sqrt((x_ref-ceil(snip_size/2)).^2 + (y_ref-ceil(snip_size/2)).^2)*PixelSize;
 
-%%%% Filter for samples meeting qc standards
-qc_ft = dist_vec >= dist_lim & ctrl_vec > 0;
-dist_vec_ctrl = dist_vec(qc_ft);
-pt_null_vec_ctrl = pt_null_vec(qc_ft);
-pt_spot_vec_ctrl = pt_spot_vec(qc_ft);
+r_ft = 1*repmat(r_ref <= ROIRadius,1,1,size(spot_protein_snips,3));
+spot_protein_vec = reshape(nanmean(nanmean(r_ft.*spot_protein_snips,1),2),1,[]);
+null_protein_vec = reshape(nanmean(nanmean(r_ft.*null_protein_snips,1),2),1,[]);
 
-% filter for data points with appropriate control
+% First look for presence of edge artifact
+dist_sigma = .1; %(um)
+protein_delta_vec =  spot_protein_vec - null_protein_vec;
+dist_index = 0:.1:floor(prctile(snip_dist_vec,99)*10)/10;
 
-[~,p] = kstest2(pt_spot_vec_ctrl,pt_null_vec_ctrl);
-lb = prctile([pt_null_vec_ctrl pt_spot_vec_ctrl],1);
-ub = prctile([pt_null_vec_ctrl pt_spot_vec_ctrl],99);
+delta_dist_mat = NaN(numel(dist_index),NBoots);
+null_dist_mat = NaN(numel(dist_index),NBoots);
+spot_dist_mat = NaN(numel(dist_index),NBoots);
+
+for n = 1:NBoots
+    s_ids = randsample(1:numel(protein_delta_vec),numel(protein_delta_vec),true);
+    dv_samp = protein_delta_vec(s_ids);    
+    nn_samp = spot_protein_vec(s_ids);
+    sp_samp = null_protein_vec(s_ids);
+    dist_samp = snip_dist_vec(s_ids);        
+    for t = 1:numel(dist_index)
+        d_weights = exp(-.5*((dist_samp-dist_index(t))/dist_sigma).^2);
+        delta_dist_mat(t,n) = nansum(dv_samp.*d_weights) / nansum(d_weights);
+        null_dist_mat(t,n) = (nansum(nn_samp.*d_weights) / nansum(d_weights));
+        spot_dist_mat(t,n) = (nansum(sp_samp.*d_weights) / nansum(d_weights));
+    end
+end
+% calcualte mean and standard error
+delta_dist_mean = nanmean(delta_dist_mat,2);
+delta_dist_ste = nanstd(delta_dist_mat,[],2);
+
+null_dist_mean = nanmean(null_dist_mat,2);
+null_dist_ste = nanstd(null_dist_mat,[],2);
+
+spot_dist_mean = nanmean(spot_dist_mat,2);
+spot_dist_ste = nanstd(spot_dist_mat,[],2);
+
+
+% make dist-dependent fold enrichment figure and select distance threshold
+pass = 0;
+while ~pass
+    delta_dist_fig = figure;
+    e = errorbar(dist_index,100* delta_dist_mean ./ null_dist_mean,100* delta_dist_ste ./ null_dist_mean);
+    e.CapSize = 0;
+    hold on
+    xlabel('distance from edge (\mu m)')
+    ylabel('apparent % enrichment')
+    
+    grid on
+    y_max = 100 * nanmax(delta_dist_mean ./ null_dist_mean);
+    y_min = 100 * nanmin(delta_dist_mean ./ null_dist_mean);
+    p = plot([DistLim DistLim],[y_min y_max],'Color', 'red');
+    legend(p, 'current limit')
+    ylim([min([0 , y_min-.1*y_min*sign(y_min)]) 1.1*y_max])  
+    if ManualDistThreshold
+        title(strvcat('Setting Edge Distance Threshold:',...
+                'If current value is staisfactory press "Enter"',...
+                'Else click a desired cutoff and click "Enter"'))
+        [x,~] = ginput;
+        if isempty(x)
+            pass = 1;
+        end
+    else
+        pass = 1;
+    end
+end
+title(['Enrichment vs. Distance from Nucleus Edge (' id_string ')'])
+saveas(delta_dist_fig, [FigPath write_string '_edge_artifact_plot.png'])
+
+% Apply distance filter and make histogram figures
+null_protein_vec_dist = null_protein_vec(snip_dist_vec>=DistLim);
+spot_protein_vec_dist = spot_protein_vec(snip_dist_vec>=DistLim);
+delta_protein_vec_dist = spot_protein_vec_dist-null_protein_vec_dist;
+delta_norm_protein_vec_dist = (spot_protein_vec_dist-null_protein_vec_dist) / nanmean(null_protein_vec_dist);
+snip_time_vec_dist = snip_time_vec(snip_dist_vec>=DistLim);
+snip_ap_vec_dist = 100*snip_ap_vec(snip_dist_vec>=DistLim);
+% plot raw distributions
+lb = .9*prctile([null_protein_vec_dist spot_protein_vec_dist],1);
+ub = 1.1*prctile([null_protein_vec_dist spot_protein_vec_dist],99);
 bins = linspace(lb,ub,100);
 
-spot_ct = histc(pt_spot_vec_ctrl,bins);
-null_ct = histc(pt_null_vec_ctrl,bins);
+spot_ct = histc(spot_protein_vec_dist,bins);
+null_ct = histc(null_protein_vec_dist,bins);
 spot_ct = spot_ct / sum(spot_ct);
 null_ct = null_ct / sum(null_ct);
 
-hist_fig = figure;
+raw_hist_fig = figure;
 cm = jet(128);
 hold on
 % hist plots
@@ -87,255 +186,268 @@ ax.YColor = 'black';
 
 legend('control',['active locus (' gene_name ')'])
 xlabel('concentration (au)')
-title(strvcat(['Distribution of ' protein_name '-' protein_fluor ' Concentrations'],...
-       [ '    min dist: ' num2str(dist_lim) ' \mu m, p=' num2str(p)]))
+title([protein_name '-' protein_fluor ' Concentrations'])
 grid on
-saveas(hist_fig,[FigPath 'hist_plots_' gene_name '_' protein_name '_dist_' num2str(dist_lim) '.png']);    
+saveas(raw_hist_fig,[FigPath 'hist_plots_' write_string '_dist_' num2str(DistLim) '.png']); 
+
+% plot delta distribution
+pd = fitdist(delta_norm_protein_vec_dist','Normal');
+lb = .9*prctile(delta_norm_protein_vec_dist,1);
+ub = 1.1*prctile(delta_norm_protein_vec_dist,99);
+bins = linspace(lb,ub,100);
+
+delta_ct = histc(delta_norm_protein_vec_dist,bins);
+delta_ct = delta_ct / sum(delta_ct);
+   
+
+delta_hist_fig = figure;
+cm = jet(128);
+hold on
+% hist plots
+b = bar(bins,delta_ct,1,'FaceAlpha',.5,'FaceColor',cm(60,:)/1.2);
+norm_vec = exp(-.5*((bins-pd.mu)/pd.sigma).^2);
+p = plot(bins,norm_vec/sum(norm_vec),'LineWidth',2);
+ylabel('share')
+legend([b,p],['\Delta F ('  gene_name ')'], ...
+    ['Gaussian Fit (\mu=' num2str(pd.mu) ' \sigma=' num2str(pd.sigma)],'Location','best')
+xlabel('concentration (au)')
+title(['Enrichment at Active Locus Relative to Control (' id_string ')'])
+grid on
+saveas(delta_hist_fig,[FigPath 'delta_hist_' write_string '_dist_' num2str(DistLim) '.png']); 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%% compare protein snippets %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% generate distance vector for protein snip filtering 
-snip_dist_vec = [];
-for i = 1:numel(nucleus_struct_protein)
-    snip_frame_vec = nucleus_struct_protein(i).snip_frame_vec;
-    nc_dist_vec = nucleus_struct_protein(i).(['spot_' ControlType '_dist_vec']);
-    nc_frames = nucleus_struct_protein(i).frames;
-    snip_dist_vec = [snip_dist_vec PixelSize*nc_dist_vec(ismember(nc_frames,snip_frame_vec))];
-end    
+%%%%%%%%%%%%%%%%%%%%%%%% Compare protein snippets %%%%%%%%%%%%%%%%%%%%%%%%%
+% apply distance filter
+spot_protein_snips_dist = spot_protein_snips(:,:,snip_dist_vec>=DistLim);
+null_protein_snips_dist = null_protein_snips(:,:,snip_dist_vec>=DistLim);
+spot_mcp_snips_dist = spot_mcp_snips(:,:,snip_dist_vec>=DistLim);
+null_mcp_snips_dist = null_mcp_snips(:,:,snip_dist_vec>=DistLim);
 
-spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
-spot_protein_snips_ctrl = spot_protein_snips(:,:,snip_dist_vec>=dist_lim);
-null_protein_snips = cat(3,nucleus_struct_protein.([ControlType '_null_protein_snips']));
-null_protein_snips_ctrl = null_protein_snips(:,:,snip_dist_vec>=dist_lim);
+% randomize snip orientation....
+inv_mat = [fliplr(1:snip_size); 1:snip_size]' ;
+spot_protein_snips_mixed = NaN(size(spot_protein_snips_dist));
+null_protein_snips_mixed = NaN(size(spot_protein_snips_dist));
+spot_mcp_snips_mixed = NaN(size(spot_protein_snips_dist));
+null_mcp_snips_mixed = NaN(size(spot_protein_snips_dist));
+for i = 1:size(spot_protein_snips_dist,3)
+    h = ceil(rand()*2);
+    v = ceil(rand()*2);
+    
+    spot_protein_snips_mixed(:,:,i) = spot_protein_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
+    null_protein_snips_mixed(:,:,i) = null_protein_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
+    spot_mcp_snips_mixed(:,:,i) = spot_mcp_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
+    null_mcp_snips_mixed(:,:,i) = null_mcp_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
+end
 
-pt_null_mean = nanmean(snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1),3);
-pt_spot_mean = nanmean(snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1),3);
-pt_diff_mean = nanmean(snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1)-snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1),3);
+spot_protein_snip_mean = nanmean(spot_protein_snips_mixed,3);
+null_protein_snip_mean = nanmean(null_protein_snips_mixed,3);
 
-ub = prctile([reshape(pt_null_mean,1,[]) reshape(pt_spot_mean,1,[])],99);
-lb = prctile([reshape(pt_null_mean,1,[]) reshape(pt_spot_mean,1,[])],1);
+lb = prctile([spot_protein_snip_mean(:)'  null_protein_snip_mean(:)'],1);
+ub = prctile([spot_protein_snip_mean(:)'  null_protein_snip_mean(:)'],99);
 
-pt_snippet_spot_fig = figure;
+xtick_string = "set(gca,'xtick',1:5:snip_size,'xticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
+ytick_string = "set(gca,'ytick',1:5:snip_size,'yticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
+
+spot_pt_snip_fig = figure;
 colormap(jet(128))
-imagesc(pt_spot_mean)
-% title(['Active Locus (' gene_name ')'])
+imagesc(spot_protein_snip_mean)
+title([protein_name '-' protein_fluor ' at ' 'Active ' gene_name ' Locus'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
 ylabel(h,[protein_name '-' protein_fluor ' concentration (au)'],'FontSize',12)
-set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-saveas(pt_snippet_spot_fig,[FigPath 'mean_pt_snippet_spot.png']);    
+eval(xtick_string)
+eval(ytick_string)
+saveas(spot_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_spot.png']);    
 
-pt_snippet_null_fig = figure;
+null_pt_snip_fig = figure;
 colormap(jet(128))
-imagesc(pt_null_mean)
-% title('Control')
+imagesc(null_protein_snip_mean)
+title([protein_name '-' protein_fluor ' at Control Locus'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
 ylabel(h,[protein_name '-' protein_fluor ' concentration (au)'],'FontSize',12)
-set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-saveas(pt_snippet_null_fig,[FigPath 'mean_pt_snippet_null.png']);    
+eval(xtick_string)
+eval(ytick_string)
+saveas(null_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_null.png']);  
 
 % Make diff image
-pt_rel_snip = pt_spot_mean ./ pt_null_mean;
-diff_snippet_fig = figure;
+rel_protein_snip_mean = (spot_protein_snip_mean) ./ null_protein_snip_mean;
+rel_pt_snip_fig = figure;
 colormap(jet(128))
-imagesc(pt_rel_snip)
-% title(['Difference Between Active and Control Snips (' gene_name ')'])
+imagesc(rel_protein_snip_mean)
+title(['Relative ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'])
+% caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
-ylabel(h,'fold enrichment (au)','FontSize',12)
-set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-saveas(diff_snippet_fig,[FigPath 'mean_pt_snippet_diff.png']);    
+ylabel(h,[protein_name '-' protein_fluor ' fold enrichment'],'FontSize',12)
+eval(xtick_string)
+eval(ytick_string)
+saveas(null_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_rel.png']);    
 
 % compare mcp snippets
-null_mean_fluo = nanmean(snip_struct_ctrl.fluo_snippet_null(:,:,snip_ctrl_vec==1),3);
-spot_mean_fluo = nanmean(snip_struct_ctrl.fluo_snippet_spot(:,:,snip_ctrl_vec==1),3);
+
+null_mean_fluo = nanmean(null_mcp_snips_mixed,3);
+spot_mean_fluo = nanmean(spot_mcp_snips_mixed,3);
 ub = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],99);
 lb = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],1);
 
 fluo_snippet_spot_fig = figure;
 colormap(jet(128))
 imagesc(spot_mean_fluo)
-% title(['Active Locus (' gene_name ')'])
+title([gene_fluor ' Intensity at Active Locus (' gene_name ')'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
 ylabel(h,[gene_name ' expression (au)'],'FontSize',12)
-set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-saveas(fluo_snippet_spot_fig,[FigPath 'mean_fluo_snippet_spot.png']);    
+eval(xtick_string)
+eval(ytick_string)
+saveas(fluo_snippet_spot_fig,[FigPath write_string '_mean_fluo_snippet_spot.png']);    
 
 fluo_snippet_null_fig = figure;
 colormap(jet(128))
 imagesc(null_mean_fluo)
-% title('Control')
+title([gene_fluor ' Intensity at Control Locus'])
 caxis([lb ub])
 h = colorbar;
 ylabel('\mum','FontSize',12)
 xlabel('\mum','FontSize',12)
 ylabel(h,[gene_name ' expression (au)'],'FontSize',12)
-set(gca,'xtick',3:5:size(pt_null_mean,1),'xticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-set(gca,'ytick',3:5:size(pt_null_mean,1),'yticklabel',round(((3:5:size(pt_null_mean,1))-round(size(pt_null_mean,1)/2))*PixelSize,2))
-saveas(fluo_snippet_null_fig,[FigPath 'mean_fluo_snippet_null.png']);    
+eval(xtick_string)
+eval(ytick_string)
+saveas(fluo_snippet_null_fig,[FigPath write_string '_mean_fluo_snippet_null.png']);    
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%% Investigate Edge Artifact %%%%%%%%%%%%%%%%%%%%%%%%
-% dist_sigma = .1;
-% dist_vec_bah = dist_vec(ctrl_vec==1);
-% delta_vec_ctrl =  pt_spot_vec_ctrl - pt_null_vec_ctrl;
-% dist_index = 0:.1:2;
-% 
-% dist_mat = NaN(numel(dist_index),n_boots);
-% dist_dv_nn = NaN(numel(dist_index),n_boots);
-% dist_dv_sp = NaN(numel(dist_index),n_boots);
-% 
-% for n = 1:n_boots
-%     s_ids = randsample(1:numel(delta_vec_ctrl),numel(delta_vec_ctrl),true);
-%     dv_samp = delta_vec_ctrl(s_ids);    
-%     nn_samp = pt_null_vec_ctrl(s_ids);
-%     sp_samp = pt_spot_vec_ctrl(s_ids);
-%     dist_samp = dist_vec_blah(s_ids);        
-%     for t = 1:numel(dist_index)
-%         d_weights = exp(-.5*((dist_samp-dist_index(t))/dist_sigma).^2);
-%         dist_mat(t,n) = nansum(dv_samp.*d_weights) / nansum(d_weights);
-%         dist_dv_nn(t,n) = (nansum(nn_samp.*d_weights) / nansum(d_weights));
-%         dist_dv_sp(t,n) = (nansum(sp_samp.*d_weights) / nansum(d_weights));
-%     end
-% end
-% % calcualte mean and standard error
-% dist_mean = nanmean(dist_mat,2);
-% dist_ste = nanstd(dist_mat,[],2);
-% 
-% dist_dv_nn_mean = nanmean(dist_dv_nn,2);
-% dist_dv_nn_ste = nanstd(dist_dv_nn,[],2);
-% 
-% dist_dv_sp_mean = nanmean(dist_dv_sp,2);
-% dist_dv_sp_ste = nanstd(dist_dv_sp,[],2);
-% 
-% % make dist-dependent fold enrichment figure
-% fold_fig = figure;
-% e = errorbar(dist_index,100* dist_mean ./ dist_dv_nn_mean,100* dist_ste ./ dist_dv_nn_mean);
-% e.CapSize = 0;
-% xlabel('distance from edge (\mu m)')
-% ylabel('apparent % enrichment')
-% title(['Pointwise Percent Enrixhment vs. Distance from Nucleus Boundary'])
-% grid on
-% y_max = 100 * nanmax(dist_mean ./ dist_dv_nn_mean);
-% y_min = 100 * nanmin(dist_mean ./ dist_dv_nn_mean);
-% ylim([min([0 , y_min-.1*y_min*sign(y_min)]) 1.1*y_max])
-% saveas(fold_fig, [FigPath 'edge_artifact_plot.png'])
 
-% plot protein profiles as function edge distance
-% fold_fig = figure;
-% hold on
-% e = errorbar(dist_index, dist_dv_nn_mean, dist_dv_nn_ste);
-% e.CapSize = 0;
-% e = errorbar(dist_index, dist_dv_sp_mean, dist_dv_sp_ste);
-% e.CapSize = 0;
-% legend('control', [gene_name ' locus'], 'Location', 'best')
-% xlabel('distance from edge (\mu m)')
-% ylabel('apparent % enrichment')
-% title('Pointwise Percent Enrixhment vs. Distance from Nucleus Boundary')
-% grid on
-% y_max = nanmax(dist_dv_sp_mean);
-% ylim([0 1.1*y_max])
-% saveas(fold_fig, [FigPath 'edge_dist_pt_profiles.png'])
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Probe mean difference between control and spot samples over time %%%%%%
-delta_vec_ctrl = pt_spot_vec_ctrl - pt_null_vec_ctrl;
-
-%%% make histogram of differences
-delta_hist = figure;
-histogram(delta_vec_ctrl)
-xlabel('pointwise difference (au)')
-ylabel('counts')
-title('Distribution of Pointwise Differences Between Locus and Control')
-grid on
-saveas(delta_hist,[FigPath 'diff_hist.png'])
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
-time_vec = [nucleus_struct_protein.time];
-time_vec_dist = time_vec(ctrl_vec==1&dist_vec>dist_lim);
 
 % take bootstrap samples
-time_mean = 0:20:round(max(time_vec_dist));
-time_delta_mat = NaN(numel(time_mean),n_boots);
-sp_dv_time_mat = NaN(numel(time_mean),n_boots);
-nn_dv_time_mat = NaN(numel(time_mean),n_boots);
+time_index = 0:20:round(max(snip_time_vec_dist));
+delta_protein_time_mat = NaN(numel(time_index),NBoots);
+spot_protein_time_mat = NaN(numel(time_index),NBoots);
+null_protein_time_mat = NaN(numel(time_index),NBoots);
 t_window = 120; % seconds
-for n = 1:n_boots
-    s_ids = randsample(1:numel(delta_vec_ctrl),numel(delta_vec_ctrl),true);
-    dv_samp = delta_vec_ctrl(s_ids);    
-    nn_samp = pt_null_vec_ctrl(s_ids);
-    sp_samp = pt_spot_vec_ctrl(s_ids);
-    time_samp = time_vec_dist(s_ids);
-    for t = 1:numel(time_mean)
-        if time_mean(t) < min(time_vec_dist) || time_mean(t) > max(time_vec_dist)
+for n = 1:NBoots
+    s_ids = randsample(1:numel(delta_protein_vec_dist),numel(delta_protein_vec_dist),true);
+    dv_samp = delta_protein_vec_dist(s_ids);    
+    nn_samp = null_protein_vec_dist(s_ids);
+    sp_samp = spot_protein_vec_dist(s_ids);
+    time_samp = snip_time_vec_dist(s_ids);
+    for t = 1:numel(time_index)
+        if time_index(t) < min(snip_time_vec_dist) || time_index(t) > max(snip_time_vec_dist)
             continue
         end
-        t_weights = exp(-.5*((time_samp-time_mean(t))/t_window).^2);
-        time_delta_mat(t,n) = nansum(dv_samp.*t_weights)/nansum(t_weights);        
-        nn_dv_time_mat(t,n) =  nansum(nn_samp.*t_weights)/nansum(t_weights);
-        sp_dv_time_mat(t,n) = nansum(sp_samp.*t_weights)/nansum(t_weights);
+        t_weights = exp(-.5*((time_samp-time_index(t))/t_window).^2);
+        delta_protein_time_mat(t,n) = nansum(dv_samp.*t_weights)/nansum(t_weights);        
+        null_protein_time_mat(t,n) =  nansum(nn_samp.*t_weights)/nansum(t_weights);
+        spot_protein_time_mat(t,n) = nansum(sp_samp.*t_weights)/nansum(t_weights);
     end
 end
 % calculate average and standard error
-time_delta_mean = nanmean(time_delta_mat,2);
-time_delta_ste = nanstd(time_delta_mat,[],2);
-nn_time_mean = nanmean(nn_dv_time_mat,2);
-nn_time_ste = nanstd(nn_dv_time_mat,[],2);
-sp_time_mean = nanmean(sp_dv_time_mat,2);
-sp_time_ste = nanstd(sp_dv_time_mat,[],2);
+time_delta_mean = nanmean(delta_protein_time_mat./null_protein_time_mat,2);
+time_delta_ste = nanstd(delta_protein_time_mat./null_protein_time_mat,[],2);
+time_null_mean = nanmean(null_protein_time_mat,2);
+time_null_ste = nanstd(null_protein_time_mat,[],2);
+time_spot_mean = nanmean(spot_protein_time_mat,2);
+time_spot_ste = nanstd(spot_protein_time_mat,[],2);
 
 
-fold_fig = figure;
-e = errorbar(time_mean/60,100 * time_delta_mean ./ nn_time_mean,100 * time_delta_ste ./ nn_time_mean);
+delta_time_fig = figure;
+yyaxis left
+e = errorbar(time_index/60,100 * time_delta_mean,100 * time_delta_ste,'-','Color',cm(60,:)/1.2,'LIneWidth',1.5);
 e.CapSize = 0;
-xlabel('minutes')
+
 ylabel('% enrichment at locus')
-title(['Percent Enrichment of ' protein_name ' at ' gene_name ' Loci'])
 grid on
-y_max = nanmax(100 * time_delta_mean ./ nn_time_mean);
-y_min = nanmin(100 * time_delta_mean ./ nn_time_mean);
+y_max = nanmax(100 * time_delta_mean);
+y_min = nanmin(100 * time_delta_mean);
 ylim([y_min-.1*y_min*sign(y_min) 1.1*y_max])
-saveas(fold_fig, [FigPath 'time_fold_enrichment.png'])
+
+yyaxis right
+plot(time_index/60, time_spot_mean,'-','Color',cm(30,:));
+hold on
+plot(time_index/60, time_null_mean,'-','Color','black');
+ylabel('concentration (au)')
+
+legend('percent enrichment','locus concentration', 'control concentration','Location','northwest')
+xlabel('minutes')
+title(['Percent Enrichment of ' id_string])
+
+saveas(delta_time_fig, [FigPath write_string '_time_percent_enrichment.png'])
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% plot relative enrichment at locus as a function of AP %%%%%%%%%%%
+
+% take bootstrap samples
+ap_index = unique(round(snip_ap_vec_dist));
+delta_protein_ap_mat = NaN(numel(ap_index),NBoots);
+spot_protein_ap_mat = NaN(numel(ap_index),NBoots);
+null_protein_ap_mat = NaN(numel(ap_index),NBoots);
+ap_sigma= 2; % seconds
+for n = 1:NBoots
+    s_ids = randsample(1:numel(delta_protein_vec_dist),numel(delta_protein_vec_dist),true);
+    dv_samp = delta_protein_vec_dist(s_ids);    
+    nn_samp = null_protein_vec_dist(s_ids);
+    sp_samp = spot_protein_vec_dist(s_ids);
+    ap_samp = snip_ap_vec_dist(s_ids);
+    for a = 1:numel(ap_index)        
+        ap_weights = exp(-.5*((ap_samp-ap_index(a))/ap_sigma).^2);
+        delta_protein_ap_mat(a,n) = nansum(dv_samp.*ap_weights)/nansum(ap_weights);        
+        null_protein_ap_mat(a,n) =  nansum(nn_samp.*ap_weights)/nansum(ap_weights);
+        spot_protein_ap_mat(a,n) = nansum(sp_samp.*ap_weights)/nansum(ap_weights);
+    end
+end
+% calculate average and standard error
+ap_delta_mean = nanmean(delta_protein_ap_mat./null_protein_ap_mat,2);
+ap_delta_ste = nanstd(delta_protein_ap_mat./null_protein_ap_mat,[],2);
+ap_null_mean = nanmean(null_protein_ap_mat,2);
+ap_null_ste = nanstd(null_protein_ap_mat,[],2);
+ap_spot_mean = nanmean(spot_protein_ap_mat,2);
+ap_spot_ste = nanstd(spot_protein_ap_mat,[],2);
+
+cm = jet(128);
+delta_ap_fig = figure;
+
+yyaxis left
+e = errorbar(ap_index,100*ap_delta_mean,100 * ap_delta_ste,'-','Color',cm(60,:)/1.2,'LineWidth',1.5);
+e.CapSize = 0;
+ylabel('% enrichment at locus')
+y_max = nanmax(100 * ap_delta_mean);
+y_min = nanmin(100 * ap_delta_mean);
+ylim([y_min-.1*y_min*sign(y_min) 1.1*y_max])
+
+yyaxis right
+plot(ap_index, ap_spot_mean,'-','Color',cm(30,:));
+hold on
+plot(ap_index, ap_null_mean,'-','Color','black');
+ylabel('concentration (au)')
+
+legend('percent enrichment','locus concentration', 'control concentration','Location','northwest')
+
+title(['Percent Enrichment of ' id_string])
+xlabel('% AP')
+grid on
+saveas(delta_ap_fig, [FigPath write_string '_ap_percent_enrichment.png'])
+
 %%%%%%%%%%%%%%%%%%%%% Make Radial Profile Figure %%%%%%%%%%%%%%%%%%%%%%%%%%
 % generate position reference matrices
-
 r_sigma = .1;
-[yref, xref] = meshgrid(1:size(pt_diff_mean,1),1:size(pt_diff_mean,2));
-r_grid = sqrt((xref-round(size(pt_diff_mean,1)/2)).^2+(yref-round(size(pt_diff_mean,1)/2)).^2)*PixelSize;
-r_index = round(0:.1:2,1);
-r_vec = NaN(size(r_index));
-% extract_snips
-pt_snips_spot = snip_struct_ctrl.pt_snippet_spot(:,:,snip_ctrl_vec==1);
-pt_snips_null = snip_struct_ctrl.pt_snippet_null(:,:,snip_ctrl_vec==1);
-index_vec = 1:size(pt_snips_null,3);
+% indexing vector for sampling
+index_vec = 1:size(null_protein_snips_mixed,3);
 % initialize profile arrays
-r_spot_mat = NaN(n_boots,numel(r_index));
-r_null_mat = NaN(n_boots,numel(r_index));
+r_spot_mat = NaN(NBoots,numel(dist_index));
+r_null_mat = NaN(NBoots,numel(dist_index));
 
-for n = 1:n_boots
+for n = 1:NBoots
     s_ids = randsample(index_vec,numel(index_vec),true);
-    pt_spot = nanmean(pt_snips_spot(:,:,s_ids),3);
-    pt_null = nanmean(pt_snips_null(:,:,s_ids),3);
-    for r = 1:numel(r_index)
-        r_weights = exp(-.5*((r_grid-r_index(r))/r_sigma).^2);
+    pt_spot = nanmean(spot_protein_snips_mixed(:,:,s_ids),3);
+    pt_null = nanmean(null_protein_snips_mixed(:,:,s_ids),3);
+    for r = 1:numel(dist_index)
+        r_weights = exp(-.5*((r_ref-dist_index(r))/r_sigma).^2);
         r_spot_mat(n,r) = nansum(pt_spot(:).*r_weights(:)) ./ nansum(r_weights(:));
         r_null_mat(n,r) = nansum(pt_null(:).*r_weights(:)) ./ nansum(r_weights(:));
     end
@@ -351,13 +463,14 @@ r_null_ste = nanstd(r_null_mat);
 cm = jet(128);
 r_fig = figure;
 hold on
-e = errorbar(r_index,r_null_mean / r_null_mean(1),r_null_ste / r_null_mean(1),'Color','black','LineWidth',1.75);
+e = errorbar(dist_index,r_null_mean / r_null_mean(1),r_null_ste / r_null_mean(1),'Color','black','LineWidth',1.75);
 e.CapSize = 0;
-e = errorbar(r_index,r_spot_mean / r_null_mean(1),r_spot_ste / r_null_mean(1),'Color',cm(35,:),'LineWidth',1.75);
+e = errorbar(dist_index,r_spot_mean / r_null_mean(1),r_spot_ste / r_null_mean(1),'Color',cm(35,:),'LineWidth',1.75);
 e.CapSize = 0;
+grid on
 xlabel('radius (\mu m)')
 ylabel('relative enrichment')
 legend('control','active locus')
-% grid on
+title(['Radial Concentration Profile (' id_string ')'])
 
-saveas(r_fig, [FigPath 'radial_enrichment.png'])
+saveas(r_fig, [FigPath write_string '_radial_enrichment.png'])
