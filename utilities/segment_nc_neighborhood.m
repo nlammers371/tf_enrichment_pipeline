@@ -1,7 +1,6 @@
 function nc_bw_final = segment_nc_neighborhood(histone_image, x_nucleus, y_nucleus, x_spot, ...
             y_spot, id_array, neighborhood_size, nc_ind)
-    
-    se = strel('disk',1); 
+        
     xDim = size(histone_image,2);
     yDim = size(histone_image,1);
     snip = histone_image(max(1,y_nucleus-neighborhood_size):min(yDim,y_nucleus+neighborhood_size),max(1,x_nucleus-neighborhood_size):min(xDim,x_nucleus+neighborhood_size));
@@ -11,7 +10,6 @@ function nc_bw_final = segment_nc_neighborhood(histone_image, x_nucleus, y_nucle
     his_lb = bwlabel(his_bin);
     % generate mask from neighborhood matrix
     id_mask = id_array==nc_ind;
-    id_mask = imerode(id_mask,se)~=0;
     % make mask using binary histone image
     ID = his_lb(y_nucleus,x_nucleus);             
     nc_bw = his_lb==ID&(ID>0);          
@@ -24,3 +22,4 @@ function nc_bw_final = segment_nc_neighborhood(histone_image, x_nucleus, y_nucle
     nc_bw_hull = bwconvhull(nc_bw);
     % prevent overlaps between nuclei
     nc_bw_final = nc_bw_hull & id_mask;
+   

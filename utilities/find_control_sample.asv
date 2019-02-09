@@ -14,9 +14,10 @@ function [null_x, null_y, null_nc, qc_flag] = find_control_sample(...
     sample_index_vec = 1:numel(spot_sep_vec);
     % find closest pixel that meets criteria
     cr_filter = spot_sep_vec >= min_sample_sep & round(dist_vec) == round(spot_dist);
+
     sample_index_vec = sample_index_vec(cr_filter);
     % if candidate found, then proceed. Else look to neighboring nuclei
-    if ~isempty(sample_index_vec)
+    if ~isempty(sample_distances)
         sample_index = randsample(sample_index_vec,1);
         null_x = x_pos_vec_spot(sample_index);
         null_y = y_pos_vec_spot(sample_index);
