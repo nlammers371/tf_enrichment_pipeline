@@ -11,19 +11,13 @@ DistLim = .6; % min distance from edge permitted (um)
 NBoots = 100; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
 for i = 1:numel(varargin)
-    if strcmpi(varargin{i}, 'DropboxFolder')        
+    if strcmpi(varargin{i}, 'dropboxFolder')        
         DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
-        FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];
-    elseif strcmpi(varargin{i}, 'ControlType')  
-        ControlType = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'ROIRadius')  
-        ROIRadius = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'DistLim')  
-        DistLim = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'NBoots')  
-        NBoots = varargin{i+1};        
-    elseif strcmpi(varargin{i}, 'ManualDistThreshold')  
-        ManualDistThreshold = 1;    
+        FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];        
+    elseif ischar(varargin{i})
+        if ismember(varargin{i}, {'ControlType','ROIRadius','DistLim','NBoots','ManualDistThreshold'}) 
+            eval([varargin{i} '=varargin{i+1};']);
+        end
     end    
 end
 FigPath = [FigPath ControlType '/'];

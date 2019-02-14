@@ -23,18 +23,21 @@
 function nucleus_struct_protein = main02_sample_local_protein(project,rawPath,proteinChannel,varargin)
 tic
 zeissFlag = 0;
-DataPath = ['../dat/' project '/'];
+dataPath = ['../dat/' project '/'];
 for i = 1:numel(varargin)  
-    if isstring(varargin{i})
-        if ismember(varargin{i},{'dropboxFolder', 'zeissFlag'})       
-            eval([varargin{i} '=varargin{i+1}']);
+    if ischar(varargin{i})
+        if ismember(varargin{i},{'zeissFlag','dropboxFolder'})       
+            eval([varargin{i} '=varargin{i+1};']);
+        end
+        if strcmpi(varargin{i},'dropboxFolder')
+            dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '/'];
         end
     end
 end
 % Load trace data
-load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
-load([DataPath '/set_key.mat'],'set_key')
-SnipPath = [DataPath '/qc_images/'];
+load([dataPath '/nucleus_struct.mat'],'nucleus_struct')
+load([dataPath '/set_key.mat'],'set_key')
+SnipPath = [dataPath '/qc_images/'];
 mkdir(SnipPath)
 addpath('./utilities')
 % get MCP channel
@@ -179,7 +182,7 @@ for i = 1:size(set_frame_array,1)
     % assign correct indices to regions
     for j = 1:numel(nc_x_vec)
         id_init = hull_mat(round(nc_y_vec(j)),round(nc_x_vec(j)));
-        if isnan(id_init)
+        if id_init==0
             continue
         end
         nc_ref_frame(hull_mat==id_init) = nc_index_vec(j);
@@ -427,4 +430,4 @@ end
 
 % save updated nucleus structure
 nucleus_struct_protein = nucleus_struct;
-save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3') 
+save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3') 

@@ -35,19 +35,19 @@
 function main03_check_control_selection(project,varargin)
 close all
 % specify paths
-DataPath = ['../dat/' project '/'];
+dataPath = ['../dat/' project '/'];
 
 for i = 1:numel(varargin)    
-    if strcmpi(varargin{i}, 'DropboxFolder')        
-        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
+    if strcmpi(varargin{i}, 'dropboxFolder')        
+        dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
     end
 end
 
-SnipPath = [DataPath 'qc_images/'];
+SnipPath = [dataPath 'qc_images/'];
 
 
 % load data
-load([DataPath '/nucleus_struct_protein.mat']);
+load([dataPath '/nucleus_struct_protein.mat']);
 % snip_files = dir([SnipPath '*.mat']);
 % check to see if nucleus structure already contains qc review info
 if isfield(nucleus_struct_protein, 'qc_review_vec')
@@ -56,8 +56,8 @@ else
     qc_review_vec = NaN(size([nucleus_struct_protein.xPos]));
 end
 edge_qc_flag_vec = [nucleus_struct_protein.edge_qc_flag_vec];
-centroid_qc_flag_vec = [nucleus_struct_protein.centroid_qc_flag_vec];
-frame_filter = edge_qc_flag_vec>0|centroid_qc_flag_vec>0;
+rand_qc_flag_vec = [nucleus_struct_protein.rand_qc_flag_vec];
+frame_filter = edge_qc_flag_vec>0|rand_qc_flag_vec>0;
 % set start frame
 all_frames = find(frame_filter);
 outstanding_frames = find(isnan(qc_review_vec)&(frame_filter));
@@ -74,7 +74,8 @@ end
 exit_flag = 0;
 cm = jet(64);
 
-index = find(all_frames==outstanding_frames(1));
+% index = find(all_frames==outstanding_frames(1));
+index = 100;
 while ~exit_flag
     % create sister_struct(i) struct    
     frame = frame_index(all_frames(index));
@@ -92,10 +93,10 @@ while ~exit_flag
         cm = [[1 1 1] ; cm(2:end,:)];
         edge_dist_rgb = ind2rgb(edge_dist_rescaled,cm);
         
-        centroid_dist_snip = qc_spot.centroid_dist_snip;
-        centroid_dist_snip(edge_dist_rescaled==1) = 0;
-        centroid_dist_rescaled = 1 + ceil(centroid_dist_snip/max(centroid_dist_snip(:)) * 63);               
-        centroid_dist_rgb = ind2rgb(centroid_dist_rescaled,cm);
+        rand_dist_snip = qc_spot.rand_dist_snip;
+        rand_dist_snip(edge_dist_rescaled==1) = 0;
+        rand_dist_rescaled = 1 + ceil(rand_dist_snip/max(rand_dist_snip(:)) * 63);               
+        rand_dist_rgb = ind2rgb(rand_dist_rescaled,cm);
         % get frame center
         x_center = qc_spot.x_center;
         y_center = qc_spot.y_center;
@@ -116,12 +117,12 @@ while ~exit_flag
         subplot(1,2,2)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
-        p = imshow(centroid_dist_rgb);        
+        p = imshow(rand_dist_rgb);        
         p.AlphaData = .4;        
         s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-        s2 = scatter(qc_spot.xc_centroid-x_center+xDim,qc_spot.yc_centroid-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+        s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
         legend([s1 s2], 'spot', 'control')  
-        title('Centroid Distance Sample')
+        title('Random Distance Sample')
         
         set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
         if qc_review_vec(all_frames(index)) == 1
@@ -155,4 +156,4 @@ while ~exit_flag
     end
 end
 % nucleus_struct_protein.qc_review_vec = qc_review_vec;
-save([DataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3')
+save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3')
