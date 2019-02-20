@@ -19,7 +19,7 @@
 % include_vec:  Vector specifying IDs within list of projects
 %               pulled by 'keyword' to keep. If passed as empty vector, all
 %               matching projects will be taken
-% DropboxFolder: Pass this option, followed by the path to data folder 
+% dropboxFolder: Pass this option, followed by the path to data folder 
 %                where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
@@ -49,7 +49,7 @@ for i = 1:numel(varargin)
         include_vec = varargin{i+1};
     elseif strcmpi(varargin{i}, 'exp_type')
         exp_type = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'DropboxFolder')        
+    elseif strcmpi(varargin{i}, 'dropboxFolder')        
         DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];    
     end
 end
