@@ -8,7 +8,7 @@
 % project: master ID variable
 %
 % OPTIONS
-% DropboxFolder: Path to data folder where you wish to save
+% dropboxFolder: Path to data folder where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
 %                above git repo in the folder structure
@@ -25,6 +25,8 @@
 %
 % 1: approve frame
 % 0: disapprove frame
+%
+% x: Exit
 %
 % General instructions: For now this script is primarily intended as a
 % means to spot-check the segementation and sample selection for different
