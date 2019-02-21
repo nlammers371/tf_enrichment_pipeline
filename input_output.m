@@ -157,8 +157,8 @@ for i = 1:numel(fluo_mean_vec)
     protein_null_std_vec(i) = nanstd(null_protein_vec(t_filter));
     
     fluo_vec_norm(t_filter) = (fluo_vec(t_filter) - fluo_mean_vec(i));%/ fluo_std_vec(i);
-    spot_pt_norm(t_filter) = (spot_protein_vec(t_filter) - mf_protein_vec(i)) ;%/ protein_spot_std_vec(i);
-    null_pt_norm(t_filter) = (null_protein_vec(t_filter) - mf_protein_vec(i)) ;%/ protein_null_std_vec(i);
+    spot_pt_norm(t_filter) = (spot_protein_vec(t_filter) - mf_protein_vec(t_filter)) ;%/ protein_spot_std_vec(i);
+    null_pt_norm(t_filter) = (null_protein_vec(t_filter) - mf_protein_vec(t_filter)) ;%/ protein_null_std_vec(i);
 end    
 
 % compile array of trace and protein fragments
