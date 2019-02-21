@@ -27,7 +27,7 @@ function colormap_viridis = viridis(m)
 %   Code below: Copyright (c) 2016, Ander Biguri. All rights reserved.
 %   File originally downloaded on 2019/02/13 from MathWorks File Exchange.
 
-colormap = [[ 0.26700401,  0.00487433,  0.32941519],
+cm = [[ 0.26700401,  0.00487433,  0.32941519],
        [ 0.26851048,  0.00960483,  0.33542652],
        [ 0.26994384,  0.01462494,  0.34137895],
        [ 0.27130489,  0.01994186,  0.34726862],
@@ -285,10 +285,10 @@ colormap = [[ 0.26700401,  0.00487433,  0.32941519],
        [ 0.99324789,  0.90615657,  0.1439362 ]];
 
 if nargin < 1
-    colormap_viridis = colormap;
+    colormap_viridis = cm;
 else
-    hsv=rgb2hsv(colormap);
-    colormap_viridis=interp1(linspace(0,1,size(colormap,1)),hsv,linspace(0,1,m));
+    hsv=rgb2hsv(cm);
+    colormap_viridis=interp1(linspace(0,1,size(cm,1)),hsv,linspace(0,1,m));
     colormap_viridis=hsv2rgb(colormap_viridis);
   
 end
