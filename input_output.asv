@@ -137,8 +137,8 @@ particle_vec = particle_vec(dist_filter(snip_filter));
 % generate de-trended fluroescence and protein vectors
 minute_vec = 1:50;
 fluo_vec_norm = NaN(size(fluo_vec));
-fluo_mean_vec = NaN(size(minute_vec));
-fluo_std_vec = NaN(size(minute_vec));
+spot_mean_vec = NaN(size(minute_vec));
+spot_std_vec = NaN(size(minute_vec));
 
 spot_pt_norm = NaN(size(fluo_vec));
 null_pt_norm = NaN(size(fluo_vec));
@@ -146,21 +146,21 @@ protein_spot_mean_vec = NaN(size(minute_vec));
 protein_null_mean_vec = NaN(size(minute_vec));
 protein_spot_std_vec = NaN(size(minute_vec));
 protein_null_std_vec = NaN(size(minute_vec));
-for i = 1:numel(fluo_mean_vec)
+for i = 1:numel(spot_mean_vec)
     t_filter = round(time_vec/60)==minute_vec(i);
-    fluo_mean_vec(i) = nanmean(fluo_vec(t_filter));
+    spot_mean_vec(i) = nanmean(fluo_vec(t_filter));
     
-    fluo_std_vec(i) = nanstd(fluo_vec(t_filter));
+    spot_std_vec(i) = nanstd(fluo_vec(t_filter));
     protein_spot_mean_vec(i) = nanmean(spot_protein_vec(t_filter));
     protein_null_mean_vec(i) = nanmean(null_protein_vec(t_filter));
     protein_spot_std_vec(i) = nanstd(spot_protein_vec(t_filter));
     protein_null_std_vec(i) = nanstd(null_protein_vec(t_filter));
     
-    fluo_vec_norm(t_filter) = (fluo_vec(t_filter) - fluo_mean_vec(i));%/ fluo_std_vec(i);
-    spot_pt_norm(t_filter) = (spot_protein_vec(t_filter) - mf_protein_vec(i)) ;%/ protein_spot_std_vec(i);
-    null_pt_norm(t_filter) = (null_protein_vec(t_filter) - mf_protein_vec(i)) ;%/ protein_null_std_vec(i);
+    fluo_vec_norm(t_filter) = (fluo_vec(t_filter) - =spot_mean_vec(i)) / protein_spot_std_vec(i);
+    spot_pt_norm(t_filter) = (spot_protein_vec(t_filter) - protein_spot_mean_vec(i)) / protein_spot_std_vec(i);
+    null_pt_norm(t_filter) = (null_protein_vec(t_filter) - protein_null_mean_vec(i)) / protein_null_std_vec(i);
 end    
-
+%%
 % compile array of trace and protein fragments
 spot_pt_array = [];
 null_pt_array = [];
@@ -395,7 +395,7 @@ fall_delta_mean = nanmean(fall_spot_mat-fall_null_mat);
 fall_delta_ste = nanstd(fall_spot_mat-fall_null_mat);
 
 % high
-high_spot_mean = nanmean(high_spot_mat)-nanmean(high_spot_mat(:));
+high_spot_mean = nanmean(high_spot_mat)-nanmean(fall_spot_mat(:));
 high_spot_ste = nanstd(high_spot_mat);
 
 high_null_mean = nanmean(high_null_mat)-nanmean(high_null_mat(:));
@@ -405,7 +405,7 @@ high_delta_mean = nanmean(high_spot_mat-high_null_mat);
 high_delta_ste = nanstd(high_spot_mat-high_null_mat);
 
 % low
-low_spot_mean = nanmean(low_spot_mat)-nanmean(low_spot_mat(:));
+low_spot_mean = nanmean(low_spot_mat)-nanmean(fall_spot_mat(:));
 low_spot_ste = nanstd(low_spot_mat);
 
 low_null_mean = nanmean(low_null_mat)-nanmean(low_null_mat(:));
