@@ -10,6 +10,9 @@ ROIRadius = .3; % radus (um) of region used to query and compare TF concentratio
 DistLim = .6; % min distance from edge permitted (um)
 NBoots = 100; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
+Colormap_plot = jet(128); %specifies the colomap used to make plots/graphs
+Colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
+
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'dropboxFolder')        
         DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
@@ -18,7 +21,7 @@ for i = 1:numel(varargin)
         if ismember(varargin{i}, {'ControlType','ROIRadius','DistLim','NBoots','ManualDistThreshold'}) 
             eval([varargin{i} '=varargin{i+1};']);
         end
-    end    
+    end
 end
 FigPath = [FigPath ControlType '/'];
 mkdir(FigPath)
@@ -161,7 +164,7 @@ spot_ct = spot_ct / sum(spot_ct);
 null_ct = null_ct / sum(null_ct);
 
 raw_hist_fig = figure;
-cm = jet(128);
+cm = Colormap_plot;
 hold on
 % hist plots
 yyaxis left
@@ -195,7 +198,7 @@ delta_ct = delta_ct / sum(delta_ct);
    
 
 delta_hist_fig = figure;
-cm = jet(128);
+cm = Colormap_plot;
 hold on
 % hist plots
 b = bar(bins,delta_ct,1,'FaceAlpha',.5,'FaceColor',cm(60,:)/1.2);
@@ -243,7 +246,7 @@ xtick_string = "set(gca,'xtick',1:5:snip_size,'xticklabel',round(((1:5:snip_size
 ytick_string = "set(gca,'ytick',1:5:snip_size,'yticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
 
 spot_pt_snip_fig = figure;
-colormap(jet(128))
+colormap(Colormap_heat)
 imagesc(spot_protein_snip_mean)
 title([protein_name '-' protein_fluor ' at ' 'Active ' gene_name ' Locus'])
 caxis([lb ub])
@@ -256,7 +259,7 @@ eval(ytick_string)
 saveas(spot_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_spot.png']);    
 
 null_pt_snip_fig = figure;
-colormap(jet(128))
+colormap(Colormap_heat)
 imagesc(null_protein_snip_mean)
 title([protein_name '-' protein_fluor ' at Control Locus'])
 caxis([lb ub])
@@ -271,7 +274,7 @@ saveas(null_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_null.png']);
 % Make diff image
 rel_protein_snip_mean = (spot_protein_snip_mean) ./ null_protein_snip_mean;
 rel_pt_snip_fig = figure;
-colormap(jet(128))
+colormap(Colormap_heat)
 imagesc(rel_protein_snip_mean)
 title(['Relative ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'])
 % caxis([lb ub])
@@ -291,7 +294,7 @@ ub = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],99);
 lb = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],1);
 
 fluo_snippet_spot_fig = figure;
-colormap(jet(128))
+colormap(Colormap_heat)
 imagesc(spot_mean_fluo)
 title([gene_fluor ' Intensity at Active Locus (' gene_name ')'])
 caxis([lb ub])
@@ -304,7 +307,7 @@ eval(ytick_string)
 saveas(fluo_snippet_spot_fig,[FigPath write_string '_mean_fluo_snippet_spot.png']);    
 
 fluo_snippet_null_fig = figure;
-colormap(jet(128))
+colormap(Colormap_heat)
 imagesc(null_mean_fluo)
 title([gene_fluor ' Intensity at Control Locus'])
 caxis([lb ub])
@@ -403,7 +406,7 @@ ap_null_ste = nanstd(null_protein_ap_mat,[],2);
 ap_spot_mean = nanmean(spot_protein_ap_mat,2);
 ap_spot_ste = nanstd(spot_protein_ap_mat,[],2);
 
-cm = jet(128);
+cm = Colormap_plot;
 delta_ap_fig = figure;
 
 yyaxis left
@@ -454,7 +457,7 @@ r_null_mean = nanmean(r_null_mat);
 r_null_ste = nanstd(r_null_mat);
 
 % make figure
-cm = jet(128);
+cm = Colormap_plot;
 r_fig = figure;
 hold on
 e = errorbar(dist_index,r_null_mean / r_null_mean(1),r_null_ste / r_null_mean(1),'Color','black','LineWidth',1.75);

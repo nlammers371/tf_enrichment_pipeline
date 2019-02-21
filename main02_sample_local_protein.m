@@ -7,16 +7,18 @@
 % ARGUMENTS
 % project: master ID variable 
 %
-% RawPath: Full or relative path to PreProcessed folder (pr
+% rawPath: Full or relative path to PreProcessed folder (pr
 %               equivalent)
 %
-% protein_channel: 
+% protein_channel: Integer corresponding to protein channel
 %
 % OPTIONS
-% DropboxFolder: Path to data folder where you wish to save
+% dropboxFolder: Path to data folder where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
-%                above git repo in the folder structure 
+%                above git repo in the folder structure
+% zeissFlag: Integer specifying a pixel correction (1 pixel needed for
+%               data taken on Zeiss780)
 %
 % OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
