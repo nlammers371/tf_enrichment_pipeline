@@ -48,7 +48,7 @@ for i = 1:numel(varargin)
            eval([varargin{i} '=varargin{i+1};']);
         end
         if strcmpi(varargin{i},'dropboxFolder')
-            dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '/'];
+            dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
         end
     end
 end
