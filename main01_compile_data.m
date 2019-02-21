@@ -8,7 +8,7 @@
 % ARGUMENTS
 % project: master ID variable 
 %
-% FolderPath: Full or relative path to DynamicsResults folder (pr
+% folderPath: Full or relative path to DynamicsResults folder (pr
 %               equivalent)
 %
 % keyword: String contained in all folder names for projects one wishes to 
@@ -19,7 +19,7 @@
 % include_vec:  Vector specifying IDs within list of projects
 %               pulled by 'keyword' to keep. If passed as empty vector, all
 %               matching projects will be taken
-% DropboxFolder: Pass this option, followed by the path to data folder 
+% dropboxFolder: Pass this option, followed by the path to data folder 
 %                where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
@@ -35,22 +35,21 @@
 % OUTPUT: nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_data(project,FolderPath,keyword,varargin)
+function nucleus_struct = main01_compile_data(project,folderPath,keyword,varargin)
 
 % set defaults
-include_vec = [];
-nc = 14;
-exp_type = 'input_output';
-DataPath = ['../dat/' project '/']; % data mat directory
+includeVec = [];
+firstNC = 14;
+expType = 'input_output';
+dataPath = ['../dat/' project '/']; % data mat directory
 for i = 1:numel(varargin)
-    if strcmpi(varargin{i},'first_nc')
-        nc = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'include_vec')
-        include_vec = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'exp_type')
-        exp_type = varargin{i+1};
-    elseif strcmpi(varargin{i}, 'DropboxFolder')        
-        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];    
+    if ischar(varargin{i})
+        if ismember(varargin{i},{'includeVec','firstNC','expType'})
+           eval([varargin{i} '=varargin{i+1};']);
+        end
+        if strcmpi(varargin{i},'dropboxFolder')
+            dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '/'];
+        end
     end
 end
 
@@ -60,17 +59,17 @@ end
 % folders
 
 %%% make filepath
-mkdir(DataPath);
+mkdir(dataPath);
 %%% assign save names
-nucleus_name = [DataPath 'nucleus_struct.mat']; % names for compiled elipse struct
+nucleus_name = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%%
 % obtain and store set names
-dirinfo = dir([FolderPath '*' keyword '*']);
+dirinfo = dir([folderPath '*' keyword '*']);
 dirinfo(~[dirinfo.isdir]) = []; %remove non-directories
-if isempty(include_vec)
-    include_vec = 1:numel(dirinfo);
+if isempty(includeVec)
+    includeVec = 1:numel(dirinfo);
 end
 % initialize filename vectors
 cp_filenames = {}; % particles
@@ -80,8 +79,8 @@ nc_filenames = {}; % nuclei
 fov_filenames = {}; % fov info
 sp_filenames = {}; % spot info
 pa_filenames = {}; % particle info that contains z info
-for d = 1:numel(include_vec)
-    thisdir = dirinfo(include_vec(d)).name;            
+for d = 1:numel(includeVec)
+    thisdir = dirinfo(includeVec(d)).name;            
     % append file paths
     cn_filenames = [cn_filenames {[thisdir '/CompiledNuclei.mat']}];
     cp_filenames = [cp_filenames {[thisdir '/CompiledParticles.mat']}];    
@@ -93,10 +92,10 @@ for d = 1:numel(include_vec)
 end
 
 % generate set key data structure
-set_key = array2table(include_vec','VariableNames',{'setID'});
-dirs = {dirinfo(include_vec).name};
+set_key = array2table(includeVec','VariableNames',{'setID'});
+dirs = {dirinfo(includeVec).name};
 set_key.prefix = dirs';
-save([DataPath 'set_key.mat'],'set_key')
+save([dataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
@@ -104,28 +103,32 @@ nucleus_struct = [];
 % Loop through filenames    
 for i = 1:length(cp_filenames) 
     % read in raw files
+    try
+        load([folderPath nc_filenames{i}]) % Ellipse Info
+        load([folderPath fov_filenames{i}]) % FrameInfo Info
+        load([folderPath sp_filenames{i}]) % Spots info
+        load([folderPath pa_filenames{i}]); % Raw Particles
+    catch
+        continue
+    end
     ap_flag = 1;
     try
-        load([FolderPath ap_filenames{i}]) % AP Info   
+        load([folderPath ap_filenames{i}]) % AP Info   
     catch
         warning('No AP Data detected. Proceeding without AP info')
         ap_flag = 0;
-    end
-    load([FolderPath nc_filenames{i}]) % Ellipse Info
-    load([FolderPath fov_filenames{i}]) % FrameInfo Info
-    load([FolderPath sp_filenames{i}]) % Spots info
-    load([FolderPath pa_filenames{i}]); % Raw Particles
+    end   
     
     % extract data structures
-    processed_data = load([FolderPath cp_filenames{i}]); % processed particles    
+    processed_data = load([folderPath cp_filenames{i}]); % processed particles    
     input_output = 0;
-    if strcmpi(exp_type, 'input_output')
+    if strcmpi(expType, 'input_output')
         input_output = 1;
-        protein_data = load([FolderPath cn_filenames{i}]); % processed nulcei 
+        protein_data = load([folderPath cn_filenames{i}]); % processed nulcei 
     end
     
     % set identifier
-    setID = include_vec(i);            
+    setID = includeVec(i);            
     % pull trace and nucleus variables
     time_raw = processed_data.ElapsedTime*60; % time vector            
     traces_raw = processed_data.AllTracesVector; % array with a column for each trace 
@@ -135,7 +138,7 @@ for i = 1:length(cp_filenames)
     end
     frames_raw = 1:length(time_raw); % Frame list   
     
-    first_frame = max([1, processed_data.(['nc' num2str(nc)])]); % Default to start of nc14 for the moment    
+    first_frame = max([1, processed_data.(['nc' num2str(firstNC)])]); % Default to start of nc14 for the moment    
     % filter trace mat and time
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
@@ -181,7 +184,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
             s_cells(e_pass).xMean = mean(x(nc_filter));
             s_cells(e_pass).yMean = mean(y(nc_filter));
-            s_cells(e_pass).ncStart = nc;
+            s_cells(e_pass).ncStart = firstNC;
             % time and set info
             s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));                        
             s_cells(e_pass).setID = setID;
