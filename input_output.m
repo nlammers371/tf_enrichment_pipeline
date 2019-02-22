@@ -7,7 +7,7 @@ project = 'Dl_Venus_snaBAC_mCherry';
 ControlType = 'edge';
 dropboxFolder = 'E:\Nick\Dropbox (Garcia Lab)\ProcessedEnrichmentData\';
 dataPath = [dropboxFolder project '\'];
-writePath = ['E:\Nick\Dropbox (Garcia Lab)\LocalEnrichmentFigures\' project '\'];
+writePath = ['E:\Nick\Dropbox (Garcia Lab)\LocalEnrichmentFigures\input_output\' project '\'];
 mkdir(writePath);
 % load data
 load([dataPath 'nucleus_struct_protein.mat'])
@@ -136,30 +136,58 @@ particle_vec = particle_vec(dist_filter(snip_filter));
 %%% Cross-correlation
 % generate de-trended fluroescence and protein vectors
 minute_vec = 1:50;
-fluo_vec_norm = NaN(size(fluo_vec));
-fluo_mean_vec = NaN(size(minute_vec));
-fluo_std_vec = NaN(size(minute_vec));
 
+fluo_mean_mat = NaN(n_boots,numel(minute_vec));
+protein_spot_mean_mat = NaN(n_boots,numel(minute_vec));
+protein_null_mean_mat = NaN(n_boots,numel(minute_vec));
+
+index_vec = 1:numel(fluo_vec);
+
+for n = 1:n_boots
+    s_ids = randsample(index_vec,numel(index_vec),true);
+    t_boot = round(time_vec(s_ids)/60);
+    fluo_boot = fluo_vec(s_ids);
+    spot_boot = spot_protein_vec(s_ids);
+    null_boot = null_protein_vec(s_ids);
+    for i = 1:numel(minute_vec)
+        t_filter = t_boot == minute_vec(i);
+        fluo_mean_mat(n,i) = nanmean(fluo_boot(t_filter));        
+        protein_spot_mean_mat(n,i) = nanmean(spot_boot(t_filter));
+        protein_null_mean_mat(n,i) = nanmean(null_boot(t_filter));
+    end   
+end
+
+fluo_mean_vec = nanmean(fluo_mean_mat);
+fluo_ste_vec = nanstd(fluo_mean_mat);
+
+pt_delta_mean_vec = nanmean(protein_spot_mean_mat-protein_null_mean_mat);
+pt_delta_ste_vec = nanstd(protein_spot_mean_mat-protein_null_mean_mat);
+
+fluo_vec_norm = NaN(size(fluo_vec));
 spot_pt_norm = NaN(size(fluo_vec));
 null_pt_norm = NaN(size(fluo_vec));
-protein_spot_mean_vec = NaN(size(minute_vec));
-protein_null_mean_vec = NaN(size(minute_vec));
-protein_spot_std_vec = NaN(size(minute_vec));
-protein_null_std_vec = NaN(size(minute_vec));
 for i = 1:numel(fluo_mean_vec)
-    t_filter = round(time_vec/60)==minute_vec(i);
-    fluo_mean_vec(i) = nanmean(fluo_vec(t_filter));
-    
-    fluo_std_vec(i) = nanstd(fluo_vec(t_filter));
-    protein_spot_mean_vec(i) = nanmean(spot_protein_vec(t_filter));
-    protein_null_mean_vec(i) = nanmean(null_protein_vec(t_filter));
-    protein_spot_std_vec(i) = nanstd(spot_protein_vec(t_filter));
-    protein_null_std_vec(i) = nanstd(null_protein_vec(t_filter));
+    t_filter = round(time_vec/60)==minute_vec(i);   
     
     fluo_vec_norm(t_filter) = (fluo_vec(t_filter) - fluo_mean_vec(i));%/ fluo_std_vec(i);
     spot_pt_norm(t_filter) = (spot_protein_vec(t_filter) - mf_protein_vec(t_filter)) ;%/ protein_spot_std_vec(i);
     null_pt_norm(t_filter) = (null_protein_vec(t_filter) - mf_protein_vec(t_filter)) ;%/ protein_null_std_vec(i);
 end    
+
+% average time trend figure
+mf_fig = figure;
+hold on 
+yyaxis left
+e1 = errorbar(minute_vec,fluo_mean_vec,fluo_ste_vec);
+e1.CapSize = 0;
+ylabel(['average ' gene_name ' activity (au)'])
+yyaxis right
+e2 = errorbar(minute_vec,100*pt_delta_mean_vec ./ nanmean(protein_null_mean_mat),100*pt_delta_ste_vec ./ nanmean(protein_null_mean_mat));
+e2.CapSize = 0;
+ylabel('% enrichment')
+xlabel('minutes into nc14')
+grid on
+saveas(mf_fig,[writePath 'mf_trends.png'])
 
 % compile array of trace and protein fragments
 spot_pt_array = [];
@@ -520,6 +548,8 @@ stop_null_ste = nanstd(stop_null_mat);
 stop_delta_mean = nanmean(stop_spot_mat-stop_null_mat);
 stop_delta_ste = nanstd(stop_spot_mat-stop_null_mat);
 
+
+% Start and stop figures
 start_delta_fig = figure;
 hold on
 e1 = errorbar(t_res*(0:n_xcorr_lags),start_delta_mean,start_delta_ste);
