@@ -284,7 +284,7 @@ xlabel('\mum','FontSize',12)
 ylabel(h,[protein_name '-' protein_fluor ' fold enrichment'],'FontSize',12)
 eval(xtick_string)
 eval(ytick_string)
-saveas(null_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_rel.png']);    
+saveas(rel_pt_snip_fig,[FigPath write_string '_mean_pt_snippet_rel.png']);    
 
 % compare mcp snippets
 
