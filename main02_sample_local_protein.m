@@ -10,7 +10,7 @@
 % rawPath: Full or relative path to PreProcessed folder (pr
 %               equivalent)
 %
-% protein_channel: Integer corresponding to protein channel
+% proteinChannel: Integer corresponding to protein channel
 %
 % OPTIONS
 % dropboxFolder: Path to data folder where you wish to save
