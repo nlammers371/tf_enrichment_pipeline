@@ -1,0 +1,276 @@
+% hmmm02_conduct_hmm_inference(project, modelPath,w)
+%
+% DESCRIPTION
+% Script to conduct HMM inference
+%
+% ARGUMENTS
+% project: master ID variable 
+%
+% modelPath: file path to folder containing hmmm scripts
+%
+% w: Integer corresponding number of time steps for Pol II to transcribe
+% gene
+%
+%
+% OPTIONS
+% dropboxFolder: Path to data folder where you wish to save
+%                pipeline-generated data sets and figures. If this
+%                var is not specified, output will be saved one level
+%                above git repo in the folder structure
+% savio: if 1, indicates we are running inference on savio cluster
+% K: number of states
+% minDp: min data points needed to be included in inferece
+%
+% OUTPUT: nucleus_struct: compiled data set with protein samples
+
+function output = hmmm02_conduct_hmm_inference(project,modelPath,w,varargin)
+
+close all
+warning('off','all') %Shut off Warnings
+savio = 0;
+nBoots = 5;
+K = 3;
+minDp = 10;
+
+inference_times = 5*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
+tWindow = 50*60; % determines width of sliding window
+sampleSize = 8000;
+maxWorkers = 25;
+alphaFrac = 1302 / 6000;
+dpBootstrap = 1;
+dataPath = ['../dat/' project '/'];
+%%%%% These options will remain fixed for now
+clipped = 1; % if 0 use "full" trace with leading and trailing 0's
+fluo_field = 1; % specify which fluo field to (1 or 3)
+n_localEM = 25; % set num local runs
+n_steps_max = 500; % set max steps per inference
+eps = 1e-4; % set convergence criteria
+off_traces_flag = 0; % if 1 filter for only traces that are observed to turn off
+                     % if 2 filter and back-align
+clipped_ends = 0; % if one, remove final w time steps from traces 
+min_dp_per_inf = 1000; % inference will be aborted if fewer present 
+%%%%%%%%%%%%%%
+for i = 1:numel(varargin)    
+    if strcmpi(varargin{i},'dropboxFolder')
+        dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
+    end
+    if ischar(varargin{i})
+        if ismember(varargin{i},{'nBoots','savio','K','minDp','tWindow','sampleSize','maxWorkers','alphaFrac','dpBootstrap'})
+            eval([varargin{i} '=varargin{i+1};']);
+        end
+    end
+end
+
+addpath(modelPath); % Route to utilities folder
+load([dataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
+% check that we have prpoer fields
+if ~isfield(nucleus_struct,'fluo_interp')
+    error('run hmmm01_interpolate_data first')
+end
+
+%-------------------------------System Vars-------------------------------%
+Tres = nucleus_struct(i).TresInterp; % Time Resolution
+alpha = alphaFrac*w;
+%----------------------------Bootstrap Vars-------------------------------
+                                       
+% max num workers
+if savio
+    maxWorkers = 24;
+end
+%----------------------------Set Write Paths------------------------------%
+d_dtype = '';
+if dpBootstrap
+    d_type = '_dp';
+end
+
+% Set write path (inference results are now written to external directory)
+out_suffix =  ['/hmm_inference/w' num2str(w) '_t' num2str(Tres)...
+    '_alpha' num2str(round(alpha*10)) '_f' num2str(fluo_field) '_cl' num2str(clipped) ...
+    '_no_ends' num2str(clipped_ends) '_off' num2str(off_traces_flag) '/K' num2str(K) ...
+    '_tw' num2str(tWindow/60) d_type '_1/']; 
+% set write path
+if savio
+    out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
+else    
+    out_prefix =dataPath;
+end
+outDir = [out_prefix out_suffix];
+mkdir(outDir);
+
+if clipped_ends
+    end_clip = w + 1;
+else
+    end_clip = 0;
+end
+% apply time filtering 
+trace_struct_filtered = [];
+for i = 1:length(nucleus_struct)
+    temp = struct;
+    time = nucleus_struct(i).time_interp(w+1:end-end_clip); % we must ignore first w + 1 time points for windowed inference         
+    fluo = nucleus_struct(i).fluo_interp(w+1:end-end_clip); 
+    if length(time) >= minDp
+        temp.fluo = fluo;
+        temp.time = time;
+        temp.inference_flag = nucleus_struct(i).inference_flag;
+        temp.ParticleID = nucleus_struct(i).ParticleID;        
+        trace_struct_filtered = [trace_struct_filtered temp];
+    end
+end
+trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.inference_flag]==1);
+
+%%% Conduct Inference
+% structure array to store the analysis data  
+for t = 1:length(inference_times)
+    t_inf = inference_times(t);
+    t_start = t_inf - tWindow/2;
+    t_stop = t_inf + tWindow/2;
+    
+    for b = 1:nBoots
+        iter_start = now;
+        local_struct = struct;
+        init_struct = struct;
+        output = struct;
+
+        % Use current time as unique inference identifier 
+        inference_id = num2str(round(10e5*now));
+
+        % Generate filenames            
+        fName_sub = ['eveSet_w' num2str(w) '_K' num2str(K) ...
+            '_time' num2str(round(t_inf/60)) '_t' inference_id];                
+        out_file = [outDir '/' fName_sub];
+        % Initialize logL to - infinity
+        logL_max = -Inf;
+        % Extract fluo_data
+        trace_ind = 1:numel(trace_struct_filtered);
+        inference_set = [];
+        for m = 1:length(trace_ind)
+            temp = trace_struct_filtered(trace_ind(m));
+            tt = temp.time;
+            ft = temp.fluo;
+            temp.time = tt(tt>=t_start & tt < t_stop);
+            temp.fluo = ft(tt>=t_start & tt < t_stop);
+            if sum(temp.fluo>0) > 1 % exclude strings of pure zeros
+                inference_set = [inference_set temp];
+            end
+        end
+        skip_flag = 0;
+        set_size = length([inference_set.fluo]);                 
+        if isempty(inference_set)
+            skip_flag = 1;
+        elseif set_size < min_dp_per_inf                    
+            skip_flag = 1;                    
+        end
+        if skip_flag
+            warning('Too few data points. Skipping')                
+        else 
+            sample_index = 1:length(inference_set);
+            if dpBootstrap                        
+                ndp = 0;    
+                sample_ids = [];                    
+                %Reset bootstrap size to be on order of set size for small bins
+                if set_size < sampleSize
+                    sampleSize = ceil(set_size/1000)*1000;
+                end
+                while ndp < sampleSize
+                    tr_id = randsample(sample_index,1);
+                    sample_ids = [sample_ids tr_id];
+                    ndp = ndp + length(inference_set(tr_id).time);
+                end
+                fluo_data = cell([length(sample_ids), 1]);    
+                time_data = cell([length(sample_ids), 1]);    
+                sample_particles = [inference_set(sample_ids).ParticleID];
+                for tr = 1:length(sample_ids)
+                    fluo_data{tr} = inference_set(sample_ids(tr)).fluo;                    
+                    time_data{tr} = inference_set(sample_ids(tr)).time;                    
+                end            
+            else % Take all relevant traces if not bootstrapping
+                fluo_data = cell([length(inference_set), 1]);            
+                for tr = 1:length(inference_set)
+                    fluo_data{tr} = inference_set(tr).fluo;
+                    time_data{tr} = inference_set(tr).time;                    
+                end
+            end
+            % Random initialization of model parameters
+            param_init = initialize_random (K, w, fluo_data);
+            % Approximate inference assuming iid data for param initialization                
+            local_iid_out = local_em_iid_reduced_memory_truncated (fluo_data, param_init.v, ...
+                                param_init.noise, K, w, alpha, 500, 1e-4);
+            noise_iid = 1/sqrt(exp(local_iid_out.lambda_log));
+            v_iid = exp(local_iid_out.v_logs);            
+            p = gcp('nocreate');
+            if isempty(p)
+                parpool(maxWorkers); %6 is the number of cores the Garcia lab server can reasonably handle per user.
+            elseif p.NumWorkers > maxWorkers
+                delete(gcp('nocreate')); % if pool with too many workers, delete and restart
+                parpool(maxWorkers);
+            end
+            parfor i_local = 1:n_localEM % Parallel Local EM                
+                % Random initialization of model parameters
+                param_init = initialize_random_with_priors(K, noise_iid, v_iid);
+                % Get Intial Values
+                pi0_log_init = log(param_init.pi0);
+                A_log_init = log(param_init.A);
+                v_init = param_init.v;                        
+                noise_init = param_init.noise;
+                % Record
+                init_struct(i_local).A_init = exp(A_log_init);                
+                init_struct(i_local).v_init = v_init;
+                init_struct(i_local).noise_init = noise_init;                
+                init_struct(i_local).subset_id = i_local;
+                %--------------------LocalEM Call-------------------------%
+                local_out = local_em_MS2_reduced_memory_truncated(fluo_data, ...
+                    v_init, noise_init, pi0_log_init', A_log_init, K, w, ...
+                    alpha, n_steps_max, eps);                    
+                %---------------------------------------------------------%                
+                % Save Results 
+                local_struct(i_local).inference_id = inference_id;
+                local_struct(i_local).subset_id = i_local;
+                local_struct(i_local).logL = local_out.logL;                
+                local_struct(i_local).A = exp(local_out.A_log);
+                local_struct(i_local).v = exp(local_out.v_logs).*local_out.v_signs;
+                local_struct(i_local).r = exp(local_out.v_logs).*local_out.v_signs / Tres;                                
+                local_struct(i_local).noise = 1/exp(local_out.lambda_log);
+                local_struct(i_local).pi0 = exp(local_out.pi0_log);
+%                         local_struct(i_local).total_time = local_out.runtime;
+                local_struct(i_local).total_steps = local_out.n_iter;               
+                local_struct(i_local).soft_struct = local_out.soft_struct;               
+            end
+            [logL, max_index] = max([local_struct.logL]); % Get index of best result                    
+            % Save parameters from most likely local run
+            output.pi0 =local_struct(max_index).pi0;                        
+            output.r = local_struct(max_index).r(:);
+            output.off_traces = off_traces_flag;
+            output.noise = local_struct(max_index).noise;
+            output.A = local_struct(max_index).A(:);
+            output.A_mat = local_struct(max_index).A;            
+            % get soft-decoded structure
+            output.soft_struct = local_struct(max_index).soft_struct;
+            % Info about run time
+            output.total_steps = local_struct(max_index).total_steps;                                  
+            output.total_time = 100000*(now - iter_start);            
+            % other inference characteristics
+            output.t_window = tWindow;
+            output.t_inf = t_inf;
+            output.fluo_type = fluo_field;
+            output.dp_bootstrap_flag = dpBootstrap;   
+            output.iter_id = b;
+            output.start_time_inf = 0;                    
+            output.clipped = clipped;
+            output.off = off_traces_flag;
+            output.clipped_ends = clipped_ends;
+            if dpBootstrap || set_bootstrap                    
+                output.particle_ids = sample_particles;
+                output.N = ndp;
+            end                
+            output.w = w;
+            output.alpha = alpha;
+            output.deltaT = Tres; 
+            % save inference data used
+            output.fluo_data = fluo_data;
+            output.time_data = time_data;
+        end
+        output.skip_flag = skip_flag;
+        save([out_file '.mat'], 'output');           
+    end  
+end
+ 
