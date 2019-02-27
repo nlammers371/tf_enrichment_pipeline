@@ -130,7 +130,10 @@ for i = 1:length(cp_filenames)
     % set identifier
     setID = includeVec(i);            
     % pull trace and nucleus variables
-    time_raw = processed_data.ElapsedTime*60; % time vector            
+    time_raw = processed_data.ElapsedTime*60; % time vector   
+    if strcmpi(cp_filenames{i},'2019-02-25-Dl_Venus_snaBAC_MCPmCherry_Zoom25x_minBleaching_embryo2_region3/CompiledParticles.mat')
+        time_raw(2:end) = time_raw(2:end) + .2895;
+    end
     traces_raw = processed_data.AllTracesVector; % array with a column for each trace 
     % check to see if traces are stored in cell array
     if iscell(traces_raw)
@@ -186,7 +189,12 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yMean = mean(y(nc_filter));
             s_cells(e_pass).ncStart = firstNC;
             % time and set info
-            s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));                        
+            s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));
+            if numel(s_cells(e_pass).time) > 1
+                if s_cells(e_pass).time(2) == 0
+                    error('wtf')
+                end
+            end
             s_cells(e_pass).setID = setID;
             fn = cp_filenames{i}; % Get filename to store in struct  
             fn = fn(1:strfind(fn,'/')-1);
