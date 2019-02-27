@@ -256,13 +256,15 @@ for i = 1:length(cp_filenames)
         % find corresponding nucleus index        
         nc_ind = find(e_index==schnitz);        
         if length(nc_ind) ~= 1
-            error('Problem with Particle-Nucleus Crossref')
+            warning('Problem with Particle-Nucleus Crossref')
+            continue
         end                                         
         % find overlap between nucleus and trace
         nc_frames = s_cells(nc_ind).frames;         
         spot_filter = ismember(nc_frames,frames_full);            
         s_cells(nc_ind).spot_frames = spot_filter;
         if sum(spot_filter) < numel(frames_full)
+            
             error('Inconsistent particle and nucleus frames')
         end
         % record fluorescence info             
