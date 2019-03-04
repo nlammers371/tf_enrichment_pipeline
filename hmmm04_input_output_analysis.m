@@ -43,14 +43,11 @@ set_vec_full = floor(particle_vec_full);
 % identify outliers
 low_ids = find(r_vec_full<prctile(r_vec_full,20));
 high_ids = find(r_vec_full>prctile(r_vec_full,80));
-rise_ids = find(rise_vec_full>.7);
-fall_ids = find(fall_vec_full>.7);
+rise_ids = find(rise_vec_full>.6);
+fall_ids = find(fall_vec_full>.6);
 
 % calculate sampling weights that allow us to draw control distributions
 % that mimic mf and fluo values for subsets of interest
-[baseHist,Xedges,Yedges,binX,binY] = histcounts2(fluo_vec_full,mf_vec,n_bins,'Normalization','probability');
-bin_id_vec = sub2ind([n_bins,n_bins],binX,binY);
-baseHist = baseHist + 1e-6;
 index_vec = 1:numel(fluo_vec_full);
 % generate ID vector assigning each observation to a bin in 2D array
 % bin_id_vec = NaN(size(fluo_vec));
@@ -62,25 +59,49 @@ index_vec = 1:numel(fluo_vec_full);
 %     end
 % end
 % now calculate resampling weights fior each scenario
+low_ft = ismember(index_vec,low_ids);
+[baseHist,Xedges,Yedges,binX,binY] = histcounts2(fluo_vec_full(~low_ft),mf_vec(~low_ft),n_bins,'Normalization','probability');
+bin_id_vec = sub2ind([n_bins,n_bins],binX,binY);
+baseHist = baseHist + 1e-6;
+
 lowHist = histcounts2(fluo_vec_full(low_ids),mf_vec(low_ids),Xedges,Yedges,'Normalization','probability');
 low_wt = lowHist ./ baseHist;
 low_wt_vec = low_wt(bin_id_vec);
-low_ctrl_ids = randsample(index_vec,numel(low_ids),true,low_wt_vec);
+low_ctrl_ids = randsample(index_vec(~low_ft),numel(low_ids),true,low_wt_vec);
+
+% high
+high_ft = ismember(index_vec,high_ids);
+[baseHist,Xedges,Yedges,binX,binY] = histcounts2(fluo_vec_full(~high_ft),mf_vec(~high_ft),n_bins,'Normalization','probability');
+bin_id_vec = sub2ind([n_bins,n_bins],binX,binY);
+baseHist = baseHist + 1e-6;
 
 highHist = histcounts2(fluo_vec_full(high_ids),mf_vec(high_ids),Xedges,Yedges,'Normalization','probability');
 high_wt = highHist ./ baseHist;
 high_wt_vec = high_wt(bin_id_vec);
-high_ctrl_ids = randsample(index_vec,numel(high_ids),true,high_wt_vec);
+high_ctrl_ids = randsample(index_vec(~high_ft),numel(high_ids),true,high_wt_vec);
+
+% rise
+rise_ft = ismember(index_vec,rise_ids);
+[baseHist,Xedges,Yedges,binX,binY] = histcounts2(fluo_vec_full(~rise_ft),mf_vec(~rise_ft),n_bins,'Normalization','probability');
+bin_id_vec = sub2ind([n_bins,n_bins],binX,binY);
+baseHist = baseHist + 1e-6;
 
 riseHist = histcounts2(fluo_vec_full(rise_ids),mf_vec(rise_ids),Xedges,Yedges,'Normalization','probability');
 rise_wt = riseHist ./ baseHist;
 rise_wt_vec = rise_wt(bin_id_vec);
-rise_ctrl_ids = randsample(index_vec,numel(rise_ids),true,rise_wt_vec);
+rise_ctrl_ids = randsample(index_vec(~rise_ft),numel(rise_ids),true,rise_wt_vec);
+
+
+% fall 
+fall_ft = ismember(index_vec,fall_ids);
+[baseHist,Xedges,Yedges,binX,binY] = histcounts2(fluo_vec_full(~fall_ft),mf_vec(~fall_ft),n_bins,'Normalization','probability');
+bin_id_vec = sub2ind([n_bins,n_bins],binX,binY);
+baseHist = baseHist + 1e-6;
 
 fallHist = histcounts2(fluo_vec_full(fall_ids),mf_vec(fall_ids),Xedges,Yedges,'Normalization','probability');
 fall_wt = fallHist ./ baseHist;
 fall_wt_vec = fall_wt(bin_id_vec);
-fall_ctrl_ids = randsample(index_vec,numel(fall_ids),true,fall_wt_vec);
+fall_ctrl_ids = randsample(index_vec(~fall_ft),numel(fall_ids),true,fall_wt_vec);
 
 % low
 low_array = NaN(numel(low_ids),n_lags+1);

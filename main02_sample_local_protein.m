@@ -25,10 +25,13 @@
 function nucleus_struct_protein = main02_sample_local_protein(project,rawPath,proteinChannel,varargin)
 tic
 zeissFlag = 0;
+ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
+ROIRadiusControl = 2*ROIRadiusSpot; % use larger integration region to dampen noise
+minSampleSep = 1;
 dataPath = ['../dat/' project '/'];
 for i = 1:numel(varargin)  
     if ischar(varargin{i})
-        if ismember(varargin{i},{'zeissFlag','dropboxFolder'})       
+        if ismember(varargin{i},{'zeissFlag','dropboxFolder','ROIRadiusSpot','ROIRadiusControl','minSampleSep'})       
             eval([varargin{i} '=varargin{i+1};']);
         end
         if strcmpi(varargin{i},'dropboxFolder')
@@ -82,7 +85,10 @@ max_areas = round(pi*(4 ./ px_sizes).^2);
 % set snippet to be 3um in size
 pt_snippet_size_vec = round(1.5 ./ px_sizes);
 % set min separation between control and locus to 2um
-min_sample_sep_vec = round(2 ./ px_sizes);
+min_sample_sep_vec = round(minSampleSep ./ px_sizes);
+% calculate ROI size in pixels for spot and control
+roi_rad_spot_pix = round(ROIRadiusSpot ./ px_sizes);
+roi_rad_null_pix = round(ROIRadiusControl ./ px_sizes);
 
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec', 'edge_null_protein_vec','rand_null_protein_vec',...
@@ -119,7 +125,7 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
-for i = 1:size(set_frame_array,1)
+for i = 20:size(set_frame_array,1)
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       
@@ -143,11 +149,13 @@ for i = 1:size(set_frame_array,1)
     
     % get size params    
     pt_snippet_size = pt_snippet_size_vec(set_index==setID); % size of snippet
-    min_sample_sep = min_sample_sep_vec(set_index==setID); % minimum distance between spot and control
+    minSampleSep = min_sample_sep_vec(set_index==setID); % minimum distance between spot and control
     nb_sz = nb_sizes(set_index==setID); % size of nucleus neighborhood to use
     sm_kernel = sm_kernels(set_index==setID); %sigma for gaussian smoothing kerne;
     min_area = min_areas(set_index==setID); % lower bound on permitted nucleus size
     max_area = max_areas(set_index==setID); % upper bound
+    roi_spot = roi_rad_spot_pix(set_index==setID);
+    roi_null = roi_rad_null_pix(set_index==setID);
 %     max_r = round(sqrt(max_area/pi))'; % max nucleus neighborhood size
     % determine whether snips will need to be resampled
     snip_scale_factor =  default_snip_size / pt_snippet_size;
@@ -201,7 +209,7 @@ for i = 1:size(set_frame_array,1)
     spot_dist_frame = zeros(size(nc_dist_frame));
     spot_dist_frame(spot_indices(~isnan(spot_indices))) = 1;
     spot_dist_frame = bwdist(spot_dist_frame);
-    
+    spot_roi_frame = bwlabel(spot_dist_frame <= roi_spot);
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
         eval([new_vec_fields{j} ' = NaN(size(spot_x_vec));']);
@@ -212,7 +220,7 @@ for i = 1:size(set_frame_array,1)
     
     % iterate through spots
     qc_mat = struct;
-    parfor j = 1:numel(nc_x_vec)        
+    for j = 1:numel(nc_x_vec)        
         % get location info
         x_nucleus = round(nc_x_vec(j));
         y_nucleus = round(nc_y_vec(j));   
@@ -229,9 +237,10 @@ for i = 1:size(set_frame_array,1)
         % get frames
         protein_frame = protein_stack(:,:,zp);
         mcp_frame = mcp_stack(:,:,zp);
-        % take locus samples
-        spot_protein_vec(j) = protein_frame(y_spot,x_spot);
-        spot_mcp_vec(j) = mcp_frame(y_spot,x_spot);
+        int_id = spot_roi_frame(y_spot,x_spot);
+        if int_id==0
+            error('wtf')
+        end        
   
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot)   
@@ -240,21 +249,26 @@ for i = 1:size(set_frame_array,1)
             continue
         end 
         
-        % pull snippets    '                
+        % pull snippets                    
         null_mask = spot_nc_mask;
         temp_pt = protein_frame;
         temp_pt(~null_mask) = NaN;
         temp_mcp = mcp_frame;
         temp_mcp(~null_mask) = NaN;
+        
+        % take locus samples
+        spot_protein_vec(j) = nanmean(temp_pt(int_id==spot_roi_frame));
+        spot_mcp_vec(j) = nanmean(temp_mcp(int_id==spot_roi_frame));
+        
         x_range = max(1,x_spot-pt_snippet_size):min(xDim,x_spot+pt_snippet_size);
         y_range = max(1,y_spot-pt_snippet_size):min(yDim,y_spot+pt_snippet_size);
-        if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
-            spot_protein_snips(:,:,j) = temp_pt(y_range,x_range);
-            spot_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
-            spot_fov_edge_flag_vec(j) = 0;
-        else
-            spot_fov_edge_flag_vec(j) = 1;
-        end
+        x_range_full = x_spot-pt_snippet_size:x_spot+pt_snippet_size;
+        y_range_full = y_spot-pt_snippet_size:y_spot+pt_snippet_size; 
+        
+        x_range = max(1,x_spot-pt_snippet_size):min(xDim,x_spot+pt_snippet_size);
+        y_range = max(1,y_spot-pt_snippet_size):min(yDim,y_spot+pt_snippet_size);
+        spot_protein_snips(ismember(y_range_full,y_range),ismember(x_range_full,x_range),j) = temp_pt(y_range,x_range);
+        spot_mcp_snips(ismember(x_range_full,x_range),ismember(y_range_full,y_range),j) = temp_mcp(y_range,x_range);
         % Now find locations from which to take control sample       
               
         % Edge sampling first                   
@@ -266,7 +280,7 @@ for i = 1:size(set_frame_array,1)
         
         [edge_null_x_vec(j), edge_null_y_vec(j), edge_null_nc_vec(j), edge_qc_flag_vec(j)]...
             = find_control_sample(edge_dist_vec, x_ref, y_ref, spot_sep_vec, spot_edge_dist,...
-                 j, min_sample_sep, null_mask);  
+                 j, minSampleSep, null_mask,0);  
         % if initial attempt failed, try nearest neighbor nucleus
         if edge_qc_flag_vec(j) == 0
             % Find nearest neighbor nucleus
@@ -290,7 +304,7 @@ for i = 1:size(set_frame_array,1)
                 nn_sep_vec = spot_dist_frame(nn_nc_mask);
                 [edge_null_x_vec(j), edge_null_y_vec(j), edge_null_nc_vec(j), edge_qc_flag_vec(j)]...
                     = find_control_sample(nn_edge_dist_vec, x_ref, y_ref, nn_sep_vec, spot_edge_dist,...
-                         mi, min_sample_sep, null_mask);
+                         mi, minSampleSep, null_mask,1);
                 if  edge_qc_flag_vec(j) == 1
                      edge_qc_flag_vec(j) =  2; % to flag cases when nn was used
                 end
@@ -299,28 +313,28 @@ for i = 1:size(set_frame_array,1)
         % Draw control samples (as appropriate)    
         if edge_qc_flag_vec(j) > 0  
             xc = edge_null_x_vec(j);
-            yc = edge_null_y_vec(j);            
-            edge_null_protein_vec(j) = protein_frame(yc,xc);
-            edge_null_mcp_vec(j) = mcp_frame(yc,xc);
-            % draw snips
+            yc = edge_null_y_vec(j);     
             temp_pt = protein_frame;
             temp_pt(~null_mask) = NaN;
             temp_mcp = mcp_frame;
             temp_mcp(~null_mask) = NaN;
+            null_dist_frame = zeros(size(temp_pt));
+            null_dist_frame(yc,xc) = 1;
+            null_dist_frame = bwdist(null_dist_frame);
+            edge_null_protein_vec(j) = nanmean(temp_pt(null_dist_frame<roi_null));
+            edge_null_mcp_vec(j) = nanmean(temp_mcp(null_dist_frame<roi_null));
+            % draw snips      
+            x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
+            y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
             x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
             y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
-            if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
-                edge_null_protein_snips(:,:,j) = temp_pt(y_range,x_range);
-                edge_null_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
-                edge_fov_edge_flag_vec(j) = 0;
-            else
-                edge_fov_edge_flag_vec(j) = 1;
-            end
+            edge_null_protein_snips(ismember(y_range_full,y_range),ismember(x_range_full,x_range),j) = temp_pt(y_range,x_range);
+            edge_null_mcp_snips(ismember(x_range_full,x_range),ismember(y_range_full,y_range),j) = temp_mcp(y_range,x_range);
         end  
         % Now take a random sample                           
         sample_index_vec = 1:numel(spot_sep_vec);
         % filter for regions far enough away from locus
-        cr_filter = spot_sep_vec >= min_sample_sep;
+        cr_filter = spot_sep_vec >= minSampleSep;
         sample_index_vec = sample_index_vec(cr_filter);
         % if candidate found, then proceed. Else look to neighboring nuclei
         if ~isempty(sample_index_vec)
@@ -337,23 +351,25 @@ for i = 1:size(set_frame_array,1)
         % Draw control samples (as appropriate)
         if rand_qc_flag_vec(j) > 0
             xc = rand_null_x_vec(j);
-            yc = rand_null_y_vec(j);            
-            rand_null_protein_vec(j) = protein_frame(yc,xc);
-            rand_null_mcp_vec(j) = mcp_frame(yc,xc);
+            yc = rand_null_y_vec(j);                  
             % draw snips
             temp_pt = protein_frame;
             temp_pt(~spot_nc_mask) = NaN;
             temp_mcp = mcp_frame;
             temp_mcp(~spot_nc_mask) = NaN;
+            
+            null_dist_frame = zeros(size(temp_pt));
+            null_dist_frame(yc,xc) = 1;
+            null_dist_frame = bwdist(null_dist_frame);
+            rand_null_protein_vec(j) = nanmean(temp_pt(null_dist_frame<roi_null));
+            rand_null_mcp_vec(j) = nanmean(temp_mcp(null_dist_frame<roi_null));
+            % draw snips      
+            x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
+            y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
             x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
             y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
-            if numel(x_range) == 2*pt_snippet_size+1 && numel(y_range) == 2*pt_snippet_size+1
-                rand_null_protein_snips(:,:,j) = temp_pt(y_range,x_range);
-                rand_null_mcp_snips(:,:,j) = temp_mcp(y_range,x_range);
-                rand_fov_edge_flag_vec(j) = 0;
-            else
-                rand_fov_edge_flag_vec(j) = 1;
-            end
+            rand_null_protein_snips(ismember(y_range_full,y_range),ismember(x_range_full,x_range),j) = temp_pt(y_range,x_range);
+            rand_null_mcp_snips(ismember(x_range_full,x_range),ismember(y_range_full,y_range),j) = temp_mcp(y_range,x_range);
         end 
      
         % save qc data                 

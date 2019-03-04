@@ -1,5 +1,6 @@
 function [null_x, null_y, null_nc, qc_flag] = find_control_sample(...
-    dist_vec, x_ref, y_ref, spot_sep_vec, spot_dist, index, min_sample_sep,null_mask)
+    dist_vec, x_ref, y_ref, spot_sep_vec, spot_dist, index, min_sample_sep,null_mask,...
+    force_sample)
     
     % initialize variables  
     null_x = NaN;
@@ -22,4 +23,13 @@ function [null_x, null_y, null_nc, qc_flag] = find_control_sample(...
         null_y = y_pos_vec_spot(sample_index);
         null_nc = index;
         qc_flag = 1;               
+    elseif force_sample
+        new_filter = spot_sep_vec >= min_sample_sep;
+        distances = abs(spot_dist-dist_vec);
+        distances(~new_filter) = inf;
+        [~, sample_index] = min(distances);
+        null_x = x_pos_vec_spot(sample_index);
+        null_y = y_pos_vec_spot(sample_index);
+        null_nc = index;
+        qc_flag = 1; 
     end

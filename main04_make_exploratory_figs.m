@@ -6,7 +6,8 @@ close all
 DataPath = ['../../dat/' project '/'];
 FigPath = ['../../fig/' project '/'];
 ControlType = 'edge'; % specify type of control to use
-ROIRadius = .3; % radus (um) of region used to query and compare TF concentrations
+ROIRadiusSpot = .3; % radus (um) of region used to query and compare TF concentrations
+ROIRadiusControl = 2*ROIRadiusSpot; % use larger integration region to dampen noise
 DistLim = .6; % min distance from edge permitted (um)
 NBoots = 100; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
@@ -18,7 +19,7 @@ for i = 1:numel(varargin)
         DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
         FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];        
     elseif ischar(varargin{i})
-        if ismember(varargin{i}, {'ControlType','ROIRadius','DistLim','NBoots','ManualDistThreshold'}) 
+        if ismember(varargin{i}, {'ControlType','ROIRadiusSpot','DistLim','NBoots','ManualDistThreshold'}) 
             eval([varargin{i} '=varargin{i+1};']);
         end
     end
@@ -78,7 +79,7 @@ snip_size = size(spot_protein_snips,1);
 [y_ref, x_ref] = meshgrid(1:snip_size,1:snip_size);
 r_ref = sqrt((x_ref-ceil(snip_size/2)).^2 + (y_ref-ceil(snip_size/2)).^2)*PixelSize;
 
-r_ft = 1*repmat(r_ref <= ROIRadius,1,1,size(spot_protein_snips,3));
+r_ft = 1*repmat(r_ref <= ROIRadiusSpot,1,1,size(spot_protein_snips,3));
 spot_protein_vec = reshape(nanmean(nanmean(r_ft.*spot_protein_snips,1),2),1,[]);
 null_protein_vec = reshape(nanmean(nanmean(r_ft.*null_protein_snips,1),2),1,[]);
 
