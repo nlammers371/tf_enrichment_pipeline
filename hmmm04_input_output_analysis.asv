@@ -1,3 +1,5 @@
+% Script to probe relationship between input protein concentration and
+% output transcriptional response
 clear 
 close all
 % define ID variables
