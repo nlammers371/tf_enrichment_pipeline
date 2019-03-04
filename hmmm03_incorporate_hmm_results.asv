@@ -132,14 +132,13 @@ for i = 1:numel(particle_index)
     sp_pt = spot_protein_vec(particle_vec==ParticleID);
     nn_pt = null_protein_vec(particle_vec==ParticleID);
     mf_pt = mf_protein_vec(particle_vec==ParticleID);
-    mf_ct = mf_count_vec(particle_vec==ParticleID);
+    mf_ct = mf_protein_vec(particle_vec==ParticleID);
     tt_pt = time_vec(particle_vec==ParticleID);
     
     % checks using mcp channel to ensure that we are correctly matching
     % particles and time frames
     temp.mcp_check = interp1(tt_pt(~isnan(mcp_pt)),mcp_pt(~isnan(mcp_pt)),temp.time);
     temp.fluo_check = interp1(tt_pt(~isnan(ff_pt)),ff_pt(~isnan(ff_pt)),temp.time);
-    temp.mf_counts = interp1(tt_pt(~isnan(ff_pt)),mc_ct(~isnan(mf_pt)),temp.time);
     % protein information
     temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);
     temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);

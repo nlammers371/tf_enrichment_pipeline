@@ -46,7 +46,6 @@ fluo_field = 1; % specify which fluo field to (1 or 3)
 n_localEM = 25; % set num local runs
 n_steps_max = 500; % set max steps per inference
 eps = 1e-4; % set convergence criteria
-clipped_ends = 0; % if one, remove final w time steps from traces 
 min_dp_per_inf = 1000; % inference will be aborted if fewer present 
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)    
@@ -77,7 +76,7 @@ if savio
     maxWorkers = 24;
 end
 %----------------------------Set Write Paths------------------------------%
-d_dtype = '';
+d_type = '';
 if dpBootstrap
     d_type = '_dp';
 end
@@ -85,8 +84,7 @@ end
 % Set write path (inference results are now written to external directory)
 out_suffix =  ['/hmm_inference/w' num2str(w) '_t' num2str(Tres)...
     '_alpha' num2str(round(alpha*10)) '_f' num2str(fluo_field) '_cl' num2str(clipped) ...
-    '_no_ends' num2str(clipped_ends) '/K' num2str(K) ...
-    '_tw' num2str(tWindow/60) d_type '_1/']; 
+    '/K' num2str(K) '_tw' num2str(tWindow/60) d_type '_1/']; 
 % set write path
 if savio
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
