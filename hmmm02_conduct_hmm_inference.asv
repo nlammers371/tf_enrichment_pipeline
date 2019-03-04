@@ -186,7 +186,6 @@ for t = 1:length(inference_times)
                     fluo_data{tr} = inference_set(tr).fluo;
                     time_data{tr} = inference_set(tr).time;                    
                 end
-                sample_particles = [inference_set.ParticleID];
             end
             % Random initialization of model parameters
             param_init = initialize_random (K, w, fluo_data);
@@ -249,9 +248,11 @@ for t = 1:length(inference_times)
             output.start_time_inf = 0;                    
             output.clipped = clipped;            
             output.clipped_ends = clipped_ends;
-            output.particle_ids = sample_particles;
-            if dpBootstrap || set_bootstrap                                    
+            if dpBootstrap || set_bootstrap                    
+                output.particle_ids = sample_particles;
                 output.N = ndp;
+            else
+                output.particle_ids = sample_particles;
             end
             output.w = w;
             output.alpha = alpha;
