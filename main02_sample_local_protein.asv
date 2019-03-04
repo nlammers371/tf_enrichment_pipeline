@@ -204,9 +204,9 @@ for i = 1:size(set_frame_array,1)
     r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);
     
     % generate array indicating distance of each pixel from an active locus 
-    nc_indices = sub2ind(size(nc_dist_frame),spot_y_vec,spot_x_vec);
+    spot_indices = sub2ind(size(nc_dist_frame),spot_y_vec,spot_x_vec);
     spot_dist_frame = zeros(size(nc_dist_frame));
-    spot_dist_frame(nc_indices(~isnan(nc_indices))) = 1;
+    spot_dist_frame(spot_indices(~isnan(spot_indices))) = 1;
     spot_dist_frame = bwdist(spot_dist_frame);
     spot_roi_frame = bwlabel(spot_dist_frame <= roi_spot);
     % initialize arrays to store relevant info 
@@ -272,7 +272,7 @@ for i = 1:size(set_frame_array,1)
         edge_dist_vec = nc_dist_frame(spot_nc_mask);
         spot_edge_dist_vec(j) = spot_edge_dist;        
         spot_sep_vec = spot_dist_frame(spot_nc_mask);
-        nc_indices = find(spot_nc_mask);
+        
         % Take average across all pixels that are both far enough away from
         % spot and of roughly equal distance from nucleus edge
         mf_filter = spot_sep_vec >= minSampleSep & abs(edge_dist_vec-spot_edge_dist) <= mfTolerance;
@@ -282,8 +282,8 @@ for i = 1:size(set_frame_array,1)
             mf_null_mcp_vec(j) = NaN;
         else
             mf_null_px_counts(j) = sum(mf_filter);
-            mf_null_protein_vec(j) = mean(temp_pt(nc_indices(mf_filter)));
-            mf_null_mcp_vec(j) = mean(temp_mcp(nc_indices(mf_filter)));
+            mf_null_protein_vec(j) = mean(;
+            mf_null_mcp_vec(j) = NaN;
         end
         
         [edge_null_x_vec(j), edge_null_y_vec(j), edge_null_nc_vec(j), edge_qc_flag_vec(j)]...
