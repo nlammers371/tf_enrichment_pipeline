@@ -47,6 +47,10 @@ for i = 1:numel(varargin)
         end
     end
 end
+d_type = '';
+if dpBootstrap
+    d_type = '_dp';
+end
 project_cell = {project};
 id_cell = {'target'};
 if ~isempty(controlProject)
@@ -66,11 +70,6 @@ for num = 1:numel(project_cell)
 
     Tres = nucleus_struct_protein(i).TresInterp; % Time Resolution
     alpha = alphaFrac*wInf;
-    pixelSize = nucleus_struct_protein(1).PixelSize;
-    d_type = '';
-    if dpBootstrap
-        d_type = '_dp';
-    end
 
     % Set write path (inference results are now written to external directory)
     hmm_suffix =  ['/hmm_inference/w' num2str(wInf) '_t' num2str(Tres)...
@@ -153,7 +152,7 @@ for num = 1:numel(project_cell)
         % particles and time frames
         temp.mcp_check = interp1(tt_pt(~isnan(mcp_pt)),mcp_pt(~isnan(mcp_pt)),temp.time);
         temp.fluo_check = interp1(tt_pt(~isnan(ff_pt)),ff_pt(~isnan(ff_pt)),temp.time);
-        temp.mf_counts = interp1(tt_pt(~isnan(ff_pt)),mc_ct(~isnan(mf_pt)),temp.time);
+        temp.mf_counts = interp1(tt_pt(~isnan(ff_pt)),mf_ct(~isnan(mf_pt)),temp.time);
         % protein information
         temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);
         temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);

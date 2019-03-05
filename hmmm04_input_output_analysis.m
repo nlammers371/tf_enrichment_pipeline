@@ -1,15 +1,119 @@
+% Script to probe relationship between input protein concentration and
+% output transcriptional response
 clear 
 close all
 % define ID variables
 project = 'Dl_Venus_snaBAC_MCPmCherry_Zoom25x_minBleaching_test';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
+figPath = [dropboxFolder '\ProcessedEnrichmentFigures\' project '\input_output\'];
 K = 2;
 w = 6;
+nTraces = 50; % number of individual traces to select for plotting
+
+% extract protein, gene, fluorophore info
+underscores = strfind(project,'_');
+protein_name = project(1:underscores(1)-1);
+protein_fluor = project(underscores(1)+1:underscores(2)-1);
+gene_name = project(underscores(2)+1:underscores(3)-1);
+if numel(underscores) == 3
+    ind = numel(project);
+else
+    ind = underscores(4)-1;
+end
+gene_fluor = project(underscores(3)+1:end);
+% load data set
+load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
+% first make figures to ensure that hmmm results have been properly
+% concatenated with protein data
+for i = 1:numel(master_struct)
+    subProject = master_struct(i).project;
+    subID = master_struct(i).ID;
+    qcPath = [figPath '\' subID '_qc_' subProject '\'];
+    mkdir(qcPath);
+    hmm_input_output = master_struct(i).hmm_input_output;
+    s_index = 1:numel(hmm_input_output);
+    rng(123);
+    plot_indices = randsample(s_index,min([20,numel(s_index)]),false);
+    for j = 1:numel(plot_indices)
+        % MCP channel checks
+        mcp_check = hmm_input_output(plot_indices(j)).mcp_check;
+        fluo_check = hmm_input_output(plot_indices(j)).fluo_check;
+        fluo = hmm_input_output(plot_indices(j)).fluo;
+        time = hmm_input_output(plot_indices(j)).time;
+        r_vec = sum(hmm_input_output(plot_indices(j)).r_mat,2);
+        % make figure
+        qc_fig = figure;
+        hold on
+        plot(time,fluo / nanmean(fluo))
+        plot(time,fluo_check / nanmean(fluo_check));
+        plot(time,mcp_check / nanmean(mcp_check))
+        plot(time,r_vec / nanmean(r_vec))
+        legend('fluo (HMM)', 'fluo (data)','raw mcp','activity state (HMM)')
+        xlabel('time')
+        ylabel([gene_name ' activity (au)'])
+        saveas(qc_fig,[qcPath 'mcp_check_nc_' sprintf('%03d',plot_indieces(j)) '.png'])
+        
+        % Protein Channel checks
+        spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
+        null_protein = hmm_input_output(plot_indices(j)).null_protein;
+        mf_protein = hmm_input_output(plot_indices(j)).mf_protein;
+        % make figure
+        qc_fig = figure;
+        hold on
+        plot(time,spot_protein)
+        plot(time,null_protein)
+        plot(time,mf_protein)
+        legend('protein (spot)', 'protein (control spot)','protein (mf control)')
+        xlabel('time')
+        ylabel([protein_name ' - ' protein_fluor ' (au)'])
+        saveas(qc_fig,[qcPath 'protein_check_nc_' sprintf('%03d',plot_indieces(j)) '.png'])
+    end
+end
+
+% Make single trace input-output plots
+for i = 1:numel(master_struct)
+    subProject = master_struct(i).project;
+    subID = master_struct(i).ID;
+    tracePath = [figPath '\' subID '_single_trace_' subProject '\'];
+    mkdir(tracePath);
+    hmm_input_output = master_struct(i).hmm_input_output;
+    s_index = 1:numel(hmm_input_output);
+    rng(321);
+    plot_indices = randsample(s_index,min([nTraces,numel(s_index)]),false);
+    for j = 1:numel(plot_indices)
+        % MCP channel checks
+        time = hmm_input_output(plot_indices(j)).time;
+        r_vec = sum(hmm_input_output(plot_indices(j)).r_mat,2);
+        spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
+        null_protein = hmm_input_output(plot_indices(j)).null_protein;
+        delta_protein = spot_protein - null_protein;
+        % make figure
+        trace_fig = figure;
+        hold on
+        
+        yyaxis left
+        plot(time,r_vec)
+        ylabel(['instantaneous ' gene_name ' activity (au)'])
+        
+        yyaxis right
+        plot(time,delta_protein);
+        ylabel(['instantaneous ' protein_name ' concentration (au)'])
+                
+        ax = gca;
+        ax.YAxis(1).Color = 'black';
+        ax.YAxis(2).Color = 'black';
+        
+        legend('transcriptional activity', 'local protein concentration')
+        xlabel('time')
+        ylabel([gene_name ' activity (au)'])
+        saveas(trace_fig,[qcPath 'input_output_nc' sprintf('%03d',plot_indieces(j)) '.png'])               
+    end
+end
+
 n_lags = 10;
 n_bins = 10;
 % load data set
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
 % make burst vectors
 rise_vec_full = [];
 fall_vec_full = [];
