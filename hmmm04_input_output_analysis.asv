@@ -6,7 +6,7 @@ close all
 project = 'Dl_Venus_snaBAC_MCPmCherry_Zoom25x_minBleaching_test';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder '\ProcessedEnrichmentFigures\' project '\input_output\'];
+figPath = [dropboxFolder '\ProcessedEnrichmentFigures\' project '\hmm_input_output\'];
 K = 2;
 w = 6;
 nTraces = 50; % number of individual traces to select for plotting
@@ -122,34 +122,62 @@ xc_control_mat = NaN(numel(xc_shuffle),2*n_lags + 1);
 
 for i = 1:numel(xc_shuffle)
     % compare true pairs first
-    sp_pt = hmm_input_output(i).spot_protein;
+    delta_pt = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;
     r_vec = sum(hmm_input_output(i).r_mat,2)';   
-    if numel(sp_pt) > n_lags + 1
-        xc_trend_mat(i,:) = xcov(sp_pt,r_vec,n_lags,'unbiased');
+    if numel(delta_pt) > n_lags + 1
+        xc_trend_mat(i,:) = xcov(delta_pt,r_vec,n_lags,'unbiased');
     end
     
     % draw random activity vector and take cross-covariance
     r_vec_rand = sum(hmm_input_output(xc_shuffle(i)).r_mat,2)';
-    n_max = min([numel(r_vec_rand) numel(sp_pt)]);
+    n_max = min([numel(r_vec_rand) numel(delta_pt)]);
     if n_max >= n_lags + 1
-        xc_control_mat(i,:) = xcov(sp_pt,r_vec_rand,n_lags,'unbiased');
+        xc_control_mat(i,:) = xcov(delta_pt(1:n_max),r_vec_rand(1:n_max),n_lags,'unbiased');
     end
 end
 
 trend_boots = NaN(n_boots,size(xc_control_mat,2));
 control_boots = NaN(n_boots,size(xc_control_mat,2));
 
+trend_index_vec = find(~isnan(xc_trend_mat(:,1)));
+control_index_vec = find(~isnan(xc_trend_mat(:,1)));
 for i = 1:n_boots
-    trend_boots
+    trend_boots(i,:) = nanmean(xc_trend_mat(randsample(trend_index_vec,numel(trend_index_vec),true),:));
+    control_boots(i,:) = nanmean(xc_control_mat(randsample(control_index_vec,numel(control_index_vec),true),:));
+end
+xc_trend_mean = nanmean(trend_boots);
+xc_trend_ste = nanstd(trend_boots);
+
+xc_control_mean = nanmean(control_boots);
+xc_control_ste = nanstd(control_boots);
+
+% sketch method for extracting time resolution 
+Tres = nanmedian([hmm_input_output.time]);
+lag_time_time_vec = (-n_lags:0)*Tres;
+
+% make figure
+xc_fig = figure;
+hold on
+e1 = errorbar(lag_time_vec,trend_mean_array(:,i),trend_ste_array(:,i));
+e1.CapSize = 0;
+e2 = errorbar(lag_time_vec,control_mean_array(:,i),control_ste_array(:,i));
+e2.CapSize = 0;
+legend('active locus','random control')
+xlabel('offset (seconds)')
+ylabel('cross-covariance')
+title('cross-covariance between ' gene)
+saveas(xc_fig,[figPath 'cross-covariance.png'])
+
+
 % calculate prduction rate extrema
 r_unit = nanmean([hmm_input_output.r_inf ; ]);
 r_unit = r_unit(2);
 mean_steps = 5;
 % create indexing and storage vectors
 time_index = 1:nanmax(round([hmm_input_output.time]/60));
-trend_id_cell = {'burst on','burst off','bulk rise','bulk fall','high','low'};
-condition_cell = {'delta_z>0','delta_z<0','bulk_delta_r>mean_steps*.6*r_unit',...
-    'bulk_delta_r<-mean_steps.6*r_unit','r_sum>mean_steps*.8*r_unit','r_sum<mean_steps*.2*r_unit'};
+trend_id_cell = {'burst start','burst stop','bulk rise','bulk fall','sustained high','sustained low'};
+condition_cell = {'delta_z>0','delta_z<0','bulk_delta_r>r_unit',...
+    'bulk_delta_r<-r_unit','r_sum>mean_steps*.8*r_unit','r_sum<mean_steps*.2*r_unit'};
 
 trend_index_cell = cell(1,numel(trend_id_cell));
 trend_subindex_cell = cell(1,numel(trend_id_cell));
@@ -168,9 +196,9 @@ for i = 1:numel(hmm_input_output)
     delta_z = [0 diff(z_vec)];
     % get isntantaneous activity state a take derivative
     r_vec = sum(hmm_input_output(i).r_mat,2);
-    r_sum = conv(r_vec,ones(1,5),'same');
+    r_sum = conv(r_vec,ones(1,mean_steps),'same');
     delta_r = diff(r_vec);
-    bulk_delta_r = conv(delta_r,ones(1,5),'same');
+    bulk_delta_r = conv(delta_r,ones(1,mean_steps),'same');
     % time info
     time_vec = round(hmm_input_output(i).time/60);
     
@@ -221,9 +249,9 @@ for i = 1:numel(trend_id_cell)
     sub_id_vec = trend_subindex_cell{j};
     for j = 1:numel(id_vec)
         % protein
-        sp_pt = hmm_input_output(id_vec(j)).spot_protein;
+        delta_pt = hmm_input_output(id_vec(j)).spot_protein;
         mf_pt = hmm_input_output(id_vec(j)).mf_protein;
-        delta = sp_pt-mf_pt;
+        delta = delta_pt-mf_pt;
         % lag
         delta = delta(max(1,sub_id_vec(j)-n_lags),sub_id_vec(j));
         lag_array(j,n_lags+1-numel(delta)+1:end) = delta;
@@ -238,9 +266,9 @@ for i = 1:numel(trend_id_cell)
     sub_id_vec = control_subindex_cell{j};
     for j = 1:numel(id_vec)
         % protein
-        sp_pt = hmm_input_output(id_vec(j)).spot_protein;
+        delta_pt = hmm_input_output(id_vec(j)).spot_protein;
         mf_pt = hmm_input_output(id_vec(j)).mf_protein;
-        delta = sp_pt-mf_pt;
+        delta = delta_pt-mf_pt;
         % lag
         delta = delta(max(1,sub_id_vec(j)-n_lags),sub_id_vec(j));
         lag_array(j,n_lags+1-numel(delta)+1:end) = delta;
@@ -271,5 +299,18 @@ for i = 1:numel(trend_id_cell)
     
     control_mean_array(:,i) = nanmean(control_boot);
     control_ste_array(:,i) = nanstd(control_boot);
+    
+    % generate figure
+    lag_fig = figure;
+    hold on
+    e1 = errorbar(lag_time_vec,trend_mean_array(:,i),trend_ste_array(:,i));
+    e1.CapSize = 0;
+    e2 = errorbar(lag_time_vec,control_mean_array(:,i),control_ste_array(:,i));
+    e2.CapSize = 0;
+    legend([trend_id_cell{i} ' events'],'random control')
+    xlabel('seconds before event')
+    ylabel('absoulte enrichment (au)')
+    title([trend_id_cell{i} ' events'])
+    saveas(lag_fig,[figPath trend_id_cell{i} '.png'])
 end
     

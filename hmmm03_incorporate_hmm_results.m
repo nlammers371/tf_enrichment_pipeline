@@ -142,7 +142,7 @@ for num = 1:numel(project_cell)
         temp.zz_mat = zz_mat / numel(indices);
         temp.r = r_inf / numel(indices); 
         % interpolate protein info to match frames of hmm
-        ff_pt = fluo(particle_vec==ParticleID);
+        ff_pt = fluo_vec(particle_vec==ParticleID);
         mcp_pt = spot_mcp_vec(particle_vec==ParticleID);
         sp_pt = spot_protein_vec(particle_vec==ParticleID);
         nn_pt = null_protein_vec(particle_vec==ParticleID);

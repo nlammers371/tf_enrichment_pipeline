@@ -28,10 +28,10 @@ function output = hmmm02_conduct_hmm_inference(project,modelPath,w,varargin)
 close all
 warning('off','all') %Shut off Warnings
 savio = 0;
-nBoots = 5;
 K = 3;
 minDp = 10;
 dpBootstrap = 0;
+nBoots = 5;
 
 inference_times = 25*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
 tWindow = 50*60; % determines width of sliding window
@@ -65,7 +65,10 @@ load([dataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
 if ~isfield(nucleus_struct,'fluo_interp')
     error('run hmmm01_interpolate_data first')
 end
-
+if ~dpBootstrap
+    warning('Bootstrap option not selected. Setting nBoots to 1')
+    nBoots = 1;
+end
 %-------------------------------System Vars-------------------------------%
 Tres = nucleus_struct(i).TresInterp; % Time Resolution
 alpha = alphaFrac*w;
@@ -94,17 +97,12 @@ end
 outDir = [out_prefix out_suffix];
 mkdir(outDir);
 
-if clipped_ends
-    end_clip = w + 1;
-else
-    end_clip = 0;
-end
 % apply time filtering 
 trace_struct_filtered = [];
 for i = 1:length(nucleus_struct)
     temp = struct;
-    time = nucleus_struct(i).time_interp(w+1:end-end_clip); % we must ignore first w + 1 time points for windowed inference         
-    fluo = nucleus_struct(i).fluo_interp(w+1:end-end_clip); 
+    time = nucleus_struct(i).time_interp(w+1:end); % we must ignore first w + 1 time points for windowed inference         
+    fluo = nucleus_struct(i).fluo_interp(w+1:end); 
     if length(time) >= minDp
         temp.fluo = fluo;
         temp.time = time;
@@ -246,9 +244,8 @@ for t = 1:length(inference_times)
             output.iter_id = b;
             output.start_time_inf = 0;                    
             output.clipped = clipped;            
-            output.clipped_ends = clipped_ends;
             output.particle_ids = sample_particles;
-            if dpBootstrap || set_bootstrap                                    
+            if dpBootstrap                                    
                 output.N = ndp;
             end
             output.w = w;
