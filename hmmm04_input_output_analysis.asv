@@ -132,25 +132,15 @@ for i = 1:numel(xc_shuffle)
     r_vec_rand = sum(hmm_input_output(xc_shuffle(i)).r_mat,2)';
     n_max = min([numel(r_vec_rand) numel(sp_pt)]);
     if n_max >= n_lags + 1
-        xc_control_mat(i,:) = xcov(sp_pt(1:n_max),r_vec_rand(1:n_max),n_lags,'unbiased');
+        xc_control_mat(i,:) = xcov(sp_pt,r_vec_rand,n_lags,'unbiased');
     end
 end
 
 trend_boots = NaN(n_boots,size(xc_control_mat,2));
 control_boots = NaN(n_boots,size(xc_control_mat,2));
 
-trend_index_vec = find(~isnan(xc_trend_mat(:,1)));
-control_index_vec = find(~isnan(xc_trend_mat(:,1)));
 for i = 1:n_boots
-    trend_boots(i,:) = nanmean(xc_trend_mat(randsample(trend_index_vec,numel(trend_index_vec),true),:));
-    control_boots(i,:) = nanmean(xc_control_mat(randsample(control_index_vec,numel(control_index_vec),true),:));
-end
-xc_trend_mean = nanmean(trend_boots);
-xc_trend_ste = nanstd(trend_boots);
-
-xc_control_mean = nanmean(control_boots);
-xc_control_ste = nanstd(control_boots);
-    
+    trend_boots
 % calculate prduction rate extrema
 r_unit = nanmean([hmm_input_output.r_inf ; ]);
 r_unit = r_unit(2);

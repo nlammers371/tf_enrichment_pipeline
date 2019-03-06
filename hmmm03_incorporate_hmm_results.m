@@ -123,6 +123,7 @@ for num = 1:numel(project_cell)
             temp.fluo = inference_results(indices(1)).fluo_data{sub_indices(1)};
             z_mat = zeros(numel(temp.time),KInf);
             r_mat = zeros(numel(temp.time),KInf);
+            r_inf = zeros(1,KInf);
             zz_mat = zeros(KInf,KInf,numel(temp.time)-1);
         else
             continue;
@@ -134,11 +135,12 @@ for num = 1:numel(project_cell)
             z_mat = z_mat + z(ri,:)';
             zz_mat = zz_mat + zz(ri,ri,:);
             r_mat = r_mat + z(ri,:)'.*r';
+            r_inf = r_ind + r;
         end
         temp.z_mat = z_mat / numel(indices);
         temp.r_mat = r_mat / numel(indices);
         temp.zz_mat = zz_mat / numel(indices);
-
+        temp.r = r_inf / numel(indices); 
         % interpolate protein info to match frames of hmm
         ff_pt = fluo(particle_vec==ParticleID);
         mcp_pt = spot_mcp_vec(particle_vec==ParticleID);

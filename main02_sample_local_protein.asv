@@ -343,9 +343,9 @@ for i = 1:size(set_frame_array,1)
             y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
             
             pt_blank = NaN(numel(y_range_full),numel(x_range_full));
-            pt_blank(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = temp_pt(y_range,x_range);
+            pt_blank(ismember(y_range_full,y_range),ismember(x_range_full,x_range),j) = temp_pt(y_range,x_range);
             mcp_blank = NaN(numel(y_range_full),numel(x_range_full));
-            mcp_blank(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = temp_mcp(y_range,x_range); 
+            mcp_blank(ismember(y_range_full,y_range),ismember(x_range_full,x_range),j) = temp_mcp(y_range,x_range); 
             
             edge_null_protein_snips(:,:,j) =  pt_blank;
             edge_null_mcp_snips(:,:,j) =  mcp_blank;

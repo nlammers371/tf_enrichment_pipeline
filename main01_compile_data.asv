@@ -40,12 +40,11 @@ function nucleus_struct = main01_compile_data(project,folderPath,keyword,varargi
 % set defaults
 includeVec = [];
 firstNC = 14;
-minDP = 10;
 expType = 'input_output';
 dataPath = ['../dat/' project '/']; % data mat directory
 for i = 1:numel(varargin)
     if ischar(varargin{i})
-        if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
+        if ismember(varargin{i},{'includeVec','firstNC','expType'})
            eval([varargin{i} '=varargin{i+1};']);
         end
         if strcmpi(varargin{i},'dropboxFolder')
@@ -291,8 +290,7 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).spot_z_cell(spot_filter) = z_cell;
         % Identifier variables                        
         particle = cp_particles(j).OriginalParticle;                        
-        s_cells(nc_ind).ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);   
-        s_cells(nc_ind).qc_flag = qc_flag; 
+        s_cells(nc_ind).ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);        
     end      
     nucleus_struct = [nucleus_struct  s_cells];        
 end
