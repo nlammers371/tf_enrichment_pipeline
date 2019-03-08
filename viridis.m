@@ -12,13 +12,14 @@ function colormap_viridis = viridis(m)
 %           for people with common forms of colorblindness, as well as in 
 %           grey scale printing; and 
 %       4) PRETTY!
-%   The colors begin with yellow, range through shades of
-%   blue, cyan, green, yellow and red, and end with dark red. VIRIDIS, by
-%   itself, is the same length as the current figure's colormap. If no
-%   figure exists, MATLAB uses the length of the default colormap.
+%   The colors begin with dark blue (lowest values), range through shades of
+%   blue, blue-green, and green, and end in yellow (highest values). 
+%   VIRIDIS, by itself, is the same length as the current figure's 
+%   colormap. If no figure exists, MATLAB uses the length of the default 
+%   colormap.
 %
-%   Other perceptually uniform colormaps include MAGMA, PLASMA, and
-%   INFERNO.
+%   Other perceptually uniform colormaps include MAGMA, PLASMA,
+%   INFERNO, and CIVIDIS.
 %
 %   Description above: partially taken from Bob Rudis, Noam Ross and Simon 
 %   Garnier (2018-03-29, https://cran.r-project.org/web/packages/viridis/
