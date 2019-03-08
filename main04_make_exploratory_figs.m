@@ -6,8 +6,6 @@ close all
 DataPath = ['../../dat/' project '/'];
 FigPath = ['../../fig/' project '/'];
 ControlType = 'edge'; % specify type of control to use
-ROIRadiusSpot = .3; % radus (um) of region used to query and compare TF concentrations
-ROIRadiusControl = 2*ROIRadiusSpot; % use larger integration region to dampen noise
 DistLim = .6; % min distance from edge permitted (um)
 NBoots = 100; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
@@ -63,10 +61,6 @@ end
 if strcmpi(project,'Hb_NbGFP_hbBAC_mCherry')
     ap_ft = snip_ap_vec > .5;
     snip_ap_vec(ap_ft) = 1 - snip_ap_vec(ap_ft);
-end
-% invert distance vector if we're using centroid metric
-if strcmpi(ControlType, 'centroid')
-    snip_dist_vec = max(snip_dist_vec) - snip_dist_vec;
 end
 % Snip stacks
 spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);

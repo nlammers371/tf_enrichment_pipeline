@@ -182,8 +182,11 @@ for num = 1:numel(project_cell)
         temp.mcp_check(dt_filter) = NaN;
         temp.fluo_check(dt_filter) = NaN;
         temp.mf_counts(dt_filter) = NaN;
+        temp.spot_protein_all = temp.spot_protein;
         temp.spot_protein(dt_filter) = NaN;
+        temp.null_protein_all = temp.null_protein;
         temp.null_protein(dt_filter) = NaN;
+        temp.mf_protein_all = temp.mf_protein;
         temp.mf_protein(dt_filter) = NaN;
         % record general info for later use
         temp.ParticleID = ParticleID; 
