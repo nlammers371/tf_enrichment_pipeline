@@ -181,6 +181,7 @@ for num = 1:numel(project_cell)
         dt_filter = dt_vec > 60;
         temp.mcp_check(dt_filter) = NaN;
         temp.fluo_check(dt_filter) = NaN;
+        temp.fluo(dt_filter) = NaN;
         temp.mf_counts(dt_filter) = NaN;
         temp.spot_protein_all = temp.spot_protein;
         temp.spot_protein(dt_filter) = NaN;

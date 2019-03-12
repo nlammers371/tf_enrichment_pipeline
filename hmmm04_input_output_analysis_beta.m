@@ -13,7 +13,7 @@ mkdir(figPath)
 
 nTraces = 50; % number of individual traces to select for plotting
 window_size = 10; % number of lags over which to track protein/fluo dynamics
-n_boots = 100;
+nBoots = 100;
 n_ref_hist_bins = 10;
 min_time = 10;
 make_trace_plots = 0;
@@ -147,6 +147,19 @@ for i = 1:numel(hmm_input_output)
     [~,z_vec] = max(z_mat,[],2);
     hmm_input_output(i).z_vec = z_vec;       
 end
+% obtain time-averaged fluo trend
+t_vec = round([hmm_input_output.time]/60);
+f_vec = [hmm_input_output.fluo];
+r_vec = vertcat(hmm_input_output.r_vec);
+
+time_index = 1:50;
+fluo_trend = NaN(size(time_index));
+r_trend = NaN(size(time_index));
+for t = 1:numel(time_index)
+    fluo_trend(t) = nanmean(f_vec(t_vec==time_index(t)));
+    r_trend(t) = nanmean(r_vec(t_vec==time_index(t)));
+end
+filter_size = 5;
 % detrend input and output time series
 for i = 1:numel(hmm_input_output)
     % detrend spot protein
@@ -155,15 +168,218 @@ for i = 1:numel(hmm_input_output)
     [p,~,mu] = polyfit(frame_vec(~isnan(spot_vec)),spot_vec(~isnan(spot_vec)),2);
     spot_trend = polyval(p,(1:numel(spot_vec)),[],mu);
     hmm_input_output(i).spot_protein_dt = spot_vec - spot_trend;
+    hmm_input_output(i).spot_protein_dt_smooth = imgaussfilt(hmm_input_output(i).spot_protein_dt,filter_size);
     % detrend control 
     null_vec = hmm_input_output(i).null_protein;
     [p,~,mu] = polyfit(frame_vec(~isnan(null_vec)),null_vec(~isnan(null_vec)),2);
     null_trend = polyval(p,(1:numel(null_vec)),[],mu);
     hmm_input_output(i).null_protein_dt = null_vec - null_trend;
     % add smoothed version of control 
-    hmm_input_output(i).null_protein_sm = imgaussfilt(hmm_input_output(i).null_protein_all,3);
+    hmm_input_output(i).null_protein_sm = imgaussfilt(hmm_input_output(i).null_protein_all,filter_size);
+    hmm_input_output(i).delta_protein_sm = spot_vec - hmm_input_output(i).null_protein_sm;
+    % detrend fluo
+    fluo = hmm_input_output(i).fluo;
+    activity = hmm_input_output(i).r_vec;
+    time = round(hmm_input_output(i).time/60);
+    for j = 1:numel(fluo)
+        fluo(j) = fluo(j) - fluo_trend(time(j)==time_index);
+        activity(j) = activity(j) - r_trend(time(j)==time_index);
+    end
+    hmm_input_output(i).fluo_dt = fluo;
+    hmm_input_output(i).r_vec_dt = activity;
 end
 
+
+%%% Simple(ish) things first...
+prctile_vec = 0:10:100;
+spot_prctile_vec = NaN(size(prctile_vec));
+null_prctile_vec = NaN(size(prctile_vec));
+spot_protein = [hmm_input_output.spot_protein];
+null_protein_smooth = [hmm_input_output.null_protein_sm];
+fluo_vec = [hmm_input_output.fluo];
+activity_vec = vertcat(hmm_input_output.r_vec)';
+
+for i = 1:numel(prctile_vec)
+    spot_prctile_vec(i) = prctile(spot_protein,prctile_vec(i));
+    null_prctile_vec(i) = prctile(null_protein_smooth,prctile_vec(i));
+end
+[bin_counts, ~,~,binSpot,binNull] = histcounts2(spot_protein,null_protein_smooth,spot_prctile_vec,null_prctile_vec);
+norm_counts = bin_counts ./ repmat(sum(bin_counts),numel(prctile_vec)-1,1);
+
+resample_weights =  repmat(sum(norm_counts,2),1,numel(prctile_vec)-1) ./ norm_counts;
+
+% now draw fluo, delta, and mf samples for each delta bin
+null_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+spot_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+fluo_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+activity_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+
+for i = 1:numel(prctile_vec)-1
+    bin_indices = find(binSpot==i);
+    resample_wt_vec = resample_weights(:,i);
+    sample_weights = resample_wt_vec(binNull(bin_indices));
+    for n = 1:nBoots
+        s_ids = randsample(bin_indices,numel(bin_indices),true,sample_weights);
+        null_boot_array(n,i) = nanmean(null_protein_smooth(s_ids));
+        spot_boot_array(n,i) = nanmean(spot_protein(s_ids));
+        fluo_boot_array(n,i) = nanmean(fluo_vec(s_ids));
+        activity_boot_array(n,i) = nanmean(activity_vec(s_ids));
+    end
+end
+
+fluo_mean = nanmean(fluo_boot_array);
+fluo_ste= nanstd(fluo_boot_array);
+
+activity_mean = nanmean(activity_boot_array);
+activity_ste= nanstd(activity_boot_array);
+
+mf_mean = nanmean(null_boot_array);
+mf_ste= nanstd(null_boot_array);
+
+spot_mean = nanmean(spot_boot_array);
+spot_ste= nanstd(spot_boot_array);
+
+aspirational_fig = figure('Visible','off');
+hold on
+errorbar(spot_mean,activity_mean,activity_ste);
+ylabel([gene_name ' activity']);
+yyaxis right
+plot(spot_mean,spot_mean)
+hold on
+plot(spot_mean,mf_mean)
+ylabel([protein_name ' concentration (au)'])
+
+legend([gene_name ' activity'], [protein_name ' (local)'], [protein_name ' (background)'],'Location','southeast')
+xlabel(['local ' protein_name ' concentration (au)'])
+saveas(aspirational_fig, [figPath 'aspirational_fig.png'])
+
+%% Examine sna activity in vicinity of anamalous high and low pt points
+
+spot_protein_dt_smooth = [hmm_input_output.spot_protein_dt_smooth];
+null_protein_smooth = [hmm_input_output.null_protein_sm];
+
+% calculate necessary sample weights
+bulk_pt_high = prctile(spot_protein_dt_smooth,95);
+bulk_pt_low = prctile(spot_protein_dt_smooth,5);
+bulk_pt_bins = [min(spot_protein_dt_smooth),bulk_pt_low,bulk_pt_high,max(spot_protein_dt_smooth)];
+% get distribution of bkg concentrations
+[bin_counts, ~,~,binSpot,binNull] = histcounts2(spot_protein_dt_smooth,...
+    null_protein_smooth,bulk_pt_bins,null_prctile_vec);
+bin_probs = bin_counts ./ sum(bin_counts,2);
+bin_weights = repmat(bin_probs(2,:),3,1) ./ bin_probs;
+
+% take weighted sampels of activity signatures in vicinity of high, low,
+% and middling pt points
+binSpot(binSpot==0) = NaN;
+binNull(binNull==0) = NaN;
+nSamples = nansum(binSpot==1);
+% initialize array
+fluo_cell = cell(1,3);
+local_protein_cell = cell(1,3);
+null_protein_cell = cell(1,3);
+activity_cell = cell(1,3);
+
+% pull time series samples from vicinity of protein events
+ind_vec = 1:3;
+name_cell = {'high','other','low'};
+ref_vec = -window_size:window_size;%1:(2*window_size+1);
+
+for i = 1:numel(hmm_input_output)
+    time_vec = hmm_input_output(i).time/60;
+    frame_vec = 1:numel(time_vec);
+    fluo_vec = hmm_input_output(i).fluo;
+    activity_vec = hmm_input_output(i).r_vec;
+    % find protein peaks and troughs
+    pt_sp_dt_sm = hmm_input_output(i).spot_protein_dt_smooth;   
+    pt_sp = hmm_input_output(i).spot_protein;   
+    pt_nn_sm = hmm_input_output(i).null_protein_sm;   
+    nan_filter = ~isnan(pt_nn_sm)&~isnan(pt_sp_dt_sm)&frame_vec>3&frame_vec<numel(frame_vec)-1;
+    high_ids = find(nan_filter&pt_sp_dt_sm>bulk_pt_high);
+    low_ids = find(nan_filter&pt_sp_dt_sm<bulk_pt_low);
+    other_ids = find(nan_filter&~ismember(1:numel(pt_sp_dt_sm),[high_ids low_ids]));
+    % sample proiten and activity traces
+    for j = 1:numel(name_cell)
+        eval(['ids =' name_cell{j} '_ids;'])
+        fluo_temp = NaN(numel(ids),2*window_size+1);
+        act_temp = NaN(numel(ids),2*window_size+1);
+        loc_temp = NaN(numel(ids),2*window_size+1);
+        bkg_temp = NaN(numel(ids),2*window_size+1);
+        for k = 1:numel(ids)
+            raw_ind = ref_vec+ids(k);
+            ft_vec1 = raw_ind > 0 & raw_ind <= numel(fluo_vec);
+            ft_vec2 = ref_vec(ft_vec1) + ids(k);
+            % record
+            fluo_temp(k,ft_vec1) = fluo_vec(ft_vec2);
+            act_temp(k,ft_vec1) = activity_vec(ft_vec2);
+            loc_temp(k,ft_vec1) = pt_sp_dt_sm(ft_vec2);
+            bkg_temp(k,ft_vec1) = pt_nn_sm(ft_vec2);
+            if isnan(bkg_temp(k,window_size+1))
+                error('wtf')
+            end
+        end
+        % add to main cell structures
+        fluo_cell{j} = vertcat(fluo_cell{j}, fluo_temp);
+        activity_cell{j} = vertcat(activity_cell{j}, act_temp);
+        local_protein_cell{j} = vertcat(local_protein_cell{j}, loc_temp);
+        null_protein_cell{j} = vertcat(null_protein_cell{j}, bkg_temp);
+    end
+end
+%%
+% now estimate bootstrap-averaged time trends
+fluo_mean_trend_mat = NaN(2*window_size+1,3);
+fluo_ste_trend_mat = NaN(2*window_size+1,3);
+
+activity_mean_trend_mat = NaN(2*window_size+1,3);
+activity_ste_trend_mat = NaN(2*window_size+1,3);
+
+spot_protein_mean_trend_mat = NaN(2*window_size+1,3);
+spot_protein_ste_trend_mat = NaN(2*window_size+1,3);
+
+null_protein_mean_trend_mat = NaN(2*window_size+1,3);
+null_protein_ste_trend_mat = NaN(2*window_size+1,3);
+
+for i = 1:3
+    % extract data
+    fluo_raw = fluo_cell{i};
+    act_raw = activity_cell{i};
+    loc_raw = local_protein_cell{i};
+    bkg_raw = null_protein_cell{i};    
+    % initialize bootstrap arrays
+    fluo_boot = NaN(nBoots,2*window_size+1);
+    act_boot = NaN(nBoots,2*window_size+1);
+    loc_boot = NaN(nBoots,2*window_size+1);
+    bkg_boot = NaN(nBoots,2*window_size+1);
+    % calculate weights
+    bkg_vec = bkg_raw(:,window_size+1);
+    [~,~,nullIDs] = histcounts(bkg_vec,null_prctile_vec);
+    resample_wt_vec = bin_weights(i,:);
+    resample_weights = resample_wt_vec(nullIDs);
+    % conduct bootstrap sampling
+    boot_index = 1:numel(bkg_vec);
+    for j = 1:nBoots
+        s_ids = randsample(boot_index,nSamples,true,resample_weights);
+        fluo_boot(j,:) = nanmean(fluo_raw(s_ids,:));
+        act_boot(j,:) = nanmean(act_raw(s_ids,:));
+        loc_boot(j,:) = nanmean(loc_raw(s_ids,:));
+        bkg_boot(j,:) = nanmean(bkg_raw(s_ids,:));
+    end
+    fluo_mean_trend_mat(:,i) = nanmean(fluo_boot);
+    fluo_ste_trend_mat(:,i) = nanstd(fluo_boot);
+    
+    activity_mean_trend_mat(:,i) = nanmean(act_boot);
+    activity_ste_trend_mat(:,i) = nanstd(act_boot);
+    
+    spot_protein_mean_trend_mat(:,i) = nanmean(loc_boot);
+    spot_protein_ste_trend_mat(:,i) = nanstd(loc_boot);
+    
+    null_protein_mean_trend_mat(:,i) = nanmean(bkg_boot);
+    null_protein_ste_trend_mat(:,i) = nanstd(bkg_boot);
+end      
+
+
+
+
+%%
 trend_id_cell = {'burst start','burst stop','protein peak','protein dip','consistency check'};
 
 metric_cell = {'spot_pt','spot_pt','r_vec','r_vec','spot_pt'}; % 
@@ -284,8 +500,8 @@ for i = 1:numel(trend_id_cell)
     trend_lag_array = lag_trend_array_cell{i};    
     % convenience v ec and bootstrap arrays
     index_vec = 1:size(trend_lag_array,1);
-    trend_boot = NaN(n_boots,2*window_size+1);
-    for j = 1:n_boots
+    trend_boot = NaN(nBoots,2*window_size+1);
+    for j = 1:nBoots
         s_ids = randsample(index_vec,numel(index_vec),true);
         trend_boot(j,:) = nanmean(trend_lag_array(s_ids,:));
     end

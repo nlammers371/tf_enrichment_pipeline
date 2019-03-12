@@ -5,7 +5,7 @@ function [mcp_stack, protein_stack] = load_stacks(RawPath, src, frame, mcp_chann
     mcp_files = dir([RawPath src '/*_' sprintf('%03d',frame) '*_ch0' num2str(mcp_channel) '.tif']);
     mcp_stack = [];
     for im = 2:numel(mcp_files)-1
-        image = double(mat2gray(imread([RawPath src '/' mcp_files(im).name])));
+        image = double(imread([RawPath src '/' mcp_files(im).name]));
         mcp_stack(:,:,im-1) = image;
     end
     

@@ -13,7 +13,7 @@ mkdir(figPath)
 
 nTraces = 50; % number of individual traces to select for plotting
 window_size = 10; % number of lags over which to track protein/fluo dynamics
-n_boots = 100;
+nBoots = 100;
 n_ref_hist_bins = 10;
 min_time = 10;
 make_trace_plots = 0;
@@ -209,16 +209,16 @@ norm_counts = bin_counts ./ repmat(sum(bin_counts),numel(prctile_vec)-1,1);
 resample_weights =  repmat(sum(norm_counts,2),1,numel(prctile_vec)-1) ./ norm_counts;
 
 % now draw fluo, delta, and mf samples for each delta bin
-null_boot_array = NaN(n_boots,numel(prctile_vec)-1);
-spot_boot_array = NaN(n_boots,numel(prctile_vec)-1);
-fluo_boot_array = NaN(n_boots,numel(prctile_vec)-1);
-activity_boot_array = NaN(n_boots,numel(prctile_vec)-1);
+null_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+spot_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+fluo_boot_array = NaN(nBoots,numel(prctile_vec)-1);
+activity_boot_array = NaN(nBoots,numel(prctile_vec)-1);
 
 for i = 1:numel(prctile_vec)-1
     bin_indices = find(binSpot==i);
     resample_wt_vec = resample_weights(:,i);
     sample_weights = resample_wt_vec(binNull(bin_indices));
-    for n = 1:n_boots
+    for n = 1:nBoots
         s_ids = randsample(bin_indices,numel(bin_indices),true,sample_weights);
         null_boot_array(n,i) = nanmean(null_protein_smooth(s_ids));
         spot_boot_array(n,i) = nanmean(spot_protein(s_ids));
@@ -253,36 +253,30 @@ legend([gene_name ' activity'], [protein_name ' (local)'], [protein_name ' (back
 xlabel(['local ' protein_name ' concentration (au)'])
 saveas(aspirational_fig, [figPath 'aspirational_fig.png'])
 
-%% Examine sna activity in vicinity of anamalous high and low pt points
+%%% Examine sna activity in vicinity of anamalous high and low pt points
+
 spot_protein_dt_smooth = [hmm_input_output.spot_protein_dt_smooth];
 null_protein_smooth = [hmm_input_output.null_protein_sm];
 
 % calculate necessary sample weights
-bulk_pt_high = prctile(spot_protein_dt_smooth,95);
-bulk_pt_low = prctile(spot_protein_dt_smooth,5);
-bulk_pt_bins = [min(spot_protein_dt_smooth),bulk_pt_low,bulk_pt_high,max(spot_protein_dt_smooth)];
-% get distribution of bkg concentrations
-[bin_counts, ~,~,binSpot,binNull] = histcounts2(spot_protein_dt_smooth,...
-    null_protein_smooth,bulk_pt_bins,null_prctile_vec);
-bin_probs = bin_counts ./ sum(bin_counts,2);
-bin_weights = repmat(bin_probs(2,:),3,1) ./ bin_probs;
+bulk_prctile_index = 0:5:100;
+bulk_pt_prctile_vec = NaN(size(bulk_prctile_index));
+for i = 1:numel(bulk_prctile_index)
+    bulk_pt_prctile_vec(i) = prctile(spot_protein_dt_smooth,bulk_prctile_index(i));
+end
 
-% take weighted sampels of activity signatures in vicinity of high, low,
-% and middling pt points
-binSpot(binSpot==0) = NaN;
-binNull(binNull==0) = NaN;
 nSamples = nansum(binSpot==1);
-% initialize array
+
+% initialize arrays
 fluo_cell = cell(1,3);
 local_protein_cell = cell(1,3);
 null_protein_cell = cell(1,3);
 activity_cell = cell(1,3);
+ind_ref_cell = cell(1,3);
 
 % pull time series samples from vicinity of protein events
-ind_vec = 1:3;
-name_cell = {'high','low','other'};
+name_cell = {'low','mid','high'};
 ref_vec = -window_size:window_size;%1:(2*window_size+1);
-
 for i = 1:numel(hmm_input_output)
     time_vec = hmm_input_output(i).time/60;
     frame_vec = 1:numel(time_vec);
@@ -292,10 +286,13 @@ for i = 1:numel(hmm_input_output)
     pt_sp_dt_sm = hmm_input_output(i).spot_protein_dt_smooth;   
     pt_sp = hmm_input_output(i).spot_protein;   
     pt_nn_sm = hmm_input_output(i).null_protein_sm;   
-    
-    high_ids = find(pt_sp_dt_sm>bulk_pt_high);
-    low_ids = find(pt_sp_dt_sm<bulk_pt_low);
-    other_ids = find(~ismember(1:numel(pt_sp_dt_sm),[high_ids low_ids]));
+    [~,~,nullBins] = histcounts(pt_sp_dt_sm,bulk_pt_prctile_vec);
+    nan_filter = ~isnan(pt_nn_sm)&~isnan(pt_sp_dt_sm)&frame_vec>3&frame_vec<numel(frame_vec)-1;
+    % find points ot interest
+    high_ids = find(nan_filter&nullBins==numel(bulk_pt_prctile_vec)-1);
+    low_ids = find(nan_filter&nullBins==1);
+    mid_ids = find(nan_filter&nullBins>5&nullBins<16);
+
     % sample proiten and activity traces
     for j = 1:numel(name_cell)
         eval(['ids =' name_cell{j} '_ids;'])
@@ -303,195 +300,84 @@ for i = 1:numel(hmm_input_output)
         act_temp = NaN(numel(ids),2*window_size+1);
         loc_temp = NaN(numel(ids),2*window_size+1);
         bkg_temp = NaN(numel(ids),2*window_size+1);
+        ind_temp = NaN(1,numel(ids));
         for k = 1:numel(ids)
             raw_ind = ref_vec+ids(k);
-            ft_vec1 = raw_ind > 0 & raw_ind < numel(fluo_vec);
+            ft_vec1 = raw_ind > 0 & raw_ind <= numel(fluo_vec);
             ft_vec2 = ref_vec(ft_vec1) + ids(k);
             % record
             fluo_temp(k,ft_vec1) = fluo_vec(ft_vec2);
             act_temp(k,ft_vec1) = activity_vec(ft_vec2);
             loc_temp(k,ft_vec1) = pt_sp_dt_sm(ft_vec2);
             bkg_temp(k,ft_vec1) = pt_nn_sm(ft_vec2);
+            ind_temp(k) = i;
+            if isnan(bkg_temp(k,window_size+1))
+                error('wtf')
+            end
         end
         % add to main cell structures
         fluo_cell{j} = vertcat(fluo_cell{j}, fluo_temp);
         activity_cell{j} = vertcat(activity_cell{j}, act_temp);
         local_protein_cell{j} = vertcat(local_protein_cell{j}, loc_temp);
         null_protein_cell{j} = vertcat(null_protein_cell{j}, bkg_temp);
+        ind_ref_cell{j} = vertcat(null_protein_cell{j}, bkg_temp);
     end
 end
 
-% now estimate bootstrap-averaged time trends
-fluo_mean_trend_vec = NaN(2*window_size+1,3);
-fluo_mean_trend_vec = NaN(2*window_size+1,3);
-
-activity_mean_trend_vec = NaN(2*window_size+1,3);
-activty_mean_trend_vec = NaN(2*window_size+1,3);
-
-spot_protein_mean_trend_vec = NaN(2*window_size+1,3);
-spot_protein_mean_trend_vec = NaN(2*window_size+1,3);
-
-null_protein_mean_trend_vec = NaN(2*window_size+1,3);
-null_protein_mean_trend_vec = NaN(2*window_size+1,3);
-
-for i = 1:3
-    % extract data
-    fluo_raw = fluo_cell{i};
-    act_raw = activity_cell{i};
-    loc_raw = local_protein_cell{i};
-    bkg_raw = null_protein_cell{i};    
-    % initialize bootstrap arrays
-    fluo_boot = NaN(nBoots,2*window_size+1);
-    act_boot = NaN(nBoots,2*window_size+1);
-    loc_boot = NaN(nBoots,2*window_size+1);
-    bkg_boot = NaN(nBoots,2*window_size+1);
-    % calculate weights
-    bkg_vec = bkg_raw(:,window_size+1);
-    [~,~,nullIDs] = histcounts(bkg_vec,null_prctile_vec);
-    resample_wt_vec = bin_weights(i,:);
-    resample_weights = resample_wt_vec(nullIDs);
-    % conduct bootstrap sampling
-    boot_index = 1:numel(bkg_vec);
-    for 
-
+% now construct control sets from mid traces that mimic temporal mf profile
+% of high and low traces
+trend_id_vec = [1 2 3];
+control_id_vec = [2 2 2];
+sampling_struct = struct;
+for i = 2%1:numel(trend_id_vec)
+    % get background pt levels
+    nn_mat_trend = null_protein_cell{trend_id_vec(i)};
+    nn_mat_control = null_protein_cell{control_id_vec(i)};
+    % other control arrays
+    sp_mat_control = local_protein_cell{control_id_vec(i)};    
+    fluo_mat_control = fluo_cell{control_id_vec(i)};        
+    act_mat_control = activity_cell{control_id_vec(i)};
+    % initialize targeted control arrays
+    nn_spec_control = NaN(size(nn_mat_trend));
+    sp_spec_control = NaN(size(nn_mat_trend));
+    fluo_spec_control = NaN(size(nn_mat_trend));
+    act_spec_control = NaN(size(nn_mat_trend));
+    % ok. now iterate through trend set and find closest match to each
+    % trace in control
+    ctrl_ids = NaN(1,size(nn_mat_trend,1));
+    for j = 1:4000%size(nn_mat_trend,1)
+        bkg_vec = nn_mat_trend(j,:);
+        bkg_mat = repmat(bkg_vec,size(nn_mat_control,1),1);
+        nan_ft = ~isnan(bkg_vec);
+        overlap_vec = sum(~isnan(bkg_mat)==~isnan(nn_mat_control),2);
+        diff_vec = nanmean(abs(nn_mat_control-bkg_vec),2);
+        if trend_id_vec(i) == control_id_vec(i)
+            diff_vec(j) = Inf;
+        end     
+        diff_vec(overlap_vec~=sum(nan_ft)) = Inf;
+        [~, mi] = min(diff_vec);
+        ctrl_ids(j) = mi;
+        nn_spec_control(j,nan_ft) = nn_mat_control(mi,nan_ft);
+        sp_spec_control(j,nan_ft) = sp_mat_control(mi,nan_ft);
+        fluo_spec_control(j,nan_ft) = fluo_mat_control(mi,nan_ft);
+        act_spec_control(j,nan_ft) = act_mat_control(mi,nan_ft);
+    end
+    % save relevant arrayes in data structure
+    sampling_struct(i).trend_id = trend_id_vec(i);
+    sampling_struct(i).trend_name = name_cell{trend_id_vec(i)};
+    sampling_struct(i).ctrl_id = control_id_vec(i);
+    sampling_struct(i).ctrl_name = name_cell{control_id_vec(i)};
+    sampling_struct(i).ctrl_id_vec = ctrl_ids;
+    % save trend data fields
+    sampling_struct(i).trend_null_protein = null_protein_cell{trend_id_vec(i)};
+    sampling_struct(i).trend_spot_protein = local_protein_cell{trend_id_vec(i)};
+    sampling_struct(i).trend_fluo = fluo_cell{trend_id_vec(i)};
+    sampling_struct(i).trend_activity = activity_cell{trend_id_vec(i)};
+    % controls
+    sampling_struct(i).ctrl_null_protein = nn_spec_control;
+    sampling_struct(i).ctrl_spot_protein = sp_spec_control;
+    sampling_struct(i).ctrl_fluo = fluo_spec_control;
+    sampling_struct(i).ctrl_activity = act_spec_control;
+end
+    
 %%
-trend_id_cell = {'burst start','burst stop','protein peak','protein dip','consistency check'};
-
-metric_cell = {'spot_pt','spot_pt','r_vec','r_vec','spot_pt'}; % 
-
-measure_cell = {'burst_rise_times','burst_fall_times','blip_times','dip_times','rand_ids'};
-
-trend_index_cell = cell(1,numel(trend_id_cell));
-trend_subindex_cell = cell(1,numel(trend_id_cell));
-trend_linear_index_cell = cell(1,numel(trend_id_cell));
-
-
-% calculate high and low thresholds for enrichment 
-pt_prom = prctile([hmm_input_output.spot_protein_dt],75)-prctile([hmm_input_output.spot_protein_dt],25);
-
-% generate longform ref indices as we go
-ind_vec_full = [];
-sub_ind_vec_full = [];
-iter = 1;
-% collect rise and fall information
-for i = 1:numel(hmm_input_output)
-    time_vec = hmm_input_output(i).time/60;
-    frame_vec = 1:numel(time_vec);
-    % Analyze MCP Channel first
-    % find all peaks and troughs
-    z_vec = hmm_input_output(i).z_vec;    
-    [~,burst_starts,burst_widths] = findpeaks(z_vec,frame_vec);
-    [~,burst_stops,trough_widths] = findpeaks(-z_vec,frame_vec);
-    burst_peaks = burst_starts + burst_widths / 2;
-    burst_troughs = burst_stops + trough_widths / 2;
-    % find BIG peaks and troughs
-    big_burst_peaks = burst_peaks(burst_widths > round(1/Tres*60));
-    big_burst_troughs = burst_troughs(trough_widths > round(.7/Tres*60));
-    % identify transitions between (uninterrupted) big troughs and big bursts
-    burst_rise_times = [];
-    for j = 1:numel(big_burst_troughs)
-        next_start = burst_starts(find(burst_peaks>big_burst_troughs(j),1));
-        next_peak = burst_peaks(find(burst_peaks>big_burst_troughs(j),1));
-        next_big_peak = big_burst_peaks(find(big_burst_peaks>big_burst_troughs(j),1));
-        if next_big_peak == next_peak
-            burst_rise_times = [burst_rise_times next_start];
-        end
-    end
-    burst_fall_times = [];
-    for j = 1:numel(big_burst_peaks)
-        next_stop = burst_stops(find(burst_troughs>big_burst_peaks(j),1));
-        next_trough = burst_troughs(find(burst_troughs>big_burst_peaks(j),1));
-        next_big_trough = big_burst_troughs(find(big_burst_troughs>big_burst_peaks(j),1));
-        if next_big_trough == next_trough
-            burst_fall_times = [burst_fall_times next_stop];
-        end
-    end
-    % Find large protein blips and dips    
-    spot_vec = hmm_input_output(i).spot_protein_dt;
-    spot_vec_filtered = imgaussfilt(spot_vec,2);
-
-    [~,blip_times,blip_widths] = findpeaks(spot_vec_filtered,frame_vec,'MinPeakWidth',60*.5/Tres,'MinPeakProminence',pt_prom); % NL: eye-balled atm
-    [~,dip_times,dip_widths] = findpeaks(-spot_vec_filtered,frame_vec,'MinPeakWidth',60*.5/Tres,'MinPeakProminence',pt_prom); % NL: eye-balled atm
-    
-    ind_vec_full = [ind_vec_full repelem(i,numel(time_vec))];
-    sub_ind_vec_full = [sub_ind_vec_full frame_vec];
-    linear_index_full = iter:iter+numel(time_vec)-1;
-    early_times = find(time_vec<min_time);
-    iter = iter + numel(time_vec);
-    
-    % random control ids to ensure method consistency
-    rand_ids = randsample(1:numel(time_vec),2,true);
-    
-    % store ids corresponding to each condition
-    for j = 1:numel(trend_id_cell)  
-        
-        id_vec = trend_index_cell{j};
-        sub_id_vec = trend_subindex_cell{j};        
-        lin_vec = trend_linear_index_cell{j};
-        
-        % record
-        trend_index_cell{j} = [id_vec repelem(i,numel(eval(measure_cell{j})))];
-        trend_subindex_cell{j} = [sub_id_vec eval(measure_cell{j})];
-        trend_linear_index_cell{j} = [lin_vec linear_index_full(eval(measure_cell{j}))];            
-    end
-end
-
-% initialize data arrays tpo store lag pt info
-lag_trend_array_cell = cell(1,numel(trend_id_cell));
-for i = 1:numel(trend_id_cell)
-    lag_trend_array_cell{i} = NaN(numel(trend_index_cell{i}),2*window_size+1);
-end
-% iterate through ids for each event type and store adjacent enrichment
-% signatures
-lag_index = -window_size:window_size;
-ctrl_cell = {'trend'};
-% pull trend samples
-for n = 1:numel(ctrl_cell)
-    ctrl_id =ctrl_cell{n};
-    for i = 1:numel(trend_id_cell)
-        eval(['lag_array = lag_' ctrl_id '_array_cell{i};']);
-        eval(['id_vec = ' ctrl_id '_index_cell{i};']);
-        eval(['sub_id_vec = ' ctrl_id '_subindex_cell{i};']);
-        for j = 1:numel(id_vec)
-            % protein
-            spot_pt = hmm_input_output(id_vec(j)).spot_protein_dt;
-            % transcription
-            r_vec = hmm_input_output(id_vec(j)).r_vec;
-            % index
-            index_vec = lag_index + sub_id_vec(j);
-            ft = index_vec>=1 & index_vec<=numel(spot_pt);
-            % lag     
-            eval(['lag_array(j,ft) = ' metric_cell{i} '(index_vec(ft));']);
-        end
-         eval(['lag_' ctrl_id '_array_cell{i} =  lag_array;']);
-    end
-end
-
-trend_mean_array = NaN(2*window_size+1,numel(trend_id_cell));
-trend_ste_array = NaN(2*window_size+1,numel(trend_id_cell));
-
-% calculate bootstrap average and ste    
-for i = 1:numel(trend_id_cell)
-    trend_lag_array = lag_trend_array_cell{i};    
-    % convenience v ec and bootstrap arrays
-    index_vec = 1:size(trend_lag_array,1);
-    trend_boot = NaN(n_boots,2*window_size+1);
-    for j = 1:n_boots
-        s_ids = randsample(index_vec,numel(index_vec),true);
-        trend_boot(j,:) = nanmean(trend_lag_array(s_ids,:));
-    end
-    trend_mean_array(:,i) = nanmean(trend_boot);
-    trend_ste_array(:,i) = nanstd(trend_boot);   
-    
-    % generate figure
-    lag_fig = figure;
-    hold on
-    e1 = errorbar(lag_index*Tres,trend_mean_array(:,i),trend_ste_array(:,i));
-    e1.CapSize = 0;
-    legend([trend_id_cell{i} ' events'])
-    xlabel('offset (seconds)')
-%     ylabel(['absoulte ' protein_name ' enrichment (au)'])
-    title([trend_id_cell{i} ' events'])
-    saveas(lag_fig,[figPath trend_id_cell{i} '.png'])
-end
-    
