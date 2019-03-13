@@ -457,7 +457,7 @@ for i = 1:numel(sampling_struct)
         end
     end
 end
-%%                       
+                       
 time_axis = Tres*ref_vec / 60;
 cm = jet(128);
 red1 = cm(115,:);
@@ -484,7 +484,7 @@ for i = 1:numel(name_cell)
 
     saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
 end
-%%
+
 close all
 % Now make figures examining input-output relationships
 for i = 1:numel(name_cell)
@@ -493,8 +493,7 @@ for i = 1:numel(name_cell)
     in_out_fig = figure;
     hold on
     yyaxis left
-    errorbar(time_axis,sampling_struct(i).trend_spot_protein_mean,...
-        sampling_struct(i).trend_spot_protein_se,'Color',blue2,'LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).trend_spot_protein_mean,'Color',blue2,'LineWidth',1)
     plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[blue1 .3])
     ylabel([protein_name ' concentration (au)'])
     ax = gca;
@@ -503,15 +502,16 @@ for i = 1:numel(name_cell)
     
     yyaxis right
     errorbar(time_axis,sampling_struct(i).trend_activity_mean,...
-        sampling_struct(i).trend_activity_se,'-','Color',red1,'LineWidth',1,'CapSize',0)
-    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[red1 .3])
+        sampling_struct(i).trend_activity_se,'-','Color','black','LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[0 0 0 .3])
     ylabel([protein_name ' concentration (au)'])
     ylabel([gene_name ' activity (au)'])
 
     xlabel('offset (minutes)')
     ax = gca;
     ax.YColor = red1;
-    legend('protein (trend)','protein (control)','production rate (trend)','production rate(control)')
+    legend('protein (trend)','protein (control)','production rate (trend)',...
+        'production rate(control)','Location','southeast')
     grid on
 
     saveas(in_out_fig,[figPath name_cell{i} '_input_output_act.png'])
