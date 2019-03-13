@@ -509,9 +509,9 @@ for i = 1:numel(name_cell)
 
     xlabel('offset (minutes)')
     ax = gca;
-    ax.YColor = red1;
+    ax.YColor = 'black';
     legend('protein (trend)','protein (control)','production rate (trend)',...
-        'production rate(control)','Location','southeast')
+        'production rate(control)','Location','southwest')
     grid on
 
     saveas(in_out_fig,[figPath name_cell{i} '_input_output_act.png'])
