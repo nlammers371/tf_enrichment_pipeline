@@ -18,8 +18,7 @@ nBoots = 100;
 min_time = 5; % minimum # minutes into trace to take
 make_trace_plots = 0;
 dTime = 2; % size of temporal deviation permitted btw trend and control
-feature_filter_size = 3;
-bkg_filter_size = 9;
+filter_size = 3;
 mid_bounds = [4 17];
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
@@ -171,15 +170,14 @@ for i = 1:numel(hmm_input_output)
     frame_vec = 1:numel(spot_vec);
     [p,~,mu] = polyfit(frame_vec(~isnan(spot_vec)),spot_vec(~isnan(spot_vec)),2);
     spot_trend = polyval(p,(1:numel(spot_vec)),[],mu);
-    hmm_input_output(i).spot_protein_dt = hmm_input_output(i).spot_protein - spot_trend;
-    hmm_input_output(i).spot_protein_smooth = imgaussfilt(hmm_input_output(i).spot_protein_all,feature_filter_size,'FilterDomain','spatial');
-    hmm_input_output(i).spot_protein_smooth(isnan(spot_vec)) = NaN;    
+    hmm_input_output(i).spot_protein_dt = hmm_input_output(i).spot_protein_all - spot_trend;
+    hmm_input_output(i).spot_protein_dt_smooth = imgaussfilt(hmm_input_output(i).spot_protein_dt,filter_size,'FilterDomain','spatial');
+    hmm_input_output(i).spot_protein_dt_smooth(isnan(spot_vec)) = NaN;
+    hmm_input_output(i).spot_protein_dt(isnan(spot_vec)) = NaN;    
     % add smoothed version of control 
-    hmm_input_output(i).null_protein_smooth = imgaussfilt(hmm_input_output(i).null_protein_all,feature_filter_size,'FilterDomain','spatial');
-    hmm_input_output(i).null_protein_bkg = imgaussfilt(hmm_input_output(i).null_protein_all,bkg_filter_size,'FilterDomain','spatial');
-    hmm_input_output(i).null_protein_smooth(isnan(spot_vec)) = NaN;
-    hmm_input_output(i).null_protein_bkg(isnan(spot_vec)) = NaN;
-    hmm_input_output(i).delta_protein_smooth = hmm_input_output(i).spot_protein_smooth - hmm_input_output(i).null_protein_bkg;
+    hmm_input_output(i).null_protein_sm = imgaussfilt(hmm_input_output(i).null_protein_all,filter_size);
+    hmm_input_output(i).null_protein_sm(isnan(spot_vec)) = NaN;
+    hmm_input_output(i).delta_protein_sm = spot_vec - hmm_input_output(i).null_protein_sm;
     % detrend fluo
     fluo = hmm_input_output(i).fluo;
     activity = hmm_input_output(i).r_vec;
@@ -197,7 +195,7 @@ prctile_vec = 0:10:100;
 spot_prctile_vec = NaN(size(prctile_vec));
 null_prctile_vec = NaN(size(prctile_vec));
 spot_protein = [hmm_input_output.spot_protein];
-null_protein_smooth = [hmm_input_output.null_protein_smooth];
+null_protein_smooth = [hmm_input_output.null_protein_sm];
 fluo_vec = [hmm_input_output.fluo];
 activity_vec = vertcat(hmm_input_output.r_vec)';
 
@@ -258,15 +256,15 @@ saveas(aspirational_fig, [figPath 'aspirational_fig.png'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine sna activity in vicinity of anamalous high and low pt points
 
-delta_protein_smooth = [hmm_input_output.delta_protein_smooth];
-null_protein_smooth = [hmm_input_output.null_protein_bkg];
+spot_protein_dt_smooth = [hmm_input_output.spot_protein_dt_smooth];
+null_protein_smooth = [hmm_input_output.null_protein_sm];
 
 % calculate necessary sample 
 bulk_prctile_index = 0:5:100;
 
 bulk_pt_prctile_vec = NaN(size(bulk_prctile_index));
 for i = 1:numel(bulk_prctile_index)
-    bulk_pt_prctile_vec(i) = prctile(delta_protein_smooth,bulk_prctile_index(i));
+    bulk_pt_prctile_vec(i) = prctile(spot_protein_dt_smooth,bulk_prctile_index(i));
 end
 
 maxSamples = 4000;
@@ -286,11 +284,14 @@ for i = 1:numel(hmm_input_output)
     time_vec = hmm_input_output(i).time/60;   
     frame_vec = 1:numel(time_vec);
     fluo_vec = hmm_input_output(i).fluo;
+%     s_time_fluo = time_vec(find(~isnan(fluo_vec),1));
+%     min_ind = find(time_vec-s_time_fluo>min_time);
     activity_vec = hmm_input_output(i).r_vec;
     % find protein peaks and troughs
-    dt_sm = hmm_input_output(i).delta_protein_smooth;      
-    pt_nn_sm = hmm_input_output(i).null_protein_bkg;   
-    [~,~,nullBins] = histcounts(dt_sm,bulk_pt_prctile_vec);
+    pt_sp_dt_sm = hmm_input_output(i).spot_protein_dt_smooth;   
+    pt_sp = hmm_input_output(i).spot_protein;   
+    pt_nn_sm = hmm_input_output(i).null_protein_sm;   
+    [~,~,nullBins] = histcounts(pt_sp_dt_sm,bulk_pt_prctile_vec);
     nan_filter = ~isnan(pt_nn_sm)&frame_vec>2&frame_vec<numel(frame_vec)-1;
     % find points of interest
     high_ids = find(nan_filter&nullBins>=numel(bulk_pt_prctile_vec)-2);
@@ -313,7 +314,7 @@ for i = 1:numel(hmm_input_output)
             % record
             fluo_temp(k,ft_vec1) = fluo_vec(ft_vec2);
             act_temp(k,ft_vec1) = activity_vec(ft_vec2);
-            loc_temp(k,ft_vec1) = dt_sm(ft_vec2);
+            loc_temp(k,ft_vec1) = pt_sp_dt_sm(ft_vec2);
             bkg_temp(k,ft_vec1) = pt_nn_sm(ft_vec2);
             ind_temp(k) = i;
             time_temp(k) = time_vec(ids(k));
@@ -441,15 +442,15 @@ for i = 1:numel(name_cell)
     plot(nanmean(sampling_struct(i).ctrl_null_protein),'Color',blue)
     plot(nanmean(sampling_struct(i).trend_null_protein(qc_trend_indices,:)),'Color',red)
     ylabel([protein_name ' concentration (au)'])
-%     yyaxis right
-%     plot(nanmean(sampling_struct(i).ctrl_fluo),'--','Color',blue)
-%     plot(nanmean(sampling_struct(i).trend_fluo(qc_trend_indices,:)),'--','Color',red)
-%     ylabel([gene_name ' MS2 activity (au)'])
+    yyaxis right
+    plot(nanmean(sampling_struct(i).ctrl_fluo),'--','Color',blue)
+    plot(nanmean(sampling_struct(i).trend_fluo(qc_trend_indices,:)),'--','Color',red)
+    ylabel([gene_name ' MS2 activity (au)'])
 
     xlabel('offset')
     ax = gca;
     ax.YColor = 'black';
-    legend('background protein (control)','background protein (trend)');%,'fluorescence (control)','fluorescence (trend)')
+    legend('background protein (control)','background protein (trend)','fluorescence (control)','fluorescence (trend)')
     grid on
 
     saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
