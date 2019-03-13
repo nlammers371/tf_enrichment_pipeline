@@ -20,7 +20,7 @@ make_trace_plots = 0;
 dTime = 2; % size of temporal deviation permitted btw trend and control
 feature_filter_size = 3;
 bkg_filter_size = 9;
-mid_bounds = [4 17];
+maxSamples = 4000;
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
 protein_name = project(1:underscores(1)-1);
@@ -269,7 +269,6 @@ for i = 1:numel(bulk_prctile_index)
     bulk_pt_prctile_vec(i) = prctile(delta_protein_smooth,bulk_prctile_index(i));
 end
 
-maxSamples = 4000;
 % initialize arrays
 fluo_cell = cell(1,3);
 local_protein_cell = cell(1,3);
@@ -287,15 +286,19 @@ for i = 1:numel(hmm_input_output)
     frame_vec = 1:numel(time_vec);
     fluo_vec = hmm_input_output(i).fluo;
     activity_vec = hmm_input_output(i).r_vec;
-    % find protein peaks and troughs
     dt_sm = hmm_input_output(i).delta_protein_smooth;      
-    pt_nn_sm = hmm_input_output(i).null_protein_bkg;   
-    [~,~,nullBins] = histcounts(dt_sm,bulk_pt_prctile_vec);
+    pt_nn_sm = hmm_input_output(i).null_protein_bkg; 
+    % find protein peaks and troughs
+    [~,high_ids,blip_widths] = findpeaks(dt_sm,frame_vec,'MinPeakWidth',60*.5/Tres,'MinPeakProminence',.3); % NL: eye-balled atm
+    [~,low_ids,dip_widths] = findpeaks(-dt_sm,frame_vec,'MinPeakWidth',60*.5/Tres,'MinPeakProminence',.3); % NL: eye-balled atm
+    
     nan_filter = ~isnan(pt_nn_sm)&frame_vec>2&frame_vec<numel(frame_vec)-1;
-    % find points of interest
-    high_ids = find(nan_filter&nullBins>=numel(bulk_pt_prctile_vec)-2);
-    low_ids = find(nan_filter&nullBins<=2);
-    mid_ids = find(nan_filter&nullBins>=mid_bounds(1)&nullBins<=mid_bounds(2));
+    nan_ids = find(nan_filter);
+    high_ids = high_ids(ismember(high_ids,nan_ids));
+    low_ids = low_ids(ismember(low_ids,nan_ids));
+    
+    mid_ids = find(nan_filter&~ismember(frame_vec,[high_ids high_ids-1 high_ids+1])&...
+        ~ismember(frame_vec,[low_ids low_ids-1 low_ids+1]));
 
     % sample proiten and activity traces
     for j = 1:numel(name_cell)
@@ -424,27 +427,54 @@ for i = 1:numel(trend_id_vec)
     sampling_struct(i).ctrl_activity = act_matched_control;
 end
 toc    
-%%
-time_axis = Tres*ref_vec / 60;
-cm = jet(128);
-red = cm(120,:);
-blue = cm(25,:);
+%% Calculate bootstrap estimates of Mean and SE
+calc_fields = {'null_protein','spot_protein','fluo','activity'};
+id_types = {'trend','ctrl'};
+    
+trend_activity_se_array = NaN(2*window_size+1,numel(name_cell));
 
-for i = 1:numel(name_cell)
-    % figure to check consistency of method
+for i = 1:numel(sampling_struct)
     qc_ctrl_id_vec = sampling_struct(i).ctrl_id_vec;
     qc_trend_id_vec = sampling_struct(i).trend_id_vec;
     qc_trend_indices = qc_trend_id_vec(~isnan(qc_ctrl_id_vec));
+    for j = 1:numel(calc_fields)
+        f_str = calc_fields{j};
+        for k = 1:numel(id_types)
+            id_str = id_types{k};
+            data_str = [id_str '_' f_str];
+            data_mat = sampling_struct(i).(data_str);
+            if strcmpi(id_str,'trend')
+                data_mat = data_mat(qc_trend_indices,:);
+            end
+            boot_mat = NaN(nBoots,2*window_size+1);
+            index_vec = 1:size(data_mat,1);
+            for n = 1:nBoots
+                s_ids = randsample(index_vec,numel(index_vec),true);
+                boot_mat(n,:) = nanmean(data_mat(s_ids,:));
+            end
+            sampling_struct(i).([data_str '_mean']) = nanmean(boot_mat);
+            sampling_struct(i).([data_str '_se']) = nanstd(boot_mat);
+        end
+    end
+end
+%%                       
+time_axis = Tres*ref_vec / 60;
+cm = jet(128);
+red1 = cm(115,:);
+red2 = cm(128,:);
+blue1 = cm(35,:);
+blue2 = cm(20,:);
 
+for i = 1:numel(name_cell)
+   
     qc_fig = figure;
     hold on
-    plot(nanmean(sampling_struct(i).ctrl_null_protein),'Color',blue)
-    plot(nanmean(sampling_struct(i).trend_null_protein(qc_trend_indices,:)),'Color',red)
+    errorbar(time_axis,sampling_struct(i).trend_null_protein_mean,...
+        sampling_struct(i).trend_null_protein_se,'Color',blue1,'LineWidth',1.2,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_null_protein_mean,'--','Color',blue2)
+%     errorbar(time_axis,sampling_struct(i).ctrl_null_protein_mean,...
+%         sampling_struct(i).ctrl_null_protein_se,'--','Color',blue2,'CapSize',0)
     ylabel([protein_name ' concentration (au)'])
-%     yyaxis right
-%     plot(nanmean(sampling_struct(i).ctrl_fluo),'--','Color',blue)
-%     plot(nanmean(sampling_struct(i).trend_fluo(qc_trend_indices,:)),'--','Color',red)
-%     ylabel([gene_name ' MS2 activity (au)'])
 
     xlabel('offset')
     ax = gca;
@@ -453,4 +483,36 @@ for i = 1:numel(name_cell)
     grid on
 
     saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
+end
+
+close all
+% Now make figures examining input-output relationships
+for i = 1:numel(name_cell)
+    % figure to check consistency of method
+
+    in_out_fig = figure;
+    hold on
+    yyaxis left
+    errorbar(time_axis,sampling_struct(i).trend_spot_protein_mean,...
+        sampling_struct(i).trend_spot_protein_se,'Color',blue2,'LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[.2 .2 .2])
+    ylabel([protein_name ' concentration (au)'])
+    ax = gca;
+    ax.YColor = blue1;
+    
+    
+    yyaxis right
+    errorbar(time_axis,sampling_struct(i).trend_activity_mean,...
+        sampling_struct(i).trend_activity_se,'Color',red1,'LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'--','Color',[.2 .2 .2])
+    ylabel([protein_name ' concentration (au)'])
+    ylabel([gene_name ' activity (au)'])
+
+    xlabel('offset')
+    ax = gca;
+    ax.YColor = red1;
+    legend('protein (trend)','protein (control)','production rate (trend)','production rate(control)')
+    grid on
+
+    saveas(in_out_fig,[figPath name_cell{i} '_input_output_act.png'])
 end

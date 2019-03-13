@@ -6,17 +6,20 @@ close all
 K = 3;
 w = 7;
 project = 'Dl_Venus_snaBAC_mCherry_Leica_hp';
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+% dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
 figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\hmm_input_output_K' num2str(K) '_w' num2str(w) '\'];
 mkdir(figPath)
 
 nTraces = 50; % number of individual traces to select for plotting
-window_size = 10; % number of lags over which to track protein/fluo dynamics
+window_size = 10; % number of lags and leads over which to track protein/fluo dynamics
 nBoots = 100;
-n_ref_hist_bins = 10;
-min_time = 10;
+min_time = 5; % minimum # minutes into trace to take
 make_trace_plots = 0;
+dTime = 2; % size of temporal deviation permitted btw trend and control
+filter_size = 3;
+mid_bounds = [4 17];
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
 protein_name = project(1:underscores(1)-1);
@@ -135,8 +138,7 @@ if K==3
 end
 for i = 1:numel(hmm_input_output)
     % generate discrete state and continuous production vectors
-    z_mat = hmm_input_output(i).z_mat;
-    r = hmm_input_output(i).r;    
+    z_mat = hmm_input_output(i).z_mat;    
     if K == 3
         z_mat(:,2) = sum(z_mat(:,2:3),2);
         z_mat = z_mat(:,1:2);
@@ -147,6 +149,7 @@ for i = 1:numel(hmm_input_output)
     [~,z_vec] = max(z_mat,[],2);
     hmm_input_output(i).z_vec = z_vec;       
 end
+
 % obtain time-averaged fluo trend
 t_vec = round([hmm_input_output.time]/60);
 f_vec = [hmm_input_output.fluo];
@@ -159,7 +162,7 @@ for t = 1:numel(time_index)
     fluo_trend(t) = nanmean(f_vec(t_vec==time_index(t)));
     r_trend(t) = nanmean(r_vec(t_vec==time_index(t)));
 end
-filter_size = 5;
+
 % detrend input and output time series
 for i = 1:numel(hmm_input_output)
     % detrend spot protein
@@ -167,15 +170,13 @@ for i = 1:numel(hmm_input_output)
     frame_vec = 1:numel(spot_vec);
     [p,~,mu] = polyfit(frame_vec(~isnan(spot_vec)),spot_vec(~isnan(spot_vec)),2);
     spot_trend = polyval(p,(1:numel(spot_vec)),[],mu);
-    hmm_input_output(i).spot_protein_dt = spot_vec - spot_trend;
-    hmm_input_output(i).spot_protein_dt_smooth = imgaussfilt(hmm_input_output(i).spot_protein_dt,filter_size);
-    % detrend control 
-    null_vec = hmm_input_output(i).null_protein;
-    [p,~,mu] = polyfit(frame_vec(~isnan(null_vec)),null_vec(~isnan(null_vec)),2);
-    null_trend = polyval(p,(1:numel(null_vec)),[],mu);
-    hmm_input_output(i).null_protein_dt = null_vec - null_trend;
+    hmm_input_output(i).spot_protein_dt = hmm_input_output(i).spot_protein_all - spot_trend;
+    hmm_input_output(i).spot_protein_dt_smooth = imgaussfilt(hmm_input_output(i).spot_protein_dt,filter_size,'FilterDomain','spatial');
+    hmm_input_output(i).spot_protein_dt_smooth(isnan(spot_vec)) = NaN;
+    hmm_input_output(i).spot_protein_dt(isnan(spot_vec)) = NaN;    
     % add smoothed version of control 
     hmm_input_output(i).null_protein_sm = imgaussfilt(hmm_input_output(i).null_protein_all,filter_size);
+    hmm_input_output(i).null_protein_sm(isnan(spot_vec)) = NaN;
     hmm_input_output(i).delta_protein_sm = spot_vec - hmm_input_output(i).null_protein_sm;
     % detrend fluo
     fluo = hmm_input_output(i).fluo;
@@ -188,7 +189,6 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).fluo_dt = fluo;
     hmm_input_output(i).r_vec_dt = activity;
 end
-
 
 %%% Simple(ish) things first...
 prctile_vec = 0:10:100;
@@ -205,7 +205,7 @@ for i = 1:numel(prctile_vec)
 end
 [bin_counts, ~,~,binSpot,binNull] = histcounts2(spot_protein,null_protein_smooth,spot_prctile_vec,null_prctile_vec);
 norm_counts = bin_counts ./ repmat(sum(bin_counts),numel(prctile_vec)-1,1);
-
+% calculate weights needed to mimic generall population
 resample_weights =  repmat(sum(norm_counts,2),1,numel(prctile_vec)-1) ./ norm_counts;
 
 % now draw fluo, delta, and mf samples for each delta bin
@@ -253,45 +253,50 @@ legend([gene_name ' activity'], [protein_name ' (local)'], [protein_name ' (back
 xlabel(['local ' protein_name ' concentration (au)'])
 saveas(aspirational_fig, [figPath 'aspirational_fig.png'])
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine sna activity in vicinity of anamalous high and low pt points
 
 spot_protein_dt_smooth = [hmm_input_output.spot_protein_dt_smooth];
 null_protein_smooth = [hmm_input_output.null_protein_sm];
 
-% calculate necessary sample weights
+% calculate necessary sample 
 bulk_prctile_index = 0:5:100;
+
 bulk_pt_prctile_vec = NaN(size(bulk_prctile_index));
 for i = 1:numel(bulk_prctile_index)
     bulk_pt_prctile_vec(i) = prctile(spot_protein_dt_smooth,bulk_prctile_index(i));
 end
 
-nSamples = nansum(binSpot==1);
-
+maxSamples = 4000;
 % initialize arrays
 fluo_cell = cell(1,3);
 local_protein_cell = cell(1,3);
 null_protein_cell = cell(1,3);
 activity_cell = cell(1,3);
 ind_ref_cell = cell(1,3);
+time_cell = cell(1,3);
 
 % pull time series samples from vicinity of protein events
 name_cell = {'low','mid','high'};
 ref_vec = -window_size:window_size;%1:(2*window_size+1);
 for i = 1:numel(hmm_input_output)
-    time_vec = hmm_input_output(i).time/60;
+    % core features
+    time_vec = hmm_input_output(i).time/60;   
     frame_vec = 1:numel(time_vec);
     fluo_vec = hmm_input_output(i).fluo;
+%     s_time_fluo = time_vec(find(~isnan(fluo_vec),1));
+%     min_ind = find(time_vec-s_time_fluo>min_time);
     activity_vec = hmm_input_output(i).r_vec;
     % find protein peaks and troughs
     pt_sp_dt_sm = hmm_input_output(i).spot_protein_dt_smooth;   
     pt_sp = hmm_input_output(i).spot_protein;   
     pt_nn_sm = hmm_input_output(i).null_protein_sm;   
     [~,~,nullBins] = histcounts(pt_sp_dt_sm,bulk_pt_prctile_vec);
-    nan_filter = ~isnan(pt_nn_sm)&~isnan(pt_sp_dt_sm)&frame_vec>3&frame_vec<numel(frame_vec)-1;
-    % find points ot interest
-    high_ids = find(nan_filter&nullBins==numel(bulk_pt_prctile_vec)-1);
-    low_ids = find(nan_filter&nullBins==1);
-    mid_ids = find(nan_filter&nullBins>5&nullBins<16);
+    nan_filter = ~isnan(pt_nn_sm)&frame_vec>2&frame_vec<numel(frame_vec)-1;
+    % find points of interest
+    high_ids = find(nan_filter&nullBins>=numel(bulk_pt_prctile_vec)-2);
+    low_ids = find(nan_filter&nullBins<=2);
+    mid_ids = find(nan_filter&nullBins>=mid_bounds(1)&nullBins<=mid_bounds(2));
 
     % sample proiten and activity traces
     for j = 1:numel(name_cell)
@@ -301,16 +306,18 @@ for i = 1:numel(hmm_input_output)
         loc_temp = NaN(numel(ids),2*window_size+1);
         bkg_temp = NaN(numel(ids),2*window_size+1);
         ind_temp = NaN(1,numel(ids));
+        time_temp = NaN(1,numel(ids));
         for k = 1:numel(ids)
             raw_ind = ref_vec+ids(k);
             ft_vec1 = raw_ind > 0 & raw_ind <= numel(fluo_vec);
-            ft_vec2 = ref_vec(ft_vec1) + ids(k);
+            ft_vec2 = raw_ind(ft_vec1);
             % record
             fluo_temp(k,ft_vec1) = fluo_vec(ft_vec2);
             act_temp(k,ft_vec1) = activity_vec(ft_vec2);
             loc_temp(k,ft_vec1) = pt_sp_dt_sm(ft_vec2);
             bkg_temp(k,ft_vec1) = pt_nn_sm(ft_vec2);
             ind_temp(k) = i;
+            time_temp(k) = time_vec(ids(k));
             if isnan(bkg_temp(k,window_size+1))
                 error('wtf')
             end
@@ -320,47 +327,84 @@ for i = 1:numel(hmm_input_output)
         activity_cell{j} = vertcat(activity_cell{j}, act_temp);
         local_protein_cell{j} = vertcat(local_protein_cell{j}, loc_temp);
         null_protein_cell{j} = vertcat(null_protein_cell{j}, bkg_temp);
-        ind_ref_cell{j} = vertcat(null_protein_cell{j}, bkg_temp);
+        ind_ref_cell{j} =[ind_ref_cell{j} ind_temp];
+        time_cell{j} =[time_cell{j} time_temp];
     end
 end
-
+tic
 % now construct control sets from mid traces that mimic temporal mf profile
 % of high and low traces
 trend_id_vec = [1 2 3];
 control_id_vec = [2 2 2];
 sampling_struct = struct;
-for i = 2%1:numel(trend_id_vec)
-    % get background pt levels
+for i = 1:numel(trend_id_vec)
+    % get dore matching vars
     nn_mat_trend = null_protein_cell{trend_id_vec(i)};
+    time_vec_trend = time_cell{trend_id_vec(i)};
+    ind_vec_trend = ind_ref_cell{trend_id_vec(i)};
+    
     nn_mat_control = null_protein_cell{control_id_vec(i)};
+    time_vec_control = time_cell{control_id_vec(i)};    
+    ind_vec_control = ind_ref_cell{control_id_vec(i)};
     % other control arrays
-    sp_mat_control = local_protein_cell{control_id_vec(i)};    
+    loc_mat_control = local_protein_cell{control_id_vec(i)};    
     fluo_mat_control = fluo_cell{control_id_vec(i)};        
     act_mat_control = activity_cell{control_id_vec(i)};
     % initialize targeted control arrays
-    nn_spec_control = NaN(size(nn_mat_trend));
-    sp_spec_control = NaN(size(nn_mat_trend));
-    fluo_spec_control = NaN(size(nn_mat_trend));
-    act_spec_control = NaN(size(nn_mat_trend));
+    nRows = min([maxSamples size(nn_mat_trend,1)]);
+    nn_matched_control = NaN(nRows,size(nn_mat_trend,2));
+    sp_matched_control = NaN(nRows,size(nn_mat_trend,2));
+    fluo_matched_control = NaN(nRows,size(nn_mat_trend,2));
+    act_matched_control = NaN(nRows,size(nn_mat_trend,2));
     % ok. now iterate through trend set and find closest match to each
     % trace in control
-    ctrl_ids = NaN(1,size(nn_mat_trend,1));
-    for j = 1:4000%size(nn_mat_trend,1)
-        bkg_vec = nn_mat_trend(j,:);
-        bkg_mat = repmat(bkg_vec,size(nn_mat_control,1),1);
-        nan_ft = ~isnan(bkg_vec);
-        overlap_vec = sum(~isnan(bkg_mat)==~isnan(nn_mat_control),2);
-        diff_vec = nanmean(abs(nn_mat_control-bkg_vec),2);
-        if trend_id_vec(i) == control_id_vec(i)
-            diff_vec(j) = Inf;
-        end     
-        diff_vec(overlap_vec~=sum(nan_ft)) = Inf;
-        [~, mi] = min(diff_vec);
+    ctrl_ids = NaN(1,nRows);
+    trend_ids = NaN(1,nRows);
+    index_vec = 1:size(nn_mat_trend,1);
+    shuffled_indices = randsample(index_vec,numel(index_vec),false);
+    parfor j = 1:nRows
+        rowInd = shuffled_indices(j);
+        trend_ids(j) = rowInd;
+        trend_bkg_vec = nn_mat_trend(rowInd,:);
+        trend_ind = ind_vec_trend(rowInd);
+        trend_time = time_vec_trend(rowInd);
+        % apply selection criteria
+        trend_bkg_mat = repmat(trend_bkg_vec,size(nn_mat_control,1),1);
+        nn_bkg_control_temp = nn_mat_control;
+        nn_bkg_control_temp(isnan(trend_bkg_mat)) = NaN;
+        nan_ft = ~isnan(trend_bkg_vec);
+        overlap_vec = sum(~isnan(trend_bkg_mat)==~isnan(nn_bkg_control_temp),2);
+        t_diff_vec = abs(time_vec_control - trend_time);        
+        pt_diff_vec = nanmean(abs(nn_bkg_control_temp-trend_bkg_vec),2);
+        
+        % must have same pattern of missing and prese
+        pt_diff_vec(overlap_vec~=sum(nan_ft)) = Inf;
+        % cannot be from same trace
+        pt_diff_vec(ind_vec_control==trend_ind) = Inf;
+        % must fall during comparable period of time
+        pt_diff_vec(t_diff_vec>dTime) = Inf;
+        if sum(~isinf(pt_diff_vec))==0
+            warning('no matches found under constraints')
+            continue
+        end
+        % find closest match
+        [~, mi] = min(pt_diff_vec);
         ctrl_ids(j) = mi;
-        nn_spec_control(j,nan_ft) = nn_mat_control(mi,nan_ft);
-        sp_spec_control(j,nan_ft) = sp_mat_control(mi,nan_ft);
-        fluo_spec_control(j,nan_ft) = fluo_mat_control(mi,nan_ft);
-        act_spec_control(j,nan_ft) = act_mat_control(mi,nan_ft);
+        nn_blank = nn_mat_control(mi,:);
+        nn_blank(~nan_ft) = NaN;
+        nn_matched_control(j,:) = nn_blank;
+        
+        sp_blank = loc_mat_control(mi,:);
+        sp_blank(~nan_ft) = NaN;
+        sp_matched_control(j,:) = sp_blank;
+        
+        fluo_blank = fluo_mat_control(mi,:);
+        fluo_blank(~nan_ft) = NaN;
+        fluo_matched_control(j,:) = fluo_blank;
+        
+        act_blank = act_mat_control(mi,:);
+        act_blank(~nan_ft) = NaN;
+        act_matched_control(j,:) = act_blank;
     end
     % save relevant arrayes in data structure
     sampling_struct(i).trend_id = trend_id_vec(i);
@@ -373,11 +417,41 @@ for i = 2%1:numel(trend_id_vec)
     sampling_struct(i).trend_spot_protein = local_protein_cell{trend_id_vec(i)};
     sampling_struct(i).trend_fluo = fluo_cell{trend_id_vec(i)};
     sampling_struct(i).trend_activity = activity_cell{trend_id_vec(i)};
+    sampling_struct(i).trend_id_vec = trend_ids;    
     % controls
-    sampling_struct(i).ctrl_null_protein = nn_spec_control;
-    sampling_struct(i).ctrl_spot_protein = sp_spec_control;
-    sampling_struct(i).ctrl_fluo = fluo_spec_control;
-    sampling_struct(i).ctrl_activity = act_spec_control;
+    sampling_struct(i).ctrl_null_protein = nn_matched_control;
+    sampling_struct(i).ctrl_spot_protein = sp_matched_control;
+    sampling_struct(i).ctrl_fluo = fluo_matched_control;
+    sampling_struct(i).ctrl_activity = act_matched_control;
 end
-    
+toc    
 %%
+time_axis = Tres*ref_vec / 60;
+cm = jet(128);
+red = cm(120,:);
+blue = cm(25,:);
+
+for i = 1:numel(name_cell)
+    % figure to check consistency of method
+    qc_ctrl_id_vec = sampling_struct(i).ctrl_id_vec;
+    qc_trend_id_vec = sampling_struct(i).trend_id_vec;
+    qc_trend_indices = qc_trend_id_vec(~isnan(qc_ctrl_id_vec));
+
+    qc_fig = figure;
+    hold on
+    plot(nanmean(sampling_struct(i).ctrl_null_protein),'Color',blue)
+    plot(nanmean(sampling_struct(i).trend_null_protein(qc_trend_indices,:)),'Color',red)
+    ylabel([protein_name ' concentration (au)'])
+    yyaxis right
+    plot(nanmean(sampling_struct(i).ctrl_fluo),'--','Color',blue)
+    plot(nanmean(sampling_struct(i).trend_fluo(qc_trend_indices,:)),'--','Color',red)
+    ylabel([gene_name ' MS2 activity (au)'])
+
+    xlabel('offset')
+    ax = gca;
+    ax.YColor = 'black';
+    legend('background protein (control)','background protein (trend)','fluorescence (control)','fluorescence (trend)')
+    grid on
+
+    saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
+end

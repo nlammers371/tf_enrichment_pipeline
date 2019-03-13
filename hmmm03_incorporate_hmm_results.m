@@ -111,6 +111,7 @@ for num = 1:numel(project_cell)
     null_protein_vec = [nucleus_struct_protein.([ControlType '_null_protein_vec'])];
     mf_protein_vec = [nucleus_struct_protein.mf_null_protein_vec];
     mf_count_vec = [nucleus_struct_protein.mf_null_px_counts];
+    orig_protein_vec = [nucleus_struct_protein.protein];
     % rescale mf reference vec
 
     %%% now extract corresponding hmm traces
@@ -137,6 +138,7 @@ for num = 1:numel(project_cell)
         sp_pt = spot_protein_vec(particle_vec==ParticleID);
         nn_pt = null_protein_vec(particle_vec==ParticleID);
         mf_pt = mf_protein_vec(particle_vec==ParticleID);
+        or_pt = orig_protein_vec(particle_vec==ParticleID);
         mf_ct = mf_count_vec(particle_vec==ParticleID);
         tt_pt = time_vec(particle_vec==ParticleID);
         if ~isempty(sub_indices) && sum(~isnan(mf_pt)) > 1 && sum(~isnan(nn_pt)) > 1        
@@ -172,6 +174,7 @@ for num = 1:numel(project_cell)
         temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);
         temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
         temp.mf_protein = interp1(tt_pt(~isnan(mf_pt)),mf_pt(~isnan(mf_pt)),temp.time);
+        temp.orig_protein = interp1(tt_pt(~isnan(or_pt)),or_pt(~isnan(or_pt)),temp.time);
         % reset values to NaN that are too far removed from true ref point
         input_times = tt_pt(~isnan(sp_pt)&~isnan(nn_pt));
         dt_vec = NaN(size(temp.time));
