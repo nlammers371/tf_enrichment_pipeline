@@ -6,8 +6,8 @@ close all
 K = 3;
 w = 7;
 project = 'Dl_Venus_snaBAC_mCherry_Leica_hp';
-% dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+% dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
 figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\hmm_input_output_K' num2str(K) '_w' num2str(w) '\'];
 mkdir(figPath)
@@ -36,7 +36,35 @@ gene_fluor = project(underscores(3)+1:end);
 
 % load data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
+hmm_input_output = master_struct(1).hmm_input_output;
+example_index = 432;
+fluo = hmm_input_output(example_index).fluo;
+spot_vec = hmm_input_output(example_index).spot_protein;
+time = hmm_input_output(example_index).time;
+% make figure
+ex1_fig = figure;
+hold on
+plot(time/60,fluo)
+xlim([5 50])
+xlabel('time (minutes)')
+ylabel([gene_name ' activity (au)'])
+saveas(ex1_fig,[figPath 'burst_example_nc_' sprintf('%03d',example_index) '.png'])
 
+ex2_fig = figure;
+hold on
+
+yyaxis left
+plot(time/60,fluo)
+ylabel([gene_name ' activity (au)'])
+
+yyaxis right
+plot(time/60,spot_vec)
+ylabel([protein_name ' concentration (au)'])
+
+xlim([5 50])
+xlabel('time (minutes)')
+
+saveas(ex2_fig,[figPath 'burst_pt_example_nc_' sprintf('%03d',example_index) '.png'])
 % first make figures to ensure that hmmm results have been properly
 % concatenated with protein data
 if make_trace_plots
@@ -243,6 +271,7 @@ spot_ste= nanstd(spot_boot_array);
 
 aspirational_fig = figure('Visible','off');
 hold on
+yyaxis left
 errorbar(spot_mean,activity_mean,activity_ste);
 ylabel([gene_name ' activity']);
 yyaxis right
@@ -363,10 +392,12 @@ for i = 1:numel(trend_id_vec)
     ctrl_ids = NaN(1,nRows);
     trend_ids = NaN(1,nRows);
     index_vec = 1:size(nn_mat_trend,1);
+    rng(325);
     shuffled_indices = randsample(index_vec,numel(index_vec),false);
-    parfor j = 1:nRows
+    for j = 1:nRows
         rowInd = shuffled_indices(j);
         trend_ids(j) = rowInd;
+        % extract vectors used for matching
         trend_bkg_vec = nn_mat_trend(rowInd,:);
         trend_ind = ind_vec_trend(rowInd);
         trend_time = time_vec_trend(rowInd);
@@ -374,10 +405,12 @@ for i = 1:numel(trend_id_vec)
         trend_bkg_mat = repmat(trend_bkg_vec,size(nn_mat_control,1),1);
         nn_bkg_control_temp = nn_mat_control;
         nn_bkg_control_temp(isnan(trend_bkg_mat)) = NaN;
-        nan_ft = ~isnan(trend_bkg_vec);
         overlap_vec = sum(~isnan(trend_bkg_mat)==~isnan(nn_bkg_control_temp),2);
+        
+        nan_ft = ~isnan(trend_bkg_vec);
+                
         t_diff_vec = abs(time_vec_control - trend_time);        
-        pt_diff_vec = nanmean(abs(nn_bkg_control_temp-trend_bkg_vec),2);
+        pt_diff_vec = nanmean(abs(nn_bkg_control_temp-trend_bkg_mat),2);
         
         % must have same pattern of missing and prese
         pt_diff_vec(overlap_vec~=sum(nan_ft)) = Inf;
@@ -392,6 +425,7 @@ for i = 1:numel(trend_id_vec)
         % find closest match
         [~, mi] = min(pt_diff_vec);
         ctrl_ids(j) = mi;
+        
         nn_blank = nn_mat_control(mi,:);
         nn_blank(~nan_ft) = NaN;
         nn_matched_control(j,:) = nn_blank;
@@ -457,7 +491,7 @@ for i = 1:numel(sampling_struct)
         end
     end
 end
-%%                       
+                       
 time_axis = Tres*ref_vec / 60;
 cm = jet(128);
 red1 = cm(115,:);
@@ -470,7 +504,7 @@ for i = 1:numel(name_cell)
     qc_fig = figure;
     hold on
     errorbar(time_axis,sampling_struct(i).trend_null_protein_mean,...
-        sampling_struct(i).trend_null_protein_se,'Color',blue1,'LineWidth',1.2,'CapSize',0)
+        sampling_struct(i).trend_null_protein_se,'Color',blue2,'LineWidth',1,'CapSize',0)
     plot(time_axis,sampling_struct(i).ctrl_null_protein_mean,'--','Color',blue2)
 %     errorbar(time_axis,sampling_struct(i).ctrl_null_protein_mean,...
 %         sampling_struct(i).ctrl_null_protein_se,'--','Color',blue2,'CapSize',0)
@@ -479,23 +513,22 @@ for i = 1:numel(name_cell)
     xlabel('offset')
     ax = gca;
     ax.YColor = 'black';
-    legend('background protein (control)','background protein (trend)');%,'fluorescence (control)','fluorescence (trend)')
+    legend('background protein (trend)','background protein (control)');%,'fluorescence (control)','fluorescence (trend)')
     grid on
 
     saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
 end
-%%
-close all
+
+% close all
 % Now make figures examining input-output relationships
 for i = 1:numel(name_cell)
     % figure to check consistency of method
 
-    in_out_fig = figure;
+    in_out_fig_full = figure;
     hold on
     yyaxis left
-    errorbar(time_axis,sampling_struct(i).trend_spot_protein_mean,...
-        sampling_struct(i).trend_spot_protein_se,'Color',blue2,'LineWidth',1,'CapSize',0)
-    plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[blue1 .3])
+    plot(time_axis,sampling_struct(i).trend_spot_protein_mean,'Color',blue2,'LineWidth',1)
+    plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[blue2 .3])
     ylabel([protein_name ' concentration (au)'])
     ax = gca;
     ax.YColor = blue2;
@@ -503,16 +536,41 @@ for i = 1:numel(name_cell)
     
     yyaxis right
     errorbar(time_axis,sampling_struct(i).trend_activity_mean,...
-        sampling_struct(i).trend_activity_se,'-','Color',red1,'LineWidth',1,'CapSize',0)
-    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[red1 .3])
+        sampling_struct(i).trend_activity_se,'-','Color','black','LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[.2 .2 .2 .3])
     ylabel([protein_name ' concentration (au)'])
     ylabel([gene_name ' activity (au)'])
 
     xlabel('offset (minutes)')
     ax = gca;
-    ax.YColor = red1;
+    ax.YColor = 'black';
     legend('protein (trend)','protein (control)','production rate (trend)','production rate(control)')
     grid on
 
-    saveas(in_out_fig,[figPath name_cell{i} '_input_output_act.png'])
+    saveas(in_out_fig_full,[figPath name_cell{i} '_input_output_act_full.png'])
+    
+    in_out_fig_part = figure;
+    hold on
+    yyaxis left
+    plot(time_axis,sampling_struct(i).trend_spot_protein_mean,'Color',blue2,'LineWidth',1)
+%     plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[blue2 .3])
+    ylabel([protein_name ' concentration (au)'])
+    ax = gca;
+    ax.YColor = blue2;
+    
+    
+    yyaxis right
+    errorbar(time_axis,sampling_struct(i).trend_activity_mean,...
+        sampling_struct(i).trend_activity_se,'-','Color','black','LineWidth',1,'CapSize',0)
+%     plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[.2 .2 .2 .3])
+    ylabel([protein_name ' concentration (au)'])
+    ylabel([gene_name ' activity (au)'])
+
+    xlabel('offset (minutes)')
+    ax = gca;
+    ax.YColor = 'black';
+    legend('local protein','transcriptional response')
+    grid on
+
+    saveas(in_out_fig_part,[figPath name_cell{i} '_input_output_act_part.png'])
 end

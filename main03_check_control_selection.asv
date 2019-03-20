@@ -170,7 +170,7 @@ while ~exit_flag
             p = imshow(edge_dist_rgb);        
             p.AlphaData = .4; 
             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-%             colorbar
+            colorbar
             saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
             saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
             
@@ -180,20 +180,9 @@ while ~exit_flag
             p = imshow(edge_dist_rgb);        
             p.AlphaData = .4; 
             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-            s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-%             colorbar
-            saveas(full_fig,[figPath 'image4_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
-            saveas(full_fig,[figPath 'image4_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
-
-            cb_fig = figure;      
-            p = imshow(edge_dist_rgb);      
-            hold on
-            p.AlphaData = .4; 
             colorbar
-%             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-%             s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-            saveas(cb_fig,[figPath 'image0_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
-            saveas(cb_fig,[figPath 'image0_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+            saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+            saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
                         
         end       
     end 
