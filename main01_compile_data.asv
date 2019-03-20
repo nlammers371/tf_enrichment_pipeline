@@ -121,11 +121,7 @@ for i = 1:length(cp_filenames)
     
     % extract data structures
     processed_data = load([folderPath cp_filenames{i}]); % processed particles    
-    % Extract compiled particles structure         
-    cp_particles = processed_data.CompiledParticles;    
-    if iscell(cp_particles)
-        cp_particles = cp_particles{1};
-    end   
+    cp_particles = processed_data.CompiledParticles;
     cp_z_flag = 0;
     if isfield(cp_particles,'zPos')
         cp_z_flag = 1;
@@ -180,7 +176,8 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).ParticleID = NaN;
             s_cells(e_pass).xPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
-            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));            
+            s_cells(e_pass).brightestZs = NaN(1,sum(nc_filter));
+            s_cells(e_pass).spot_z_cell = cell(1,sum(nc_filter));
             s_cells(e_pass).fluo = NaN(1,sum(nc_filter));
             
             % add core nucleus info
@@ -226,7 +223,11 @@ for i = 1:length(cp_filenames)
     % Index vector to cross-ref w/ particles            
     e_index = [s_cells.Nucleus]; 
     
-     
+    % Extract compiled particles structure       
+    cp_particles = processed_data.CompiledParticles; 
+    if iscell(cp_particles)
+        cp_particles = cp_particles{1};
+    end    
     
     % iterate through traces
     for j = 1:size(traces_clean,2)  
@@ -251,22 +252,20 @@ for i = 1:length(cp_filenames)
         if numel(cp_frames) < minDP
             qc_flag = 0;
         end
-        if ~cp_z_flag
-            % Initialize arrays to store Z info
-            bZ = NaN(1, length(frames_full));        
-            % Get spot Z location info
-            part_id = cp_particles(j).OriginalParticle;        
-            particle_frames_raw = Particles(part_id).Frame;
-            for id = 1:length(cp_frames)            
-                abs_idx = cp_frames(id) == frames_full;
-                rel_id = raw_pt_frames==cp_frames(id);
-                if Particles(part_id).Index(particle_frames_raw==cp_frames(id)) > length(Spots(cp_frames(id)) ...
-                        .Fits)
-                    error('Mismatch between Particles and Spots dimensions')                                
-                else
-                    bZ(abs_idx) = Spots(cp_frames(id)) ...
-                            .Fits(Particles(part_id).Index(rel_id)).brightestZ;                
-                end
+        % Initialize arrays to store Z info
+        bZ = NaN(1, length(frames_full));        
+        % Get spot Z location info
+        part_id = cp_particles(j).OriginalParticle;        
+        particle_frames_raw = Particles(part_id).Frame;
+        for id = 1:length(cp_frames)            
+            abs_idx = find(cp_frames(id) == frames_full);
+            rel_id = raw_pt_frames==cp_frames(id);
+            if Particles(part_id).Index(particle_frames_raw==cp_frames(id)) > length(Spots(cp_frames(id)) ...
+                    .Fits)
+                error('Mismatch between Particles and Spots dimensions')                                
+            else
+                bZ(abs_idx) = Spots(cp_frames(id)) ...
+                        .Fits(Particles(part_id).Index(rel_id)).brightestZ;                
             end
         end
         % find corresponding nucleus index        
@@ -290,13 +289,9 @@ for i = 1:length(cp_filenames)
             cp_particles(j).xPos(ismember(cp_frames,nc_frames));
         s_cells(nc_ind).yPosParticle(ismember(nc_frames,cp_frames)) = ...
             cp_particles(j).yPos(ismember(cp_frames,nc_frames));
-        % add z info       
-        if ~cp_z_flag
-            s_cells(nc_ind).zPosParticle(spot_filter) = bZ;   
-        else
-            s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
-            cp_particles(j).zPos(ismember(cp_frames,nc_frames));
-        end
+        % add z info                       
+        s_cells(nc_ind).brightestZs(spot_filter) = bZ;   
+        s_cells(nc_ind).spot_z_cell(spot_filter) = z_cell;
         % Identifier variables                        
         particle = cp_particles(j).OriginalParticle;                        
         s_cells(nc_ind).ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);   
