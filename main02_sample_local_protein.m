@@ -457,8 +457,8 @@ for i = 20:30%1:size(set_frame_array,1)
         if sum(nc_master_vec(j)==nc_master_vec) == 2
             indices = find(nc_master_vec(j)==nc_master_vec);
             si = indices(indices~=j);
-            x_spot_sister = nc_x_vec(si);
-            y_spot_sister = nc_y_vec(si);
+            x_spot_sister = spot_x_vec(si);
+            y_spot_sister = spot_y_vec(si);
         end
             
         % save qc data                 
