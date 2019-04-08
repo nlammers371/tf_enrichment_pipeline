@@ -478,9 +478,8 @@ for i = 20:30%1:size(set_frame_array,1)
         qc_mat(j).xc_rand = rand_null_x_vec(j);
         qc_mat(j).yc_rand = rand_null_y_vec(j);
         qc_mat(j).ParticleID = particle_id_vec(j);
-        qc_mat(j).serial_qc_flag = serial_qc_flag_vec(j);
-        qc_mat(j).rand_qc_flag = rand_qc_flag_vec(j);
-        qc_mat(j).edge_qc_flag = edge_qc_flag_vec(j);        
+        qc_mat(j).serial_qc_flag = serial_qc_flag_ve
+        'serial_qc_flag_vec','edge_qc_flag_vec', 'rand_qc_flag_vec'
         sz = nb_sz;
         edge_dist_mat = nc_dist_frame;
         edge_dist_mat(~spot_nc_mask&~null_mask) = 0;

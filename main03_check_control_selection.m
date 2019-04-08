@@ -46,7 +46,7 @@ for i = 1:numel(varargin)
     end
 end
 
-SnipPath = [dataPath 'qc_images/'];
+snipPath = [dataPath 'qc_images1/'];
 mkdir(figPath);
 
 % load data
@@ -72,10 +72,11 @@ for i = 1:numel(nucleus_struct_protein)
     set_index = [set_index repelem(nucleus_struct_protein(i).setID, numel(nucleus_struct_protein(i).frames))];
     particle_index = [particle_index repelem(nucleus_struct_protein(i).ParticleID, numel(nucleus_struct_protein(i).frames))];
 end    
-
+particle_index = particle_index(ismember(particle_index,sample_particles));
+set_index = floor(particle_index);
 % iterate through snip files
 exit_flag = 0;
-cm = jet(64);
+cm = jet(128);
 
 % index = find(all_frames==outstanding_frames(1));
 index = 100;
@@ -85,7 +86,7 @@ while ~exit_flag
     ParticleID = particle_index(all_frames(index));
     setID = set_index(all_frames(index));    
     % load snip data
-    load([SnipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat']);
+    load([snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat']);
     
     %%%%%%%%%%%%%%%%%%%%%%% load image stack %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      
@@ -106,26 +107,28 @@ while ~exit_flag
         yDim = ceil(size(edge_dist_snip,1)/2);
         xDim = ceil(size(edge_dist_snip,2)/2);
         
-        qc_fig = figure('Position',[0 0 1024 512]);                 
-        subplot(1,2,1)
+        qc_fig = figure('Position',[0 0 512 512]);                 
+%         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
         p = imshow(edge_dist_rgb);        
         p.AlphaData = .4;        
         s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
         s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-        legend([s1 s2], 'spot', 'control')          
+        s3 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(90,:),'MarkerEdgeAlpha',0);
+        s4 = scatter(qc_spot.xc_serial-x_center+xDim,qc_spot.yc_serial-y_center+yDim,30,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0);
+        legend([s1 s2 s3 s4], 'spot', 'edge control', 'random', 'serialized')          
         title('Edge Distance Sample')
         
-        subplot(1,2,2)
-        imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
-        hold on
-        p = imshow(rand_dist_rgb);        
-        p.AlphaData = .4;        
-        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-        s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-        legend([s1 s2], 'spot', 'control')  
-        title('Random Distance Sample')
+%         subplot(1,2,2)
+%         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
+%         hold on
+%         p = imshow(rand_dist_rgb);        
+%         p.AlphaData = .4;        
+%         s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+%         s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+%         legend([s1 s2], 'spot', 'control')  
+%         title('Random Distance Sample')
         
         set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
         if qc_review_vec(all_frames(index)) == 1
@@ -197,11 +200,11 @@ while ~exit_flag
                         
         end       
     end 
-    close all
+%     close all
     if exit_flag
         disp('Exiting')
         break
     end
 end
 % nucleus_struct_protein.qc_review_vec = qc_review_vec;
-save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3')
+save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein')

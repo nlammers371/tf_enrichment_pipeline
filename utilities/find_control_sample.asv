@@ -6,7 +6,6 @@ function [null_x, null_y, null_nc, qc_flag, null_e] = find_control_sample(...
     null_x = NaN;
     null_y = NaN;
     null_nc = NaN;
-    null_e = NaN;
     qc_flag = 0;   
     
     % get position vectors for nucleus mask
@@ -23,7 +22,7 @@ function [null_x, null_y, null_nc, qc_flag, null_e] = find_control_sample(...
         null_x = x_pos_vec_spot(sample_index);
         null_y = y_pos_vec_spot(sample_index);
         null_nc = index;
-        null_e = round(spot_edge_dist);
+        null_e =
         qc_flag = 1;               
     elseif force_sample
         new_filter = spot_sep_vec >= min_sample_sep;

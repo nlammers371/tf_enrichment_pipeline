@@ -41,7 +41,7 @@ function nucleus_struct = main01_compile_data(project,folderPath,keyword,varargi
 includeVec = [];
 firstNC = 14;
 minDP = 10;
-expType = 'input_output';
+% expType = 'input_output';
 dataPath = ['../dat/' project '/']; % data mat directory
 for i = 1:numel(varargin)
     if ischar(varargin{i})
@@ -110,14 +110,7 @@ for i = 1:length(cp_filenames)
         load([folderPath pa_filenames{i}]); % Raw Particles
     catch
         continue
-    end
-    ap_flag = 1;
-    try
-        load([folderPath ap_filenames{i}]) % AP Info   
-    catch
-        warning('No AP Data detected. Proceeding without AP info')
-        ap_flag = 0;
-    end   
+    end     
     
     % extract data structures
     processed_data = load([folderPath cp_filenames{i}]); % processed particles    
@@ -132,11 +125,11 @@ for i = 1:length(cp_filenames)
     else        
         load([folderPath sp_filenames{i}]) % Spots info
     end
-    input_output = 0;
-    if strcmpi(expType, 'input_output')
-        input_output = 1;
-        protein_data = load([folderPath cn_filenames{i}]); % processed nulcei 
-    end
+%     input_output = 0;
+%     if strcmpi(expType, 'input_output')
+%         input_output = 1;
+%         protein_data = load([folderPath cn_filenames{i}]); % processed nulcei 
+%     end
     
     % set identifier
     setID = includeVec(i);            
@@ -159,13 +152,13 @@ for i = 1:length(cp_filenames)
     time_clean = time_clean - min(time_clean); % Normalize to start of nc14    
     frames_clean = frames_raw(first_frame:end);    
     
-    if input_output
-        % extract protein data
-        cp_protein = protein_data.CompiledNuclei;   
-        if iscell(cp_protein)
-            cp_protein= cp_protein{1};
-        end
-    end
+%     if input_output
+%         % extract protein data
+%         cp_protein = protein_data.CompiledNuclei;   
+%         if iscell(cp_protein)
+%             cp_protein= cp_protein{1};
+%         end
+%     end
     
     % compile schnitz info
     s_cells = struct;
@@ -190,10 +183,6 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yPos = y(nc_filter); 
             s_cells(e_pass).frames = nc_frames';            
             s_cells(e_pass).Nucleus = e;     
-            if ap_flag
-                s_cells(e_pass).ap_vector = schnitzcells(e).APpos(nc_filter);
-                s_cells(e_pass).apMean = mean(schnitzcells(e).APpos(nc_filter));
-            end
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
             s_cells(e_pass).xMean = mean(x(nc_filter));
             s_cells(e_pass).yMean = mean(y(nc_filter));
@@ -210,13 +199,15 @@ for i = 1:length(cp_filenames)
             fn = fn(1:strfind(fn,'/')-1);
             s_cells(e_pass).source_path = fn;                        
             s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;       
-            s_cells(e_pass).ap_flag = ap_flag;
-            % add protein info      
-            if input_output
-                prot_nuc = cp_protein([cp_protein.schnitz] == e);                     
-                pt_vec = prot_nuc.FluoMax(nc_filter);
-                s_cells(e_pass).protein = pt_vec';
-            end
+            s_cells(e_pass).ap_flag = 0;
+            % sister fields
+            s_cells(e_pass).sister_Index = NaN;
+            s_cells(e_pass).sister_ParticleID = NaN; 
+%             if input_output
+%                 prot_nuc = cp_protein([cp_protein.schnitz] == e);                     
+%                 pt_vec = prot_nuc.FluoMax(nc_filter);
+%                 s_cells(e_pass).protein = pt_vec';
+%             end
             e_pass = e_pass + 1;
         end
     end
@@ -224,10 +215,8 @@ for i = 1:length(cp_filenames)
     % now add particle info
     
     % Index vector to cross-ref w/ particles            
-    e_index = [s_cells.Nucleus]; 
-    
-     
-    
+    e_index = [s_cells.Nucleus];          
+    schnitz_vec = [cp_particles.schnitz];
     % iterate through traces
     for j = 1:size(traces_clean,2)  
         % Raw fluo trace
@@ -269,18 +258,41 @@ for i = 1:length(cp_filenames)
                 end
             end
         end
-        % find corresponding nucleus index        
-        nc_ind = find(e_index==schnitz);        
+        % find corresponding nucleus index     
+        % trace-nucleus mapping may be many-to-1
+        nc_ind = find(e_index==schnitz);  
         if length(nc_ind) ~= 1
             warning('Problem with Particle-Nucleus Crossref')
             continue
-        end                                         
+        end 
+        % Identifier variable                        
+        particle = cp_particles(j).OriginalParticle;                        
+        ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]); 
+        % check to see if a different particle has already been assigned
+        % if so, create a new entry
+        if ~isnan(s_cells(nc_ind).ParticleID)
+            s_cells = [s_cells s_cells(nc_ind)];
+            % update cross-reference variables
+            s_cells(nc_ind).sister_ParticleID = ParticleID;
+            s_cells(end).sister_ParticleID = s_cells(nc_ind).sister_ParticleID;
+            s_cells(nc_ind).sister_Index = numel(s_cells);
+            s_cells(end).sister_Index = nc_ind;
+            % redefine index variables
+            nc_ind = numel(s_cells);
+            % reset particle fields
+            n_entries = numel(s_cells(nc_ind).xPosParticle);
+            s_cells(nc_ind).ParticleID = NaN;
+            s_cells(nc_ind).xPosParticle = NaN(1,n_entries);
+            s_cells(nc_ind).yPosParticle = NaN(1,n_entries);
+            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);            
+            s_cells(nc_ind).fluo = NaN(1,n_entries);
+        end
+        s_cells(nc_ind).ParticleID = ParticleID;
         % find overlap between nucleus and trace
         nc_frames = s_cells(nc_ind).frames;         
         spot_filter = ismember(nc_frames,frames_full);            
         s_cells(nc_ind).spot_frames = spot_filter;
-        if sum(spot_filter) < numel(frames_full)
-            
+        if sum(spot_filter) < numel(frames_full)            
             error('Inconsistent particle and nucleus frames')
         end
         % record fluorescence info             
@@ -296,10 +308,7 @@ for i = 1:length(cp_filenames)
         else
             s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
             cp_particles(j).zPos(ismember(cp_frames,nc_frames));
-        end
-        % Identifier variables                        
-        particle = cp_particles(j).OriginalParticle;                        
-        s_cells(nc_ind).ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);   
+        end          
         s_cells(nc_ind).qc_flag = qc_flag; 
     end      
     nucleus_struct = [nucleus_struct  s_cells];        
