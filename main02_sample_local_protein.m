@@ -248,6 +248,7 @@ for i = 20:30%1:size(set_frame_array,1)
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot)   
             edge_qc_flag_vec(j) = 0;
             rand_qc_flag_vec(j) = 0;
+            serial_qc_flag_vec(j) = 0;
             continue
         end 
         % take locus samples
