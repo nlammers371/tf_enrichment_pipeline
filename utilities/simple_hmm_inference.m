@@ -1,16 +1,16 @@
 % stripped-down inference script
 
-function output = simple_hmm_inference(fluo_data,w,K,varargin)
+function output = simple_hmm_inference(fluo_data,w,K,Tres,varargin)
 % set defaults
 MaxWorkers = 12;
 alpha_frac = 1302 / 6444;
 n_steps_max = 500;
 eps = 1e-4;
+n_localEM = 20;
+
 for i = 1:numel(varargin)
     if ischar(varargin{i})
-        if ismember(varargin{i},{'n_boots','ap_index'})
-            eval([varargin{i} ' = varargin{i+1};'])
-        end
+        eval([varargin{i} ' = varargin{i+1};'])
     end
 end
 
@@ -43,7 +43,6 @@ parfor i_local = 1:n_localEM % Parallel Local EM
         alpha, n_steps_max, eps);                    
     %---------------------------------------------------------%                
     % Save Results 
-    local_struct(i_local).inference_id = inference_id;
     local_struct(i_local).subset_id = i_local;
     local_struct(i_local).logL = local_out.logL;                
     local_struct(i_local).A = exp(local_out.A_log);
@@ -51,9 +50,7 @@ parfor i_local = 1:n_localEM % Parallel Local EM
     local_struct(i_local).r = exp(local_out.v_logs).*local_out.v_signs / Tres;                                
     local_struct(i_local).noise = 1/exp(local_out.lambda_log);
     local_struct(i_local).pi0 = exp(local_out.pi0_log);
-%                         local_struct(i_local).total_time = local_out.runtime;
-    local_struct(i_local).total_steps = local_out.n_iter;               
-    local_struct(i_local).soft_struct = local_out.soft_struct;               
+    local_struct(i_local).soft_struct = local_out.soft_struct; 
 end
 [~, max_index] = max([local_struct.logL]); % Get index of best result                    
 % Save parameters from most likely local run

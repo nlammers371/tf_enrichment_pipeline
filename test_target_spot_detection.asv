@@ -1,5 +1,5 @@
 % Script to validate methods for discriminating between target and
-% off-target loci 
+% off-target loci using protein concentration
 clear
 close all
 % set id variables and load data
@@ -94,13 +94,13 @@ for i = 1:numel(id_vec1)
         delta_array(id_vec1(i),id_vec2(i)) = nanmean(abs(mf_delta_vec));
     end     
 end
-%%
+
 % use existing code to solve linear assignment problem
 M = matchpairs(delta_array, 1);
 % SICK. Now, finally, calculate error rate for pairs using simple binary
 % decision procedure (higher=target)
 dev_vec = NaN(1,size(M,1));
-err_mat = NaN(size(M,1),nanmax(overlap_mat(:)));
+success_mat = NaN(size(M,1),round(nanmax(overlap_mat(:))/20));
 for i = 1:size(M,1)
     t1 = master_struct(1).nucleus_struct_protein(id_cell{1}(M(i,1))).time_interp;
     t2 = master_struct(2).nucleus_struct_protein(id_cell{2}(M(i,2))).time_interp;
@@ -112,6 +112,39 @@ for i = 1:size(M,1)
     % extract spot protein vectors
     sp1 = master_struct(1).nucleus_struct_protein(id_cell{1}(M(i,1))).spot_protein_vec_interp(t1_filter);
     sp2 = master_struct(2).nucleus_struct_protein(id_cell{2}(M(i,2))).spot_protein_vec_interp(t2_filter);
-    pt_ft = ~isnan(mf1) & ~isnan(mf2) & ~isnan(sp1) & ~isnan(sp2);    
     % take intersection
+    pt_ft = ~isnan(mf1) & ~isnan(mf2) & ~isnan(sp1) & ~isnan(sp2);    
+    target_delta = sp1(pt_ft) - mf1(pt_ft);
+    control_delta = sp2(pt_ft) - mf2(pt_ft);
+    n_vec = 1:numel(control_delta);
+    diff_vec = (cumsum(target_delta) - cumsum(control_delta)) ./ n_vec;
+    success_vec = diff_vec > 0;
+    success_mat(i,1:numel(success_vec)) = success_vec;
 end
+%%
+%%% Complementary approach: use mHMM likelihood
+w = 7;
+K = 2;
+Tres = 20;
+addpath('./utilities')
+samp_size = 4000;
+for i = 1:numel(master_struct)
+    ids = id_cell{i};
+    fluo_data_full = cell(size(ids'));
+    iter = 1;
+    for j = ids
+        fvec = master_struct(i).nucleus_struct_protein(j).fluo_interp;
+        fvec = fvec(~isnan(fvec));
+        fluo_data_full{iter} = fvec;
+        iter = iter + 1;
+    end
+    sample_ids = randsample(1:numel(fluo_data_full),numel(fluo_data_full),false);
+    ndp = 0;
+    iter = 1;
+    while ndp < samp_size
+        f = fluo_data_full{
+        ndp = ndp + numel(fluo_data
+    output = simple_hmm_inference(fluo_data_full,w,K,Tres);
+    master_struct(i).hmm_params = output;
+end
+    

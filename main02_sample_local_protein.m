@@ -127,7 +127,7 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
-for i = 20:30%1:size(set_frame_array,1)    
+for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);       

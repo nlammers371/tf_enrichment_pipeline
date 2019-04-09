@@ -272,7 +272,7 @@ for i = 1:length(cp_filenames)
         % check to see if a different particle has already been assigned
         % if so, create a new entry
         if ~isnan(s_cells(nc_ind).ParticleID)
-            two_spot_flag = true;
+            sister_flag = true;
             s_cells = [s_cells s_cells(nc_ind)];
             % update cross-reference variables
             s_cells(nc_ind).sister_ParticleID = ParticleID;
@@ -314,12 +314,6 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).qc_flag = qc_flag; 
     end      
     nucleus_struct = [nucleus_struct  s_cells];        
-end
-% add fields related to 2 spot analyses
-for i = 1:numel(nucleus_struct)
-    nucleus_struct(i).two_spot_flag = two_spot_flag;
-    nucleus_struct(i).target_locus_flag = NaN;
-    nucleus_struct(i).control_locus_flag = NaN;
 end
 % save
 save(nucleus_name ,'nucleus_struct') 
