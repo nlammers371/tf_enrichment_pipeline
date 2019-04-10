@@ -32,9 +32,9 @@ function [logL_tot, logL_cell] = likelihood_reduced_memory_adapted (fluo_values,
     
     % logs of the fluorescence values &
     % the lengths of the fluorescence trace
-    fluo_logs = cell([n_traces, 1]);
-    fluo_signs = cell([n_traces, 1]);
-    fluo_lengths = cell([n_traces, 1]);
+    fluo_logs = cell([n_traces,1]);
+    fluo_signs = cell([n_traces,1]);
+    fluo_lengths = cell([n_traces,1]);
     for i_tr = 1:n_traces
         fluo_logs{i_tr} = log(abs(fluo_values{i_tr}));
         fluo_signs{i_tr} = sign(fluo_values{i_tr});

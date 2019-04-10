@@ -10,7 +10,21 @@ for i = 1:numel(project_cell)
     master_struct(i).project = project_cell{i};
     load([dropboxFolder project_cell{i} '/nucleus_struct_protein.mat'])
     master_struct(i).nucleus_struct_protein = nucleus_struct_protein;
+    
+    % get other project info
+    project = project_cell{i};
+    underscores = strfind(project,'_');
+    master_struct(i).protein_name = project(1:underscores(1)-1);
+    master_struct(i).protein_fluor = project(underscores(1)+1:underscores(2)-1);
+    master_struct(i).gene_name = project(underscores(2)+1:underscores(3)-1);
+    if numel(underscores) == 3
+        ind = numel(project);
+    else
+        ind = underscores(4)-1;
+    end
+    master_struct(i).gene_fluor = project(underscores(3)+1:ind);
 end
+
 
 % assign pseudo sister pairings from across two sets
 mindp = 20; % only nuclei with 20 time-step temporal overlap will be permitted
@@ -122,39 +136,3 @@ for i = 1:size(M,1)
     success_mat(i,1:numel(success_vec)) = success_vec;
 end
 %%
-%%% Complementary approach: use mHMM likelihood
-w = 7;
-K = 2;
-Tres = 20;
-addpath('./utilities')
-samp_size = 4000;
-for i = 1:numel(master_struct)
-    ids = id_cell{i};
-    fluo_data_full = cell(size(ids'));
-    iter = 1;
-    for j = ids
-        fvec = master_struct(i).nucleus_struct_protein(j).fluo_interp;
-        fvec = fvec(~isnan(fvec));
-        fluo_data_full{iter} = fvec;
-        iter = iter + 1;
-    end
-    sample_ids = randsample(1:numel(fluo_data_full),numel(fluo_data_full),false);
-    ndp = 0;
-    indices = [];
-    iter = 1;
-    while ndp < samp_size
-        f = fluo_data_full{iter};
-        
-        if numel(f) > 10
-            ndp = ndp + numel(f);
-            indices = [indices iter];
-        end
-        iter = iter + 1;
-    end
-    fluo_data = fluo_data_full(indices);
-    tic
-    output = simple_hmm_inference(fluo_data,w,K,Tres);
-    toc
-    master_struct(i).hmm_params = output;
-end
-    

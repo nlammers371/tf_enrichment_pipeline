@@ -6,7 +6,7 @@ close all
 
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-project = 'Bcd_GFP_hbP2P_MCPmCherry_Leica_6uW15uW';
+project = 'Dl_Venus_snaBAC_mCherry_Leica_hp';
 varargin = {'dropboxFolder',dropboxFolder};
 
 proteinChannel = 1;
@@ -84,7 +84,7 @@ for i = 1:numel(nucleus_struct)
     
     xPosParticle = xPosParticle(pt_ft);
     yPosParticle = nucleus_struct(i).yPosParticle(pt_ft);
-    zPosParticle = nucleus_struct(i).zPosParticle(pt_ft);
+    zPosParticle = nucleus_struct(i).brightestZs(pt_ft);
     xPosNC = nucleus_struct(i).xPos(pt_ft);
     yPosNC = nucleus_struct(i).yPos(pt_ft);       
     
@@ -93,22 +93,23 @@ for i = 1:numel(nucleus_struct)
     end
     nc_iter = nc_iter+1;    
     % interpolate
-    xPosParticleFull = interp1(timeVec,xPosParticle,timeVecFull);      
-    yPosParticleFull = interp1(timeVec,yPosParticle,timeVecFull);
-    zPosParticleFull = round(interp1(timeVec,zPosParticle,timeVecFull));
+    xPosParticleFull = imgaussfilt(interp1(timeVec,xPosParticle,timeVecFull),1);      
+    yPosParticleFull = imgaussfilt(interp1(timeVec,yPosParticle,timeVecFull),1);
+    zPosParticleFull = round(imgaussfilt(interp1(timeVec,zPosParticle,timeVecFull),1));
 %     fluoVecFull = round(imgaussfilt(interp1(timeVec,fluoVec,timeVecFull),1));
-    xPosNCFull = round(interp1(timeVec,xPosNC,timeVecFull),1);
-    yPosNCFull = round(interp1(timeVec,yPosNC,timeVecFull),1);
+    xPosNCFull = round(imgaussfilt(interp1(timeVec,xPosNC,timeVecFull),1));
+    yPosNCFull = round(imgaussfilt(interp1(timeVec,yPosNC,timeVecFull),1));
     % make filepath 
-    ncPath = [snipPath '/nc_' num2str(1e4*ncID) '/'];
+    ncPath = [snipPath '/nc_' num2str(ncID) '/'];
     mkdir(ncPath)
     % record fields 
     protein_dynamics_struct(nc_iter).xPosParticleFull = xPosParticleFull;      
-    protein_dynamics_struct(nc_iter).yPosParticleFull = yPosParticleFull;      
-    protein_dynamics_struct(nc_iter).zPosParticleFull = zPosParticleFull;      
-    protein_dynamics_struct(nc_iter).xPosNCFull = xPosNCFull;
-    protein_dynamics_struct(nc_iter).yPosNCFull = yPosNCFull;
-    protein_dynamics_struct(nc_iter).timeVecFull = timeVecFull;
+    yPosParticleFull = imgaussfilt(interp1(timeVec,yPosParticle,timeVecFull),1);
+    zPosParticleFull = round(imgaussfilt(interp1(timeVec,zPosParticle,timeVecFull),1));
+%     fluoVecFull = round(imgaussfilt(interp1(timeVec,fluoVec,timeVecFull),1));
+    xPosNCFull = round(imgaussfilt(interp1(timeVec,xPosNC,timeVecFull),1));
+    yPosNCFull = round(imgaussfilt(interp1(timeVec,yPosNC,timeVecFull),1));
+    
     
     fNorm = fluoVec / nanmax(fluoVec) * 50;
     fNorm(fNorm<0) = NaN;
@@ -124,7 +125,7 @@ for i = 1:numel(nucleus_struct)
         protein_snip = protein_frame(y_nucleus-nb_sz:y_nucleus+nb_sz,x_nucleus-nb_sz:x_nucleus+nb_sz);
         nc_snip_stack(:,:,j) = protein_snip;
     end
-    protein_dynamics_struct(nc_iter).nc_snip_stack = nc_snip_stack;   
+    protein_dynamics(   
     % find percentile rank of local concentration over time
     prctile_vec = NaN(1,numel(frameVecFull));
     nc_snip_stack_sm = NaN(size(nc_snip_stack));
@@ -139,18 +140,13 @@ for i = 1:numel(nucleus_struct)
         xp = round(xPosParticleFull(j)-xPosNCFull(j)) + nb_sz + 1;
         masked = nc_snip_stack_sm(:,:,j);
         masked(~mask) = NaN;
-        try
-            spot_val = masked(yp,xp);
-        catch
-            continue
-        end
+        spot_val = masked(yp,xp);
+        
         prctile_vec(j) = sum(masked(:)<spot_val) / sum(~isnan(masked(:)));
     end
-    protein_dynamics_struct(nc_iter).nc_snip_stack_sm = nc_snip_stack_sm;
-    protein_dynamics_struct(nc_iter).prctile_vec = prctile_vec;
-
     max_vec = imgaussfilt(reshape(max(max(nc_snip_stack_sm,[],2)),[],1),5);
-    min_vec = imgaussfilt(reshape(min(min(nc_snip_stack_sm,[],2)),[],1),5);            
+    min_vec = imgaussfilt(reshape(min(min(nc_snip_stack_sm,[],2)),[],1),5);        
+    
     % plot intensity fluctuations over time
     for j = 1:size(nc_snip_stack_sm,3)
         pt_field_fig = figure('Visible','off');
@@ -163,6 +159,6 @@ for i = 1:numel(nucleus_struct)
         ylabel(h,'Dl concentration (au)')
         saveas(pt_field_fig,[ncPath 'frame_' sprintf('%03d',frameVecFull(j)) '.tif'])
         close all
-    end                             
+    end    
+                         
 end
-save([dataPath 'protein_dynamics_struct.mat'],'protein_dynamics_struct')

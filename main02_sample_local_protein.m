@@ -44,6 +44,8 @@ end
 load([dataPath '/nucleus_struct.mat'],'nucleus_struct')
 load([dataPath '/set_key.mat'],'set_key')
 snipPath = [dataPath '/qc_images/'];
+refPath = [dataPath '/refFrames/'];
+mkdir(refPath)
 mkdir(snipPath)
 addpath('./utilities')
 % get MCP channel
@@ -170,7 +172,7 @@ for i = 1:size(set_frame_array,1)
     src = set_key(set_key.setID==setID,:).prefix{1};   
     [mcp_stack, protein_stack] = load_stacks(rawPath, src, frame, mcp_channel);
     % generate protein gradient frame for segmentation
-    protein_smooth = imgaussfilt(median(protein_stack,3),round(sm_kernel/2));
+    protein_smooth = imgaussfilt(mean(protein_stack,3),round(sm_kernel/2));
     protein_grad = imgradient(protein_smooth);   
     % flatten background 
     protein_bkg = imgaussfilt(protein_smooth, round(nb_sz/2));
@@ -211,7 +213,15 @@ for i = 1:size(set_frame_array,1)
     spot_dist_frame = zeros(size(nc_dist_frame));
     spot_dist_frame(nc_indices(~isnan(nc_indices))) = 1;
     spot_dist_frame = bwdist(spot_dist_frame);
-    spot_roi_frame = bwlabel(spot_dist_frame <= roi_spot & nc_ref_frame>0); % label regions within designated integration radius of a spot    
+    spot_roi_frame = bwlabel(spot_dist_frame <= roi_spot); % label regions within designated integration radius of a spot    
+    
+    % save spot and nucleus reference frames
+    nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
+    save(nc_ref_name,'nc_ref_frame');
+    
+    spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
+    save(spot_ref_name,'spot_roi_frame');
+        
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
         eval([new_vec_fields{j} ' = NaN(size(spot_x_vec));']);
@@ -228,33 +238,31 @@ for i = 1:size(set_frame_array,1)
         x_spot = round(spot_x_vec(j));
         y_spot = round(spot_y_vec(j)); 
         % check for sister spot        
-        zp = round(spot_z_vec(j))-1; 
-        % extract mask 
-        spot_nc_mask = nc_ref_frame == nc_master_vec(j);
-        if isnan(x_spot) 
+        z_spot = round(spot_z_vec(j))-1; 
+        if isnan(x_spot)
             continue
         end
+        % extract mask 
+        spot_nc_mask = nc_ref_frame == nc_master_vec(j);        
                 
         %%%%%%%%%%%%%%%%%%%%%% Sample protein levels %%%%%%%%%%%%%%%%%%%%%%
         % get frames
-        protein_frame = protein_stack(:,:,zp);
-        mcp_frame = mcp_stack(:,:,zp);
+        protein_frame = protein_stack(:,:,z_spot);
+        mcp_frame = mcp_stack(:,:,z_spot);
         int_id = spot_roi_frame(y_spot,x_spot);
-        if int_id==0          
-            continue
-        end        
-  
+        % regardless of qc issues filtered fpor later on, take pt samples
+        % in vicinity of spot       
+        spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame));
+        spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));            
+        
         % make sure size is reasonable and that spot is inside nucleus
-        if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot)   
+        if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = 0;
             rand_qc_flag_vec(j) = 0;
             serial_qc_flag_vec(j) = 0;
             continue
         end 
-        % take locus samples
-        spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame));
-        spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));
-        
+                
         x_range = max(1,x_spot-pt_snippet_size):min(xDim,x_spot+pt_snippet_size);
         y_range = max(1,y_spot-pt_snippet_size):min(yDim,y_spot+pt_snippet_size);
         x_range_full = x_spot-pt_snippet_size:x_spot+pt_snippet_size;
@@ -271,8 +279,7 @@ for i = 1:size(set_frame_array,1)
         mcp_snip(~bound_snip) = NaN;
         % save
         spot_protein_snips(:,:,j) = pt_snip;
-        spot_mcp_snips(:,:,j) = mcp_snip;   
-              
+        spot_mcp_snips(:,:,j) = mcp_snip;                 
        
         % Take average across all pixels in nucleus mask
 %         mf_filter = spot_sep_vec >= minSampleSep & abs(nc_edge_dist_vec-spot_edge_dist) <= mfTolerance;                    
@@ -348,7 +355,7 @@ for i = 1:size(set_frame_array,1)
             mcp_snip(~(bound_snip>0)) = NaN;
 %             
             edge_null_protein_snips(:,:,j) =  pt_snip;
-            edge_null_mcp_snips(:,:,j) =  mcp_snip;
+            edge_null_mcp_snips(:,:,j) =  mcp_snip;                 
         end  
         
         % Now take a random sample                           
@@ -550,3 +557,4 @@ toc
 disp('saving nucleus structure...')
 nucleus_struct_protein = nucleus_struct;
 save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 
+save([dataPath 'qc_particles.mat'],'qc_particles')
