@@ -3,7 +3,7 @@
 clear 
 close all
 % ID variable
-project = 'Dl_Venus_snaBAC_mCherry';
+project = 'Dl_Venus_snaBAC_mCherry_LeicaZoom2x_3sets';
 ControlType = 'edge';
 dropboxFolder = 'E:\Nick\Dropbox (Garcia Lab)\ProcessedEnrichmentData\';
 dataPath = [dropboxFolder project '\'];
@@ -42,6 +42,10 @@ fluo_avg = NaN(numel(time_index),numel(set_index));
 protein_avg = NaN(numel(time_index),numel(set_index));
 time_sigma = 1;
 
+fluo_avg_norm = NaN(numel(time_index),numel(set_index));
+protein_avg_norm = NaN(numel(time_index),numel(set_index));
+protein_peak_index = NaN(1,numel(set_index));
+
 for i = 1:numel(set_index)    
     time = [nucleus_struct_protein(set_vec==set_index(i)).time]/60;
     fluo = [nucleus_struct_protein(set_vec==set_index(i)).fluo];
@@ -52,9 +56,41 @@ for i = 1:numel(set_index)
         fluo_avg(j,i) = nansum(t_weights.*fluo) / nansum(t_weights);
         protein_avg(j,i) = nansum(t_weights.*protein) / nansum(t_weights);
     end
+    [peak_protein, protein_peak_index(1,i)] = max(protein_avg(:,i));
+    protein_avg_norm(:,i) = protein_avg(:,i)./peak_protein;
+    peak_fluo = max(fluo_avg(:,i));
+    fluo_avg_norm(:,i) = fluo_avg(:,i)./peak_fluo;
 end
 
-% make figure
+%Shift protein_avg and fluo_avg to align at protein peak
+protein_peak_diff = abs(protein_peak_index - max(protein_peak_index));
+
+if sum(protein_peak_diff) > 0
+    protein_avg_norm_aligned = padarray(protein_avg_norm, max(protein_peak_diff),...
+                                NaN,'post');
+    protein_avg_aligned = padarray(protein_avg, max(protein_peak_diff),NaN,...
+                                'post');
+    fluo_avg_norm_aligned = padarray(fluo_avg_norm, max(protein_peak_diff),...
+                                NaN,'post');
+    fluo_avg_aligned = padarray(fluo_avg, max(protein_peak_diff),NaN,...
+                                'post');
+    time_index_aligned = 0:(length(protein_avg_aligned)-1);
+
+    for i = 1:numel(set_index) 
+        protein_avg_aligned(:,i) = circshift(protein_avg_aligned(:,i),protein_peak_diff(i));
+        protein_avg_norm_aligned(:,i) = circshift(protein_avg_norm_aligned(:,i),...
+                                        protein_peak_diff(i));
+        fluo_avg_aligned(:,i) = circshift(fluo_avg_aligned(:,i),protein_peak_diff(i));
+        fluo_avg_norm_aligned(:,i) = circshift(fluo_avg_norm_aligned(:,i),...
+                                        protein_peak_diff(i));                            
+    end
+end
+save([writePath project '_time_averaged.mat'], 'protein_peak_index',...
+        'time_index','time_index_aligned','fluo_avg',...
+        'protein_avg','protein_avg_norm_aligned','protein_avg_aligned',...
+        'fluo_avg_aligned','fluo_avg_norm_aligned')
+
+% Make un-normalized, un-aligned figure
 time_trends = figure;
 subplot(2,1,1)
 hold on
@@ -81,8 +117,71 @@ title(['Time-averaged trends: ' protein_fluor ' channel'])
 grid on
 xlabel('minutes')
 ylabel('au')
+hold off
 
 saveas(time_trends,[writePath 'time_trend_fig.png'])
+
+% Make aligned figure
+aligned_time_trends = figure;
+subplot(2,1,1)
+hold on
+lgd_str ={};
+for i = 1:numel(set_index)
+    plot(time_index_aligned,fluo_avg_aligned(:,i))    
+    lgd_str = [lgd_str{:} {['set ' num2str(set_index(i))]}];
+end
+legend(lgd_str{:})
+title(['Aligned time-averaged trends: ' gene_fluor ' channel'])
+grid on
+xlabel('minutes')
+ylabel('au')
+
+subplot(2,1,2)
+hold on
+lgd_str ={};
+for i = 1:numel(set_index)
+    plot(time_index_aligned,protein_avg_aligned(:,i))    
+    lgd_str = [lgd_str{:} {['set ' num2str(set_index(i))]}];
+end
+legend(lgd_str{:})
+title(['Aligned time-averaged trends: ' protein_fluor ' channel'])
+grid on
+xlabel('minutes')
+ylabel('au')
+hold off
+
+saveas(aligned_time_trends,[writePath 'time_trend_aligned_fig.png'])
+
+%Make normalized, aligned figure
+norm_aligned_time_trends = figure;
+subplot(2,1,1)
+hold on
+lgd_str ={};
+for i = 1:numel(set_index)
+    plot(time_index_aligned,fluo_avg_norm_aligned(:,i))    
+    lgd_str = [lgd_str{:} {['set ' num2str(set_index(i))]}];
+end
+legend(lgd_str{:})
+title(['Normalized, aligned, time-averaged trends: ' gene_fluor ' channel'])
+grid on
+xlabel('minutes')
+ylabel('au')
+
+subplot(2,1,2)
+hold on
+lgd_str ={};
+for i = 1:numel(set_index)
+    plot(time_index_aligned,protein_avg_norm_aligned(:,i))    
+    lgd_str = [lgd_str{:} {['set ' num2str(set_index(i))]}];
+end
+legend(lgd_str{:})
+title(['Normalized, aligned, time-averaged trends: ' protein_fluor ' channel'])
+grid on
+xlabel('minutes')
+ylabel('au')
+hold off 
+
+saveas(norm_aligned_time_trends,[writePath 'time_trend_norm_aligned_fig.png'])
 
 %%% Make some useful data vectors
 % Generate distance vector for filtering snip stacks
