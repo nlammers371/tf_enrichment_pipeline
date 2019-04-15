@@ -50,7 +50,9 @@ snipPath = [dataPath 'qc_images1/'];
 mkdir(figPath);
 
 % load data
+load([dataPath '/qc_particles.mat']);
 load([dataPath '/nucleus_struct_protein.mat']);
+
 % snip_files = dir([SnipPath '*.mat']);
 % check to see if nucleus structure already contains qc review info
 if isfield(nucleus_struct_protein, 'qc_review_vec')
@@ -72,7 +74,7 @@ for i = 1:numel(nucleus_struct_protein)
     set_index = [set_index repelem(nucleus_struct_protein(i).setID, numel(nucleus_struct_protein(i).frames))];
     particle_index = [particle_index repelem(nucleus_struct_protein(i).ParticleID, numel(nucleus_struct_protein(i).frames))];
 end    
-particle_index = particle_index(ismember(particle_index,sample_particles));
+particle_index = particle_index(ismember(particle_index,qc_particles));
 set_index = floor(particle_index);
 % iterate through snip files
 exit_flag = 0;

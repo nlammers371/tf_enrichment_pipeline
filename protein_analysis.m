@@ -6,7 +6,7 @@ close all
 
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-project = 'Bcd_GFP_hbP2P_MCPmCherry_Leica_6uW15uW';
+project = 'Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW';
 varargin = {'dropboxFolder',dropboxFolder};
 
 proteinChannel = 1;
@@ -53,8 +53,21 @@ roi_rad_spot_pix = round(ROIRadiusSpot ./ px_sizes);
 nc_snip_structure = struct;
 protein_dynamics_struct = struct;
 nc_iter = 0;
-%%% iterate
+
+plot_flags = false(size(nucleus_struct));
 for i = 1:numel(nucleus_struct)
+    fluo = nucleus_struct(i).fluo;
+    duration = find(~isnan(fluo),1,'last')-find(~isnan(fluo),1);
+    if ~isempty(duration)
+        plot_flags(i) = sum(~isnan(fluo)) > 40 & (sum(~isnan(fluo)) / duration)>.8;
+    end
+end
+% draw sample set
+rng(123)
+plot_indices = randsample(find(plot_flags),50,false);
+
+%%% iterate
+for i = plot_indices
     setID = nucleus_struct(i).setID;    
     ncID = nucleus_struct(i).ncID;    
     
@@ -66,19 +79,17 @@ for i = 1:numel(nucleus_struct)
     src = set_key(set_key.setID==setID,:).prefix{1};        
         
     xPosParticle = nucleus_struct(i).xPosParticle;
-    pt_ft = ~isnan(xPosParticle);
-    frameVec = nucleus_struct(i).frames(pt_ft);    
-    frameVecFull = nucleus_struct(i).frames;
-    frameVecFull = frameVecFull(find(pt_ft,1):find(pt_ft,1,'last'));
+    nan_ft = ~isnan(xPosParticle);
+    pt_ft = 1:find(nan_ft,1,'last');
+    frameVec = nucleus_struct(i).frames(nan_ft);    
+    frameVecFull = nucleus_struct(i).frames(pt_ft);    
     
     % for now limit ourselves to nearly complete traces
-    if sum(pt_ft) / numel(frameVecFull) < .8 || numel(frameVec) < 20
+    if sum(nan_ft) / numel(frameVec) < .8 || numel(frameVec) < 20
         continue
     end    
     
-    timeVecFull = nucleus_struct(i).time;
-    timeVec = timeVecFull(pt_ft);
-    timeVecFull = timeVecFull(find(pt_ft,1):find(pt_ft,1,'last'));
+    timeVec = nucleus_struct(i).time(pt_ft);    
     
     fluoVec = nucleus_struct(i).fluo(find(pt_ft,1):find(pt_ft,1,'last'));
     
@@ -92,33 +103,35 @@ for i = 1:numel(nucleus_struct)
         continue
     end
     nc_iter = nc_iter+1;    
-    % interpolate
-    xPosParticleFull = interp1(timeVec,xPosParticle,timeVecFull);      
-    yPosParticleFull = interp1(timeVec,yPosParticle,timeVecFull);
-    zPosParticleFull = round(interp1(timeVec,zPosParticle,timeVecFull));
-%     fluoVecFull = round(imgaussfilt(interp1(timeVec,fluoVec,timeVecFull),1));
-    xPosNCFull = round(interp1(timeVec,xPosNC,timeVecFull),1);
-    yPosNCFull = round(interp1(timeVec,yPosNC,timeVecFull),1);
+%     % interpolate
+%     xPosParticle = xPostParticle;%interp1(timeVec,xPosParticle,timeVecFull);      
+%     yPosParticle = yPosParticle;%interp1(timeVec,yPosParticle,timeVecFull);
+%     zPosParticle = zPosParticle;%round(interp1(timeVec,zPosParticle,timeVecFull));
+% %     fluoVecFull = round(imgaussfilt(interp1(timeVec,fluoVec,timeVecFull),1));
+%     xPosNCFull = xPosNC; %round(interp1(timeVec,xPosNC,timeVecFull),1);
+%     yPosNCFull = yPosNC;% round(interp1(timeVec,yPosNC,timeVecFull),1);
     % make filepath 
     ncPath = [snipPath '/nc_' num2str(1e4*ncID) '/'];
     mkdir(ncPath)
     % record fields 
-    protein_dynamics_struct(nc_iter).xPosParticleFull = xPosParticleFull;      
-    protein_dynamics_struct(nc_iter).yPosParticleFull = yPosParticleFull;      
-    protein_dynamics_struct(nc_iter).zPosParticleFull = zPosParticleFull;      
-    protein_dynamics_struct(nc_iter).xPosNCFull = xPosNCFull;
-    protein_dynamics_struct(nc_iter).yPosNCFull = yPosNCFull;
-    protein_dynamics_struct(nc_iter).timeVecFull = timeVecFull;
+    protein_dynamics_struct(nc_iter).xPosParticle = xPosParticle;      
+    protein_dynamics_struct(nc_iter).yPosParticle = yPosParticle;      
+    protein_dynamics_struct(nc_iter).zPosParticle = zPosParticle;      
+    protein_dynamics_struct(nc_iter).xPosNC = xPosNC;
+    protein_dynamics_struct(nc_iter).yPosNC = yPosNC;
+    protein_dynamics_struct(nc_iter).timeVec = timeVec;
     
-    fNorm = fluoVec / nanmax(fluoVec) * 50;
+    fNorm = fluoVec / nanmax(fluoVec) * 60;
     fNorm(fNorm<0) = NaN;
-    nc_snip_stack = NaN(2*nb_sz+1,2*nb_sz+1,numel(zPosParticleFull));    
+    nc_snip_stack = NaN(2*nb_sz+1,2*nb_sz+1,numel(zPosParticle));  
+    particleFrames = frameVecFull;
+    particleFrames(~nan_ft) = NaN;
     for j = 1:numel(frameVecFull)
-        x_nucleus = xPosNCFull(j);
-        y_nucleus = yPosNCFull(j);
-        
+        x_nucleus = xPosNC(j);
+        y_nucleus = yPosNC(j);
         frame = frameVecFull(j);
-        fileList = dir([rawPath src '/*_' sprintf('%03d',frame)  '*z' sprintf('%02d',zPosParticleFull(j)) '_ch0' num2str(proteinChannel) '.tif']);
+        [~,mi] = nanmin(abs(particleFrames-frame));        
+        fileList = dir([rawPath src '/*_' sprintf('%03d',frame)  '*z' sprintf('%02d',zPosParticle(mi)) '_ch0' num2str(proteinChannel) '.tif']);
         fileName = [fileList(1).folder '/' fileList(1).name];
         protein_frame = double(imread(fileName));
         protein_snip = protein_frame(y_nucleus-nb_sz:y_nucleus+nb_sz,x_nucleus-nb_sz:x_nucleus+nb_sz);
@@ -135,8 +148,8 @@ for i = 1:numel(nucleus_struct)
         dist_mat(nb_sz+1,nb_sz+1) = 1;
         dist_mat = bwdist(dist_mat);
         mask = dist_mat <=25;
-        yp = round(yPosParticleFull(j)-yPosNCFull(j)) + nb_sz + 1;
-        xp = round(xPosParticleFull(j)-xPosNCFull(j)) + nb_sz + 1;
+        yp = round(yPosParticle(j)-yPosNC(j)) + nb_sz + 1;
+        xp = round(xPosParticle(j)-xPosNC(j)) + nb_sz + 1;
         masked = nc_snip_stack_sm(:,:,j);
         masked(~mask) = NaN;
         try
@@ -157,8 +170,8 @@ for i = 1:numel(nucleus_struct)
         imagesc(nc_snip_stack_sm(:,:,j))
         caxis([min_vec(j) max_vec(j)])
         hold on
-        scatter(xPosParticleFull(j)-xPosNCFull(j) + nb_sz + 1,yPosParticleFull(j)-yPosNCFull(j)+ nb_sz + 1,...
-            fNorm(j),'MarkerFaceColor','red','MarkerFaceAlpha',.3)
+        scatter(xPosParticle(j)-xPosNC(j) + nb_sz + 1,yPosParticle(j)-yPosNC(j)+ nb_sz + 1,...
+            20+fNorm(j),'MarkerFaceColor','red','MarkerFaceAlpha',.5)
         h = colorbar;
         ylabel(h,'Dl concentration (au)')
         saveas(pt_field_fig,[ncPath 'frame_' sprintf('%03d',frameVecFull(j)) '.tif'])

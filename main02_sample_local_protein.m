@@ -129,6 +129,7 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
+frame_rate_vec = NaN(1,size(set_frame_array,1));
 for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
@@ -528,7 +529,16 @@ for i = 1:size(set_frame_array,1)
             nucleus_struct(nc_index).snip_frame_vec(ind) = frame;
         end
     end
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(round(toc)) ' sec)'])
+    t = round(toc);
+    frame_rate_vec(i) = t;
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])    
+    % check how long it's taking per frame
+    if i > 3
+        mean_rate = nanmean(frame_rate_vec(max(1,i-10):i));
+        if mean_rate > 300
+            break
+        end
+    end
 end
 disp('saving qc frames...')
 % save qc data

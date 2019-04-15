@@ -51,17 +51,17 @@ for i = 1:numel(nucleus_struct_protein)
     snip_frame_vec = nucleus_struct_protein(i).snip_frame_vec;
     nc_dist_vec = nucleus_struct_protein(i).(['spot_' ControlType '_dist_vec']);
     time_vec = nucleus_struct_protein(i).time;
-    ap_vec = nucleus_struct_protein(i).ap_vector;
+%     ap_vec = nucleus_struct_protein(i).ap_vector;
     nc_frames = nucleus_struct_protein(i).frames;
     snip_dist_vec = [snip_dist_vec PixelSize*nc_dist_vec(ismember(nc_frames,snip_frame_vec))];
     snip_time_vec = [snip_time_vec time_vec(ismember(nc_frames,snip_frame_vec))];
-    snip_ap_vec = [snip_ap_vec ap_vec(ismember(nc_frames,snip_frame_vec))];
+%     snip_ap_vec = [snip_ap_vec ap_vec(ismember(nc_frames,snip_frame_vec))];
 end    
-% fixing error in a data set
-if strcmpi(project,'Hb_NbGFP_hbBAC_mCherry')
-    ap_ft = snip_ap_vec > .5;
-    snip_ap_vec(ap_ft) = 1 - snip_ap_vec(ap_ft);
-end
+% % fixing error in a data set
+% if strcmpi(project,'Hb_NbGFP_hbBAC_mCherry')
+%     ap_ft = snip_ap_vec > .5;
+%     snip_ap_vec(ap_ft) = 1 - snip_ap_vec(ap_ft);
+% end
 % Snip stacks
 spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
 null_protein_snips = cat(3,nucleus_struct_protein.([ControlType '_null_protein_snips']));
@@ -146,7 +146,7 @@ time_vec_dist = [nucleus_struct_protein.time];
 time_vec_dist = time_vec_dist(dist_vec>=DistLim);
 fluo_vec_dist = [nucleus_struct_protein.fluo];
 fluo_vec_dist = fluo_vec_dist(dist_vec>=DistLim);
-mf_protein_vec_dist = [nucleus_struct_protein.protein];
+mf_protein_vec_dist = [nucleus_struct_protein.mf_null_protein_vec];
 mf_protein_vec_dist = mf_protein_vec_dist(dist_vec>=DistLim);
 
 
@@ -156,7 +156,7 @@ n_unique = numel(unique([null_protein_vec_dist spot_protein_vec_dist]));
 % plot raw distributions
 lb = .9*prctile([null_protein_vec_dist spot_protein_vec_dist],1);
 ub = 1.1*prctile([null_protein_vec_dist spot_protein_vec_dist],99);
-bins = linspace(lb,ub,min([n_unique/20,100]));
+bins = linspace(lb,ub,min([ceil(n_unique/20),100]));
 
 spot_ct = histc(spot_protein_vec_dist,bins);
 null_ct = histc(null_protein_vec_dist,bins);
@@ -323,7 +323,7 @@ saveas(fluo_snippet_null_fig,[figPath write_string '_mean_fluo_snippet_null.png'
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
 
 % take bootstrap samples
-tt_index = 0:60:round(max(time_vec_dist));
+tt_index = 0:120:round(max(time_vec_dist));
 delta_protein_time_mat = NaN(numel(tt_index),NBoots);
 fluo_time_mat = NaN(numel(tt_index),NBoots);
 spot_protein_time_mat = NaN(numel(tt_index),NBoots);
@@ -399,10 +399,11 @@ for p = 1:numel(mf_prctile_vec)-1
 end
 mf_vec_dist = mf_protein_vec_dist;
 tt_vec_dist = time_vec_dist;
+mf_index = linspace(min(mf_protein_vec_dist),prctile(mf_protein_vec_dist,99),50);
 % track enrichemnt trends as function of space and protein concentration
 delta_v_tt_c_mf_array = NaN(numel(tt_index),numel(prctile_vec)-1,NBoots);
-delta_v_mf_c_tt_array = NaN(numel(tt_index),numel(prctile_vec)-1,NBoots);
-mf_index = linspace(min(mf_protein_vec_dist),max(mf_protein_vec_dist));
+delta_v_mf_c_tt_array = NaN(numel(mf_index),numel(prctile_vec)-1,NBoots);
+
 mf_sigma = 2*median(diff(mf_index));
 
 dep_var_cell = {'mf','tt'};
