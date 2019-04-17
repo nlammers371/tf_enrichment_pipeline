@@ -326,7 +326,6 @@ for j = 1:numel(feature_cell)
             serial_protein_boot_mat(n,:) = nanmean(serial_protein_mat(boot_ids,:));
         end
         results_struct(iter).ID = [data_titles{k} ' ' feature_titles{j}];
-        results_struct(iter).fn = [data_titles{k} '_' feature_titles{j}];
         results_struct(iter).data_name = data_titles(k);
         % response
         results_struct(iter).response_mean = nanmean(response_boot_mat)-nanmean(response_boot_mat(:));
@@ -340,7 +339,7 @@ for j = 1:numel(feature_cell)
         iter = iter + 1;
     end
 end
-%%
+
 %%% Make figures                     
 time_axis = Tres*ref_vec / 60;
 cm = jet(128);
@@ -351,23 +350,53 @@ for i = 1:numel(results_struct)
     input_output_fig = figure;
     hold on
     yyaxis left
-    plot(time_axis,results_struct(i).response_mean,'Color','black')
-    ylabel([gene_name ' activity (' results_struct(i).data_name ')'])
-    ax = gca;
-    ax.YColor = 'black';
+    plot(time_axis,results_struct(i).response_mean,'Color','black','LineWidth')
+    ylabel(['transcriptional activity ('results_struct(i).data_name ')'])
     
     yyaxis right
     errorbar(time_axis,results_struct(i).spot_protein_mean,results_struct(i).spot_protein_ste,...
         'Color',red,'CapSize',0)
     errorbar(time_axis,results_struct(i).serial_protein_mean,results_struct(i).serial_protein_ste,...
-        'Color',blue,'CapSize',0)    
+        'Color',blue,'CapSize',0)
     ylabel([protein_name ' concentration (au)'])
+
+    xlabel('offset')
     ax = gca;
     ax.YColor = 'black';
-    
-    xlabel('offset (minutes)')       
-    title(results_struct(i).ID )
-    legend('transcriptional response','protein (locus)','protein (control)','Location','southeast');%,'fluorescence (control)','fluorescence (trend)')
+    legend('background protein (control)','background protein (trend)');%,'fluorescence (control)','fluorescence (trend)')
     grid on
-    saveas(input_output_fig,[figPath results_struct(i).fn '_in_out.png'])
+
+    saveas(qc_fig,[figPath name_cell{i} '_sampling_qc.png'])
+end
+
+close all
+% Now make figures examining input-output relationships
+for i = 1:numel(name_cell)
+    % figure to check consistency of method
+
+    in_out_fig = figure;
+    hold on
+    yyaxis left
+    plot(time_axis,sampling_struct(i).trend_spot_protein_mean,'Color',blue2,'LineWidth',1)
+    plot(time_axis,sampling_struct(i).ctrl_spot_protein_mean,'-','Color',[blue1 .3])
+    ylabel([protein_name ' concentration (au)'])
+    ax = gca;
+    ax.YColor = blue2;
+    
+    
+    yyaxis right
+    errorbar(time_axis,sampling_struct(i).trend_activity_mean,...
+        sampling_struct(i).trend_activity_se,'-','Color','black','LineWidth',1,'CapSize',0)
+    plot(time_axis,sampling_struct(i).ctrl_activity_mean,'-','Color',[0 0 0 .3])
+    ylabel([protein_name ' concentration (au)'])
+    ylabel([gene_name ' activity (au)'])
+
+    xlabel('offset (minutes)')
+    ax = gca;
+    ax.YColor = 'black';
+    legend('protein (trend)','protein (control)','production rate (trend)',...
+        'production rate(control)','Location','southwest')
+    grid on
+
+    saveas(in_out_fig,[figPath name_cell{i} '_input_output_act.png'])
 end
