@@ -364,6 +364,8 @@ for i = 1:size(set_frame_array,1)
         
         serial_null_x = nucleus_struct(nc_index).serial_null_x_vec;
         serial_null_y = nucleus_struct(nc_index).serial_null_y_vec;          
+%         xPos_vec = nucleus_struct(nc_index).xPosParticle;
+%         yPos_vec = nucleus_struct(nc_index).yPosParticle;
         % if this is the first sample for this spot, just find random
         % control snip. This will "seed" subsequent samples
         if nc_sub_index==1||all(isnan(serial_null_x))            
@@ -491,8 +493,7 @@ tic
 particle_index = unique([nucleus_struct.ParticleID]);
 particle_index = particle_index(~isnan(particle_index));
 qc_particles = randsample(particle_index,100,false);
-particle_index_full = [];
-particle_frames_full = [];
+pt_counts = zeros(size(qc_particles));
 for i = 1:numel(qc_structure)
     qc_mat = qc_structure(i).qc_mat;
     for  j = 1:numel(qc_mat)
@@ -504,21 +505,15 @@ for i = 1:numel(qc_structure)
         if isempty(ParticleID) || ~ismember(ParticleID,qc_particles)
             continue
         end        
+        pt_co
         frame = qc_spot.frame;      
-        particle_index_full = [particle_index_full ParticleID];
-        particle_frames_full [particle_frames_full frame];        
         save_name = [snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat'];
         save(save_name,'qc_spot');
     end
 end
-[particle_index_full, si] = sort(particle_index_full);
-particle_frames_full = particle_frames_full(si);
-
-qc_ref_struct.particle_frames_full = particle_frames_full;
-qc_ref_struct.particle_index_full = particle_index_full;
 toc
 % save updated nucleus structure
 disp('saving nucleus structure...')
 nucleus_struct_protein = nucleus_struct;
 save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 
-save([dataPath 'qc_ref_struct.mat'],'qc_ref_struct')
+save([dataPath 'qc_particles.mat'],'qc_particles')

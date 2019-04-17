@@ -88,11 +88,11 @@ while ~exit_flag
         hold on
         p = imshow(edge_dist_rgb);        
         p.AlphaData = .4;        
-        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,40,'MarkerFaceColor',cm(30,:),'MarkerEdgeColor','black');
-        s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(90,:),'MarkerEdgeAlpha',0);        
-        s3 = scatter(qc_spot.xp_sister-x_center+xDim,qc_spot.yp_sister-y_center+yDim,40,'d','MarkerFaceColor',cm(60,:),'MarkerEdgeColor','black');        
+        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,40,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+        s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);        
+        s3 = scatter(qc_spot.xp_sister-x_center+xDim,qc_spot.yp_sister-y_center+yDim,40,'d','MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);        
         s4 = scatter(qc_spot.xc_serial-x_center+xDim,qc_spot.yc_serial-y_center+yDim,30,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0);
-        legend([s1 s2 s3 s4], 'spot', 'edge control', 'sister spot', 'serialized')          
+        legend([s1 s2 s4], 'spot', 'edge control', 'serialized')          
         title(['Particle: ' num2str(ParticleID) ' Frame: ' sprintf('%03d',frame)])
         
         
@@ -114,15 +114,56 @@ while ~exit_flag
             index = max(1,index-1);
             break
         elseif strcmp(cc,'m')
-            index = min(numel(particle_index_full),index+1);
+            index = min(numel(all_frames),index+1);
             break
         elseif strcmp(cc,'j')
             index = input('enter desired index: ');
             break
         elseif strcmp(cc,'s')
             disp('saving figure')
+%             im_fig = figure;
+%             imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');
             saveas(qc_fig,[figPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
-            saveas(qc_fig,[figPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])             
+            saveas(qc_fig,[figPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+            
+%             spot_fig = figure;
+%             imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');
+%             hold on
+%             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+%             saveas(spot_fig,[figPath 'image2_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+%             saveas(spot_fig,[figPath 'image2_image_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+%             
+%             color_fig = figure;
+%             imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');
+%             hold on
+%             p = imshow(edge_dist_rgb);        
+%             p.AlphaData = .4; 
+%             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+% %             colorbar
+%             saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+%             saveas(color_fig,[figPath 'image3_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+%             
+%             full_fig = figure;
+%             imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');
+%             hold on
+%             p = imshow(edge_dist_rgb);        
+%             p.AlphaData = .4; 
+%             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+%             s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+% %             colorbar
+%             saveas(full_fig,[figPath 'image4_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+%             saveas(full_fig,[figPath 'image4_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+% 
+%             cb_fig = figure;      
+%             p = imshow(edge_dist_rgb);      
+%             hold on
+%             p.AlphaData = .4; 
+%             colorbar
+% %             s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
+% %             s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
+%             saveas(cb_fig,[figPath 'image0_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+%             saveas(cb_fig,[figPath 'image0_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])
+                        
         end       
     end 
 %     close all
@@ -131,3 +172,5 @@ while ~exit_flag
         break
     end
 end
+% nucleus_struct_protein.qc_review_vec = qc_review_vec;
+save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein')

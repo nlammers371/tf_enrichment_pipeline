@@ -96,14 +96,14 @@ roi_rad_spot_pix = round(ROIRadiusSpot ./ px_sizes);
 
 
 % Designate fields ot be added to nucleus structure
-new_vec_fields = {'spot_protein_vec', 'serial_null_protein_vec', 'edge_null_protein_vec','mf_null_protein_vec',...
-    'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','mf_null_mcp_vec',...
-    'serial_qc_flag_vec','edge_qc_flag_vec','spot_fov_edge_flag_vec','edge_fov_edge_flag_vec', ...
-    'edge_null_x_vec', 'serial_null_x_vec','serial_null_y_vec','edge_null_y_vec', 'edge_null_nc_vec',...
-    'spot_edge_dist_vec','serial_null_edge_dist_vec'};
+new_vec_fields = {'spot_protein_vec', 'serial_null_protein_vec', 'edge_null_protein_vec','rand_null_protein_vec','mf_null_protein_vec',...
+    'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','rand_null_mcp_vec','mf_null_mcp_vec',...
+    'serial_qc_flag_vec','edge_qc_flag_vec', 'rand_qc_flag_vec', 'spot_fov_edge_flag_vec','edge_fov_edge_flag_vec', ...
+    'rand_fov_edge_flag_vec','edge_null_x_vec', 'serial_null_x_vec','serial_null_y_vec','edge_null_y_vec', 'edge_null_nc_vec',...
+    'rand_null_x_vec', 'rand_null_y_vec', 'rand_null_nc_vec','spot_edge_dist_vec','serial_null_edge_dist_vec'};
 
-new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
-    'spot_mcp_snips','edge_null_mcp_snips'};
+new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips','rand_null_protein_snips',...
+    'spot_mcp_snips','edge_null_mcp_snips','rand_null_mcp_snips'};
 % get most common snip size
 default_snip_size = mode(pt_snippet_size_vec);
 % Initialize fields
@@ -258,7 +258,8 @@ for i = 1:size(set_frame_array,1)
         
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
-            edge_qc_flag_vec(j) = 0;            
+            edge_qc_flag_vec(j) = 0;
+            rand_qc_flag_vec(j) = 0;
             serial_qc_flag_vec(j) = 0;
             continue
         end 
@@ -356,7 +357,55 @@ for i = 1:size(set_frame_array,1)
 %             
             edge_null_protein_snips(:,:,j) =  pt_snip;
             edge_null_mcp_snips(:,:,j) =  mcp_snip;                 
-        end                  
+        end  
+        
+        % Now take a random sample                           
+        sample_index_vec = 1:numel(spot_sep_vec);
+        % filter for regions far enough away from locus
+        cr_filter = spot_sep_vec >= minSampleSep;
+        sample_index_vec = sample_index_vec(cr_filter);
+        % if candidate found, then proceed. Else look to neighboring nuclei
+        if ~isempty(sample_index_vec)
+            sample_index = randsample(sample_index_vec,1);
+            x_pos_vec = x_ref(spot_nc_mask);
+            y_pos_vec = y_ref(spot_nc_mask);
+            rand_null_x_vec(j) = x_pos_vec(sample_index);
+            rand_null_y_vec(j) = y_pos_vec(sample_index);
+            rand_qc_flag_vec(j) = 1;               
+        else
+            error('Unable to draw random sample. Check "PixelSize" and "min_sample_sep" variables')
+        end                
+        % Draw control samples (as appropriate)
+        if rand_qc_flag_vec(j) > 0
+            xc = rand_null_x_vec(j);
+            yc = rand_null_y_vec(j);                  
+            % draw snips
+            
+            null_dist_frame = zeros(size(protein_frame));
+            null_dist_frame(yc,xc) = 1;
+            null_dist_frame = bwdist(null_dist_frame);
+            % record
+            rand_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
+            rand_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
+            % draw snips      
+            x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
+            y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
+            x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
+            y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
+            
+            pt_snip = NaN(numel(y_range_full),numel(x_range_full));
+            pt_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = protein_frame(y_range,x_range);
+            mcp_snip = NaN(numel(y_range_full),numel(x_range_full));
+            mcp_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = mcp_frame(y_range,x_range); 
+            bound_snip = NaN(numel(y_range_full),numel(x_range_full));
+            bound_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = nc_ref_frame(y_range,x_range)>0;  
+            % apply filtering
+            pt_snip(~(bound_snip>0)) = NaN;
+            mcp_snip(~(bound_snip>0)) = NaN;
+%             
+            rand_null_protein_snips(:,:,j) = pt_snip;
+            rand_null_mcp_snips(:,:,j) = mcp_snip;
+        end 
         
         % Draw serialized control
         nc_index = nc_lin_index_vec(j);
@@ -364,6 +413,8 @@ for i = 1:size(set_frame_array,1)
         
         serial_null_x = nucleus_struct(nc_index).serial_null_x_vec;
         serial_null_y = nucleus_struct(nc_index).serial_null_y_vec;          
+%         xPos_vec = nucleus_struct(nc_index).xPosParticle;
+%         yPos_vec = nucleus_struct(nc_index).yPosParticle;
         % if this is the first sample for this spot, just find random
         % control snip. This will "seed" subsequent samples
         if nc_sub_index==1||all(isnan(serial_null_x))            
@@ -433,16 +484,19 @@ for i = 1:size(set_frame_array,1)
         qc_mat(j).xc_edge = edge_null_x_vec(j);
         qc_mat(j).yc_edge = edge_null_y_vec(j);
         qc_mat(j).xc_serial = serial_null_x_vec(j);
-        qc_mat(j).yc_serial = serial_null_y_vec(j);       
+        qc_mat(j).yc_serial = serial_null_y_vec(j);
+        qc_mat(j).xc_rand = rand_null_x_vec(j);
+        qc_mat(j).yc_rand = rand_null_y_vec(j);
         qc_mat(j).ParticleID = particle_id_vec(j);
         qc_mat(j).serial_qc_flag = serial_qc_flag_vec(j);
+        qc_mat(j).rand_qc_flag = rand_qc_flag_vec(j);
         qc_mat(j).edge_qc_flag = edge_qc_flag_vec(j);        
         sz = nb_sz;
         edge_dist_mat = nc_dist_frame;
         edge_dist_mat(~spot_nc_mask&~null_mask) = 0;
         if edge_qc_flag_vec(j) == 2         
             sz = max([nb_sz,abs(x_nucleus - edge_null_x_vec(j)),abs(y_nucleus - edge_null_y_vec(j))...
-                abs(x_nucleus - serial_null_x_vec(j)),abs(y_nucleus - serial_null_y_vec(j))]);            
+                abs(x_nucleus - rand_null_x_vec(j)),abs(y_nucleus - rand_null_y_vec(j))]);            
         end
         y_range = max(1,y_nucleus-sz):min(yDim,y_nucleus+sz);
         x_range = max(1,x_nucleus-sz):min(xDim,x_nucleus+sz);
@@ -450,7 +504,8 @@ for i = 1:size(set_frame_array,1)
         qc_mat(j).y_center = median(y_range);
         qc_mat(j).mcp_snip = mcp_frame(y_range,x_range);
         qc_mat(j).protein_snip = protein_frame(y_range,x_range);
-        qc_mat(j).edge_dist_snip = edge_dist_mat(y_range,x_range);                
+        qc_mat(j).edge_dist_snip = edge_dist_mat(y_range,x_range);        
+        qc_mat(j).rand_dist_snip = edge_dist_mat(y_range,x_range);            
     end 
     qc_structure(i).qc_mat = qc_mat;    
     % map data back to nucleus_struct    
@@ -462,7 +517,7 @@ for i = 1:size(set_frame_array,1)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
         end
-        if serial_qc_flag_vec(j) > 0 || edge_qc_flag_vec(j) > 0
+        if rand_qc_flag_vec(j) > 0 || edge_qc_flag_vec(j) > 0
             for k = 1:numel(new_snip_fields)
                 snip = eval([new_snip_fields{k} '(:,:,j)']);
                 ind = numel(nucleus_struct(nc_index).snip_frame_vec)+1;
@@ -491,8 +546,6 @@ tic
 particle_index = unique([nucleus_struct.ParticleID]);
 particle_index = particle_index(~isnan(particle_index));
 qc_particles = randsample(particle_index,100,false);
-particle_index_full = [];
-particle_frames_full = [];
 for i = 1:numel(qc_structure)
     qc_mat = qc_structure(i).qc_mat;
     for  j = 1:numel(qc_mat)
@@ -505,20 +558,13 @@ for i = 1:numel(qc_structure)
             continue
         end        
         frame = qc_spot.frame;      
-        particle_index_full = [particle_index_full ParticleID];
-        particle_frames_full [particle_frames_full frame];        
         save_name = [snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat'];
         save(save_name,'qc_spot');
     end
 end
-[particle_index_full, si] = sort(particle_index_full);
-particle_frames_full = particle_frames_full(si);
-
-qc_ref_struct.particle_frames_full = particle_frames_full;
-qc_ref_struct.particle_index_full = particle_index_full;
 toc
 % save updated nucleus structure
 disp('saving nucleus structure...')
 nucleus_struct_protein = nucleus_struct;
 save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 
-save([dataPath 'qc_ref_struct.mat'],'qc_ref_struct')
+save([dataPath 'qc_particles.mat'],'qc_particles')
