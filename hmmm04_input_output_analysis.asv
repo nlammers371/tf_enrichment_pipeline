@@ -218,7 +218,7 @@ legend('hmm activity','fluorescence')
 grid on
 saveas(comp_xcov,[figPath 'xcov_comparison.png'])
 
-
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine protein levels in vicinity of sna peaks, troughs, rises, and
 %%% falls as detected in raw fluorescence and hmm channels
@@ -246,7 +246,7 @@ for i = 1:numel(hmm_input_output)
     
     ft1 = ~isnan(pt_spot);
     ft2 = ~isnan(pt_serial);
-    if sum(ft1&ft2) < window_size || sum(ft1)/sum(ft2) < .9 % being pretty strict about trace quality
+    if sum(ft1&ft2) < window_size || sum(ft1)/sum(ft2) < .8
         continue
     end
     %%% find features
@@ -306,7 +306,7 @@ for i = 1:numel(hmm_input_output)
     iter = iter + 1;
 end
 tic
-
+%%
 %%% Calculate bootstrap estimates of Mean and SE
 results_struct = struct;
 

@@ -28,16 +28,17 @@ zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 mfTolerance = ROIRadiusSpot;
 minSampleSep = 1; %um
-driftTol = .3; % pixels
+driftTol = .3; % mean frame-over frame drift distance in um (median for empirical data is .38)
 dataPath = ['../dat/' project '/'];
+numWorkers = 12;
+
 for i = 1:numel(varargin)  
-    if ischar(varargin{i})
-        if ismember(varargin{i},{'zeissFlag','dropboxFolder','ROIRadiusSpot','ROIRadiusControl','minSampleSep'})       
-            eval([varargin{i} '=varargin{i+1};']);
+    if ischar(varargin{i}) && ~strcmpi(varargin{i},'dropboxFolder')
+        if ~ischar(varargin{i+1})
+            eval([varargin{i} '=varargin{i+1};']);        
         end
-        if strcmpi(varargin{i},'dropboxFolder')
-            dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
-        end
+    elseif strcmpi(varargin{i},'dropboxFolder')
+        dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
     end
 end
 % Load trace data
@@ -129,6 +130,13 @@ end
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
+p = gcp('nocreate');
+if isempty(p)
+    parpool(numWorkers);
+elseif p.NumWorkers ~= numWorkers
+    delete(gcp('nocreate'))
+    parpool(numWorkers);
+end
 frame_rate_vec = NaN(1,size(set_frame_array,1));
 for i = 1:size(set_frame_array,1)    
     tic
@@ -476,14 +484,7 @@ for i = 1:size(set_frame_array,1)
     end
     t = round(toc);
     frame_rate_vec(i) = t;
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])    
-    % check how long it's taking per frame
-    if i > 3
-        mean_rate = nanmean(frame_rate_vec(max(1,i-10):i));
-        if mean_rate > 300
-            break
-        end
-    end
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])     
 end
 disp('saving qc frames...')
 % save qc data
@@ -506,7 +507,7 @@ for i = 1:numel(qc_structure)
         end        
         frame = qc_spot.frame;      
         particle_index_full = [particle_index_full ParticleID];
-        particle_frames_full [particle_frames_full frame];        
+        particle_frames_full = [particle_frames_full frame];        
         save_name = [snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat'];
         save(save_name,'qc_spot');
     end

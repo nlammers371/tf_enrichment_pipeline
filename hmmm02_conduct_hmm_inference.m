@@ -32,9 +32,8 @@ K = 3;
 minDp = 10;
 dpBootstrap = 0;
 nBoots = 5;
-
-inference_times = 25*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
-tWindow = 50*60; % determines width of sliding window
+inference_times = 30*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
+tWindow = 60*60; % determines width of sliding window
 % sampleSize = 4000;
 maxWorkers = 25;
 alphaFrac = 1302 / 6000;
@@ -87,7 +86,7 @@ end
 % Set write path (inference results are now written to external directory)
 out_suffix =  ['/hmm_inference/w' num2str(w) '_t' num2str(Tres)...
     '_alpha' num2str(round(alpha*10)) '_f' num2str(fluo_field) '_cl' num2str(clipped) ...
-    '/K' num2str(K) '_tw' num2str(tWindow/60) d_type '_1/']; 
+    '/K' num2str(K) '_tw' num2str(tWindow/60) d_type '/']; 
 % set write path
 if savio
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';

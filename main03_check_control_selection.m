@@ -21,11 +21,6 @@
 % m: move forward one sample
 % j: jump to specified sample (entered in command line)
 %
-% Labels:
-%
-% 1: approve frame
-% 0: disapprove frame
-%
 % x: Exit
 %
 % General instructions: For now this script is primarily intended as a
@@ -96,12 +91,7 @@ while ~exit_flag
         title(['Particle: ' num2str(ParticleID) ' Frame: ' sprintf('%03d',frame)])
         
         
-        set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
-        if qc_review_vec(all_frames(index)) == 1
-            set(gcf, 'color', 'green')
-        elseif qc_review_vec(all_frames(index)) == 0
-            set(gcf, 'color', 'red')
-        end
+        set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(particle_frames_full)) ')'])      
         ct=waitforbuttonpress;
         cc=get(qc_fig,'currentcharacter');
         if strcmp(cc,'1')||strcmp(cc,'0')                       
