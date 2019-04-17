@@ -35,7 +35,7 @@ nBoots = 5;
 
 inference_times = 25*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
 tWindow = 50*60; % determines width of sliding window
-sampleSize = 8000;
+% sampleSize = 4000;
 maxWorkers = 25;
 alphaFrac = 1302 / 6000;
 

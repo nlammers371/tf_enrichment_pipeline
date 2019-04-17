@@ -41,7 +41,8 @@ function nucleus_struct = main01_compile_data(project,folderPath,keyword,varargi
 includeVec = [];
 firstNC = 14;
 minDP = 10;
-expType = 'input_output';
+two_spot_flag = false;
+% expType = 'input_output';
 dataPath = ['../dat/' project '/']; % data mat directory
 for i = 1:numel(varargin)
     if ischar(varargin{i})
@@ -106,27 +107,30 @@ for i = 1:length(cp_filenames)
     % read in raw files
     try
         load([folderPath nc_filenames{i}]) % Ellipse Info
-        load([folderPath fov_filenames{i}]) % FrameInfo Info
-        load([folderPath sp_filenames{i}]) % Spots info
+        load([folderPath fov_filenames{i}]) % FrameInfo Info        
         load([folderPath pa_filenames{i}]); % Raw Particles
     catch
         continue
-    end
-    ap_flag = 1;
-    try
-        load([folderPath ap_filenames{i}]) % AP Info   
-    catch
-        warning('No AP Data detected. Proceeding without AP info')
-        ap_flag = 0;
-    end   
+    end     
     
     % extract data structures
     processed_data = load([folderPath cp_filenames{i}]); % processed particles    
-    input_output = 0;
-    if strcmpi(expType, 'input_output')
-        input_output = 1;
-        protein_data = load([folderPath cn_filenames{i}]); % processed nulcei 
+    % Extract compiled particles structure         
+    cp_particles = processed_data.CompiledParticles;    
+    if iscell(cp_particles)
+        cp_particles = cp_particles{1};
+    end   
+    cp_z_flag = 0;
+    if isfield(cp_particles,'zPos')
+        cp_z_flag = 1;
+    else        
+        load([folderPath sp_filenames{i}]) % Spots info
     end
+%     input_output = 0;
+%     if strcmpi(expType, 'input_output')
+%         input_output = 1;
+%         protein_data = load([folderPath cn_filenames{i}]); % processed nulcei 
+%     end
     
     % set identifier
     setID = includeVec(i);            
@@ -149,13 +153,13 @@ for i = 1:length(cp_filenames)
     time_clean = time_clean - min(time_clean); % Normalize to start of nc14    
     frames_clean = frames_raw(first_frame:end);    
     
-    if input_output
-        % extract protein data
-        cp_protein = protein_data.CompiledNuclei;   
-        if iscell(cp_protein)
-            cp_protein= cp_protein{1};
-        end
-    end
+%     if input_output
+%         % extract protein data
+%         cp_protein = protein_data.CompiledNuclei;   
+%         if iscell(cp_protein)
+%             cp_protein= cp_protein{1};
+%         end
+%     end
     
     % compile schnitz info
     s_cells = struct;
@@ -170,8 +174,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).ParticleID = NaN;
             s_cells(e_pass).xPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
-            s_cells(e_pass).brightestZs = NaN(1,sum(nc_filter));
-            s_cells(e_pass).spot_z_cell = cell(1,sum(nc_filter));
+            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));            
             s_cells(e_pass).fluo = NaN(1,sum(nc_filter));
             
             % add core nucleus info
@@ -181,10 +184,6 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yPos = y(nc_filter); 
             s_cells(e_pass).frames = nc_frames';            
             s_cells(e_pass).Nucleus = e;     
-            if ap_flag
-                s_cells(e_pass).ap_vector = schnitzcells(e).APpos(nc_filter);
-                s_cells(e_pass).apMean = mean(schnitzcells(e).APpos(nc_filter));
-            end
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
             s_cells(e_pass).xMean = mean(x(nc_filter));
             s_cells(e_pass).yMean = mean(y(nc_filter));
@@ -201,13 +200,15 @@ for i = 1:length(cp_filenames)
             fn = fn(1:strfind(fn,'/')-1);
             s_cells(e_pass).source_path = fn;                        
             s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;       
-            s_cells(e_pass).ap_flag = ap_flag;
-            % add protein info      
-            if input_output
-                prot_nuc = cp_protein([cp_protein.schnitz] == e);                     
-                pt_vec = prot_nuc.FluoMax(nc_filter);
-                s_cells(e_pass).protein = pt_vec';
-            end
+            s_cells(e_pass).ap_flag = 0;
+            % sister fields
+            s_cells(e_pass).sister_Index = NaN;
+            s_cells(e_pass).sister_ParticleID = NaN; 
+%             if input_output
+%                 prot_nuc = cp_protein([cp_protein.schnitz] == e);                     
+%                 pt_vec = prot_nuc.FluoMax(nc_filter);
+%                 s_cells(e_pass).protein = pt_vec';
+%             end
             e_pass = e_pass + 1;
         end
     end
@@ -215,14 +216,8 @@ for i = 1:length(cp_filenames)
     % now add particle info
     
     % Index vector to cross-ref w/ particles            
-    e_index = [s_cells.Nucleus]; 
-    
-    % Extract compiled particles structure       
-    cp_particles = processed_data.CompiledParticles; 
-    if iscell(cp_particles)
-        cp_particles = cp_particles{1};
-    end    
-    
+    e_index = [s_cells.Nucleus];          
+    schnitz_vec = [cp_particles.schnitz];
     % iterate through traces
     for j = 1:size(traces_clean,2)  
         % Raw fluo trace
@@ -246,37 +241,60 @@ for i = 1:length(cp_filenames)
         if numel(cp_frames) < minDP
             qc_flag = 0;
         end
-        % Initialize arrays to store Z info
-        bZ = NaN(1, length(frames_full));
-        z_cell = cell(1, length(frames_full));
-        % Get spot Z location info
-        part_id = cp_particles(j).OriginalParticle;        
-        particle_frames_raw = Particles(part_id).Frame;
-        for id = 1:length(cp_frames)            
-            abs_idx = find(cp_frames(id) == frames_full);
-            rel_id = raw_pt_frames==cp_frames(id);
-            if Particles(part_id).Index(particle_frames_raw==cp_frames(id)) > length(Spots(cp_frames(id)) ...
-                    .Fits)
-                error('Mismatch between Particles and Spots dimensions')                                
-            else
-                bZ(abs_idx) = Spots(cp_frames(id)) ...
-                        .Fits(Particles(part_id).Index(rel_id)).brightestZ;
-                z_cell{abs_idx} = Spots(Particles(part_id).Frame(rel_id)) ...
-                        .Fits(Particles(part_id).Index(rel_id)).z;
+        if ~cp_z_flag
+            % Initialize arrays to store Z info
+            bZ = NaN(1, length(frames_full));        
+            % Get spot Z location info
+            part_id = cp_particles(j).OriginalParticle;        
+            particle_frames_raw = Particles(part_id).Frame;
+            for id = 1:length(cp_frames)            
+                abs_idx = cp_frames(id) == frames_full;
+                rel_id = raw_pt_frames==cp_frames(id);
+                if Particles(part_id).Index(particle_frames_raw==cp_frames(id)) > length(Spots(cp_frames(id)) ...
+                        .Fits)
+                    error('Mismatch between Particles and Spots dimensions')                                
+                else
+                    bZ(abs_idx) = Spots(cp_frames(id)) ...
+                            .Fits(Particles(part_id).Index(rel_id)).brightestZ;                
+                end
             end
         end
-        % find corresponding nucleus index        
-        nc_ind = find(e_index==schnitz);        
+        % find corresponding nucleus index     
+        % trace-nucleus mapping may be many-to-1
+        nc_ind = find(e_index==schnitz);  
         if length(nc_ind) ~= 1
             warning('Problem with Particle-Nucleus Crossref')
             continue
-        end                                         
+        end 
+        % Identifier variable                        
+        particle = cp_particles(j).OriginalParticle;                        
+        ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]); 
+        % check to see if a different particle has already been assigned
+        % if so, create a new entry
+        if ~isnan(s_cells(nc_ind).ParticleID)
+            two_spot_flag = true;
+            s_cells = [s_cells s_cells(nc_ind)];
+            % update cross-reference variables
+            s_cells(nc_ind).sister_ParticleID = ParticleID;
+            s_cells(end).sister_ParticleID = s_cells(nc_ind).sister_ParticleID;
+            s_cells(nc_ind).sister_Index = numel(s_cells);
+            s_cells(end).sister_Index = nc_ind;
+            % redefine index variables
+            nc_ind = numel(s_cells);
+            % reset particle fields
+            n_entries = numel(s_cells(nc_ind).xPosParticle);
+            s_cells(nc_ind).ParticleID = NaN;
+            s_cells(nc_ind).xPosParticle = NaN(1,n_entries);
+            s_cells(nc_ind).yPosParticle = NaN(1,n_entries);
+            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);            
+            s_cells(nc_ind).fluo = NaN(1,n_entries);
+        end
+        s_cells(nc_ind).ParticleID = ParticleID;
         % find overlap between nucleus and trace
         nc_frames = s_cells(nc_ind).frames;         
         spot_filter = ismember(nc_frames,frames_full);            
         s_cells(nc_ind).spot_frames = spot_filter;
-        if sum(spot_filter) < numel(frames_full)
-            
+        if sum(spot_filter) < numel(frames_full)            
             error('Inconsistent particle and nucleus frames')
         end
         % record fluorescence info             
@@ -286,15 +304,22 @@ for i = 1:length(cp_filenames)
             cp_particles(j).xPos(ismember(cp_frames,nc_frames));
         s_cells(nc_ind).yPosParticle(ismember(nc_frames,cp_frames)) = ...
             cp_particles(j).yPos(ismember(cp_frames,nc_frames));
-        % add z info                       
-        s_cells(nc_ind).brightestZs(spot_filter) = bZ;   
-        s_cells(nc_ind).spot_z_cell(spot_filter) = z_cell;
-        % Identifier variables                        
-        particle = cp_particles(j).OriginalParticle;                        
-        s_cells(nc_ind).ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);   
+        % add z info       
+        if ~cp_z_flag
+            s_cells(nc_ind).zPosParticle(spot_filter) = bZ;   
+        else
+            s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
+            cp_particles(j).zPos(ismember(cp_frames,nc_frames));
+        end          
         s_cells(nc_ind).qc_flag = qc_flag; 
     end      
     nucleus_struct = [nucleus_struct  s_cells];        
+end
+% add fields related to 2 spot analyses
+for i = 1:numel(nucleus_struct)
+    nucleus_struct(i).two_spot_flag = two_spot_flag;
+    nucleus_struct(i).target_locus_flag = NaN;
+    nucleus_struct(i).control_locus_flag = NaN;
 end
 % save
 save(nucleus_name ,'nucleus_struct') 

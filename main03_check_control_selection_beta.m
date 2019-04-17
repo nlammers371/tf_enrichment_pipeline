@@ -34,7 +34,7 @@
 % need to adapt a different component of the pipleine either to resolve
 % issue or to remove problematic observations
 
-function main03_check_control_selection(project,varargin)
+function main03_check_control_selection_beta(project,varargin)
 close all
 % specify paths
 dataPath = ['../dat/' project '/'];
@@ -50,45 +50,21 @@ snipPath = [dataPath 'qc_images1/'];
 mkdir(figPath);
 
 % load data
-load([dataPath '/qc_particles.mat']);
 load([dataPath '/nucleus_struct_protein.mat']);
+snip_files = dir([snipPath '*.mat']);
 
-% snip_files = dir([SnipPath '*.mat']);
-% check to see if nucleus structure already contains qc review info
-if isfield(nucleus_struct_protein, 'qc_review_vec')
-    qc_review_vec = [nucleus_struct_protein.qc_review_vec];
-else 
-    qc_review_vec = NaN(size([nucleus_struct_protein.xPos]));
-end
-edge_qc_flag_vec = [nucleus_struct_protein.edge_qc_flag_vec];
-rand_qc_flag_vec = [nucleus_struct_protein.rand_qc_flag_vec];
-frame_filter = edge_qc_flag_vec>0|rand_qc_flag_vec>0;
-% set start frame
-all_frames = find(frame_filter);
-outstanding_frames = find(isnan(qc_review_vec)&(frame_filter));
-% generate indexing vectors
-frame_index = [nucleus_struct_protein.frames];
-set_index = [];
-particle_index = [];
-for i = 1:numel(nucleus_struct_protein)
-    set_index = [set_index repelem(nucleus_struct_protein(i).setID, numel(nucleus_struct_protein(i).frames))];
-    particle_index = [particle_index repelem(nucleus_struct_protein(i).ParticleID, numel(nucleus_struct_protein(i).frames))];
-end    
-particle_index = particle_index(ismember(particle_index,qc_particles));
-set_index = floor(particle_index);
+
 % iterate through snip files
 exit_flag = 0;
 cm = jet(128);
 
-% index = find(all_frames==outstanding_frames(1));
+% index = find(snip_files==outstanding_frames(1));
 index = 100;
 while ~exit_flag
     % create sister_struct(i) struct    
-    frame = frame_index(all_frames(index));
-    ParticleID = particle_index(all_frames(index));
-    setID = set_index(all_frames(index));    
+    name = snip_files(index).name; 
     % load snip data
-    load([snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.mat']);
+    load([snipPath name]);
     
     %%%%%%%%%%%%%%%%%%%%%%% load image stack %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      
@@ -109,40 +85,39 @@ while ~exit_flag
         yDim = ceil(size(edge_dist_snip,1)/2);
         xDim = ceil(size(edge_dist_snip,2)/2);
         
-        qc_fig = figure('Position',[0 0 512 512]);                 
+        qc_fig = figure;%('Position',[0 0 512 512]);                 
 %         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
         p = imshow(edge_dist_rgb);        
-        p.AlphaData = .4;        
-        s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-        s2 = scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-        s3 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(90,:),'MarkerEdgeAlpha',0);
-        s4 = scatter(qc_spot.xc_serial-x_center+xDim,qc_spot.yc_serial-y_center+yDim,30,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0);
-        legend([s1 s2 s3 s4], 'spot', 'edge control', 'random', 'serialized')          
+        p.AlphaData = .4;      
+        s = [];
+        s = [s scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,60,'MarkerFaceColor',cm(30,:),'MarkerEdgeColor','black')];
+        s = [s scatter(qc_spot.xc_edge-x_center+xDim,qc_spot.yc_edge-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0)];
+        s = [s scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(90,:),'MarkerEdgeAlpha',0)];
+        s = [s scatter(qc_spot.xc_serial-x_center+xDim,qc_spot.yc_serial-y_center+yDim,60,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0)];
+        % check for sister spot
+        lgd_cell = {'spot', 'edge control', 'random', 'serialized'};
+        if ~isnan(qc_spot.xp_sister)
+            s = [s scatter(qc_spot.xp_sister-x_center+xDim,qc_spot.yp_sister-y_center+yDim,60,...
+                'd','MarkerFaceColor',cm(30,:),'MarkerEdgeColor','black')];
+            lgd_cell = [lgd_cell{:} {'sister spot'}];                
+        end
+        legend(s, lgd_cell{:})          
         title('Edge Distance Sample')
         
-%         subplot(1,2,2)
-%         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
-%         hold on
-%         p = imshow(rand_dist_rgb);        
-%         p.AlphaData = .4;        
-%         s1 = scatter(qc_spot.xp-x_center+xDim,qc_spot.yp-y_center+yDim,30,'MarkerFaceColor',cm(30,:),'MarkerEdgeAlpha',0);
-%         s2 = scatter(qc_spot.xc_rand-x_center+xDim,qc_spot.yc_rand-y_center+yDim,30,'MarkerFaceColor',cm(60,:),'MarkerEdgeAlpha',0);
-%         legend([s1 s2], 'spot', 'control')  
-%         title('Random Distance Sample')
         
-        set(gcf,'Name',['Particle ' num2str(ParticleID) ' Frame ' num2str(frame) ' (' num2str(index) ' of ' num2str(numel(all_frames)) ')'])
-        if qc_review_vec(all_frames(index)) == 1
-            set(gcf, 'color', 'green')
-        elseif qc_review_vec(all_frames(index)) == 0
-            set(gcf, 'color', 'red')
-        end
+        set(gcf,'Name',['Particle ' num2str(qc_spot.ParticleID) ' Frame ' num2str(qc_spot.frame) ' (' num2str(index) ' of ' num2str(numel(snip_files)) ')'])
+%         if qc_review_vec(snip_files(index)) == 1
+%             set(gcf, 'color', 'green')
+%         elseif qc_review_vec(snip_files(index)) == 0
+%             set(gcf, 'color', 'red')
+%         end
         ct=waitforbuttonpress;
         cc=get(qc_fig,'currentcharacter');
         if strcmp(cc,'1')||strcmp(cc,'0')                       
-            nucleus_struct(qc_spot.nc_index).qc_review_vec(qc_spot.nc_sub_index) = eval(cc);
-            index = min(numel(all_frames),index + 1);
+%             nucleus_struct(qc_spot.nc_index).qc_review_vec(qc_spot.nc_sub_index) = eval(cc);
+            index = min(numel(snip_files),index + 1);
         elseif strcmp(cc,'x')
             exit_flag = 1;
             break        
@@ -150,7 +125,7 @@ while ~exit_flag
             index = max(1,index-1);
             break
         elseif strcmp(cc,'m')
-            index = min(numel(all_frames),index+1);
+            index = min(numel(snip_files),index+1);
             break
         elseif strcmp(cc,'j')
             index = input('enter desired index: ');
