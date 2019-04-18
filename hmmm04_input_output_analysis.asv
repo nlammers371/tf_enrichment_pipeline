@@ -112,7 +112,6 @@ if make_trace_plots
     end
 end
 
-
 close all
 % ignore possibility of second project for noq 
 Tres = nanmedian(diff([hmm_input_output.time]));
@@ -137,12 +136,36 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).z_vec = z_vec;       
 end
 
+start_vec = NaN(size(hmm_input_output));
+stop_vec = NaN(size(hmm_input_output));
+for i = 1:numel(hmm_input_output)
+    start_vec(i) = hmm_input_output(i).time(1);
+    stop_vec(i) = hmm_input_output(i).time(end);
+end
+% select second protein series from amongst other loci
+rng(123); % for consistency
+for i = 1:numel(start_vec)
+    options = find(stop_vec>=stop_vec(i)&start_vec<=start_vec(i));
+    pt_id = randsample(options,1);
+    time_i = hmm_input_output(i).time;
+    time_j = hmm_input_output(pt_id).time;
+    t_ft = ismember(time_j,time_i);
+    sample_protein = hmm_input_output(pt_id).spot_protein(t_ft)-hmm_input_output(pt_id).mf_protein(t_ft);
+    sample_protein_all = hmm_input_output(pt_id).spot_protein_all(t_ft)-hmm_input_output(pt_id).mf_protein(t_ft);
+    hmm_input_output(i).alt_protein = sample_protein_all;
+    hmm_input_output(i).alt_protein_all = sample_protein_all;
+    hmm_input_output(i).alt_id = pt_id;
+end
+
+
 % First perform basic cross-correlation analysis
 r_xcov_spot_mat = NaN(2*window_size+1,numel(hmm_input_output));
 r_xcov_null_mat = NaN(2*window_size+1,numel(hmm_input_output));
+r_xcov_alt_mat = NaN(2*window_size+1,numel(hmm_input_output));
 
 f_xcov_spot_mat = NaN(2*window_size+1,numel(hmm_input_output));
 f_xcov_null_mat = NaN(2*window_size+1,numel(hmm_input_output));
+f_xcov_alt_mat = NaN(2*window_size+1,numel(hmm_input_output));
 iter = 0;
 wt_mat = NaN(2*window_size+1,numel(hmm_input_output));
 for i = 1:numel(hmm_input_output)
@@ -151,19 +174,25 @@ for i = 1:numel(hmm_input_output)
     f_vec = hmm_input_output(i).fluo;
     pt_spot = hmm_input_output(i).spot_protein_all-hmm_input_output(i).mf_protein_all;
     pt_serial = hmm_input_output(i).serial_protein_all-hmm_input_output(i).mf_protein_all;
+    pt_alt = hmm_input_output(i).alt_protein_all;
     % get raw-ish vectors
     pt_spot_raw = hmm_input_output(i).spot_protein;
     pt_serial_raw = hmm_input_output(i).serial_protein;
-    ft = ~isnan(pt_spot)&~isnan(pt_serial);     
+    pt_alt_raw = hmm_input_output(i).alt_protein;
+    
+    ft = ~isnan(pt_spot)&~isnan(pt_serial)&~isnan(pt_alt_raw);     
     
     if sum(ft) > window_size + 1 && sum(~isnan(pt_serial_raw)) / sum(~isnan(pt_spot_raw))== 1
         iter = iter + 1;
         hmm_input_output(i).qc_flag = 1;
         r_xcov_spot_mat(:,i) = xcov(r_vec(ft),pt_spot(ft),window_size,'coeff');
         r_xcov_null_mat(:,i) = xcov(r_vec(ft),pt_serial(ft),window_size,'coeff');
+        r_xcov_alt_mat(:,i) = xcov(r_vec(ft),pt_alt(ft),window_size,'coeff');
         
         f_xcov_spot_mat(:,i) = xcov(f_vec(ft),pt_spot(ft),window_size,'coeff');
         f_xcov_null_mat(:,i) = xcov(f_vec(ft),pt_serial(ft),window_size,'coeff');
+        f_xcov_alt_mat(:,i) = xcov(f_vec(ft),pt_alt(ft),window_size,'coeff');
+        
         wt_vec = (sum(ft)-window_size):sum(ft)-1;
         wt_mat(:,i) = [fliplr(wt_vec) sum(ft) wt_vec]; 
     end
@@ -171,9 +200,11 @@ end
 
 r_xcov_spot_mean = nansum(r_xcov_spot_mat.*wt_mat,2) ./ nansum(wt_mat,2);
 r_xcov_null_mean = nansum(r_xcov_null_mat.*wt_mat,2) ./ nansum(wt_mat,2);
+r_xcov_alt_mean = nansum(r_xcov_alt_mat.*wt_mat,2) ./ nansum(wt_mat,2);
+
 f_xcov_spot_mean = nansum(f_xcov_spot_mat.*wt_mat,2) ./ nansum(wt_mat,2);
 f_xcov_null_mean = nansum(f_xcov_null_mat.*wt_mat,2) ./ nansum(wt_mat,2);
-
+f_xcov_alt_mean = nansum(f_xcov_alt_mat.*wt_mat,2) ./ nansum(wt_mat,2);
 %%% make xcov figures
 
 % hmm-decoded rate
@@ -181,8 +212,9 @@ hmm_xcov = figure;
 hold on
 x_axis = Tres*(-window_size:window_size)/60;
 plot(x_axis,r_xcov_spot_mean)
+plot(x_axis,r_xcov_alt_mean)
 plot(x_axis,r_xcov_null_mean)
-legend('locus','control')
+legend('locus','control (random target)','control (virtual spot)')
 xlabel('offset (minutes)')
 ylabel('cross-covariance')
 title('hmm-decoded activity vs. protein')
@@ -194,8 +226,9 @@ fluo_xcov = figure;
 hold on
 x_axis = Tres*(-window_size:window_size)/60;
 plot(x_axis,f_xcov_spot_mean)
+plot(x_axis,f_xcov_alt_mean)
 plot(x_axis,f_xcov_null_mean)
-legend('locus','control')
+legend('locus','control (random target)','control (virtual spot)')
 xlabel('offset (minutes)')
 ylabel('cross-covariance')
 title('spot fluorescence vs. protein')
@@ -218,7 +251,7 @@ legend('hmm activity','fluorescence')
 grid on
 saveas(comp_xcov,[figPath 'xcov_comparison.png'])
 
-%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine protein levels in vicinity of sna peaks, troughs, rises, and
 %%% falls as detected in raw fluorescence and hmm channels
@@ -246,7 +279,7 @@ for i = 1:numel(hmm_input_output)
     
     ft1 = ~isnan(pt_spot);
     ft2 = ~isnan(pt_serial);
-    if sum(ft1&ft2) < window_size || sum(ft1)/sum(ft2) < .8
+    if sum(ft1&ft2) < window_size || sum(ft1)/sum(ft2) < .9 % being pretty strict about trace quality
         continue
     end
     %%% find features
@@ -306,7 +339,7 @@ for i = 1:numel(hmm_input_output)
     iter = iter + 1;
 end
 tic
-%%
+
 %%% Calculate bootstrap estimates of Mean and SE
 results_struct = struct;
 
@@ -332,7 +365,7 @@ for j = 1:numel(feature_cell)
         end
         results_struct(iter).ID = [data_titles{k} ' ' feature_titles{j}];
         results_struct(iter).fn = [data_titles{k} '_' feature_titles{j}];
-        results_struct(iter).data_name = data_titles(k);
+        results_struct(iter).data_name = data_titles{k};
         % response
         results_struct(iter).response_mean = nanmean(response_boot_mat)-nanmean(response_boot_mat(:));
         results_struct(iter).response_ste = nanstd(response_boot_mat);
@@ -376,3 +409,5 @@ for i = 1:numel(results_struct)
     grid on
     saveas(input_output_fig,[figPath results_struct(i).fn '_in_out.png'])
 end
+
+save([dataPath '
