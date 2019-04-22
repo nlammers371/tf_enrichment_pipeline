@@ -1,4 +1,4 @@
-% main02_sample_local_protein(project, RawPath)
+% main02_sample_local_protein(project, rawPath, proteinChannel, varargin)
 %
 % DESCRIPTION
 % Script to generate samples of local protein contentration at active gene
@@ -32,7 +32,7 @@ driftTol = .3; % mean frame-over frame drift distance in um (median for empirica
 dataPath = ['../dat/' project '/'];
 numWorkers = 12;
 
-for i = 1:numel(varargin)  
+for i = 1:(numel(varargin)-1)  
     if ischar(varargin{i}) && ~strcmpi(varargin{i},'dropboxFolder')
         if ~ischar(varargin{i+1})
             eval([varargin{i} '=varargin{i+1};']);        
