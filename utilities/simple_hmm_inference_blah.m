@@ -38,7 +38,7 @@ parfor i_local = 1:n_localEM % Parallel Local EM
     v_init = param_init.v;                        
     noise_init = param_init.noise; 
     %--------------------LocalEM Call-------------------------%
-    local_out = local_em_MS2_reduced_memory(fluo_data, ...
+    local_out = local_em_MS2_reduced_memory_truncated(fluo_data, ...
         v_init, noise_init, pi0_log_init', A_log_init, K, w, ...
         alpha, n_steps_max, eps);                    
     %---------------------------------------------------------%                
@@ -52,13 +52,11 @@ parfor i_local = 1:n_localEM % Parallel Local EM
     local_struct(i_local).pi0 = exp(local_out.pi0_log);
     local_struct(i_local).soft_struct = local_out.soft_struct; 
 end
-[logL, max_index] = max([local_struct.logL]); % Get index of best result                    
+[~, max_index] = max([local_struct.logL]); % Get index of best result                    
 % Save parameters from most likely local run
-output.logL = logL;                        
-output.logL_avg = logL / numel([fluo_data{:}]);
 output.pi0 =local_struct(max_index).pi0;                        
 output.r = local_struct(max_index).r(:);           
-output.noise = sqrt(local_struct(max_index).noise);
+output.noise = local_struct(max_index).noise;
 output.A = local_struct(max_index).A(:);
 output.A_mat = local_struct(max_index).A;            
 % get soft-decoded structure

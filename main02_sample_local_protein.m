@@ -25,17 +25,19 @@
 function nucleus_struct_protein = main02_sample_local_protein(project,rawPath,proteinChannel,varargin)
 
 zeissFlag = 0;
+minTime = 6*60;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
-mfTolerance = ROIRadiusSpot;
-minSampleSep = 1; %um
+minSampleSep = 1.5; %um
 driftTol = .3; % mean frame-over frame drift distance in um (median for empirical data is .38)
 dataPath = ['../dat/' project '/'];
 numWorkers = 12;
 
 for i = 1:numel(varargin)  
     if ischar(varargin{i}) && ~strcmpi(varargin{i},'dropboxFolder')
-        if ~ischar(varargin{i+1})
-            eval([varargin{i} '=varargin{i+1};']);        
+        if i ~= numel(varargin)
+            if ~ischar(varargin{i+1})
+                eval([varargin{i} '=varargin{i+1};']);        
+            end
         end
     elseif strcmpi(varargin{i},'dropboxFolder')
         dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
@@ -54,6 +56,7 @@ options = [1 2];
 mcp_channel = options(options~=proteinChannel);
 % generate indexing vectors
 frame_ref = [nucleus_struct.frames];
+time_ref = [nucleus_struct.time];
 nc_x_ref = [nucleus_struct.xPos];
 nc_y_ref = [nucleus_struct.yPos];
 spot_x_ref = [nucleus_struct.xPosParticle]-zeissFlag;
@@ -127,7 +130,7 @@ for s = 1:numel(set_index)
     src_cell{s} = src;     
 end
 %%% Generate reference array for set-frame combos
-set_frame_array = unique([set_ref' frame_ref'],'row');
+set_frame_array = unique([set_ref' frame_ref' time_ref'],'row');
 qc_structure = struct;
 %%% iterate
 p = gcp('nocreate');
@@ -141,7 +144,11 @@ frame_rate_vec = NaN(1,size(set_frame_array,1));
 for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
-    frame = set_frame_array(i,2);       
+    frame = set_frame_array(i,2);  
+    time = set_frame_array(i,3);  
+    if time < minTime
+        continue
+    end
     % get nucleus
     frame_set_filter = set_ref==setID&frame_ref==frame;
     nc_x_vec = nc_x_ref(frame_set_filter);
@@ -199,7 +206,11 @@ for i = 1:size(set_frame_array,1)
     [yDim, xDim] = size(protein_bin); 
     [x_ref, y_ref] = meshgrid(1:xDim,1:yDim);
     % generate linear indices ofr nc center positions
-    nc_lin_indices = sub2ind(size(protein_bin),round(nc_y_vec_u),round(nc_x_vec_u));
+    try
+        nc_lin_indices = sub2ind(size(protein_bin),round(nc_y_vec_u),round(nc_x_vec_u));
+    catch
+        error('asdfa')
+    end
     % take convex hull
     stats = regionprops(nc_frame_labels,'ConvexHull');
     nc_ref_frame = zeros(size(nc_frame_labels)); 
@@ -389,7 +400,7 @@ for i = 1:size(set_frame_array,1)
             drControl = double(sqrt((old_x-x_pos_vec).^2+(old_y-y_pos_vec).^2));   
             edge_dev_vec = spot_edge_dist-nc_edge_dist_vec;
             % calculate weights
-            wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2+((edge_dev_vec)/roi_spot).^2));
+            wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2+((1.5*edge_dev_vec)/roi_spot).^2));
             % anything too close to locus or with an edge distance too different from locus is excluded
             wt_vec(spot_sep_vec<minSampleSep) = 0;
             wt_vec(edge_dev_vec>3*roi_spot) = 0;

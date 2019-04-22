@@ -24,8 +24,9 @@
 function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,varargin)
 
 close all
-
+min_time = 6*60;
 tWindow = 50*60; % determines width of sliding window
+qc_frac = .8;
 %%%%% These options will remain fixed for now
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
 fluo_field = 1; % specify which fluo field to (1 or 3)
@@ -79,7 +80,7 @@ end
 % Set write path (inference results are now written to external directory)
 hmm_suffix =  ['/hmm_inference/w' num2str(w) '_t' num2str(Tres)...
     '_alpha' num2str(round(alpha*10)) '_f' num2str(fluo_field) '_cl' num2str(clipped) ...
-    '/K' num2str(KInf) '_tw' num2str(tWindow/60) d_type '_1/']; 
+    '/K' num2str(KInf) '_tw' num2str(tWindow/60) d_type '/']; 
 
 file_list = dir([dataPath hmm_suffix '*.mat']);
 
@@ -95,7 +96,7 @@ end
 %%% extract protein info
 particle_vec = [];
 for i = 1:numel(nucleus_struct_protein)
-    particle_vec = [particle_vec repelem(nucleus_struct(i).ParticleID,numel(nucleus_struct_protein(i).time))];
+    particle_vec = [particle_vec repelem(nucleus_struct_protein(i).ParticleID,numel(nucleus_struct_protein(i).time))];
 end
 time_vec = [nucleus_struct_protein.time];
 fluo_vec = [nucleus_struct_protein.fluo];
@@ -123,7 +124,7 @@ for i = 1:numel(particle_index)
     indices = index_vec(particle_ft);
     sub_indices = sub_index_vec(particle_ft);
     temp = struct;
-    % extract relevant vectors
+    % extract relevant vectors from protein struct
     ff_pt = fluo_vec(particle_vec==ParticleID);
     mcp_pt = spot_mcp_vec(particle_vec==ParticleID);
     sp_pt = spot_protein_vec(particle_vec==ParticleID);
@@ -131,6 +132,7 @@ for i = 1:numel(particle_index)
     mf_pt = mf_protein_vec(particle_vec==ParticleID);
     sr_pt = serial_protein_vec(particle_vec==ParticleID);       
     tt_pt = time_vec(particle_vec==ParticleID);
+    
     if ~isempty(sub_indices) && any(~isnan(mf_pt)) && any(~isnan(nn_pt))
         temp.time = inference_results(indices(1)).time_data{sub_indices(1)}; % doesn't matter which duplicate we reference
         temp.fluo = inference_results(indices(1)).fluo_data{sub_indices(1)};
@@ -158,32 +160,31 @@ for i = 1:numel(particle_index)
     temp.r_vec = sum(temp.r_mat,2);
     % make predicted fluo vec
     fluo_hmm = conv(temp.r_vec,alpha_kernel);
-    temp.fluo_hmm = fluo_hmm(1:numel(temp.r_vec));
+    temp.fluo_hmm = fluo_hmm(1:numel(temp.r_vec));        
     
     % checks using mcp channel to ensure that we are correctly matching
     % particles and time frames
     temp.mcp_check = interp1(tt_pt(~isnan(mcp_pt)),mcp_pt(~isnan(mcp_pt)),temp.time);
     temp.fluo_check = interp1(tt_pt(~isnan(ff_pt)),ff_pt(~isnan(ff_pt)),temp.time);
     % protein information
-    temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);    
-    temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
+    temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);        
     temp.mf_protein = interp1(tt_pt(~isnan(mf_pt)),mf_pt(~isnan(mf_pt)),temp.time);  
+    if sum(~isnan(nn_pt)) 
     if sum(~isnan(sr_pt)) > 2
         temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);
     else
         temp.serial_protein = NaN(size(temp.null_protein));
     end
     % reset values to NaN that are too far removed from true ref point
-    input_times = tt_pt(~isnan(sp_pt)&~isnan(nn_pt));
+    input_times = tt_pt(~isnan(sp_pt)&~isnan(sr_pt));
     dt_vec = NaN(size(temp.time));
     for t = 1:numel(dt_vec)
         dt_vec(t) = min(abs(temp.time(t)-input_times));
     end
-    dt_filter = dt_vec > 60;
+    dt_filter = dt_vec > 60 | temp.time < min_time;
     temp.mcp_check(dt_filter) = NaN;
     temp.fluo_check(dt_filter) = NaN;
-%     temp.fluo(dt_filter) = NaN;
-    temp.mf_counts(dt_filter) = NaN;
+%     temp.fluo(dt_filter) = NaN;    
     temp.spot_protein_all = temp.spot_protein;
     temp.spot_protein(dt_filter) = NaN;
     temp.null_protein_all = temp.null_protein;
@@ -194,7 +195,29 @@ for i = 1:numel(particle_index)
     temp.mf_protein(dt_filter) = NaN;
     % record general info for later use
     temp.ParticleID = ParticleID; 
+    temp.Tres = Tres;
+    temp.qc_frac = sum(~isnan(ff_pt)) / numel(ff_pt);
+    temp.mcp_qc_flag = sum(~isnan(ff_pt)) / numel(ff_pt) > qc_frac;
     hmm_input_output  = [hmm_input_output temp];
+end
+% generate effective initiation rate vector
+occ_vec = nanmean(vertcat(hmm_input_output.z_mat));
+r_mean = nanmean(vertcat(hmm_input_output.r));
+if K==3
+    r_mean = [r_mean(1) (r_mean(2).*occ_vec(2)+r_mean(3).*occ_vec(3))/(occ_vec(2)+occ_vec(3))];
+end
+for i = 1:numel(hmm_input_output)
+    % generate discrete state and continuous production vectors
+    z_mat = hmm_input_output(i).z_mat;    
+    if K == 3
+        z_mat(:,2) = sum(z_mat(:,2:3),2);
+        z_mat = z_mat(:,1:2);
+    end
+    r_mat = z_mat .* r_mean;
+    hmm_input_output(i).r_vec = sum(r_mat,2);
+    hmm_input_output(i).z_mat2 = z_mat;
+    [~,z_vec] = max(z_mat,[],2);
+    hmm_input_output(i).z_vec = z_vec;       
 end
 
 % save results

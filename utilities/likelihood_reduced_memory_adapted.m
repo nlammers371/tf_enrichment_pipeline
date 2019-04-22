@@ -1,4 +1,4 @@
-function [logL_tot, logL_cell] = likelihood_reduced_memory_adapted (fluo_values, v, noise, ...
+function [logL_tot, logL_vec] = likelihood_reduced_memory_adapted (fluo_values, v, noise, ...
                          pi0_log, A_log, K, w, kappa)
 
     % Returns the log likelihood of observing fluorescence data (single or
@@ -21,7 +21,7 @@ function [logL_tot, logL_cell] = likelihood_reduced_memory_adapted (fluo_values,
     %%%%%%%%%%%%%%%%%%%%%%% Variable assignments %%%%%%%%%%%%%%%%%%%%%%%
     
     % initialize cell to store logL values
-    logL_cell = cell(size(fluo_values));
+    logL_vec = NaN(size(fluo_values));
     % number of traces
     n_traces = length(fluo_values);
     
@@ -153,7 +153,7 @@ function [logL_tot, logL_cell] = likelihood_reduced_memory_adapted (fluo_values,
         end
         
         % log-likelihood calculation
-        logL_tot = logL_tot + ...
-            log_sum_exp_positive(alpha_matrix_log(:,fluo_lengths{i_tr}));
-        logL_cell{i_tr} = alpha_matrix_log(:,fluo_lengths{i_tr});
+        total_logL = log_sum_exp_positive(alpha_matrix_log(:,fluo_lengths{i_tr}));
+        logL_tot = logL_tot + total_logL;
+        logL_vec(i_tr) = total_logL;
     end

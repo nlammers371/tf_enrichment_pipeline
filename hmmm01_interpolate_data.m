@@ -13,7 +13,7 @@ function nucleus_struct = hmmm01_interpolate_data(project,varargin)
 
 dataPath = ['../dat/' project '/'];
 minDp = 10;
-
+minTime = 6*60;
 for i = 1:numel(varargin)
     if strcmpi(varargin{i},'dropboxFolder')
         dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
@@ -39,18 +39,21 @@ for i = 1:length(nucleus_struct)
     temp = nucleus_struct(i);
     trace1 = temp.fluo; %Load full trace, including intervening NaN's    
     pt_time = temp.time;      
+    trace1(pt_time < minTime) = NaN;
     quality_flag = 1; % indicates whether trace suitable for inference
     
     if sum(~isnan(trace1)) == 0 
         t_start = 0;
         t_stop = -1;
     else
-        t_start = interpGrid(find(interpGrid>=min(pt_time(~isnan(trace1))),1));
-        t_stop = interpGrid(find(interpGrid<=max(pt_time(~isnan(trace1))),1,'last'));
+        start_i = find(interpGrid>=min(pt_time(~isnan(trace1))),1);
+        t_start = interpGrid(start_i);
+        stop_i = find(interpGrid<=max(pt_time(~isnan(trace1))),1,'last');
+        t_stop = interpGrid(stop_i);
     end
     time_interp = t_start:TresInterp:t_stop;
     
-    if sum(~isnan(trace1)) < minDp
+    if sum(~isnan(trace1)) < minDp || sum(~isnan(trace1)) / numel(start_i:stop_i) < .6
         quality_flag = 0;
         trace1_interp = NaN(size(time_interp));
         time_interp = NaN(size(time_interp));
