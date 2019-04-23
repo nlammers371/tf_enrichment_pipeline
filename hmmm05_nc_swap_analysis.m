@@ -91,10 +91,10 @@ for i = 1:numel(hmm_input_output)
     pt_spot = hmm_input_output(i).spot_protein_all-hmm_input_output(i).mf_protein_all;
     pt_swap = hmm_input_output(i).swap_spot_protein_all-hmm_input_output(i).swap_mf_protein_all;    
     % get raw-ish vectors
-    qc_flag = hmm_input_output(i).mcp_qc_flag;
+%     qc_flag = hmm_input_output(i).mcp_qc_flag;
     ft = ~isnan(pt_spot)&~isnan(pt_swap);     
     
-    if sum(~isnan(f_vec)) > window_size + 1 && qc_flag
+    if sum(~isnan(f_vec)) > window_size + 1 % && qc_flag
         iter = iter + 1;
         r_xcov_spot_mat(:,i) = xcov(r_vec(ft),pt_spot(ft),window_size,'coeff');        
         r_xcov_swap_mat(:,i) = xcov(r_vec(ft),pt_swap(ft),window_size,'coeff');
@@ -176,16 +176,16 @@ for i = 1:numel(hmm_input_output)
     time_vec = hmm_input_output(i).time/60;   
     frame_vec = 1:numel(time_vec);
     fluo_vec = hmm_input_output(i).fluo;
-    qc_flag = hmm_input_output(i).mcp_qc_flag;
+%     qc_flag = hmm_input_output(i).mcp_qc_flag;
     hmm_vec = hmm_input_output(i).r_vec;
     pt_spot = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;      
     pt_swap = hmm_input_output(i).swap_spot_protein-hmm_input_output(i).swap_mf_protein; 
     nan_ft = ~isnan(pt_spot) & ~isnan(pt_swap);
     pt_spot(~nan_ft) = NaN;
     pt_swap(~nan_ft) = NaN;
-    if ~qc_flag
-        continue
-    end
+%     if ~qc_flag
+%         continue
+%     end
     %%% find features
     % find fluo peaks and troughs
     [~,fluo_high_ids] = findpeaks(fluo_vec,frame_vec,'MinPeakProminence',fluo_scale); % NL: eye-balled atm

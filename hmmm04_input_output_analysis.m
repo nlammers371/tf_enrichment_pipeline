@@ -130,10 +130,10 @@ for i = 1:numel(hmm_input_output)
     % get raw-ish vectors
     pt_spot_raw = hmm_input_output(i).spot_protein;
     pt_serial_raw = hmm_input_output(i).serial_protein;
-    qc_flag = hmm_input_output(i).mcp_qc_flag;
+%     qc_flag = hmm_input_output(i).mcp_qc_flag;
     ft = ~isnan(pt_spot)&~isnan(pt_serial);     
     
-    if qc_flag && numel(f_vec) >= window_size + 1 
+    if numel(f_vec) >= window_size + 1 
         iter = iter + 1;        
         r_xcov_spot_mat(:,i) = xcov(r_vec(ft),pt_spot(ft),window_size,'coeff');
         r_xcov_null_mat(:,i) = xcov(r_vec(ft),pt_serial(ft),window_size,'coeff');
@@ -216,14 +216,14 @@ for i = 1:numel(hmm_input_output)
     time_vec = hmm_input_output(i).time/60;   
     frame_vec = 1:numel(time_vec);
     fluo_vec = hmm_input_output(i).fluo;
-    qc_flag = hmm_input_output(i).mcp_qc_flag;
+%     qc_flag = hmm_input_output(i).mcp_qc_flag;
     hmm_vec = hmm_input_output(i).r_vec;
     pt_spot = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;      
     pt_serial = hmm_input_output(i).serial_protein-hmm_input_output(i).mf_protein; 
     
-    if ~qc_flag
-        continue
-    end
+%     if ~qc_flag
+%         continue
+%     end
     %%% find features
     % find fluo peaks and troughs
     [~,fluo_high_ids] = findpeaks(fluo_vec,frame_vec,'MinPeakProminence',fluo_scale); % NL: eye-balled atm
@@ -332,7 +332,7 @@ for i = 1:numel(results_struct)
     
     yyaxis right
     errorbar(time_axis,results_struct(i).spot_protein_mean,results_struct(i).spot_protein_ste,...
-        'Color',red,'CapSize',0,'LineWidth',1.2)
+        'Color',red,'CapSize',0,'LineWidth',1.5)
     plot(time_axis,results_struct(i).serial_protein_mean,'-',...results_struct(i).serial_protein_ste,...
         'Color',blue);%,'CapSize',0)    
     ylabel([protein_name ' concentration (au)'])

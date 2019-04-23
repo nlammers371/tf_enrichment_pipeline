@@ -192,7 +192,7 @@ for i = 1:numel(particle_index)
         % record general info for later use
         temp.ParticleID = ParticleID; 
         temp.Tres = Tres;
-        temp.qc_frac = sum(~isnan(ff_pt)) / numel(ff_pt);
+%         temp.qc_frac = sum(~isnan(ff_pt)) / numel(ff_pt);
 %         temp.mcp_qc_flag = qc_index(i);%sum(~isnan(ff_pt)) / numel(ff_pt) > qc_frac;
         hmm_input_output  = [hmm_input_output temp];
     end
