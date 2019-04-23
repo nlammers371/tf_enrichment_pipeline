@@ -94,7 +94,7 @@ for i = 1:numel(hmm_input_output)
 %     qc_flag = hmm_input_output(i).mcp_qc_flag;
     ft = ~isnan(pt_spot)&~isnan(pt_swap);     
     
-    if sum(ft) > window_size + 1 % && qc_flag
+    if sum(~isnan(f_vec)) > window_size + 1 % && qc_flag
         iter = iter + 1;
         r_xcov_spot_mat(:,i) = xcov(r_vec(ft),pt_spot(ft),window_size,'coeff');        
         r_xcov_swap_mat(:,i) = xcov(r_vec(ft),pt_swap(ft),window_size,'coeff');
@@ -297,19 +297,19 @@ for i = 1:numel(results_struct)
     % generate error range vrctors
     spot_err_top = results_struct(i).spot_protein_mean + results_struct(i).spot_protein_ste;
     spot_err_bottom = results_struct(i).spot_protein_mean - results_struct(i).spot_protein_ste;
-    null_err_top = results_struct(i).swap_protein_mean + results_struct(i).swap_protein_ste;
-    null_err_bottom = results_struct(i).swap_protein_mean - results_struct(i).swap_protein_ste;
+    null_err_top = results_struct(i).serial_protein_mean + results_struct(i).serial_protein_ste;
+    null_err_bottom = results_struct(i).serial_protein_mean - results_struct(i).serial_protein_ste;
     
     yyaxis right
     f1 = fill([time_axis fliplr(time_axis)],[spot_err_top fliplr(spot_err_bottom)],rd);
     f1.FaceAlpha = .3;
     f1.EdgeAlpha = 0;
-%     f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
+    f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
     f2.FaceAlpha = .3;
     f2.EdgeAlpha = 0;
     
     p2 = plot(time_axis,results_struct(i).spot_protein_mean,'-','Color',rd,'LineWidth',1.5);
-    p3 = plot(time_axis,results_struct(i).swap_protein_mean,'-','LineWidth',1.5,...
+    p3 = plot(time_axis,results_struct(i).serial_protein_mean,'-','LineWidth',1.5,...
         'Color',bl);%,'CapSize',0)    
     ylabel([protein_name ' enrichment (au)'])
     ax = gca;
@@ -320,7 +320,9 @@ for i = 1:numel(results_struct)
     results_struct(i).project = project;
     legend([p1 p2 p3], 'transcriptional response','protein (locus)','protein (control)','Location','southwest');%,'fluorescence (control)','fluorescence (trend)')
     grid on
-    saveas(input_output_fig,[figPath results_struct(i).fn '_in_out_swap.png'])
+    saveas(input_output_fig,[figPath results_struct(i).fn '_in_out.png'])
 end
 % save results
+
+save([dataPath 'input_output_results.mat'],'results_struct')
 save([dataPath 'swap_input_output_results.mat'],'results_struct')

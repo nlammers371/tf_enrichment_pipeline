@@ -25,8 +25,7 @@ function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,vararg
 
 close all
 min_time = 6*60;
-tWindow = 60*60; % determines width of sliding window
-qc_frac = .6;
+tWindow = 50*60; % determines width of sliding window
 %%%%% These options will remain fixed for now
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
 fluo_field = 1; % specify which fluo field to (1 or 3)

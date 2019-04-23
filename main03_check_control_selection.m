@@ -77,7 +77,7 @@ while ~exit_flag
         yDim = ceil(size(edge_dist_snip,1)/2);
         xDim = ceil(size(edge_dist_snip,2)/2);
         
-        qc_fig = figure('Position',[0 0 512 512]);                 
+        qc_fig = figure;%('Position',[0 0 512 512]);                 
 %         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on

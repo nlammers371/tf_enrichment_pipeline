@@ -133,7 +133,7 @@ for i = 1:numel(hmm_input_output)
 %     qc_flag = hmm_input_output(i).mcp_qc_flag;
     ft = ~isnan(pt_spot)&~isnan(pt_serial);     
     
-    if numel(f_vec) >= window_size + 1 
+    if numel(f_vec) >= window_size + 1 && sum(ft) / numel(f_vec) > .8
         iter = iter + 1;        
         r_xcov_spot_mat(:,i) = xcov(r_vec(ft),pt_spot(ft),window_size,'coeff');
         r_xcov_null_mat(:,i) = xcov(r_vec(ft),pt_serial(ft),window_size,'coeff');
@@ -315,34 +315,48 @@ for j = 1:numel(feature_cell)
     end
 end
 
-%%% Make figures                     
+%% Make figures                     
 time_axis = Tres*ref_vec / 60;
-cm = jet(128);
-red = cm(110,:);
-blue = cm(35,:);
+% Define some colors
+yw = [234 194 100]/256; % yellow
+bl = [115 143 193]/256; % blue
+rd = [213 108 85]/256; % red
+gr = [191 213 151]/256; % green
+br = [207 178 147]/256; % brown
 
 for i = 1:numel(results_struct)  
     input_output_fig = figure;
     hold on
     yyaxis left
-    plot(time_axis,results_struct(i).response_mean,'Color',[.6 .6 .6])
+    p1 = plot(time_axis,results_struct(i).response_mean,'Color',[.6 .6 .6],'LineWidth',1.5);
     ylabel([gene_name ' activity (' results_struct(i).data_name ')'])
     ax = gca;
     ax.YColor = 'black';
+    % generate error range vrctors
+    spot_err_top = results_struct(i).spot_protein_mean + results_struct(i).spot_protein_ste;
+    spot_err_bottom = results_struct(i).spot_protein_mean - results_struct(i).spot_protein_ste;
+    null_err_top = results_struct(i).serial_protein_mean + results_struct(i).serial_protein_ste;
+    null_err_bottom = results_struct(i).serial_protein_mean - results_struct(i).serial_protein_ste;
     
     yyaxis right
-    errorbar(time_axis,results_struct(i).spot_protein_mean,results_struct(i).spot_protein_ste,...
-        'Color',red,'CapSize',0,'LineWidth',1.5)
-    plot(time_axis,results_struct(i).serial_protein_mean,'-',...results_struct(i).serial_protein_ste,...
-        'Color',blue);%,'CapSize',0)    
-    ylabel([protein_name ' concentration (au)'])
+    f1 = fill([time_axis fliplr(time_axis)],[spot_err_top fliplr(spot_err_bottom)],rd);
+    f1.FaceAlpha = .3;
+    f1.EdgeAlpha = 0;
+%     f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
+    f2.FaceAlpha = .3;
+    f2.EdgeAlpha = 0;
+    
+    p2 = plot(time_axis,results_struct(i).spot_protein_mean,'-','Color',rd,'LineWidth',1.5);
+    p3 = plot(time_axis,results_struct(i).serial_protein_mean,'-','LineWidth',1.5,...
+        'Color',bl);%,'CapSize',0)    
+    ylabel([protein_name ' enrichment (au)'])
     ax = gca;
     ax.YColor = 'black';
     
     xlabel('offset (minutes)')       
     title(results_struct(i).ID )
     results_struct(i).project = project;
-    legend('transcriptional response','protein (locus)','protein (control)','Location','southwest');%,'fluorescence (control)','fluorescence (trend)')
+    legend([p1 p2 p3], 'transcriptional response','protein (locus)','protein (control)','Location','southwest');%,'fluorescence (control)','fluorescence (trend)')
     grid on
     saveas(input_output_fig,[figPath results_struct(i).fn '_in_out.png'])
 end
