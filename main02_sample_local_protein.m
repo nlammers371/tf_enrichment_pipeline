@@ -27,7 +27,7 @@ function nucleus_struct_protein = main02_sample_local_protein(project,rawPath,pr
 zeissFlag = 0;
 minTime = 6*60;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
-minSampleSep = 1.5; %um
+minSampleSep = 1; %um
 driftTol = .3; % mean frame-over frame drift distance in um (median for empirical data is .38)
 dataPath = ['../dat/' project '/'];
 numWorkers = 12;
@@ -130,7 +130,7 @@ for s = 1:numel(set_index)
     src_cell{s} = src;     
 end
 %%% Generate reference array for set-frame combos
-set_frame_array = unique([set_ref' frame_ref' time_ref'],'row');
+set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
 %%% iterate
 p = gcp('nocreate');
@@ -145,10 +145,10 @@ for i = 1:size(set_frame_array,1)
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);  
-    time = set_frame_array(i,3);  
-    if time < minTime
-        continue
-    end
+%     time = set_frame_array(i,3);  
+%     if time < minTime
+%         continue
+%     end
     % get nucleus
     frame_set_filter = set_ref==setID&frame_ref==frame;
     nc_x_vec = nc_x_ref(frame_set_filter);
@@ -400,7 +400,7 @@ for i = 1:size(set_frame_array,1)
             drControl = double(sqrt((old_x-x_pos_vec).^2+(old_y-y_pos_vec).^2));   
             edge_dev_vec = spot_edge_dist-nc_edge_dist_vec;
             % calculate weights
-            wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2+((1.5*edge_dev_vec)/roi_spot).^2));
+            wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2+((edge_dev_vec)/roi_spot).^2));
             % anything too close to locus or with an edge distance too different from locus is excluded
             wt_vec(spot_sep_vec<minSampleSep) = 0;
             wt_vec(edge_dev_vec>3*roi_spot) = 0;
