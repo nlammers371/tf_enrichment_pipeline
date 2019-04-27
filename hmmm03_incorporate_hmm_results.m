@@ -25,7 +25,7 @@ function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,vararg
 
 close all
 min_time = 6*60;
-tWindow = 50*60; % determines width of sliding window
+tWindow = 60*60; % determines width of sliding window
 %%%%% These options will remain fixed for now
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
 fluo_field = 1; % specify which fluo field to (1 or 3)
@@ -36,7 +36,7 @@ alphaFrac = 1302 / 6000;
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)    
     if strcmpi(varargin{i},'dropboxFolder')
-        dataRoot = [varargin{i+1} '\ProcessedEnrichmentData\'];
+        dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
     end
     if ischar(varargin{i})
         if ismember(varargin{i},{'dpBootstrap','controlProject'})
@@ -77,7 +77,7 @@ for i = 1:w
 end
 
 % Set write path (inference results are now written to external directory)
-hmm_suffix =  ['/hmm_inference/w' num2str(w) '_t' num2str(Tres)...
+hmm_suffix =  ['hmm_inference/w' num2str(w) '_t' num2str(Tres)...
     '_alpha' num2str(round(alpha*10)) '_f' num2str(fluo_field) '_cl' num2str(clipped) ...
     '/K' num2str(KInf) '_tw' num2str(tWindow/60) d_type '/']; 
 
@@ -114,6 +114,7 @@ for i = 1:numel(inference_results)
     index_vec = [index_vec repelem(i,numel(inference_results(i).fluo_data))];
     sub_index_vec = [sub_index_vec 1:numel(inference_results(i).fluo_data)];
 end
+
 %%% now extract corresponding hmm traces
 hmm_input_output = [];
 for i = 1:numel(particle_index)        

@@ -6,6 +6,7 @@ close all
 K = 3;
 w = 6;
 project = 'Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW';
+% project = 'Dl_Venus_hbP2P_MCPmCherry_Zoom2_7uW14uW';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 % dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
@@ -15,7 +16,7 @@ mkdir(figPath)
 nTraces = 50; % number of individual traces to select for plotting
 window_size = 15; % number of lags and leads over which to track protein/fluo dynamics
 nBoots = 100;
-make_trace_plots = 0;
+make_trace_plots = 1;
 
 % extract protein, gene, fluorophore info
 underscores = strfind(project,'_');
@@ -31,7 +32,12 @@ gene_fluor = project(underscores(3)+1:end);
 
 % load data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
-
+% Define some colors
+yw = [234 194 100]/256; % yellow
+bl = [115 143 193]/256; % blue
+rd = [213 108 85]/256; % red
+gr = [191 213 151]/256; % green
+br = [207 178 147]/256; % brown
 % first make figures to ensure that hmmm results have been properly
 % concatenated with protein data
 if make_trace_plots    
@@ -40,7 +46,7 @@ if make_trace_plots
     s_index = 1:numel(hmm_input_output);
     rng(123);
     plot_indices = randsample(s_index,min([nTraces,numel(s_index)]),false);
-    for j = 1:numel(plot_indices)
+    for j = 1:-1%numel(plot_indices)
         % MCP channel checks
         mcp_check = hmm_input_output(plot_indices(j)).mcp_check;
         fluo_check = hmm_input_output(plot_indices(j)).fluo_check;
@@ -84,28 +90,31 @@ if make_trace_plots
     for j = 1:numel(plot_indices)
         % MCP channel checks
         time = hmm_input_output(plot_indices(j)).time;
-        r_vec = sum(hmm_input_output(plot_indices(j)).r_mat,2);
+        fluo = hmm_input_output(plot_indices(j)).fluo;
         spot_protein = hmm_input_output(plot_indices(j)).spot_protein_all;
-        null_protein = hmm_input_output(plot_indices(j)).serial_protein_all;
-        delta_protein = spot_protein - null_protein;
+        serial_protein = hmm_input_output(plot_indices(j)).serial_protein_all;
+        mf_protein = hmm_input_output(plot_indices(j)).mf_protein_all;
         % make figure
         trace_fig = figure('Visible','off');
         hold on
 
         yyaxis left
-        plot(time,r_vec)
-        ylabel(['instantaneous ' gene_name ' activity (au)'])
+        area(time,fluo,'FaceColor',[.7 .7 .7])
+        ylabel([gene_name ' activity (au)'])
 
         yyaxis right
-        plot(time,delta_protein);
+        plot(time,spot_protein,'-','Color',rd,'LineWidth',1.5);
+        plot(time,serial_protein,'-','Color',bl,'LineWidth',1.5);
+        plot(time,mf_protein,'-','Color',yw,'LineWidth',1.5);
         ylabel(['absolute ' protein_name ' enrichment(au)'])
 
         ax = gca;
         ax.YAxis(1).Color = 'black';
         ax.YAxis(2).Color = 'black';
 
-        legend('transcriptional activity', 'local protein concentration')
+%         legend('transcriptional activity', 'protein (active locus)', 'protein (virtual spot)','protein (nucleus average)')
         xlabel('time')
+%         error('afs')
         ylabel([gene_name ' activity (au)'])
         saveas(trace_fig,[tracePath 'input_output_nc' sprintf('%03d',plot_indices(j)) '.png'])               
     end
@@ -195,7 +204,7 @@ legend('hmm activity','fluorescence')
 grid on
 saveas(comp_xcov,[figPath 'xcov_comparison.png'])
 
-%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine protein levels in vicinity of sna peaks, troughs, rises, and
 %%% falls as detected in raw fluorescence and hmm channels
@@ -315,7 +324,7 @@ for j = 1:numel(feature_cell)
     end
 end
 
-%% Make figures                     
+%%% Make figures                     
 time_axis = Tres*ref_vec / 60;
 % Define some colors
 yw = [234 194 100]/256; % yellow
@@ -323,6 +332,12 @@ bl = [115 143 193]/256; % blue
 rd = [213 108 85]/256; % red
 gr = [191 213 151]/256; % green
 br = [207 178 147]/256; % brown
+
+if strcmp(project,'Dl_Venus_hbP2P_MCPmCherry_Zoom2_7uW14uW')
+    target_color = yw;
+else
+    target_color = rd;
+end
 
 for i = 1:numel(results_struct)  
     input_output_fig = figure;
@@ -339,14 +354,14 @@ for i = 1:numel(results_struct)
     null_err_bottom = results_struct(i).serial_protein_mean - results_struct(i).serial_protein_ste;
     
     yyaxis right
-    f1 = fill([time_axis fliplr(time_axis)],[spot_err_top fliplr(spot_err_bottom)],rd);
-    f1.FaceAlpha = .3;
+    f1 = fill([time_axis fliplr(time_axis)],[spot_err_top fliplr(spot_err_bottom)],target_color);
+    f1.FaceAlpha = .2;
     f1.EdgeAlpha = 0;
-%     f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
-    f2.FaceAlpha = .3;
+    f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
+    f2.FaceAlpha = .2;
     f2.EdgeAlpha = 0;
     
-    p2 = plot(time_axis,results_struct(i).spot_protein_mean,'-','Color',rd,'LineWidth',1.5);
+    p2 = plot(time_axis,results_struct(i).spot_protein_mean,'-','Color',target_color,'LineWidth',1.5);
     p3 = plot(time_axis,results_struct(i).serial_protein_mean,'-','LineWidth',1.5,...
         'Color',bl);%,'CapSize',0)    
     ylabel([protein_name ' enrichment (au)'])

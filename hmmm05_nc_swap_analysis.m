@@ -277,7 +277,7 @@ for j = 1:numel(feature_cell)
     end
 end
 
-%%% Make figures                     
+%% Make figures                     
 time_axis = Tres*ref_vec / 60;
 % Define some colors
 yw = [234 194 100]/256; % yellow
@@ -302,15 +302,15 @@ for i = 1:numel(results_struct)
     
     yyaxis right
     f1 = fill([time_axis fliplr(time_axis)],[spot_err_top fliplr(spot_err_bottom)],rd);
-    f1.FaceAlpha = .3;
+    f1.FaceAlpha = .2;
     f1.EdgeAlpha = 0;
-%     f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],bl);
-    f2.FaceAlpha = .3;
+    f2 = fill([time_axis fliplr(time_axis)],[null_err_top fliplr(null_err_bottom)],(bl+gr)/2);
+    f2.FaceAlpha = .2;
     f2.EdgeAlpha = 0;
     
     p2 = plot(time_axis,results_struct(i).spot_protein_mean,'-','Color',rd,'LineWidth',1.5);
     p3 = plot(time_axis,results_struct(i).swap_protein_mean,'-','LineWidth',1.5,...
-        'Color',bl);%,'CapSize',0)    
+        'Color',(bl + gr)/2);%,'CapSize',0)    
     ylabel([protein_name ' enrichment (au)'])
     ax = gca;
     ax.YColor = 'black';
