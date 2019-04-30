@@ -25,8 +25,10 @@
 function nucleus_struct_protein = main02_sample_local_protein(project,varargin)
 
 zeissFlag = 0;
+minTime = 6*60;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
-minSampleSepUm = 1.5; %um
+minSampleSep = 1; %um
+driftTol = .3; % mean frame-over frame drift distance in um (median for empirical data is .38)
 % dataPath = ['../dat/' project '/'];
 % numWorkers = 4;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
@@ -69,11 +71,9 @@ master_ind_ref = [];
 lin_ind_ref = [];
 sub_ind_ref = [];
 pt_ref = [];
-pt_qc_ref = [];
 for i = 1:numel(nucleus_struct)
     ParticleID = nucleus_struct(i).ParticleID;    
     pt_ref = [pt_ref repelem(ParticleID, numel(nucleus_struct(i).frames))];
-    pt_qc_ref = [pt_qc_ref repelem(nucleus_struct(i).qc_flag, numel(nucleus_struct(i).frames))];
     set_ref = [set_ref repelem(nucleus_struct(i).setID,numel(nucleus_struct(i).frames))];
     master_ind_ref = [master_ind_ref repelem(round(nucleus_struct(i).ncID*1e5),numel(nucleus_struct(i).frames))];
     lin_ind_ref = [lin_ind_ref repelem(i,numel(nucleus_struct(i).frames))]; 
@@ -86,6 +86,7 @@ set_index = unique(set_vec);
 
 px_size = [nucleus_struct(1).PixelSize];
 
+
 % determine size of neighborhood to use
 nb_size = round(10 ./ px_size);
 % size of gaussian smoothing kernel 
@@ -94,19 +95,13 @@ sm_kernel = round(1 ./ px_size);
 min_area = round(pi*(2 ./ px_size).^2);
 max_area = round(pi*(4 ./ px_size).^2);
 % set snippet to be 3um in size
-pt_snippet_size = round(1.5 ./ px_size);
+pt_snippet_size_vec = round(1.5 ./ px_size);
 % set min separation between control and locus to 2um
-minSampleSep = round(minSampleSepUm ./ px_size);
+min_sample_sep_vec = round(minSampleSep ./ px_size);
 % calculate ROI size in pixels for spot and control
 roi_rad_spot_pix = round(ROIRadiusSpot ./ px_size);
-% calculate average frame-over-frame particle drift from data
-lin_diff_vec = diff(lin_ind_ref);
-x_diff_vec = diff(spot_x_ref);
-y_diff_vec = diff(spot_y_ref);
-dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
-dr_vec = dr_vec(lin_diff_vec==0);
-% sets sigma of movement for virtual spot
-driftTol = nanmedian(dr_vec)*px_size;
+
+
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec', 'serial_null_protein_vec', 'edge_null_protein_vec','mf_null_protein_vec',...
     'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','mf_null_mcp_vec',...
@@ -116,7 +111,8 @@ new_vec_fields = {'spot_protein_vec', 'serial_null_protein_vec', 'edge_null_prot
 
 new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
     'spot_mcp_snips','edge_null_mcp_snips'};
-
+% get most common snip size
+default_snip_size = mode(pt_snippet_size_vec);
 % Initialize fields
 for i = 1:numel(nucleus_struct)
     ref = nucleus_struct(i).xPos;
@@ -128,7 +124,12 @@ for i = 1:numel(nucleus_struct)
     end
     nucleus_struct(i).snip_frame_vec = [];
 end
-
+% calculate average frame-over-frame particle drift from data
+lin_diff_vec = diff(lin_ind_ref);
+x_diff_vec = diff(spot_x_ref);
+y_diff_vec = diff(spot_y_ref);
+dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
+dr_vec = dr_vec(lin_diff_vec==0);
 
 %%% make source key
 src_cell = {1,numel(set_index)};
@@ -150,7 +151,7 @@ qc_structure = struct;
 %     parpool(numWorkers);
 % end
 frame_rate_vec = NaN(1,size(set_frame_array,1));
-for i = 1:size(set_frame_array,1)    
+for i = 10:20%1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);  
@@ -168,7 +169,6 @@ for i = 1:size(set_frame_array,1)
     nc_x_vec_u = nc_x_vec(ia);
     nc_y_vec_u = nc_y_vec(ia);    
     % particle positions    
-    pt_qc_vec = pt_qc_ref(frame_set_filter);
     spot_x_vec = spot_x_ref(frame_set_filter);
     spot_y_vec = spot_y_ref(frame_set_filter);        
     spot_z_vec = spot_z_ref(frame_set_filter);  
@@ -176,7 +176,18 @@ for i = 1:size(set_frame_array,1)
     % find indices for spots
     if sum(~isnan(spot_x_vec)) == 0
         continue
-    end                    
+    end                 
+    % get size params    
+    pt_snippet_size = pt_snippet_size_vec(set_index==setID); % size of snippet
+    minSampleSep = min_sample_sep_vec(set_index==setID); % minimum distance between spot and control    
+    sm_kernel = sm_kernel(set_index==setID); %sigma for gaussian smoothing kerne;
+    min_area = min_area(set_index==setID); % lower bound on permitted nucleus size
+    max_area = max_area(set_index==setID); % upper bound
+    roi_spot = roi_rad_spot_pix(set_index==setID);
+    px_size = px_size(set_index==setID);
+    % determine whether snips will need to be resampled
+    snip_scale_factor =  default_snip_size / pt_snippet_size;
+    % load MCP mCherry and protein stacks
     
     src = set_key(set_key.setID==setID,:).prefix{1};   
     [mcp_stack, protein_stack] = load_stacks(rawPath, src, frame, mcp_channel);
@@ -226,7 +237,7 @@ for i = 1:size(set_frame_array,1)
     spot_dist_frame = zeros(size(nc_dist_frame));
     spot_dist_frame(nc_indices(~isnan(nc_indices))) = 1;
     spot_dist_frame = bwdist(spot_dist_frame);
-    spot_roi_frame = bwlabel(spot_dist_frame <= roi_rad_spot_pix); % label regions within designated integration radius of a spot    
+    spot_roi_frame = bwlabel(spot_dist_frame <= roi_spot); % label regions within designated integration radius of a spot    
     
     % save spot and nucleus reference frames
     nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
@@ -252,7 +263,7 @@ for i = 1:size(set_frame_array,1)
         y_spot = round(spot_y_vec(j)); 
         % check for sister spot        
         z_spot = round(spot_z_vec(j))-1; 
-        if isnan(x_spot) || ~pt_qc_vec(j)
+        if isnan(x_spot)
             continue
         end
         % extract mask 
@@ -348,8 +359,8 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame = zeros(size(protein_frame));
             null_dist_frame(yc,xc) = 1;
             null_dist_frame = bwdist(null_dist_frame);
-            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));
-            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));
+            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
+            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
             % draw snips      
             x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
             y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
@@ -432,8 +443,8 @@ for i = 1:size(set_frame_array,1)
         % samples below default to NaN if no sample taken
         % sample protein
         serial_qc_flag_vec(j) = ~isnan(xc);
-        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));
-        serial_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));
+        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
+        serial_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_spot));
         % record
         serial_null_x_vec(j) = xc;
         serial_null_y_vec(j) = yc;
@@ -494,6 +505,9 @@ for i = 1:size(set_frame_array,1)
             for k = 1:numel(new_snip_fields)
                 snip = eval([new_snip_fields{k} '(:,:,j)']);
                 ind = numel(nucleus_struct(nc_index).snip_frame_vec)+1;
+                if snip_scale_factor ~= 1
+                    snip = imresize(snip,snip_scale_factor);
+                end
                 nucleus_struct(nc_index).(new_snip_fields{k})(:,:,ind) = snip;
             end
             nucleus_struct(nc_index).snip_frame_vec(ind) = frame;

@@ -25,9 +25,9 @@
 function nucleus_struct = main01_compile_data(project,varargin)
 
 % set defaults
-includeVec = [];
 firstNC = 14;
-minDP = 10;
+minDP = 15;
+maxSparsity = 1.3;
 two_spot_flag = false;
 min_time = 4*60; % take no fluorescence data prior to this point
 % expType = 'input_output';
@@ -57,7 +57,10 @@ if isempty(sheet_index)
     error('no tab matching "project" string found in DataStatus')
 end
 sheet_cell = readcell(sheet_path,'Sheet',sheet_index);
-name_col = sheet_cell(1:32,1);
+name_col = sheet_cell(1:33,1); % hard coded for now
+ready_ft = contains(name_col,'ReadyForEnrichment');
+ready_cols = 1 + find([sheet_cell{ready_ft,2:end}]==1);
+sheet_cell = sheet_cell(:,[1 ready_cols]);
 % get list of project names
 prefix_ft = contains(name_col,'Prefix');
 prefix_cell_raw = sheet_cell(prefix_ft,2:end);
@@ -156,7 +159,9 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));            
             s_cells(e_pass).fluo = NaN(1,sum(nc_filter));
-            
+            s_cells(e_pass).qc_flag = NaN;
+            s_cells(e_pass).N = NaN;
+            s_cells(e_pass).sparsity = NaN;
             % add core nucleus info
             x = schnitzcells(e).cenx;            
             y = schnitzcells(e).ceny;                           
@@ -212,8 +217,11 @@ for i = 1:length(cp_filenames)
         % Find intersection btw full frame range and CP frames        
         raw_pt_frames = cp_particles(j).Frame;
         cp_frames = raw_pt_frames(ismember(raw_pt_frames,frames_full));        
+        % perform qc tests
         qc_flag = 1;
-        if numel(cp_frames) < minDP
+        nDP = numel(cp_frames);
+        sparsity = median(diff(find(~isnan(trace_full))));
+        if  nDP < minDP || sparsity > maxSparsity
             qc_flag = 0;
         end
 %         NL: Deperecated code for pulling particle Z location
@@ -286,6 +294,8 @@ for i = 1:length(cp_filenames)
 %         else
         s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
         cp_particles(j).zPos(ismember(cp_frames,nc_frames));
+        s_cells(nc_ind).N = nDP;
+        s_cells(nc_ind).sparsity = sparsity;
 %         end          
         s_cells(nc_ind).qc_flag = qc_flag; 
     end      
