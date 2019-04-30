@@ -33,8 +33,8 @@ min_time = 4*60; % take no fluorescence data prior to this point
 % expType = 'input_output';
 % dataPath = ['../dat/' project '/']; % data mat directory
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-folderPath = [dropboxFolder 'LocalEnrichmentResults\'];
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
+folderPath = [dropboxFolder '\LocalEnrichmentResults\'];
+dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '/'];
 for i = 1:numel(varargin)
     if ischar(varargin{i})
         if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
@@ -60,15 +60,7 @@ sheet_cell = readcell(sheet_path,'Sheet',sheet_index);
 name_col = sheet_cell(1:32,1);
 % get list of project names
 prefix_ft = contains(name_col,'Prefix');
-prefix_cell_raw = sheet_cell(prefix_ft,2:end);
-prefix_cell = {};
-for i = 1:numel(prefix_cell_raw)
-    if ~isempty(prefix_cell_raw{i})
-        eval([prefix_cell_raw{i} ';'])
-        prefix_cell = [prefix_cell{:} {Prefix}];
-    end
-end
-    
+prefix_cell = sheet_cell(prefix_ft,2:end);
 %%% make filepath
 mkdir(dataPath);
 %%% assign save names
@@ -86,8 +78,8 @@ for d = 1:numel(prefix_cell)
     % append file paths
     cn_filenames = [cn_filenames {[folderPath thisdir '/CompiledNuclei.mat']}];
     cp_filenames = [cp_filenames {[folderPath thisdir '/CompiledParticles.mat']}];        
-    nc_filenames = [nc_filenames {[folderPath thisdir '/' thisdir '_lin.mat']}];           
-    fov_filenames = [fov_filenames {[folderPath thisdir '/FrameInfo.mat']}];        
+    nc_filenames = [nc_filenames {[thisdir '/' thisdir '_lin.mat']}];           
+    fov_filenames = [fov_filenames {[thisdir '/FrameInfo.mat']}];        
 end
 
 % generate set key data structure
@@ -102,29 +94,29 @@ nucleus_struct = [];
 for i = 1:length(cp_filenames) 
     % read in raw files
     try
-        load(nc_filenames{i}) % Ellipse Info
-        load(fov_filenames{i}) % FrameInfo Info                
+        load([folderPath nc_filenames{i}]) % Ellipse Info
+        load([folderPath fov_filenames{i}]) % FrameInfo Info                
     catch
         warning(['failed to load one or more files for prefix: ' prefix_cell{i} '. Skipping...' ])
         continue
     end     
     
     % extract data structures
-    processed_data = load(cp_filenames{i}); % processed particles    
+    processed_data = load([folderPath cp_filenames{i}]); % processed particles    
     % Extract compiled particles structure         
     cp_particles = processed_data.CompiledParticles;    
     if iscell(cp_particles)
         cp_particles = cp_particles{1};
     end   
-%     cp_z_flag = 0;
-%     if isfield(cp_particles,'zPos')
-%         cp_z_flag = 1;
-%     else        
-%         load([folderPath sp_filenames{i}]) % Spots info
-%     end
+    cp_z_flag = 0;
+    if isfield(cp_particles,'zPos')
+        cp_z_flag = 1;
+    else        
+        load([folderPath sp_filenames{i}]) % Spots info
+    end
 
     % set identifier
-    setID = i;            
+    setID = includeVec(i);            
     % pull trace and nucleus variables
     time_raw = processed_data.ElapsedTime*60; % time vector   
     traces_raw = processed_data.AllTracesVector; % array with a column for each trace 
@@ -281,12 +273,12 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).yPosParticle(ismember(nc_frames,cp_frames)) = ...
             cp_particles(j).yPos(ismember(cp_frames,nc_frames));
         % add z info       
-%         if ~cp_z_flag
-%             s_cells(nc_ind).zPosParticle(spot_filter) = bZ;   
-%         else
-        s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
-        cp_particles(j).zPos(ismember(cp_frames,nc_frames));
-%         end          
+        if ~cp_z_flag
+            s_cells(nc_ind).zPosParticle(spot_filter) = bZ;   
+        else
+            s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
+            cp_particles(j).zPos(ismember(cp_frames,nc_frames));
+        end          
         s_cells(nc_ind).qc_flag = qc_flag; 
     end      
     nucleus_struct = [nucleus_struct  s_cells];        
