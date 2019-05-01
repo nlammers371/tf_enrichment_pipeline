@@ -298,12 +298,9 @@ for i = 1:numel(nucleus_struct)
         end
     end
     % qc check 
-    if nucleus_struct(i).qc_flag && sum(~isnan(nucleus_struct(i).fluo_interp)) < minDP
-        error('why?')
-    end
-end
+    if nucleus_struct(i).qc_flag && 
         
-
+end
 % save
 save(nucleus_name ,'nucleus_struct') 
 
