@@ -24,7 +24,7 @@
 function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,varargin)
 
 close all
-min_time = 6*60;
+% min_time = 8*60;
 tWindow = 60*60; % determines width of sliding window
 %%%%% These options will remain fixed for now
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
@@ -51,9 +51,12 @@ d_type = '';
 if dpBootstrap
     d_type = '_dp';
 end
-
+% extract 1c variables 
 % dataPath = [dataRoot project '/'];
 load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+
+minDP = nucleus_struct_protein(1).minDP;
+min_time = nucleus_struct_protein(1).min_time;
 % check for necessary fields
 analysis_fields = {'TresInterp','fluo_interp','time_interp'};
 if ~isfield(nucleus_struct_protein,analysis_fields{1})
@@ -112,8 +115,8 @@ if soft_fit_flag
     rm_indices = [];
     for i = 1:numel(qc_indices)
         fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
-        if isempty(fluo)
-            rm_indices = [rm_indices qc_indices(i)];
+        if numel(fluo) < minDP
+            error('problem with qc flag')
         end
         fluo_values{i} = fluo;
     end    

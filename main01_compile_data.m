@@ -173,6 +173,9 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).xMean = mean(x(nc_filter));
             s_cells(e_pass).yMean = mean(y(nc_filter));
             s_cells(e_pass).ncStart = firstNC;
+            s_cells(e_pass).minDP = minDP;
+            s_cells(e_pass).min_time = min_time;
+            s_cells(e_pass).maxSparsity = maxSparsity;
             % time and set info
             s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));
             if numel(s_cells(e_pass).time) > 1
