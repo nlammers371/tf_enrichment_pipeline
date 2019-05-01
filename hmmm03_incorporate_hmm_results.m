@@ -101,7 +101,7 @@ if exist([dataPath hmm_suffix 'soft_fit_struct.mat']) > 0
         soft_fit_flag = 0;
     end
 end
-qc_indices = find([nucleus_struct_protein.inference_flag]);
+qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 if soft_fit_flag
     disp('conducting single trace fits...')
     A_log = log(inference_results.A_mat);

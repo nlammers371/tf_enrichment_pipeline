@@ -77,8 +77,8 @@ while ~exit_flag
         y_center = qc_spot.y_center;
         y_med = median(1:size(edge_dist_snip,1));        
         x_med = median(1:size(edge_dist_snip,2));
-        x_origin = x_center - x_med -1;
-        y_origin = y_center - y_med - 1;
+        x_origin = x_center - x_med + 1;
+        y_origin = y_center - y_med + 1;
         qc_fig = figure;%('Position',[0 0 512 512]);                 
 %         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
@@ -88,7 +88,7 @@ while ~exit_flag
         s1 = scatter(qc_spot.xp-x_origin,qc_spot.yp-y_origin,40,'MarkerFaceColor',cm(30,:),'MarkerEdgeColor','black');
         s2 = scatter(qc_spot.xc_edge-x_origin,qc_spot.yc_edge-y_origin,30,'MarkerFaceColor',cm(90,:),'MarkerEdgeAlpha',0);        
         s3 = scatter(qc_spot.xp_sister-x_origin,qc_spot.yp_sister-y_origin,40,'d','MarkerFaceColor',cm(60,:),'MarkerEdgeColor','black');        
-        s4 = scatter(qc_spot.xc_serial-x_origin,qc_spot.yc_serial-y_origin,30,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0);
+        s4 = scatter(qc_spot.xc_serial-x_origin,qc_spot.yc_serial-y_center+yDim,30,'MarkerFaceColor',cm(120,:),'MarkerEdgeAlpha',0);
         legend([s1 s2 s3 s4], 'spot', 'edge control', 'sister spot', 'serialized')          
         title(['Particle: ' num2str(ParticleID) ' Frame: ' sprintf('%03d',frame)])
         

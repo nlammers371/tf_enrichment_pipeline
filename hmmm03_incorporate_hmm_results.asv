@@ -24,7 +24,7 @@
 function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,varargin)
 
 close all
-min_time = 6*60;
+% min_time = 8*60;
 tWindow = 60*60; % determines width of sliding window
 %%%%% These options will remain fixed for now
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
@@ -51,9 +51,12 @@ d_type = '';
 if dpBootstrap
     d_type = '_dp';
 end
-
+% extract 1c variables 
 % dataPath = [dataRoot project '/'];
 load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+
+minDP = nucleus_struct_protein(1).minDP;
+min_time = nucleus_struct_protein(1).min_time;
 % check for necessary fields
 analysis_fields = {'TresInterp','fluo_interp','time_interp'};
 if ~isfield(nucleus_struct_protein,analysis_fields{1})
@@ -90,15 +93,15 @@ inference_results = load([dataPath hmm_suffix file_list(1).name]);
 inference_results = inference_results.output;
 % check for soft fit structure
 soft_fit_flag = 1;
-if exist([dataPath hmm_suffix 'soft_decode_fits.mat']) > 0
-    fit_props = dir([dataPath hmm_suffix 'soft_decode_fits.mat']);
+if exist([dataPath hmm_suffix 'soft_fit_struct.mat']) > 0
+    fit_props = dir([dataPath hmm_suffix 'soft_fit_struct.mat']);
     fit_date = datenum(fit_props(1).date);
     hmm_date = datenum(file_list(1).date);
     if fit_date > hmm_date
         soft_fit_flag = 0;
     end
 end
-qc_indices = find([nucleus_struct_protein.inference_flag]);
+qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 if soft_fit_flag
     disp('conducting single trace fits...')
     A_log = log(inference_results.A_mat);
@@ -109,15 +112,22 @@ if soft_fit_flag
 
     
     fluo_values = cell(numel(qc_indices),1);
+    rm_indices = [];
     for i = 1:numel(qc_indices)
-        fluo_values{i} = nucleus_struct_protein(qc_indices(i)).fluo_interp;
+        fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
+        if numel(fluo) < minDP
+            error('problem with qc flag')
+        end
+        fluo_values{i} = fluo;
     end    
+    fluo_values = fluo_values(~ismember(qc_indices,rm_indices));
+    qc_indices = qc_indices(~ismember(qc_indices,rm_indices));
     tic 
     local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
                   v', sigma, pi0_log, A_log, KInf, w, alpha, 1, eps);
     toc
     soft_fit_struct = local_em_outputs.soft_struct;
-    save([hmm_suffic
+    save([hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 end
 
 %%% extract protein info
