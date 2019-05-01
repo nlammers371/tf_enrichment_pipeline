@@ -32,8 +32,9 @@
 function main03_check_control_selection(project,varargin)
 close all
 % specify paths
-dataPath = ['../dat/' project '/'];
-
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
+figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '/'];
 for i = 1:numel(varargin)    
     if strcmpi(varargin{i}, 'dropboxFolder')        
         dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];

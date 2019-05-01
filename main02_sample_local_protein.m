@@ -27,6 +27,7 @@ function nucleus_struct_protein = main02_sample_local_protein(project,varargin)
 zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
+minEdgeSepUm = .8; %um
 % dataPath = ['../dat/' project '/'];
 % numWorkers = 4;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
@@ -97,6 +98,7 @@ max_area = round(pi*(4 ./ px_size).^2);
 pt_snippet_size = round(1.5 ./ px_size);
 % set min separation between control and locus to 2um
 minSampleSep = round(minSampleSepUm ./ px_size);
+minEdgeSep = round(minEdgeSepUm ./ px_size);
 % calculate ROI size in pixels for spot and control
 roi_rad_spot_pix = round(ROIRadiusSpot ./ px_size);
 % calculate average frame-over-frame particle drift from data
@@ -382,7 +384,7 @@ for i = 1:size(set_frame_array,1)
             % Now take a random sample                           
             sample_index_vec = 1:numel(spot_sep_vec);
             % filter for regions far enough away from locus
-            cr_filter = spot_sep_vec >= minSampleSep;
+            cr_filter = spot_sep_vec >= minSampleSep & nc_edge_dist_vec >= minEdgeSep;
             sample_index_vec = sample_index_vec(cr_filter);
             % if candidate found, then proceed. Else look to neighboring nuclei
             if ~isempty(sample_index_vec)
@@ -408,8 +410,7 @@ for i = 1:size(set_frame_array,1)
             % calculate weights
             wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2));%+((edge_dev_vec)/roi_spot).^2));
             % anything too close to locus or with an edge distance too different from locus is excluded
-            wt_vec(spot_sep_vec<minSampleSep) = 0;
-%             wt_vec(edge_dev_vec>3*roi_spot) = 0;
+            wt_vec(spot_sep_vec<minSampleSep|nc_edge_dist_vec < minEdgeSep) = 0;
             % draw sample
             xc = NaN;
             yc = NaN;

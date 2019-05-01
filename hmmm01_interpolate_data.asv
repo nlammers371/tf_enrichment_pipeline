@@ -51,7 +51,8 @@ for i = 1:length(nucleus_struct)
     end
     time_interp = t_start:TresInterp:t_stop;
     
-    if ~quality_flag        
+    if sum(~isnan(trace1)) < minDp || sum(~isnan(trace1)) / numel(start_i:stop_i) < .6
+        quality_flag = 0;
         trace1_interp = NaN(size(time_interp));
         time_interp = NaN(size(time_interp));
     else
@@ -80,10 +81,10 @@ for i = 1:length(nucleus_struct)
         trace1(ismember(pt_time,query_points1)) = new_f1;        
 
         %%% flag traces with unreasonably large rises or falls    
-%         tr_d1 = diff(trace1);    
-%         if max(abs(tr_d1)) >= jump_threshold1         
-%             quality_flag = 0;        
-%         end
+        tr_d1 = diff(trace1);    
+        if max(abs(tr_d1)) >= jump_threshold1         
+            quality_flag = 0;        
+        end
 
         % Interpolate to standardize spacing    
         trace1_interp = interp1(pt_time,trace1,time_interp);    
@@ -107,7 +108,7 @@ for i = 1:length(nucleus_struct)
     end
     nucleus_struct(i).fluo_interp = trace1_interp;    
     nucleus_struct(i).time_interp = time_interp;
-%     nucleus_struct(i).inference_flag = quality_flag;  
+    nucleus_struct(i).inference_flag = quality_flag;  
     nucleus_struct(i).TresInterp = TresInterp;
 end
 % save
