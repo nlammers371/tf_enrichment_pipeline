@@ -99,8 +99,8 @@ end
 % input_output_snips = struct;
 iter = sum([base_in_out_struct.n_reads]);
 % base_var_cell = {'ParticleID','mf_protein','spot_protein'
-tic
-for i = 1:numel(base_in_out_struct)  
+for i = 1:numel(base_in_out_struct)
+    tic
     % extract set of vectors
     t_vec = base_in_out_struct(i).time;
     r_vec = base_in_out_struct(i).r_vec;
@@ -156,6 +156,6 @@ for i = 1:numel(base_in_out_struct)
         input_output_snips(iter).ctrl_xcov = xcov(input_output_snips(iter).hmm_vec,...
             ctrl_delta,window_size,'Coeff');
         iter = iter - 1;
-    end    
+    end
+    toc
 end
-toc
