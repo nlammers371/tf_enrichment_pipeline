@@ -203,7 +203,7 @@ for i = 1:length(cp_filenames)
         if sum(~isnan(raw_trace)) == 0
             continue
         end
-        trace_start = max(min_frame,find(~isnan(raw_trace),1));
+        trace_start = find(time_clean>=min_time&find(~isnan(raw_trace),1));
         trace_stop = find(~isnan(raw_trace),1,'last');        
         %Creat versions with all intervening frames present (missing frames
         %appear as NaNs)
@@ -256,11 +256,14 @@ for i = 1:length(cp_filenames)
         if sum(spot_filter) < numel(frames_full)            
             error('Inconsistent particle and nucleus frames')
         end
+        if numel(cp_frames) ~= numel(cp_particles(j).xPos)
+            error('fanfrakintastic')
+        end
         % record fluorescence info             
         s_cells(nc_ind).fluo(spot_filter) = trace_full;               
         % x and y info                                
         s_cells(nc_ind).xPosParticle(ismember(nc_frames,cp_frames)) = ...
-            cp_particles(j).xPos(ismember(cp_frames,nc_frames));
+            (ismember(cp_frames,nc_frames));
         s_cells(nc_ind).yPosParticle(ismember(nc_frames,cp_frames)) = ...
             cp_particles(j).yPos(ismember(cp_frames,nc_frames));
         % add z info       
@@ -298,9 +301,12 @@ for i = 1:numel(nucleus_struct)
         end
     end
     % qc check 
-    if nucleus_struct(i).qc_flag && 
-        
+    if nucleus_struct(i).qc_flag && sum(~isnan(nucleus_struct(i).fluo_interp)) < minDP
+        error('why?')
+    end
 end
+        
+
 % save
 save(nucleus_name ,'nucleus_struct') 
 

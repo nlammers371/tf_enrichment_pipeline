@@ -136,7 +136,7 @@ end
 src_cell = {1,numel(set_index)};
 pt_id_vec = [nucleus_struct.ParticleID];
 for s = 1:numel(set_index)
-    ind = find([nucleus_struct.setID]==set_index(s)&~isnan(pt_id_vec),1);   
+    ind = find([nucleus_struct.setID]==set_index(s),1);   
     src = nucleus_struct(ind).source_path;    
     src_cell{s} = src;     
 end
@@ -450,22 +450,22 @@ for i = 1:size(set_frame_array,1)
         end
             
         % save qc data                 
-        qc_mat(j).setID = setID; 
-        qc_mat(j).frame = frame;
-        qc_mat(j).nc_index = nc_lin_index_vec(j);
-        qc_mat(j).nc_sub_index = nc_sub_index_vec(j);
-        qc_mat(j).qc_flag = edge_qc_flag_vec(j);            
-        qc_mat(j).xp = x_spot;
-        qc_mat(j).yp = y_spot;  
-        qc_mat(j).xp_sister = x_spot_sister;
-        qc_mat(j).yp_sister = y_spot_sister;  
-        qc_mat(j).xc_edge = edge_null_x_vec(j);
-        qc_mat(j).yc_edge = edge_null_y_vec(j);
-        qc_mat(j).xc_serial = serial_null_x_vec(j);
-        qc_mat(j).yc_serial = serial_null_y_vec(j);       
-        qc_mat(j).ParticleID = particle_id_vec(j);
-        qc_mat(j).serial_qc_flag = serial_qc_flag_vec(j);
-        qc_mat(j).edge_qc_flag = edge_qc_flag_vec(j);        
+        qc_mat(numel(nc_x_vec)-j+1).setID = setID; 
+        qc_mat(numel(nc_x_vec)-j+1).frame = frame;
+        qc_mat(numel(nc_x_vec)-j+1).nc_index = nc_lin_index_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).nc_sub_index = nc_sub_index_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).qc_flag = edge_qc_flag_vec(j);            
+        qc_mat(numel(nc_x_vec)-j+1).xp = x_spot;
+        qc_mat(numel(nc_x_vec)-j+1).yp = y_spot;  
+        qc_mat(numel(nc_x_vec)-j+1).xp_sister = x_spot_sister;
+        qc_mat(numel(nc_x_vec)-j+1).yp_sister = y_spot_sister;  
+        qc_mat(numel(nc_x_vec)-j+1).xc_edge = edge_null_x_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).yc_edge = edge_null_y_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).xc_serial = serial_null_x_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).yc_serial = serial_null_y_vec(j);       
+        qc_mat(numel(nc_x_vec)-j+1).ParticleID = particle_id_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).serial_qc_flag = serial_qc_flag_vec(j);
+        qc_mat(numel(nc_x_vec)-j+1).edge_qc_flag = edge_qc_flag_vec(j);        
         sz = nb_size;
         edge_dist_mat = nc_dist_frame;
         edge_dist_mat(~spot_nc_mask&~null_mask) = 0;
@@ -475,13 +475,13 @@ for i = 1:size(set_frame_array,1)
         end
         y_range = max(1,y_nucleus-sz):min(yDim,y_nucleus+sz);
         x_range = max(1,x_nucleus-sz):min(xDim,x_nucleus+sz);
-        qc_mat(j).x_origin = x_range(1);
-        qc_mat(j).y_origin = y_range(1);
-        qc_mat(j).mcp_snip = mcp_frame(y_range,x_range);
-        qc_mat(j).protein_snip = protein_frame(y_range,x_range);
-        qc_mat(j).edge_dist_snip = edge_dist_mat(y_range,x_range);                
+        qc_mat(numel(nc_x_vec)-j+1).x_origin = x_range(1);
+        qc_mat(numel(nc_x_vec)-j+1).y_origin = y_range(1);
+        qc_mat(numel(nc_x_vec)-j+1).mcp_snip = mcp_frame(y_range,x_range);
+        qc_mat(numel(nc_x_vec)-j+1).protein_snip = protein_frame(y_range,x_range);
+        qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);                
     end 
-    qc_structure(i).qc_mat = qc_mat;    
+    qc_structure(i).qc_mat = fliplr(qc_mat);    
     % map data back to nucleus_struct    
     for j = 1:numel(nc_master_vec)
         nc_index = nc_lin_index_vec(j);
@@ -515,7 +515,7 @@ particle_frames_full = [];
 for i = 1:numel(qc_structure)
     qc_mat = qc_structure(i).qc_mat;
     for  j = 1:numel(qc_mat)
-        qc_spot = qc_mat(j);
+        qc_spot = qc_mat(numel(nc_x_vec)-j+1);
         if ~isfield(qc_spot,'ParticleID')
             continue
         end

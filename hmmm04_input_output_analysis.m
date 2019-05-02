@@ -4,8 +4,8 @@ clear
 close all
 % define ID variables
 K = 3;
-w = 6;
-project = 'Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW';
+w = 7;
+project = 'Dl-Ven x snaBAC';
 % project = 'Dl_Venus_hbP2P_MCPmCherry_Zoom2_7uW14uW';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 % dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
@@ -18,17 +18,19 @@ window_size = 15; % number of lags and leads over which to track protein/fluo dy
 nBoots = 100;
 make_trace_plots = 1;
 
-% extract protein, gene, fluorophore info
-underscores = strfind(project,'_');
-protein_name = project(1:underscores(1)-1);
-protein_fluor = project(underscores(1)+1:underscores(2)-1);
-gene_name = project(underscores(2)+1:underscores(3)-1);
-if numel(underscores) == 3
-    ind = numel(project);
-else
-    ind = underscores(4)-1;
-end
-gene_fluor = project(underscores(3)+1:end);
+% % extract protein, gene, fluorophore info
+% underscores = strfind(project,'_');
+% protein_name = project(1:underscores(1)-1);
+% protein_fluor = project(underscores(1)+1:underscores(2)-1);
+% gene_name = project(underscores(2)+1:underscores(3)-1);
+% if numel(underscores) == 3
+%     ind = numel(project);
+% else
+%     ind = underscores(4)-1;
+% end
+% gene_fluor = project(underscores(3)+1:end);
+protein_name = 'Dorsal';
+gene_name = 'sna';
 
 % load data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
@@ -36,8 +38,8 @@ load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
 yw = [234 194 100]/256; % yellow
 bl = [115 143 193]/256; % blue
 rd = [213 108 85]/256; % red
-gr = [191 213 151]/256; % green
-br = [207 178 147]/256; % brown
+% gr = [191 213 151]/256; % green
+% br = [207 178 147]/256; % brown
 % first make figures to ensure that hmmm results have been properly
 % concatenated with protein data
 if make_trace_plots    
@@ -66,9 +68,9 @@ if make_trace_plots
         saveas(qc_fig,[qcPath 'mcp_check_nc_' sprintf('%03d',plot_indices(j)) '.png'])
 
         % Protein Channel checks
-        spot_protein = hmm_input_output(plot_indices(j)).spot_protein_all;
-        null_protein = hmm_input_output(plot_indices(j)).serial_protein_all;
-        mf_protein = hmm_input_output(plot_indices(j)).mf_protein_all;        
+        spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
+        null_protein = hmm_input_output(plot_indices(j)).serial_protein;
+        mf_protein = hmm_input_output(plot_indices(j)).mf_protein;        
         % make figure
         qc_fig = figure('Visible','off');
         hold on
@@ -91,9 +93,9 @@ if make_trace_plots
         % MCP channel checks
         time = hmm_input_output(plot_indices(j)).time;
         fluo = hmm_input_output(plot_indices(j)).fluo;
-        spot_protein = hmm_input_output(plot_indices(j)).spot_protein_all;
-        serial_protein = hmm_input_output(plot_indices(j)).serial_protein_all;
-        mf_protein = hmm_input_output(plot_indices(j)).mf_protein_all;
+        spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
+        serial_protein = hmm_input_output(plot_indices(j)).serial_protein;
+        mf_protein = hmm_input_output(plot_indices(j)).mf_protein;
         % make figure
         trace_fig = figure('Visible','off');
         hold on
@@ -134,12 +136,9 @@ wt_mat = NaN(2*window_size+1,numel(hmm_input_output));
 for i = 1:numel(hmm_input_output)
     r_vec = hmm_input_output(i).r_vec;
     f_vec = hmm_input_output(i).fluo;
-    pt_spot = hmm_input_output(i).spot_protein_all-hmm_input_output(i).mf_protein_all;
-    pt_serial = hmm_input_output(i).serial_protein_all-hmm_input_output(i).mf_protein_all;
-    % get raw-ish vectors
-    pt_spot_raw = hmm_input_output(i).spot_protein;
-    pt_serial_raw = hmm_input_output(i).serial_protein;
-%     qc_flag = hmm_input_output(i).mcp_qc_flag;
+    pt_spot = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;
+    pt_serial = hmm_input_output(i).serial_protein-hmm_input_output(i).mf_protein;
+    % get raw-ish vectors    
     ft = ~isnan(pt_spot)&~isnan(pt_serial);     
     
     if numel(f_vec) >= window_size + 1 && sum(ft) / numel(f_vec) > .8
@@ -203,7 +202,7 @@ xlabel('offset (minutes)')
 legend('hmm activity','fluorescence')
 grid on
 saveas(comp_xcov,[figPath 'xcov_comparison.png'])
-
+%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Examine protein levels in vicinity of sna peaks, troughs, rises, and

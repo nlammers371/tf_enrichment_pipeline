@@ -138,7 +138,7 @@ for i = 1:length(cp_filenames)
     time_clean = time_raw(first_frame:end);    
     time_clean = time_clean - min(time_clean); % Normalize to start of nc14    
     frames_clean = frames_raw(first_frame:end);        
-    min_frame = find(time_clean>=min_time);
+%     min_frame = find(time_clean>=min_time);
     % compile schnitz info
     s_cells = struct;
     e_pass = 1;    
@@ -199,22 +199,22 @@ for i = 1:length(cp_filenames)
         raw_trace = traces_clean(:,j); 
         % Get nucleus ID
         schnitz = cp_particles(j).schnitz;        
-        % skip particles not in nc range
-        if sum(~isnan(raw_trace)) == 0
-            continue
-        end
-        trace_start = max(min_frame,find(~isnan(raw_trace),1));
+        trace_start = find(time_clean>=min_time&~isnan(raw_trace'),1);
         trace_stop = find(~isnan(raw_trace),1,'last');        
         %Creat versions with all intervening frames present (missing frames
         %appear as NaNs)
         trace_full = raw_trace(trace_start:trace_stop)';                                   
-        frames_full = frames_clean(trace_start:trace_stop);                       
+        frames_full = frames_clean(trace_start:trace_stop); 
+        % skip particles not in nc range
+        if sum(~isnan(trace_full)) == 0
+            continue
+        end                              
         % Find intersection btw full frame range and CP frames        
         raw_pt_frames = cp_particles(j).Frame;
-        cp_frames = raw_pt_frames(ismember(raw_pt_frames,frames_full));        
+%         cp_frames = raw_pt_frames(ismember(raw_pt_frames,frames_full));        
         % perform qc tests
         qc_flag = 1;
-        nDP = numel(cp_frames);
+        nDP = sum(~isnan(trace_full));
         sparsity = median(diff(find(~isnan(trace_full))));
         if  nDP < minDP || sparsity > maxSparsity
             qc_flag = 0;
@@ -259,13 +259,13 @@ for i = 1:length(cp_filenames)
         % record fluorescence info             
         s_cells(nc_ind).fluo(spot_filter) = trace_full;               
         % x and y info                                
-        s_cells(nc_ind).xPosParticle(ismember(nc_frames,cp_frames)) = ...
-            cp_particles(j).xPos(ismember(cp_frames,nc_frames));
-        s_cells(nc_ind).yPosParticle(ismember(nc_frames,cp_frames)) = ...
-            cp_particles(j).yPos(ismember(cp_frames,nc_frames));
+        s_cells(nc_ind).xPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
+            cp_particles(j).xPos(ismember(raw_pt_frames,nc_frames));
+        s_cells(nc_ind).yPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
+            cp_particles(j).yPos(ismember(raw_pt_frames,nc_frames));
         % add z info       
-        s_cells(nc_ind).zPosParticle(ismember(nc_frames,cp_frames)) = ...
-        cp_particles(j).zPos(ismember(cp_frames,nc_frames));
+        s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
+        cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
         % add qc info
         s_cells(nc_ind).N = nDP;
         s_cells(nc_ind).sparsity = sparsity;        
@@ -296,14 +296,10 @@ for i = 1:numel(nucleus_struct)
             vec = nucleus_struct(i).(interp_fields{j});
             nucleus_struct(i).([interp_fields{j} '_interp']) = vec(1);
         end
-    end
-    % qc check 
-    if nucleus_struct(i).qc_flag && sum(~isnan(nucleus_struct(i).fluo_interp)) < minDP
-        error('why?')
-    end
+    end 
 end
-        
-
+pt_indices = find(~isnan([nucleus_struct.ParticleID]));
+nucleus_struct = nucleus_struct(randsample(pt_indices,25));
 % save
 save(nucleus_name ,'nucleus_struct') 
 
