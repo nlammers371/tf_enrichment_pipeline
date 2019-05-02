@@ -25,10 +25,7 @@ function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,vararg
 
 close all
 % min_time = 8*60;
-tWindow = 60*60; % determines width of sliding window
 %%%%% These options will remain fixed for now
-clipped = 1; % if 0 use "full" trace with leading and trailing 0's
-fluo_field = 1; % specify which fluo field to (1 or 3)
 dpBootstrap = 0;
 % dataRoot = ['../dat/'];
 alphaFrac = 1302 / 6000;
@@ -56,7 +53,6 @@ end
 load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
 
 minDP = nucleus_struct_protein(1).minDP;
-min_time = nucleus_struct_protein(1).min_time;
 % check for necessary fields
 analysis_fields = {'TresInterp','fluo_interp','time_interp'};
 if ~isfield(nucleus_struct_protein,analysis_fields{1})
@@ -127,7 +123,7 @@ if soft_fit_flag
                   v', sigma, pi0_log, A_log, KInf, w, alpha, 1, eps);
     toc
     soft_fit_struct = local_em_outputs.soft_struct;
-    save([hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+    save([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 end
 
 %%% extract protein info
