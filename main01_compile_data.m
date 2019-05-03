@@ -51,7 +51,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % find sheet
-sheet_path = [folderPath 'DataStatus.xlsx'];
+sheet_path = [folderPath 'DataStatusTemp.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
 sheet_index = find(ismember(sheet_names,project));
 if isempty(sheet_index)
