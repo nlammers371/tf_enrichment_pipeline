@@ -1,13 +1,46 @@
 % Script to build data set for systematic input/output analyses
-clear 
+% DESCRIPTION
+% Script to conduct HMM inference
+%
+% ARGUMENTS
+% project: master ID variable 
+%
+% wInf: memory used for inference
+%
+% KInf: number of states used for inference
+%
+% OPTIONS
+% dropboxFolder: Path to data folder where you wish to save
+%                pipeline-generated data sets and figures. If this
+%                var is not specified, output will be saved one level
+%                above git repo in the folder structure
+%
+% controlProject: specifies a project to use as an external control
+%
+% OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
+% intensities, along with corresponding HMM-decoded activity trajectories
+
+function input_output_snips = main07_build_input_output_analysis_set(project,varargin)
+
 close all
-% define ID variables
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 K = 3;
 w = 6;
-project = 'Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW';
-% dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
-dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
+
+%%%%%%%%%%%%%%
+for i = 1:numel(varargin)    
+    if strcmpi(varargin{i},'dropboxFolder')
+        dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
+    end
+    if ischar(varargin{i}) && i ~= numel(varargin)
+        if ismember(varargin{i},{'dpBootstrap','controlProject'})
+            eval([varargin{i} '=varargin{i+1};']);
+        end
+    end
+end
+disp('building "final" input-output analysis set...')
+tic
 % load data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
 % set size of time series "reads"
@@ -20,7 +53,7 @@ min_change_size_mcp = prctile(vertcat(hmm_input_output.r_vec),35); % eyeballed
 min_peak_prom_mcp = prctile(vertcat(hmm_input_output.r_vec),10);
 pt_vec = [hmm_input_output.spot_protein];
 min_peak_prom_pt = prctile(pt_vec,10) - prctile(pt_vec,5);
-%%
+
 base_in_out_struct = [];
 for i = 1:numel(hmm_input_output)
     r_vec = hmm_input_output(i).r_vec;
@@ -95,11 +128,12 @@ for i = 1:numel(hmm_input_output)
     % add
     base_in_out_struct = [base_in_out_struct temp];
 end
-%% generate data set of reads
+
+%%% generate data set of reads
 % input_output_snips = struct;
 iter = sum([base_in_out_struct.n_reads]);
 % base_var_cell = {'ParticleID','mf_protein','spot_protein'
-tic
+
 for i = 1:numel(base_in_out_struct)  
     % extract set of vectors
     t_vec = base_in_out_struct(i).time;
@@ -158,4 +192,7 @@ for i = 1:numel(base_in_out_struct)
         iter = iter - 1;
     end    
 end
+disp('done')
 toc
+% save
+save([dataPath 'input_output_snips.mat'],'input_output_snips');

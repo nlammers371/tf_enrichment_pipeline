@@ -57,7 +57,7 @@ sheet_index = find(ismember(sheet_names,project));
 if isempty(sheet_index)
     error('no tab matching "project" string found in DataStatus')
 end
-sheet_cell = readcell(sheet_path,'Sheet',sheet_index);
+[~,~,sheet_cell] = xlsread(sheet_path,sheet_index);
 name_col = sheet_cell(1:33,1); % hard coded for now
 ready_ft = contains(name_col,'ReadyForEnrichment');
 ready_cols = 1 + find([sheet_cell{ready_ft,2:end}]==1);
@@ -138,15 +138,21 @@ for i = 1:length(cp_filenames)
     time_clean = time_raw(first_frame:end);    
     time_clean = time_clean - min(time_clean); % Normalize to start of nc14    
     frames_clean = frames_raw(first_frame:end);        
-%     min_frame = find(time_clean>=min_time);
+    % get basic frame info
+    yDim = FrameInfo(1).LinesPerFrame;
+    xDim = FrameInfo(1).PixelsPerLine;
+    zDim = FrameInfo(1).NumberSlices;
     % compile schnitz info
     s_cells = struct;
     e_pass = 1;    
     for e = 1:length(schnitzcells)
         e_frames = schnitzcells(e).frames;
         nc_filter = ismember(e_frames,frames_clean);
-        nc_frames = e_frames(nc_filter);
-        if length(nc_frames) >= 1 % skip nuclei not desired nc range                     
+        nc_frames = e_frames(nc_filter);        
+        if length(nc_frames) >= 1 % skip nuclei not desired nc range   
+            s_cells(e_pass).xDim = xDim;
+            s_cells(e_pass).yDim = yDim;
+            s_cells(e_pass).zDim = zDim;
             %Will be set to particle real values for nuclei with matching
             %particle
             s_cells(e_pass).ParticleID = NaN;
@@ -285,7 +291,7 @@ interp_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle',...
 interpGrid = 0:TresInterp:60*60;
 for i = 1:numel(nucleus_struct)
     time_vec = nucleus_struct(i).time;
-    time_interp = interpGrid(interpGrid<=time_vec(1)&interpGrid>=time_vec(end));
+    time_interp = interpGrid(interpGrid>=time_vec(1)&interpGrid<=time_vec(end));
     if numel(nucleus_struct(i).xPos) > 1
         for  j = 1:numel(interp_fields)
             vec = nucleus_struct(i).(interp_fields{j});
@@ -297,9 +303,11 @@ for i = 1:numel(nucleus_struct)
             nucleus_struct(i).([interp_fields{j} '_interp']) = vec(1);
         end
     end 
+    nucleus_struct(i).time_interp = time_interp;
+    nucleus_struct(i).TresInterp = TresInterp;
 end
-pt_indices = find(~isnan([nucleus_struct.ParticleID]));
-nucleus_struct = nucleus_struct(randsample(pt_indices,25));
+% pt_indices = find(~isnan([nucleus_struct.ParticleID]));
+% nucleus_struct = nucleus_struct(randsample(pt_indices,25));
 % save
 save(nucleus_name ,'nucleus_struct') 
 

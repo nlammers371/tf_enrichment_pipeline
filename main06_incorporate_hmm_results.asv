@@ -1,5 +1,3 @@
-% hmmm03_incorporate_hmm_results(project,wInf,KInf)
-%
 % DESCRIPTION
 % Script to conduct HMM inference
 %
@@ -21,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(project,w,KInf,varargin)
 
 close all
 % min_time = 8*60;
@@ -38,7 +36,7 @@ for i = 1:numel(varargin)
     if strcmpi(varargin{i},'dropboxFolder')
         dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
     end
-    if ischar(varargin{i})
+    if ischar(varargin{i}) & i ~= numel(varargin
         if ismember(varargin{i},{'dpBootstrap','controlProject'})
             eval([varargin{i} '=varargin{i+1};']);
         end
@@ -95,7 +93,6 @@ if exist([dataPath hmm_suffix 'soft_fit_struct.mat']) > 0
     hmm_date = datenum(file_list(1).date);
     if fit_date > hmm_date
         soft_fit_flag = 0;
-        load([dataPath hmm_suffix 'soft_fit_struct.mat']);
     end
 end
 qc_indices = find([nucleus_struct_protein.qc_flag]==1);
@@ -149,6 +146,9 @@ iter = 1;
 for i = qc_indices%1:numel(particle_index)        
     % take average soft decoded result for particle
     ParticleID = particle_index(i);
+    particle_ft = hmm_particle_vec==ParticleID;
+    indices = index_vec(particle_ft);
+    sub_indices = sub_index_vec(particle_ft);
     temp = struct;
     % extract relevant vectors from protein struct
     ff_pt = fluo_vec(particle_vec==ParticleID);
@@ -164,7 +164,7 @@ for i = qc_indices%1:numel(particle_index)
     temp.fluo = nucleus_struct(i).fluo_interp;%inference_results(indices(1)).fluo_data{sub_indices(1)};    
     % extract useful values
     [r,ri] = sort(inference_results.r);
-    z = exp(soft_fit_struct.p_z_log_soft{iter});    
+    z = exp(local_em_outputs.soft_struct.p_z_log_soft{iter});    
     temp.z_mat = z(ri,:)';    
     temp.r_mat = z(ri,:)'.*r';
     temp.r_inf = r';
@@ -187,13 +187,11 @@ for i = qc_indices%1:numel(particle_index)
         % reset values to NaN that are too far removed from true ref point
         input_times = tt_pt(~isnan(sp_pt)&~isnan(sr_pt));
         gap_times = tt_pt(~isnan(sp_pt)&isnan(sr_pt)); % look for assymmetries btw spot and control channels
-        dt_vec_gap = zeros(size(temp.time));
-        dt_vec_imbalance = zeros(size(temp.time));
+        dt_vec_gap = NaN(size(temp.time));
+        dt_vec_imbalance = NaN(size(temp.time));
         for t = 1:numel(dt_vec_gap)
-            dt_vec_gap(t) = min(abs(temp.time(t)-input_times)); 
-            if ~isempty(gap_times)
-                dt_vec_imbalance(t) = min(abs(temp.time(t)-gap_times));
-            end
+            dt_vec_gap(t) = min(abs(temp.time(t)-input_times));            
+            dt_vec_imbalance(t) = min(abs(temp.time(t)-gap_times));
         end
         temp.dt_filter_gap = dt_vec_gap > 60;           
         temp.dt_filter_imb = dt_vec_imbalance < Tres;
@@ -205,7 +203,7 @@ for i = qc_indices%1:numel(particle_index)
 end
 % find nearest neighbor particles
 % generate array of average protein levels for each nucleus
-time_vec = unique([nucleus_struct_protein.time_interp];
+time_vec = nucleus_struct_protein(1).interpGrid;
 mf_array = NaN(numel(time_vec),numel(hmm_input_output));
 start_time_vec = NaN(size(hmm_input_output));
 stop_time_vec = NaN(size(hmm_input_output));

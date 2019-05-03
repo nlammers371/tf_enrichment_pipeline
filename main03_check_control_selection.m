@@ -73,12 +73,9 @@ while ~exit_flag
         edge_dist_rgb = ind2rgb(edge_dist_rescaled,cm);
                
         % get frame center
-        x_center = qc_spot.x_center;
-        y_center = qc_spot.y_center;
-        y_med = median(1:size(edge_dist_snip,1));        
-        x_med = median(1:size(edge_dist_snip,2));
-        x_origin = x_center - x_med -1;
-        y_origin = y_center - y_med - 1;
+        x_origin = qc_spot.x_origin;
+        y_origin = qc_spot.y_origin;
+        
         qc_fig = figure;%('Position',[0 0 512 512]);                 
 %         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        

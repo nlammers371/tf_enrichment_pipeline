@@ -1,5 +1,3 @@
-% hmmm03_incorporate_hmm_results(project,wInf,KInf)
-%
 % DESCRIPTION
 % Script to conduct HMM inference
 %
@@ -21,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = hmmm03_incorporate_hmm_results(project,w,KInf,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(project,w,KInf,varargin)
 
 close all
 % min_time = 8*60;
@@ -38,7 +36,7 @@ for i = 1:numel(varargin)
     if strcmpi(varargin{i},'dropboxFolder')
         dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
     end
-    if ischar(varargin{i})
+    if ischar(varargin{i}) && i ~= numel(varargin)
         if ismember(varargin{i},{'dpBootstrap','controlProject'})
             eval([varargin{i} '=varargin{i+1};']);
         end

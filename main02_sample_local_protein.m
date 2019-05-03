@@ -28,6 +28,7 @@ zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
 minEdgeSepUm = .8; %um
+segmentNuclei = 0;
 % dataPath = ['../dat/' project '/'];
 % numWorkers = 4;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
@@ -57,6 +58,21 @@ addpath('./utilities')
 % get MCP channel
 options = [1 2];
 mcp_channel = options(options~=proteinChannel);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% remove all frames that do not contain a segmented particle or that
+% contain a particle that fails QC standards
+% nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
+clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
+for i = 1:numel(nucleus_struct)
+    fluo = nucleus_struct(i).fluo;
+    nan_ft = ~isnan(fluo);
+    for j = 1:numel(clean_fields)
+        vec = nucleus_struct(i).(clean_fields{j});
+        nucleus_struct(i).(clean_fields{j}) = vec(nan_ft);
+    end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%
 % generate indexing vectors
 frame_ref = [nucleus_struct.frames];
 nc_x_ref = [nucleus_struct.xPos];
@@ -81,7 +97,8 @@ for i = 1:numel(nucleus_struct)
     sub_ind_ref = [sub_ind_ref 1:numel(nucleus_struct(i).frames)];
 end
 
-%%% set snip size to use
+%%%%%%%%%%%%%%%%%%%%
+%%% Set size parameters
 set_vec = [nucleus_struct.setID];
 set_index = unique(set_vec);
 
@@ -109,6 +126,8 @@ dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
 dr_vec = dr_vec(lin_diff_vec==0);
 % sets sigma of movement for virtual spot
 driftTol = nanmedian(dr_vec)*px_size;
+
+%%%%%%%%%%%%%%%%%%%%%%%
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec', 'serial_null_protein_vec', 'edge_null_protein_vec','mf_null_protein_vec',...
     'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','mf_null_mcp_vec',...
@@ -126,12 +145,12 @@ for i = 1:numel(nucleus_struct)
         nucleus_struct(i).(new_vec_fields{j}) = NaN(size(ref));
     end
     for j = 1:numel(new_snip_fields)
-        nucleus_struct(i).(new_snip_fields{j}) = [];%NaN(2*default_snip_size+1,2*default_snip_size+1,numel(ref));
+        nucleus_struct(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
     end
     nucleus_struct(i).snip_frame_vec = [];
 end
 
-
+%%%%%%%%%%%%%%%%%%%%%%
 %%% make source key
 src_cell = {1,numel(set_index)};
 pt_id_vec = [nucleus_struct.ParticleID];
@@ -140,6 +159,7 @@ for s = 1:numel(set_index)
     src = nucleus_struct(ind).source_path;    
     src_cell{s} = src;     
 end
+
 %%% Generate reference array for set-frame combos
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
@@ -151,11 +171,145 @@ qc_structure = struct;
 %     delete(gcp('nocreate'))
 %     parpool(numWorkers);
 % end
-frame_rate_vec = NaN(1,size(set_frame_array,1));
+%%%%%%%%%%%%%%%%%%%%%%%%%
+xDim = nucleus_struct(1).xDim;
+yDim = nucleus_struct(1).yDim;
+[x_ref,y_ref] = meshgrid(1:xDim,1:yDim);
+% first check to see if segmentation files exist
+segment_indices = 1:size(set_frame_array,1);
+spot_frame_vec = false(1,size(set_frame_array,1));
+nc_frame_vec = false(1,size(set_frame_array,1));
+for i = 1:size(set_frame_array,1)        
+    setID_temp = set_frame_array(i,1);
+    frame_temp = set_frame_array(i,2);  
+    nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID_temp) '_frame' sprintf('%03d',frame_temp) '.mat'];
+    nc_frame_vec(i) = isfile(nc_ref_name);    
+    spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',setID_temp) '_frame' sprintf('%03d',frame_temp) '.mat'];    
+    spot_frame_vec(i) = isfile(spot_ref_name);    
+end    
+if all(spot_frame_vec) && segmentNuclei   
+    warning('previous segmentation results found')
+    y = 1;
+    n = 0;
+    overwrite = input('overwrite segmentation results? (y/n)');
+    segmentNuclei = overwrite;
+elseif ~all(spot_frame_vec) && ~segmentNuclei   
+    warning('some or all frames missing nucleus segmentation data. Segmenting missing frames only')
+    segmentNuclei = 1;   
+    segment_indices = find(~spot_frame_vec);
+end
+if segmentNuclei
+    disp('segmenting nuclei...')
+    tic
+    
+    %%% Segment nuclei
+ 
+%     zDim = nucleus_struct(1).zDim;
+    % initialize arrays to store segmentation info
+    nucleus_frame_array = NaN(yDim,xDim,size(set_frame_array,1));
+    spot_frame_array = NaN(yDim,xDim,size(set_frame_array,1));
+    parfor i = segment_indices    
+        setID_temp = set_frame_array(i,1);
+        frame_temp = set_frame_array(i,2);  
+        % get nucleus
+        frame_set_filter = set_ref==setID_temp&frame_ref==frame_temp;
+        nc_x_vec_temp = nc_x_ref(frame_set_filter);
+        nc_y_vec_temp = nc_y_ref(frame_set_filter); 
+        % indexing vectors    
+        nc_master_vec = master_ind_ref(frame_set_filter);  
+        % get list of unique indices 
+        [nc_master_vec_u,ia,~] = unique(nc_master_vec,'stable');
+        % unique nucleus vectors
+        nc_x_vec_u = nc_x_vec_temp(ia);
+        nc_y_vec_u = nc_y_vec_temp(ia);    
+        % particle positions        
+        spot_x_vec = spot_x_ref(frame_set_filter);
+        spot_y_vec = spot_y_ref(frame_set_filter);            
+
+        src = set_key(set_key.setID==setID_temp,:).prefix{1};   
+        protein_stack = load_stacks(rawPath, src, frame_temp, proteinChannel);
+        % generate protein gradient frame for segmentation
+        protein_smooth = imgaussfilt(mean(protein_stack,3),round(sm_kernel/2));                
+        protein_grad = imgradient(protein_smooth);   
+        % flatten background         
+        protein_bkg = imgaussfilt(protein_smooth, round(nb_size/2));
+        protein_grad_norm = protein_grad ./ protein_bkg;        
+        
+        % try local thresholding
+        n_x_local = floor(xDim / nb_size);
+        n_y_local = floor(yDim / nb_size);
+        x_dim_local = round(xDim / n_x_local);
+        y_dim_local = round(yDim / n_y_local);
+        protein_bin_clean = false(size(protein_grad_norm));
+        for x = 1:n_x_local
+            for y = 1:n_y_local
+                x_start = (x-1)*x_dim_local+1;
+                x_stop = min([x*x_dim_local,xDim]);
+                y_start = (y-1)*y_dim_local+1;
+                y_stop = min([y*y_dim_local,yDim]);
+                pt_section = protein_grad_norm(y_start:y_stop,x_start:x_stop);
+                thresh = multithresh(pt_section);
+                section_bin = pt_section > thresh; 
+                section_bin_clean = bwareaopen(section_bin,sm_kernel^2);                
+                % record
+                protein_bin_clean(y_start:y_stop,x_start:x_stop) = bwmorph(section_bin_clean,'hbreak');
+            end
+        end        
+        % label regions
+        nc_frame_labels = logical(protein_bin_clean);         
+        % frame info
+        nc_lin_indices = sub2ind(size(protein_bin_clean),round(nc_y_vec_u),round(nc_x_vec_u));
+        % take convex hull
+        stats = regionprops(nc_frame_labels,'ConvexHull');
+        nc_ref_frame = zeros(size(nc_frame_labels)); 
+        for j = 2:numel(stats)
+            hull_points = stats(j).ConvexHull;
+            mask = poly2mask(hull_points(:,1),hull_points(:,2),yDim,xDim);   
+            nc_bin_ids = mask(nc_lin_indices);
+            if sum(nc_bin_ids) == 1 % enforce unique
+                nc_ref_frame(mask) = nc_master_vec_u(nc_bin_ids);
+            end
+        end       
+        % generate array indicating distance of each pixel from an active locus 
+        nc_indices = sub2ind(size(nc_ref_frame),spot_y_vec,spot_x_vec);
+        spot_dist_frame_temp = zeros(size(nc_ref_frame));
+        spot_dist_frame_temp(nc_indices(~isnan(nc_indices))) = 1;
+        spot_dist_frame_temp = bwdist(spot_dist_frame_temp);
+        % label regions within designated integration radius of a spot    
+        % store arrays
+        nucleus_frame_array(:,:,i) = nc_ref_frame;
+        spot_frame_array(:,:,i) = spot_dist_frame_temp;
+        % save spot and nucleus reference frames    
+    end
+    disp('saving segmentation results...')
+    % save arrays
+    for i = 1:size(set_frame_array,1)        
+        setID_temp = set_frame_array(i,1);
+        frame_temp = set_frame_array(i,2);  
+        nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID_temp) '_frame' sprintf('%03d',frame_temp) '.mat'];
+        nc_ref_frame = nucleus_frame_array(:,:,i);
+        save(nc_ref_name,'nc_ref_frame');
+        spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',setID_temp) '_frame' sprintf('%03d',frame_temp) '.mat'];
+        spot_dist_frame = spot_frame_array(:,:,i);
+        save(spot_ref_name,'spot_dist_frame');
+    end
+    disp('done.')
+    toc
+end
+disp('taking protein samples...')
+
 for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);  
+    
+    % load spot and nucleus reference frames
+    nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
+    load(nc_ref_name,'nc_ref_frame');
+    nc_dist_frame = bwdist(~nc_ref_frame);    
+    spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
+    load(spot_ref_name,'spot_dist_frame');
+    spot_roi_frame = bwlabel(spot_dist_frame <= roi_rad_spot_pix);
     % get nucleus
     frame_set_filter = set_ref==setID&frame_ref==frame;
     nc_x_vec = nc_x_ref(frame_set_filter);
@@ -164,78 +318,22 @@ for i = 1:size(set_frame_array,1)
     nc_sub_index_vec = sub_ind_ref(frame_set_filter); 
     nc_lin_index_vec = lin_ind_ref(frame_set_filter); 
     nc_master_vec = master_ind_ref(frame_set_filter);  
-    % get list of unique indices 
-    [nc_master_vec_u,ia,~] = unique(nc_master_vec,'stable');
-    % unique nucleus vectors
-    nc_x_vec_u = nc_x_vec(ia);
-    nc_y_vec_u = nc_y_vec(ia);    
+  
     % particle positions    
     pt_qc_vec = pt_qc_ref(frame_set_filter);
     spot_x_vec = spot_x_ref(frame_set_filter);
     spot_y_vec = spot_y_ref(frame_set_filter);        
     spot_z_vec = spot_z_ref(frame_set_filter);  
     particle_id_vec = pt_ref(frame_set_filter);
-    % find indices for spots
-    if sum(~isnan(spot_x_vec)) == 0
-        continue
-    end                    
+    src = set_key(set_key.setID==setID,:).prefix{1};
+    % load stacks
+    mcp_stack = load_stacks(rawPath, src, frame, mcp_channel);
+    protein_stack = load_stacks(rawPath, src, frame, proteinChannel);
     
-    src = set_key(set_key.setID==setID,:).prefix{1};   
-    [mcp_stack, protein_stack] = load_stacks(rawPath, src, frame, mcp_channel);
-    % generate protein gradient frame for segmentation
-    protein_smooth = imgaussfilt(mean(protein_stack,3),round(sm_kernel/2));
-    protein_grad = imgradient(protein_smooth);   
-    % flatten background 
-    protein_bkg = imgaussfilt(protein_smooth, round(nb_size/2));
-    protein_grad_norm = protein_grad ./ protein_bkg;
-    % binarize
-    thresh = multithresh(protein_grad_norm);
-    protein_bin = protein_grad_norm > thresh; 
-    protein_bin_clean = bwareaopen(protein_bin,sm_kernel^2);
-    protein_bin_clean = bwmorph(protein_bin_clean,'hbreak');
-    % label regions
-    nc_frame_labels = bwlabel(protein_bin_clean); 
-    label_index = unique(nc_frame_labels(:));
-    
-    % frame info
-    [yDim, xDim] = size(protein_bin); 
-    [x_ref, y_ref] = meshgrid(1:xDim,1:yDim);
-    % generate linear indices ofr nc center positions
-    try
-        nc_lin_indices = sub2ind(size(protein_bin),round(nc_y_vec_u),round(nc_x_vec_u));
-    catch
-        error('asdfa')
-    end
-    % take convex hull
-    stats = regionprops(nc_frame_labels,'ConvexHull');
-    nc_ref_frame = zeros(size(nc_frame_labels)); 
-    for j = 2:numel(stats)
-        hull_points = stats(j).ConvexHull;
-        mask = poly2mask(hull_points(:,1),hull_points(:,2),yDim,xDim);   
-        nc_bin_ids = mask(nc_lin_indices);
-        if sum(nc_bin_ids) == 1 % enforce unique
-            nc_ref_frame(mask) = nc_master_vec_u(nc_bin_ids);
-        end
-    end
-    nc_dist_frame = bwdist(~nc_ref_frame);    
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
-    r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);
-    
-    % generate array indicating distance of each pixel from an active locus 
-    nc_indices = sub2ind(size(nc_dist_frame),spot_y_vec,spot_x_vec);
-    spot_dist_frame = zeros(size(nc_dist_frame));
-    spot_dist_frame(nc_indices(~isnan(nc_indices))) = 1;
-    spot_dist_frame = bwdist(spot_dist_frame);
-    spot_roi_frame = bwlabel(spot_dist_frame <= roi_rad_spot_pix); % label regions within designated integration radius of a spot    
-    
-    % save spot and nucleus reference frames
-    nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
-    save(nc_ref_name,'nc_ref_frame');
-    
-    spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
-    save(spot_ref_name,'spot_roi_frame');
+    r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);        
         
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
@@ -490,18 +588,13 @@ for i = 1:size(set_frame_array,1)
         for k = 1:numel(new_vec_fields)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
-        end
-        if serial_qc_flag_vec(j) > 0 || edge_qc_flag_vec(j) > 0
-            for k = 1:numel(new_snip_fields)
-                snip = eval([new_snip_fields{k} '(:,:,j)']);
-                ind = numel(nucleus_struct(nc_index).snip_frame_vec)+1;
-                nucleus_struct(nc_index).(new_snip_fields{k})(:,:,ind) = snip;
-            end
-            nucleus_struct(nc_index).snip_frame_vec(ind) = frame;
-        end
+        end        
+        for k = 1:numel(new_snip_fields)
+            snip = eval([new_snip_fields{k} '(:,:,j)']);            
+            nucleus_struct(nc_index).(new_snip_fields{k})(:,:,nc_sub_index) = snip;
+        end                
     end
     t = round(toc);
-    frame_rate_vec(i) = t;
     disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])     
 end
 disp('saving qc frames...')
@@ -509,13 +602,13 @@ disp('saving qc frames...')
 tic
 particle_index = unique([nucleus_struct.ParticleID]);
 particle_index = particle_index(~isnan(particle_index));
-qc_particles = randsample(particle_index,100,false);
+qc_particles = randsample(particle_index,min([100,numel(particle_index)]),false);
 particle_index_full = [];
 particle_frames_full = [];
 for i = 1:numel(qc_structure)
     qc_mat = qc_structure(i).qc_mat;
     for  j = 1:numel(qc_mat)
-        qc_spot = qc_mat(numel(nc_x_vec)-j+1);
+        qc_spot = qc_mat(j);
         if ~isfield(qc_spot,'ParticleID')
             continue
         end
