@@ -95,4 +95,10 @@ for i = sampling_order
         n_sampled = n_sampled + 1;
     end
 end
+
+% find average psf 
+mean_spot = nanmean(cat(4,psf_cell{:}),4);
+mean_psf = mean_spot = nansum(mean_spot(:));
+
+
     
