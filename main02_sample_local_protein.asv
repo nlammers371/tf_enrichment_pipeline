@@ -200,7 +200,7 @@ if all(spot_frame_vec) && segmentNuclei
 elseif ~all(nc_frame_vec) && ~segmentNuclei   
     warning('some or all frames missing nucleus segmentation data. Segmenting missing frames only')
     segmentNuclei = 1;   
-    segment_indices = find(~spot_frame_vec);
+    segment_indices = find(~nc_frame_vec);
 end
 if segmentNuclei
     disp('segmenting nuclei...')
@@ -301,6 +301,17 @@ if segmentNuclei
     toc
 end
 disp('taking protein samples...')
+% define volumetric distance box for subsequent use
+xy_sigma = psf_dims.xy_sigma;
+z_sigma = psf_dims.z_sigma;
+xy_vol_dim = ceil(xy_sigma);
+z_vol_dim = ceil(z_sigma);
+[x_ref_vol, y_ref_vol, z_ref_vol] = meshgrid(1:2*xy_vol_dim+1,1:2*xy_vol_dim+1,1:2*z_vol_dim+1);
+x_ref_vol = x_ref_vol - xy_vol_dim - 1;
+z_ref_vol = z_ref_vol - z_vol_dim - 1;
+y_ref_vol = y_ref_vol - xy_vol_dim - 1;
+vol_box = (x_ref_vol/xy_sigma).^2 + (y_ref_vol/xy_sigma).^2 + (z_ref_vol/z_sigma).^2;
+vol_box_bin = vol_box <= 1;
 
 for i = 1:size(set_frame_array,1)    
     tic
@@ -371,13 +382,20 @@ for i = 1:size(set_frame_array,1)
         % in vicinity of spot       
         spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame)) / voxel_size;
         spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame)) / voxel_size;            
-                
-        xd = x_ref - x_spot;
-        yd = y_ref - y_spot;
-        zd = z_ref - z_spot;
-        dn_ref = (xd./psf_dims.xy_sigma).^2 + (yd./psf_dims.xy_sigma).^2 + (zd./psf_dims.z_sigma).^2 < 1;
-        vol_pt = sum(dn_ref(:).*protein_stack(:)) / sum(dn_ref(:));
-        spot_protein_vec_3d(j) = vol_pt / voxel_size;        
+        % volume protein sampling 
+        sample_box = NaN(2*xy_vol_dim+1,2*xy_vol_dim+1,2*z_vol_dim+1);
+        xv_range_full = x_spot - xy_vol_dim:x_spot + xy_vol_dim;
+        xv_range = xv_range_full(xv_range_full>=1&xv_range_full<=xDim);
+        yv_range_full = y_spot - xy_vol_dim:y_spot + xy_vol_dim;
+        yv_range = yv_range_full(yv_range_full>=1&yv_range_full<=yDim);
+        zv_range_full = z_spot - z_vol_dim:z_spot + z_vol_dim;
+        zv_range = zv_range_full(zv_range_full>=1&zv_range_full<=zDim);
+        
+        sample_box(ismember(yv_range_full,yv_range),ismember(xv_range_full,xv_range),...
+            ismember(zv_range_full,zv_range)) = protein_stack(yv_range,xv_range,zv_range);
+        vol_pt_spot = sample_box.*vol_box_bin;
+        vol_denominator = ~isnan(sample_box).*vol_box_bin;
+        spot_protein_vec_3d(j) = nansum(vol_pt_spot(:)) / sum(vol_denominator(:)) / voxel_size; 
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            
@@ -547,10 +565,17 @@ for i = 1:size(set_frame_array,1)
         serial_null_x_vec(j) = xc;
         serial_null_y_vec(j) = yc;
         serial_null_edge_dist_vec(j) = ec;
-        % 3D version
+        % 3D version        
+        x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
+        y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
+        x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
+        y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
+                
+        
+        
         xd = x_ref - xc;
         yd = y_ref - yc;
-        zd = z_ref - zc;
+        zd = z_ref - z_spot;
         dn_ref = (xd./psf_dims.xy_sigma).^2 + (yd./psf_dims.xy_sigma).^2 + (zd./psf_dims.z_sigma).^2 < 1;
         vol_pt = sum(dn_ref(:).*protein_stack(:)) / sum(dn_ref(:)) / voxel_size;
         serial_null_protein_vec_3d(j) = vol_pt;
