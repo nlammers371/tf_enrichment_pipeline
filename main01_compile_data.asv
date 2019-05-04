@@ -287,20 +287,20 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
 end
-
 % generate interpolation fields
 interp_fields = {'fluo'};
 interpGrid = 0:TresInterp:60*60;
 for i = 1:numel(nucleus_struct)
     time_vec = nucleus_struct(i).time;
     fluo_vec = nucleus_struct(i).fluo;
-    start_i = find(~isnan(fluo_vec),1);
-    stop_i = find(~isnan(fluo_vec),1,'last');    
-    time_vec = time_vec(start_i:stop_i);       
+    start_i = find(~isnan(fluo),1);
+    s
+    time_vec = time_vec(:);
+    fluo_vec = fluo_vec(find(~isnan(fluo),1):find(~isnan(fluo),1,'last'));
+    time_interp = interpGrid(interpGrid>=time_vec(1)&interpGrid<=time_vec(end));
     if nucleus_struct(i).qc_flag == 1
-        time_interp = interpGrid(interpGrid>=time_vec(1)&interpGrid<=time_vec(end));
         for  j = 1:numel(interp_fields)
-            vec = nucleus_struct(i).(interp_fields{j})(start_i:stop_i);
+            vec = nucleus_struct(i).(interp_fields{j});
             %Look for clusters of 6 or more NaNs
             kernel = [1,1,1,1,1];
             vec_nans = isnan(vec);
@@ -322,12 +322,12 @@ for i = 1:numel(nucleus_struct)
             nucleus_struct(i).([interp_fields{j} '_interp']) = interp1(time_vec,vec,time_interp);
         end
     else
-        time_interp = nucleus_struct(i).time;
         for  j = 1:numel(interp_fields)
             vec = nucleus_struct(i).(interp_fields{j});
             nucleus_struct(i).([interp_fields{j} '_interp']) = vec(1);
         end
-    end           
+    end 
+    vec_nans = isnan(vec);              
     nucleus_struct(i).time_interp = time_interp;
     nucleus_struct(i).TresInterp = TresInterp;
 end

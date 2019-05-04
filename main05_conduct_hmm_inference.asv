@@ -54,8 +54,10 @@ min_dp_per_inf = 1000; % inference will be aborted if fewer present
 for i = 1:numel(varargin)    
     if strcmpi(varargin{i},'dropboxFolder')
         dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
-    elseif ischar(varargin{i}) && i ~= numel(varargin)        
-        eval([varargin{i} '=varargin{i+1};']);        
+    elseif ischar(varargin{i}) && i ~= numel(varargin)
+        
+        eval([varargin{i} '=varargin{i+1};']);
+        end
     end
 end
 
