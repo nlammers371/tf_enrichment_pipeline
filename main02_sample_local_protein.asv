@@ -200,7 +200,7 @@ if all(spot_frame_vec) && segmentNuclei
 elseif ~all(nc_frame_vec) && ~segmentNuclei   
     warning('some or all frames missing nucleus segmentation data. Segmenting missing frames only')
     segmentNuclei = 1;   
-    segment_indices = find(~nc_frame_vec);
+    segment_indices = find(~spot_frame_vec);
 end
 if segmentNuclei
     disp('segmenting nuclei...')

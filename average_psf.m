@@ -4,18 +4,18 @@ clear
 close all
 
 project = 'Dl-Ven x snaBAC';
-dropboxFolder =  'D:\Data\Nick\LivemRNA\LivemRNAFISH\Dropbox (Garcia Lab)\';
+rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-rawPath = 'D:\Data\LocalEnrichment\Data\PreProcessedData\';
 
 % sampling parameters
 n_spots = 1000;
 mcp_channel = 2;
-snip_size = 15;
+snip_size = 25;
 stack_size = 5;
 % load nucleus structure
 load([dataPath 'nucleus_struct.mat'])
-
+load([dataPath '/set_key.mat'],'set_key')
 % remove all frames that do not contain a segmented particle or that
 % contain a particle that fails QC standards
 % nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
@@ -61,6 +61,7 @@ sampling_order = randsample(1:size(set_frame_array,1),size(set_frame_array,1),fa
 % sample spots
 for i = sampling_order    
     tic
+    exit_flag = 0;
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2); 
 
@@ -74,31 +75,72 @@ for i = sampling_order
     
     % load stacks
     mcp_stack = load_stacks(rawPath, src, frame, mcp_channel);
-    
+    if isempty(mcp_stack)
+        continue
+    end
     for j = 1:numel(spot_x_vec)
         x_spot = spot_x_vec(j);
-        y_spot = spot_x_vec(j);
-        z_spot = spot_x_vec(j);
-        mcp_stack = NaN(2*snip_size + 1,2*snip_size + 1,10);
+        y_spot = spot_y_vec(j);
+        z_spot = spot_z_vec(j);
+        spot_stack = NaN(2*snip_size + 1,2*snip_size + 1,2*stack_size+1);
         % pull sample
         x_range = max(1,x_spot-snip_size):min(xDim,x_spot+snip_size);
         y_range = max(1,y_spot-snip_size):min(yDim,y_spot+snip_size);
-        z_range = max(1,z_spot-stack_size):min(zDim,z_spot+snip_size);
+        z_range = max(1,z_spot-stack_size):min(zDim,z_spot+stack_size);
         x_range_full = x_spot-snip_size:x_spot+snip_size;
         y_range_full = y_spot-snip_size:y_spot+snip_size; 
         z_range_full = z_spot-stack_size:z_spot+stack_size; 
         
-        mcp_stack(ismember(y_range_full,y_range),ismember(x_range_full,x_range),ismember(z_range_full,z_range)) = ...
+        spot_stack(ismember(y_range_full,y_range),ismember(x_range_full,x_range),ismember(z_range_full,z_range)) = ...
             mcp_stack(y_range,x_range,z_range);
         
-        psf_cell{j} = mcp_stack;
+        psf_cell{j} = spot_stack;
         n_sampled = n_sampled + 1;
+        
+        if n_sampled > n_spots
+            exit_flag = 1;
+            break
+        end
+    end
+    if exit_flag == 1
+        break;
     end
 end
-
+%%
 % find average psf 
 mean_spot = nanmean(cat(4,psf_cell{:}),4);
-mean_psf = mean_spot = nansum(mean_spot(:));
+mean_spot(isnan(mean_spot)) = 0;
+mean_psf = mean_spot / nansum(mean_spot(:));
 
 
-    
+% fit gaussian to mean spot
+[mesh_y,mesh_x, mesh_z] = meshgrid(1:size(mean_psf,2), 1:size(mean_psf,1), 1:size(mean_psf, 3));
+mesh_x = mesh_x - snip_size - 1;
+mesh_y = mesh_y - snip_size - 1;
+mesh_z = mesh_z - stack_size - 1;
+
+% Single 3D generalized gaussian function
+single3DGaussian = @(params) params(3)*...params(1)^2 * params(2) / (2*pi)^1.5 * ...
+    exp(-.5*( params(1)*(mesh_x).^2 + params(1)*(mesh_y).^2 + params(2)*(mesh_z).^2 )) + params(4);
+
+objective_fun = @(params) single3DGaussian(params) - (mean_spot);
+
+centroid_guess = [size(mean_psf, 2)/2, size(mean_psf, 1)/2, size(mean_psf,3)/2];
+
+initial_parameters = [1/2,1/2,1.2,1];
+ub = [1 1 Inf Inf];%f snip_size snip_size snip_size];
+lb = [0 0 0 0];% -snip_size -snip_size -snip_size];
+%%% params and fits: %%%
+%fitting options
+lsqOptions=optimset('maxfunevals',10000,'TolFun',1e-4,'maxiter',10000);
+
+fit = lsqnonlin(objective_fun, initial_parameters,lb,ub,lsqOptions);
+
+
+% save dim params
+psf_dims = struct;
+psf_dims.xy_sigma = fit(1)^-.5;
+psf_dims.z_sigma = fit(2)^-.5;
+
+save([dataPath 'psf_dims.mat'],'psf_dims')
+

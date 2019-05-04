@@ -51,7 +51,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % find sheet
-sheet_path = [folderPath 'DataStatusTemp.xlsx'];
+sheet_path = [folderPath 'DataStatus.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
 sheet_index = find(ismember(sheet_names,project));
 if isempty(sheet_index)
@@ -142,6 +142,7 @@ for i = 1:length(cp_filenames)
     yDim = FrameInfo(1).LinesPerFrame;
     xDim = FrameInfo(1).PixelsPerLine;
     zDim = FrameInfo(1).NumberSlices;
+    zStep = FrameInfo(1).ZStep;
     % compile schnitz info
     s_cells = struct;
     e_pass = 1;    
@@ -153,6 +154,8 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).xDim = xDim;
             s_cells(e_pass).yDim = yDim;
             s_cells(e_pass).zDim = zDim;
+            s_cells(e_pass).zStep = zStep;
+            s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;      
             %Will be set to particle real values for nuclei with matching
             %particle
             s_cells(e_pass).ParticleID = NaN;
@@ -187,8 +190,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).setID = setID;
             fn = cp_filenames{i}; % Get filename to store in struct  
             fn = fn(1:strfind(fn,'/')-1);
-            s_cells(e_pass).source_path = fn;                        
-            s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;       
+            s_cells(e_pass).source_path = fn;                                     
             s_cells(e_pass).ap_flag = 0;
             % sister fields
             s_cells(e_pass).sister_Index = NaN;
