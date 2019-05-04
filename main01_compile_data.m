@@ -101,6 +101,7 @@ save([dataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
+disp('compiling data...')
 nucleus_struct = [];
 % Loop through filenames    
 for i = 1:length(cp_filenames) 
@@ -287,7 +288,7 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
 end
-
+disp('interpolating data...')
 % generate interpolation fields
 interp_fields = {'fluo'};
 interpGrid = 0:TresInterp:60*60;
@@ -331,8 +332,9 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).time_interp = time_interp;
     nucleus_struct(i).TresInterp = TresInterp;
 end
-% pt_indices = find(~isnan([nucleus_struct.ParticleID]));
-% nucleus_struct = nucleus_struct(randsample(pt_indices,25));
+% call function to calculate average psf difs
+disp('calculating psf dims...')
+calculate_average_psf(project);
 % save
 save(nucleus_name ,'nucleus_struct') 
-
+disp('done.')
