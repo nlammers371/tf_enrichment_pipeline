@@ -423,8 +423,8 @@ for i = 1:size(set_frame_array,1)
        
         % Take average across all pixels in nucleus mask
 %         mf_filter = spot_sep_vec >= minSampleSep & abs(nc_edge_dist_vec-spot_edge_dist) <= mfTolerance;                    
-        mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask));
-        mf_null_mcp_vec(j) = nanmean(mcp_frame(spot_nc_mask));
+        mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask)) / voxel_size;
+        mf_null_mcp_vec(j) = nanmean(mcp_frame(spot_nc_mask)) / voxel_size;
         
         % Edge sampling 
         spot_edge_dist = nc_dist_frame(y_spot,x_spot);        

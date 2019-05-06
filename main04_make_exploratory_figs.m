@@ -1,11 +1,10 @@
 % Script conduct locus enrichment analyses
-function main04_make_exploratory_figs(project, varargin)
+function main04_make_exploratory_figs(project,protein_string,gene_string,varargin)
 
 close all
 
 DataPath = ['../../dat/' project '/'];
 figPath = ['../../fig/' project '/'];
-ControlType = 'edge'; % specify type of control to use
 DistLim = .8; % min distance from edge permitted (um)
 NBoots = 20;%00; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
@@ -22,51 +21,30 @@ for i = 1:numel(varargin)
         end
     end
 end
-figPath = [figPath ControlType '/'];
+figPath = [figPath 'basicFigs/'];
 mkdir(figPath)
 
 % Load analysis data
 load([DataPath 'nucleus_struct_protein.mat']);
 
 % extract protein, gene, fluorophore info
-underscores = strfind(project,'_');
-protein_name = project(1:underscores(1)-1);
-protein_fluor = project(underscores(1)+1:underscores(2)-1);
-gene_name = project(underscores(2)+1:underscores(3)-1);
-if numel(underscores) == 3
-    ind = numel(project);
-else
-    ind = underscores(4)-1;
-end
-gene_fluor = project(underscores(3)+1:ind);
+pt_dash = strfind(protein_string,'-');
+protein_name = protein_string(1:pt_dash-1);
+protein_fluor = protein_string(pt_dash+1:end);
+gene_dash = strfind(gene_string,'-');
+gene_name = gene_string(1:gene_dash-1);
+gene_fluor = gene_string(gene_dash+1:end);
 
 id_string = [protein_name '-' protein_fluor ' : ' gene_name '-' gene_fluor]; 
 write_string = [protein_name '-' protein_fluor '__' gene_name '-' gene_fluor]; 
 % Generate distance vector for filtering snip stacks
 PixelSize = nucleus_struct_protein(1).PixelSize;
-snip_dist_vec = [];
-snip_time_vec = [];
-snip_ap_vec = [];
-for i = 1:numel(nucleus_struct_protein)
-    snip_frame_vec = nucleus_struct_protein(i).snip_frame_vec;
-    nc_dist_vec = nucleus_struct_protein(i).(['spot_' ControlType '_dist_vec']);
-    time_vec = nucleus_struct_protein(i).time;
-%     ap_vec = nucleus_struct_protein(i).ap_vector;
-    nc_frames = nucleus_struct_protein(i).frames;
-    snip_dist_vec = [snip_dist_vec PixelSize*nc_dist_vec(ismember(nc_frames,snip_frame_vec))];
-    snip_time_vec = [snip_time_vec time_vec(ismember(nc_frames,snip_frame_vec))];
-%     snip_ap_vec = [snip_ap_vec ap_vec(ismember(nc_frames,snip_frame_vec))];
-end    
-% % fixing error in a data set
-% if strcmpi(project,'Hb_NbGFP_hbBAC_mCherry')
-%     ap_ft = snip_ap_vec > .5;
-%     snip_ap_vec(ap_ft) = 1 - snip_ap_vec(ap_ft);
-% end
+
 % Snip stacks
 spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
-null_protein_snips = cat(3,nucleus_struct_protein.([ControlType '_null_protein_snips']));
+null_protein_snips = cat(3,nucleus_struct_protein.edge_null_protein_snips);
 spot_mcp_snips = cat(3,nucleus_struct_protein.spot_mcp_snips);
-null_mcp_snips = cat(3,nucleus_struct_protein.([ControlType '_null_mcp_snips']));
+null_mcp_snips = cat(3,nucleus_struct_protein.edge_null_mcp_snips);
 
 % Make r reference array
 snip_size = size(spot_protein_snips,1);

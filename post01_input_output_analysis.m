@@ -42,7 +42,8 @@ rd = [213 108 85]/256; % red
 % br = [207 178 147]/256; % brown
 % first make figures to ensure that hmmm results have been properly
 % concatenated with protein data
-if make_trace_plots    
+if make_trace_plots
+    disp('making single-trace plots...')
     qcPath = [figPath '\qc_' project '\'];
     mkdir(qcPath);
     s_index = 1:numel(hmm_input_output);
@@ -69,15 +70,19 @@ if make_trace_plots
 
         % Protein Channel checks
         spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
+        spot_protein_3D = hmm_input_output(plot_indices(j)).spot_protein_3D;
         null_protein = hmm_input_output(plot_indices(j)).serial_protein;
+        null_protein_3D = hmm_input_output(plot_indices(j)).serial_protein_3D;
         mf_protein = hmm_input_output(plot_indices(j)).mf_protein;        
         % make figure
         qc_fig = figure('Visible','off');
         hold on
         plot(time,spot_protein)
         plot(time,null_protein)
+        plot(time,spot_protein_3D)
+        plot(time,null_protein_3D)
         plot(time,mf_protein)
-        legend('protein (spot)', 'protein (control spot)','protein (mf control)')
+        legend('protein (spot)', 'protein (control spot)','protein (mf control)','protein 3D (control spot)','protein 3D (mf control)')
         xlabel('time')
         ylabel([protein_name ' - ' protein_fluor ' (au)'])
         saveas(qc_fig,[qcPath 'protein_check_nc_' sprintf('%03d',plot_indices(j)) '.png'])
@@ -93,8 +98,8 @@ if make_trace_plots
         % MCP channel checks
         time = hmm_input_output(plot_indices(j)).time;
         fluo = hmm_input_output(plot_indices(j)).fluo;
-        spot_protein = hmm_input_output(plot_indices(j)).spot_protein;
-        serial_protein = hmm_input_output(plot_indices(j)).serial_protein;
+        spot_protein = hmm_input_output(plot_indices(j)).spot_protein_3D;
+        serial_protein = hmm_input_output(plot_indices(j)).serial_protein_3D;
         mf_protein = hmm_input_output(plot_indices(j)).mf_protein;
         % make figure
         trace_fig = figure('Visible','off');
@@ -121,7 +126,7 @@ if make_trace_plots
         saveas(trace_fig,[tracePath 'input_output_nc' sprintf('%03d',plot_indices(j)) '.png'])               
     end
 end
-
+%%
 close all
 Tres = hmm_input_output(1).Tres;
 
@@ -214,7 +219,7 @@ data_type_cell = {'fluo','hmm'};
 data_titles = {'fluorescence', 'HMM'};
 % set scales for feature identification
 fluo_scale = prctile([hmm_input_output.fluo],40);
-r_scale = prctile(vertcat(hmm_input_output.r_vec),40);
+r_scale = prctile([hmm_input_output.r_vec],40);
 % pull time series samples from vicinity of protein events
 feature_struct = struct;
 ref_vec = -window_size:window_size;%1:(2*window_size+1);
@@ -240,7 +245,7 @@ for i = 1:numel(hmm_input_output)
     [~,hmm_high_ids] = findpeaks(hmm_vec,frame_vec,'MinPeakWidth',3,'MinPeakProminence',r_scale); % NL: eye-balled atm
     [~,hmm_low_ids] = findpeaks(-hmm_vec,frame_vec,'MinPeakWidth',3,'MinPeakProminence',r_scale); % NL: eye-balled atm
     % identify changepoints 
-    hmm_d_vec = sign([0 diff(hmm_vec')]);
+    hmm_d_vec = sign([0 diff(hmm_vec)]);
     fluo_d_vec = sign([0 diff(fluo_vec)]);
     ipt_hmm = findchangepts(hmm_vec,'MinThreshold',r_scale);
     ipt_fluo = findchangepts(fluo_vec,'MinThreshold',fluo_scale);

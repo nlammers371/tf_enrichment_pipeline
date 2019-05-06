@@ -19,17 +19,18 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results(project,w,KInf,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(project,varargin)
 
 close all
-% min_time = 8*60;
+addpath('./utilities')
 %%%%% These options will remain fixed for now
 dpBootstrap = 0;
 % dataRoot = ['../dat/'];
 alphaFrac = 1302 / 6000;
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-
+w = 7;
+K = 3;
 
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)    
@@ -49,13 +50,12 @@ end
 % extract 1c variables 
 % dataPath = [dataRoot project '/'];
 load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
-
+load([dataPath '/nucleus_struct.mat'],'nucleus_struct') 
 minDP = nucleus_struct_protein(1).minDP;
 % check for necessary fields
 analysis_fields = {'TresInterp','fluo_interp','time_interp'};
-if ~isfield(nucleus_struct_protein,analysis_fields{1})
-    warning('Interpolation fields missing. Adding now.')
-    load([dataPath '/nucleus_struct.mat'],'nucleus_struct') 
+if true %~isfield(nucleus_struct_protein,analysis_fields{1})
+    warning('Interpolation fields missing. Adding now.')    
     for i = 1:numel(nucleus_struct)
         for a = 1:numel(analysis_fields)
             nucleus_struct_protein(i).(analysis_fields{a}) = nucleus_struct(i).(analysis_fields{a});
@@ -75,9 +75,9 @@ for i = 1:w
         alpha_kernel(i) = Tres;
     end
 end
-
+voxel_size = nucleus_struct_protein(1).PixelSize^2 * nucleus_struct_protein(1).zStep;
 % Set write path (inference results are now written to external directory)
-hmm_suffix =  ['hmm_inference/w' num2str(w) '_K' num2str(KInf) '/']; 
+hmm_suffix =  ['hmm_inference/w' num2str(w) '_K' num2str(K) '/']; 
 file_list = dir([dataPath hmm_suffix 'hmm_results*.mat']);
 if numel(file_list) > 1
     warning('multiple inference files detected. Ignoring all but first')
@@ -96,6 +96,7 @@ if exist([dataPath hmm_suffix 'soft_fit_struct.mat']) > 0
     end
 end
 qc_indices = find([nucleus_struct_protein.qc_flag]==1);
+particle_index = [nucleus_struct_protein.ParticleID];
 if soft_fit_flag
     disp('conducting single trace fits...')
     A_log = log(inference_results.A_mat);
@@ -103,12 +104,14 @@ if soft_fit_flag
     sigma = sqrt(inference_results.noise);
     pi0_log = log(inference_results.pi0); 
     eps = 1e-4;
-
     
     fluo_values = cell(numel(qc_indices),1);
     rm_indices = [];
     for i = 1:numel(qc_indices)
         fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
+        start_i = find(~isnan(fluo),1);
+        stop_i = find(~isnan(fluo),1,'last');
+        fluo = fluo(start_i:stop_i);
         if numel(fluo) < minDP
             error('problem with qc flag')
         end
@@ -118,12 +121,14 @@ if soft_fit_flag
     qc_indices = qc_indices(~ismember(qc_indices,rm_indices));
     tic 
     local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                  v', sigma, pi0_log, A_log, KInf, w, alpha, 1, eps);
+                  v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
     toc
     soft_fit_struct = local_em_outputs.soft_struct;
+    soft_fit_struct.particle_index = particle_index(qc_indices);
     save([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+else
+    load([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 end
-
 %%% extract protein info
 particle_vec = [];
 for i = 1:numel(nucleus_struct_protein)
@@ -132,43 +137,48 @@ end
 time_vec = [nucleus_struct_protein.time];
 fluo_vec = [nucleus_struct_protein.fluo];
 spot_protein_vec = [nucleus_struct_protein.spot_protein_vec];
+spot_protein_vec_3D = [nucleus_struct_protein.spot_protein_vec_3d];
 spot_mcp_vec = [nucleus_struct_protein.spot_mcp_vec];
 null_protein_vec = [nucleus_struct_protein.edge_null_protein_vec];
-mf_protein_vec = [nucleus_struct_protein.mf_null_protein_vec];
+mf_protein_vec = [nucleus_struct_protein.mf_null_protein_vec] / voxel_size;
 serial_protein_vec = [nucleus_struct_protein.serial_null_protein_vec];
+serial_protein_vec_3D = [nucleus_struct_protein.serial_null_protein_vec_3d];
 
-%%% generate indexing vectors
-particle_index = unique(particle_vec);
 
 %%% now extract corresponding hmm traces
 hmm_input_output = [];
 iter = 1;
 for i = qc_indices%1:numel(particle_index)        
     % take average soft decoded result for particle
-    ParticleID = particle_index(i);
-    particle_ft = hmm_particle_vec==ParticleID;
-    indices = index_vec(particle_ft);
-    sub_indices = sub_index_vec(particle_ft);
+    ParticleID = particle_index(i);    
+    if isnan(ParticleID)
+        ereror('uh oh')
+    end
     temp = struct;
     % extract relevant vectors from protein struct
     ff_pt = fluo_vec(particle_vec==ParticleID);
     mcp_pt = spot_mcp_vec(particle_vec==ParticleID);
     sp_pt = spot_protein_vec(particle_vec==ParticleID);
+    sp_pt_3D = spot_protein_vec_3D(particle_vec==ParticleID);
     nn_pt = null_protein_vec(particle_vec==ParticleID);
     mf_pt = mf_protein_vec(particle_vec==ParticleID);
     sr_pt = serial_protein_vec(particle_vec==ParticleID);       
+    sr_pt_3D = serial_protein_vec_3D(particle_vec==ParticleID);       
     tt_pt = time_vec(particle_vec==ParticleID);
     % check to see if we ran inference for this one
-
-    temp.time = nucleus_struct(i).time_interp;%inference_results(indices(1)).time_data{sub_indices(1)}; % doesn't matter which duplicate we reference
-    temp.fluo = nucleus_struct(i).fluo_interp;%inference_results(indices(1)).fluo_data{sub_indices(1)};    
+    master_time = nucleus_struct_protein(i).time_interp;
+    master_fluo = nucleus_struct_protein(i).fluo_interp;
+    start_i = find(~isnan(master_fluo),1);
+    stop_i = find(~isnan(master_fluo),1,'last');
+    temp.time = master_time(start_i:stop_i);%inference_results(indices(1)).time_data{sub_indices(1)}; % doesn't matter which duplicate we reference
+    temp.fluo = master_fluo(start_i:stop_i);%inference_results(indices(1)).fluo_data{sub_indices(1)};    
     % extract useful values
     [r,ri] = sort(inference_results.r);
-    z = exp(local_em_outputs.soft_struct.p_z_log_soft{iter});    
+    z = exp(soft_fit_struct.p_z_log_soft{iter});    
     temp.z_mat = z(ri,:)';    
     temp.r_mat = z(ri,:)'.*r';
     temp.r_inf = r';
-    temp.r_vec = sum(temp.r_mat,2);
+    temp.r_vec = sum(temp.r_mat,2)';
     [~,z_vec] = max(temp.z_mat,[],2);
     temp.z_vec = z_vec; 
     % make predicted fluo vec
@@ -181,17 +191,21 @@ for i = qc_indices%1:numel(particle_index)
         temp.fluo_check = interp1(tt_pt(~isnan(ff_pt)),ff_pt(~isnan(ff_pt)),temp.time);
         % protein information
         temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);        
+        temp.spot_protein_3D = interp1(tt_pt(~isnan(sp_pt_3D)),sp_pt_3D(~isnan(sp_pt_3D)),temp.time);        
         temp.mf_protein = interp1(tt_pt(~isnan(mf_pt)),mf_pt(~isnan(mf_pt)),temp.time);  
         temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
         temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);
+        temp.serial_protein_3D = interp1(tt_pt(~isnan(sr_pt_3D)),sr_pt_3D(~isnan(sr_pt_3D)),temp.time);
         % reset values to NaN that are too far removed from true ref point
         input_times = tt_pt(~isnan(sp_pt)&~isnan(sr_pt));
         gap_times = tt_pt(~isnan(sp_pt)&isnan(sr_pt)); % look for assymmetries btw spot and control channels
         dt_vec_gap = NaN(size(temp.time));
-        dt_vec_imbalance = NaN(size(temp.time));
+        dt_vec_imbalance = zeros(size(temp.time));
         for t = 1:numel(dt_vec_gap)
-            dt_vec_gap(t) = min(abs(temp.time(t)-input_times));            
-            dt_vec_imbalance(t) = min(abs(temp.time(t)-gap_times));
+            dt_vec_gap(t) = min(abs(temp.time(t)-input_times));   
+            if ~isempty(gap_times)
+                dt_vec_imbalance(t) = min(abs(temp.time(t)-gap_times));
+            end
         end
         temp.dt_filter_gap = dt_vec_gap > 60;           
         temp.dt_filter_imb = dt_vec_imbalance < Tres;
@@ -200,10 +214,11 @@ for i = qc_indices%1:numel(particle_index)
         temp.Tres = Tres;
         hmm_input_output  = [hmm_input_output temp];
     end
+    iter = iter + 1;
 end
 % find nearest neighbor particles
 % generate array of average protein levels for each nucleus
-time_vec = nucleus_struct_protein(1).interpGrid;
+time_vec = unique([nucleus_struct_protein.time_interp]);%nucleus_struct_protein(1).interpGrid;
 mf_array = NaN(numel(time_vec),numel(hmm_input_output));
 start_time_vec = NaN(size(hmm_input_output));
 stop_time_vec = NaN(size(hmm_input_output));
@@ -236,4 +251,4 @@ for i = 1:numel(hmm_input_output)
 end
 
 % save results
-save([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(KInf) '.mat'],'hmm_input_output')
+save([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
