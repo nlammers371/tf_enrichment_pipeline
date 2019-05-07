@@ -244,10 +244,16 @@ for i = 1:numel(hmm_input_output)
     s_pt(ismember(time_i,time_swap)) = hmm_input_output(best_ind).spot_protein(ismember(time_swap,time_i));
     mf_pt = NaN(size(time_i));
     mf_pt(ismember(time_i,time_swap)) = hmm_input_output(best_ind).mf_protein(ismember(time_swap,time_i));
+    s_fluo = NaN(size(time_i));
+    s_fluo(ismember(time_i,time_swap)) = hmm_input_output(best_ind).fluo(ismember(time_swap,time_i));
+    r_fluo = NaN(size(time_i));
+    r_fluo(ismember(time_i,time_swap)) = hmm_input_output(best_ind).r_vec(ismember(time_swap,time_i));
     % record
     hmm_input_output(i).swap_ind = best_ind;
     hmm_input_output(i).swap_spot_protein = s_pt;
     hmm_input_output(i).swap_mf_protein = mf_pt;
+    hmm_input_output(i).swap_fluo = s_fluo;
+    hmm_input_output(i).swap_hmm = r_fluo;
 end
 
 % save results

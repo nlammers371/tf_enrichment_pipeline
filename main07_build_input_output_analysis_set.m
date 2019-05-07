@@ -59,7 +59,7 @@ pt_vec = [hmm_input_output.spot_protein];
 min_peak_prom_pt = prctile(pt_vec,10) - prctile(pt_vec,5);
 
 base_in_out_struct = [];
-for i = 1:numel(hmm_input_output)
+for i = 90%1:numel(hmm_input_output)
     r_vec = hmm_input_output(i).r_vec;
     if numel(r_vec) < 2*window_size+1
         continue
@@ -84,7 +84,7 @@ for i = 1:numel(hmm_input_output)
     hmm_feature_prom(indices) = [peak_prom trough_prom];
     hmm_feature_sep(indices) = [peak_sep trough_sep]; 
     % find changepoints
-    hmm_change_flags = false(size(r_vec));    
+    hmm_change_flags = zeros(size(r_vec));    
     hmm_change_size = NaN(size(r_vec));
     hmm_change_sep = NaN(size(r_vec));
     hmm_change_points = findchangepts(r_vec,'MinThreshold',min_change_size_hmm);
@@ -124,13 +124,13 @@ for i = 1:numel(hmm_input_output)
     fluo_feature_prom(indices) = [peak_prom trough_prom];
     fluo_feature_sep(indices) = [peak_sep trough_sep]; 
     % find changepoints
-    fluo_change_flags = false(size(r_vec));    
+    fluo_change_flags = zeros(size(r_vec));    
     fluo_change_size = NaN(size(r_vec));
     fluo_change_sep = NaN(size(r_vec));
-    fluo_change_points = findchangepts(fluo_vec,'MinThreshold',min_change_size_fluo*2);
+    fluo_change_points = findchangepts(fluo_vec,'MinThreshold',min_change_size_fluo);
     fluo_change_sep(fluo_change_points) = nanmean(vertcat([NaN diff(fluo_change_points)],[diff(fluo_change_points) NaN]));
-    change_sign = sign([0,diff(r_vec)]);
-    change_size = abs([0,diff(r_vec)]);
+    change_sign = sign([0,diff(fluo_vec)]);
+    change_size = abs([0,diff(fluo_vec)]);
     % record
     fluo_change_flags(fluo_change_points) = change_sign(fluo_change_points);
     fluo_change_size(fluo_change_points) = change_size(fluo_change_points);
@@ -183,9 +183,11 @@ for i = 1:numel(base_in_out_struct)
     p_vec = base_in_out_struct(i).spot_protein;
     mf_vec = base_in_out_struct(i).mf_protein;
     serial_vec = base_in_out_struct(i).serial_protein;
-    swap_spot_vec = base_in_out_struct(i).swap_spot_protein;
+    swap_spot_protein_vec = base_in_out_struct(i).swap_spot_protein;
     swap_mf_vec = base_in_out_struct(i).swap_mf_protein;
     fluo_vec = base_in_out_struct(i).fluo;
+    swap_fluo_vec = base_in_out_struct(i).swap_fluo;
+    swap_hmm_vec = base_in_out_struct(i).swap_hmm;
     delta_protein_smooth = base_in_out_struct(i).delta_protein_smooth;        
     % feature vectors
     pt_peak_flags = base_in_out_struct(i).pt_peak_flags;
@@ -218,11 +220,13 @@ for i = 1:numel(base_in_out_struct)
         input_output_snips(iter).time_vec = t_vec(j:j+2*window_size);
         input_output_snips(iter).hmm_vec = r_vec(j:j+2*window_size);
         input_output_snips(iter).fluo_vec = fluo_vec(j:j+2*window_size);
+        input_output_snips(iter).swap_hmm_vec = swap_hmm_vec(j:j+2*window_size);
+        input_output_snips(iter).swap_fluo_vec = swap_fluo_vec(j:j+2*window_size);
         input_output_snips(iter).serial_protein_vec = serial_vec(j:j+2*window_size);
         input_output_snips(iter).mf_protein_vec = mf_vec(j:j+2*window_size);
         input_output_snips(iter).swap_mf_protein_vec = swap_mf_vec(j:j+2*window_size);
         input_output_snips(iter).spot_protein_vec = p_vec(j:j+2*window_size);
-        input_output_snips(iter).swap_spot_protein_vec = swap_spot_vec(j:j+2*window_size);
+        input_output_snips(iter).swap_spot_protein_vec = swap_spot_protein_vec(j:j+2*window_size);
         input_output_snips(iter).delta_protein_vec = delta_protein_smooth(j:j+2*window_size);
         % pull feature info
         input_output_snips(iter).t_center = t_vec(j+window_size);
@@ -230,6 +234,7 @@ for i = 1:numel(base_in_out_struct)
         input_output_snips(iter).pt_trough_flag = pt_trough_flags(j+window_size);
         input_output_snips(iter).pt_feature_width = pt_feature_width(j+window_size);
         input_output_snips(iter).pt_feature_prom = pt_feature_prom(j+window_size);
+        
         input_output_snips(iter).hmm_feature_sep = hmm_feature_sep(j+window_size);
         input_output_snips(iter).hmm_peak_flag = hmm_peak_flags(j+window_size);
         input_output_snips(iter).hmm_trough_flag = hmm_trough_flags(j+window_size);
@@ -238,6 +243,7 @@ for i = 1:numel(base_in_out_struct)
         input_output_snips(iter).hmm_change_sep = hmm_change_sep(j+window_size);
         input_output_snips(iter).hmm_change_flags = hmm_change_flags(j+window_size);
         input_output_snips(iter).hmm_change_size = hmm_change_size(j+window_size);
+        
         input_output_snips(iter).fluo_feature_sep = fluo_feature_sep(j+window_size);
         input_output_snips(iter).fluo_peak_flag = fluo_peak_flags(j+window_size);
         input_output_snips(iter).fluo_trough_flag = fluo_trough_flags(j+window_size);

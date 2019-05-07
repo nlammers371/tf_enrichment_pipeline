@@ -5,7 +5,7 @@ close all
 % define ID variables
 K = 3;
 w = 7;
-project = 'Dl-Ven x snaBAC';
+project = 'Dl-Ven x hbP2P';
 % project = 'Dl_Venus_hbP2P_MCPmCherry_Zoom2_7uW14uW';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 % dropboxFolder = 'C:\Users\nlamm\Dropbox (Garcia Lab)\';
@@ -16,7 +16,7 @@ mkdir(figPath)
 nTraces = 50; % number of individual traces to select for plotting
 window_size = 15; % number of lags and leads over which to track protein/fluo dynamics
 nBoots = 100;
-make_trace_plots = 1;
+make_trace_plots = 0;
 
 % % extract protein, gene, fluorophore info
 % underscores = strfind(project,'_');
@@ -30,7 +30,7 @@ make_trace_plots = 1;
 % end
 % gene_fluor = project(underscores(3)+1:end);
 protein_name = 'Dorsal';
-gene_name = 'sna';
+gene_name = 'hbP2P';
 
 % load data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'])
@@ -126,7 +126,7 @@ if make_trace_plots
         saveas(trace_fig,[tracePath 'input_output_nc' sprintf('%03d',plot_indices(j)) '.png'])               
     end
 end
-%%
+
 close all
 Tres = hmm_input_output(1).Tres;
 
@@ -234,9 +234,6 @@ for i = 1:numel(hmm_input_output)
     pt_spot = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;      
     pt_serial = hmm_input_output(i).serial_protein-hmm_input_output(i).mf_protein; 
     
-%     if ~qc_flag
-%         continue
-%     end
     %%% find features
     % find fluo peaks and troughs
     [~,fluo_high_ids] = findpeaks(fluo_vec,frame_vec,'MinPeakProminence',fluo_scale); % NL: eye-balled atm
@@ -327,7 +324,7 @@ for j = 1:numel(feature_cell)
         iter = iter + 1;
     end
 end
-
+%%
 %%% Make figures                     
 time_axis = Tres*ref_vec / 60;
 % Define some colors
