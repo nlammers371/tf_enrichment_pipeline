@@ -5,7 +5,7 @@ close all
 % define ID variables
 K = 3;
 w = 7;
-project = 'Dl-Ven x snaBAC';
+project = 'Dl-Ven x hbP2P';
 nBoots = 100;
 % project = 'Dl_Venus_hbP2P_MCPmCherry_Zoom2_7uW14uW';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
@@ -14,131 +14,85 @@ dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
 figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\hmm_input_output_K' num2str(K) '_w' num2str(w) '\'];
 mkdir(figPath)
 load([dataPath 'input_output_snips.mat'])
-gene_name = 'snaBAC';
+gene_name = 'hbP2P';
 protein_name = 'Dorsal';
-
-%% Make time-dependent cross-covariance plots
+%%
+%%% Make time-dependent cross-covariance plots
 % define some colors
 yw = [234 194 100]/256; % yellow
 bl = [115 143 193]/256; % blue
 rd = [213 108 85]/256; % red
 gr = [191 213 151]/256; % green
 br = [207 178 147]/256; % brown
-
-t_vec = [input_output_snips.t_center]; % center time for each snip
-early_indices = find(t_vec < 20*60);
-mid_indices = find(t_vec >= 60*20 & t_vec < 60*35);
-late_indices = (t_vec >= 60*35);
-n_lags = floor(numel(input_output_snips(3).ctrl_xcov)/2);
-
-% conduct bootstrap sampling
-early_xcov_mat = NaN(nBoots,2*n_lags+1);
-mid_xcov_mat = NaN(nBoots,2*n_lags+1);
-late_xcov_mat = NaN(nBoots,2*n_lags+1);
-for n = 1:nBoots
-    early_boot = randsample(early_indices,numel(early_indices),true);
-    mid_boot = randsample(mid_indices,numel(mid_indices),true);
-    late_boot = randsample(late_indices,numel(late_indices),true);
-
-    early_xcov_mat(n,:) = nanmean(vertcat(input_output_snips(early_boot).spot_xcov));
-    mid_xcov_mat(n,:) = nanmean(vertcat(input_output_snips(mid_boot).spot_xcov));
-    late_xcov_mat(n,:) = nanmean(vertcat(input_output_snips(late_boot).spot_xcov));
-end
-early_xcov_mean = nanmean(early_xcov_mat);
-early_xcov_ste = nanstd(early_xcov_mat);
-mid_xcov_mean = nanmean(mid_xcov_mat);
-mid_xcov_ste = nanstd(mid_xcov_mat);
-late_xcov_mean = nanmean(late_xcov_mat);
-late_xcov_ste = nanstd(late_xcov_mat);    
-
-lag_axis = (-n_lags:n_lags)*20/60;
-test_fig = figure;
-hold on
-fill([lag_axis fliplr(lag_axis)],[early_xcov_mean+early_xcov_ste fliplr(early_xcov_mean-early_xcov_ste)],bl,'FaceAlpha',.3,'EdgeAlpha',0)
-fill([lag_axis fliplr(lag_axis)],[mid_xcov_mean+mid_xcov_ste fliplr(mid_xcov_mean-mid_xcov_ste)],gr,'FaceAlpha',.3,'EdgeAlpha',0)
-fill([lag_axis fliplr(lag_axis)],[late_xcov_mean+late_xcov_ste fliplr(late_xcov_mean-late_xcov_ste)],rd,'FaceAlpha',.3,'EdgeAlpha',0)
-
-p1 = plot(lag_axis,early_xcov_mean,'Color',bl);
-p2 = plot(lag_axis,mid_xcov_mean,'Color',gr);
-p3 = plot(lag_axis,late_xcov_mean,'Color',rd);
-legend([p1 p2 p3],'early','middle','late')
-grid on
-xlabel('offset (minutes)')
-ylabel(['cross-covariance (' gene_name ' x ' protein_name])
-saveas(test_fig,[figPath 'temporal_xcov.png'])
-
-%% now make feature plots
+n_lags = floor(numel(input_output_snips(3).hmm_ctrl_xcov)/2);
 feature_cell = {'fluo_rise','fluo_fall','protein_peak','protein_trough'};
-% initialize arrays
-fluo_fluo_rise_mat = NaN(nBoots,2*n_lags+1);
-fluo_fluo_fall_mat = NaN(nBoots,2*n_lags+1);
-protein_fluo_rise_mat = NaN(nBoots,2*n_lags+1);
-protein_fluo_fall_mat = NaN(nBoots,2*n_lags+1);
-protein_protein_peak_mat = NaN(nBoots,2*n_lags+1);
-fluo_protein_peak_mat = NaN(nBoots,2*n_lags+1);
-protein_protein_trough_mat = NaN(nBoots,2*n_lags+1);
-fluo_protein_trough_mat = NaN(nBoots,2*n_lags+1);
-% get indices for sampling
-protein_peak_indices = find([input_output_snips.pt_peak_flag]==1);% & [input_output_snips.pt_feature_prom] > 100);
-protein_trough_indices = find([input_output_snips.pt_trough_flag]==1 & [input_output_snips.pt_feature_prom] > 100);
-fluo_rise_indices = find([input_output_snips.fluo_change_flags]==1);% & [input_output_snips.fluo_feature_prom] > 50);
-fluo_fall_indices = find([input_output_snips.fluo_change_flags]==-1);% & [input_output_snips.fluo_feature_prom] > 50);
-%%
-for n = 1:nBoots
-    for i = 1:numel(feature_cell)
-        % sample indices
-        eval(['indices = ' feature_cell{i} '_indices;'])
-        boot_indices = randsample(indices,numel(indices),true);
+flag_names = {'fluo_change_flags','fluo_change_flags','pt_peak_flag','pt_trough_flag'};
+val_vec = [1 -1 1 1];
+
+
+results_struct = struct;
+for i = 1:numel(feature_cell)
+    f_string = feature_cell{i};
+    % initialize arrays
+    protein_spot_diff_mat = NaN(nBoots,2*n_lags+1);
+    protein_spot_mat = NaN(nBoots,2*n_lags+1);
+    protein_mf_mat = NaN(nBoots,2*n_lags+1);
+    protein_swap_spot_mat = NaN(nBoots,2*n_lags+1);
+    protein_serial_mat = NaN(nBoots,2*n_lags+1);
+    protein_swap_serial_mat = NaN(nBoots,2*n_lags+1);
+    fluo_spot_mat = NaN(nBoots,2*n_lags+1);
+    fluo_swap_spot_mat = NaN(nBoots,2*n_lags+1); 
+        
+    feature_indices = find([input_output_snips.(flag_names{i})]==val_vec(i));
+    for n = 1:nBoots    
+        % sample indices  
+        boot_indices = randsample(feature_indices,numel(feature_indices),true);
         % extract
         p_vec_spot = nanmean(vertcat(input_output_snips(boot_indices).spot_protein_vec));
-        p_vec_swap = nanmean(vertcat(input_output_snips(boot_indices).swap_spot_protein_vec));
+        p_vec_mf = nanmean(vertcat(input_output_snips(boot_indices).mf_protein_vec));
+        p_vec_serial = nanmean(vertcat(input_output_snips(boot_indices).serial_protein_vec));
+        
+        
+        p_vec_spot_swap = nanmean(vertcat(input_output_snips(boot_indices).swap_spot_protein_vec));                
+        p_vec_mf_swap = nanmean(vertcat(input_output_snips(boot_indices).swap_mf_protein_vec));
+        p_vec_serial_swap = nanmean(vertcat(input_output_snips(boot_indices).swap_serial_protein_vec));
+        
         f_vec_spot = nanmean(vertcat(input_output_snips(boot_indices).fluo_vec));
         f_vec_swap = nanmean(vertcat(input_output_snips(boot_indices).swap_fluo_vec));
-        % record
-        eval(['protein_' feature_cell{i} '_mat(n,:) = p_vec_spot - p_vec_swap;'])
-        eval(['fluo_' feature_cell{i} '_mat(n,:) = f_vec_spot - f_vec_swap;'])
+        % record        
+        protein_mf_mat(n,:) = p_vec_mf;
+        protein_spot_mat(n,:) = p_vec_spot;
+        protein_serial_mat(n,:) = p_vec_serial;
+        protein_swap_spot_mat(n,:) = p_vec_spot_swap;        
+        fluo_spot_mat(n,:) = f_vec_spot;
+        fluo_swap_spot_mat(n,:) = f_vec_swap;
     end
-end    
-%%    
-% & [input_output_snips.fluo_change_size] > 40;
-
-for i = 1:numel(feature_cell)
-    % record
-    f_name = feature_cell{i};
-    eval(['protein_' f_name '_mean = nanmean(protein_' f_name '_mat);'])
-    eval(['protein_' f_name '_ste = nanstd(protein_' f_name '_mat);'])
+    % save to structure
+    results_struct(i).feature = f_string;
     
-    eval(['fluo_' f_name '_mean = nanmean(fluo_' f_name '_mat);'])
-    eval(['fluo_' f_name '_ste = nanstd(fluo_' f_name '_mat);'])
-end
+    results_struct(i).protein_mf_mean = nanmean(protein_mf_mat);
+    results_struct(i).protein_mf_ste = nanstd(protein_mf_mat);
+    
+    results_struct(i).protein_spot_mean = nanmean(protein_spot_mat);
+    results_struct(i).protein_spot_ste = nanstd(protein_spot_mat);
+    
+    results_struct(i).protein_serial_mean = nanmean(protein_serial_mat);
+    results_struct(i).protein_serial_ste = nanstd(protein_serial_mat);
+    
+    results_struct(i).protein_diff_mean = nanmean(protein_spot_mat - protein_serial_mat);
+    results_struct(i).protein_diff_ste = nanstd(protein_spot_mat - protein_serial_mat);
+    
+    results_struct(i).protein_swap_spot_mean = nanmean(protein_swap_spot_mat);
+    results_struct(i).protein_swap_spot_ste = nanstd(protein_swap_spot_mat);
+    
+    results_struct(i).fluo_spot_mean = nanmean(fluo_spot_mat);
+    results_struct(i).fluo_spot_ste = nanstd(fluo_spot_mat);
+    
+    results_struct(i).fluo_swap_spot_mean = nanmean(fluo_swap_spot_mat);
+    results_struct(i).fluo_swap_spot_ste = nanstd(fluo_swap_spot_mat);
+    
+    results_struct(i).fluo_spot_diff_mean = nanmean(fluo_spot_mat-fluo_swap_spot_mat);
+    results_struct(i).fluo_spot_diff_ste = nanstd(fluo_spot_mat-fluo_swap_spot_mat);
+end    
 
-dep_var_vec = {'p','p','f','f'};
-
-for i = 1:numel(feature_cell)
-    % record
-    f_name = feature_cell{i};
-    eval(['f_vec = fluo_' f_name '_mean;'])
-    eval(['p_vec = protein_' f_name '_mean;'])
-    fig = figure;
-    hold on
-    if strcmpi(dep_var_vec{i},'f')
-        eval(['high = f_vec + fluo_' f_name '_ste;'])
-        eval(['low = f_vec - fluo_' f_name '_ste;'])
-        yyaxis left
-        fill([lag_axis fliplr(lag_axis)],[high fliplr(low)],bl,'FaceAlpha',.2,'EdgeAlpha',0)
-        p1 = plot(lag_axis,f_vec,'-','Color',bl,'LineWidth',1.3);
-        yyaxis right
-        p2 = plot(lag_axis,p_vec,'Color',rd,'LineWidth',1.3);
-    else
-        eval(['high = p_vec + protein_' f_name '_ste;'])
-        eval(['low = p_vec - protein_' f_name '_ste;'])
-        yyaxis right
-        fill([lag_axis fliplr(lag_axis)],[high fliplr(low)],rd,'FaceAlpha',.2,'EdgeAlpha',0)
-        p2 = plot(lag_axis,p_vec,'-','Color',rd,'LineWidth',1.3);
-        yyaxis left
-        p1 = plot(lag_axis,f_vec,'Color',bl,'LineWidth',1.3);
-    end        
-    legend([p1 p2],gene_name,protein_name)
-    grid on
-    xlabel('offset (minutes)')
-end
+save([dataPath 'input_output_results.mat'],'results_struct')

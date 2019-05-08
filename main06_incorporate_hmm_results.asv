@@ -166,8 +166,10 @@ for i = qc_indices%1:numel(particle_index)
     sr_pt_3D = serial_protein_vec_3D(particle_vec==ParticleID);       
     tt_pt = time_vec(particle_vec==ParticleID);
     % check to see if we ran inference for this one
-    time_raw = nucleus_struct(i).time;
+    fluo_raw = nucleus_struct(i).time;
     mcp_raw = nucleus_struct(i).fluo;
+    full_frames = min(raw_frames):max(raw_frames);
+    qc_filter = ~ismember(full_frames,raw_frames)
     
     master_time = nucleus_struct_protein(i).time_interp;
     master_fluo = nucleus_struct_protein(i).fluo_interp;
@@ -205,13 +207,22 @@ for i = qc_indices%1:numel(particle_index)
         temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
         temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);
         temp.serial_protein_3D = interp1(tt_pt(~isnan(sr_pt_3D)),sr_pt_3D(~isnan(sr_pt_3D)),temp.time);
-        % reset values to NaN that are too far removed from true ref point        
-        input_times = time_raw(~isnan(mcp_raw));
+        % reset values to NaN that are too far removed from true ref point
+        input_times = tt_pt(~isnan(sp_pt)&~isnan(sr_pt));
+        gap_times = time_; % look for assymmetries btw spot and control channels
         dt_vec_gap = NaN(size(temp.time));
+%         dt_vec_imbalance = Inf(size(temp.time));
         for t = 1:numel(dt_vec_gap)
             dt_vec_gap(t) = min(abs(temp.time(t)-input_times));   
+%             if ~isempty(gap_times)
+%                 dt_vec_imbalance(t) = min(abs(temp.time(t)-gap_times));
+%             end
+        end
+        if iter == 30
+            error('blahhhh')
         end
         temp.dt_filter_gap = dt_vec_gap > 60;           
+%         temp.dt_filter_imb = dt_vec_imbalance < Tres/2;
         % record general info for later use
         temp.ParticleID = ParticleID; 
         temp.Tres = Tres;

@@ -18,6 +18,17 @@ window_size = 15; % number of lags and leads over which to track protein/fluo dy
 nBoots = 100;
 make_trace_plots = 0;
 
+% % extract protein, gene, fluorophore info
+% underscores = strfind(project,'_');
+% protein_name = project(1:underscores(1)-1);
+% protein_fluor = project(underscores(1)+1:underscores(2)-1);
+% gene_name = project(underscores(2)+1:underscores(3)-1);
+% if numel(underscores) == 3
+%     ind = numel(project);
+% else
+%     ind = underscores(4)-1;
+% end
+% gene_fluor = project(underscores(3)+1:end);
 protein_name = 'Dorsal';
 gene_name = 'hbP2P';
 
