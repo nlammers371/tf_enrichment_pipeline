@@ -32,10 +32,10 @@ K = 3;
 w = 7;
 minDp = 10;
 dpBootstrap = 1;
-nBoots = 10;
+nBoots = 1;
 inference_times = 30*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
 tWindow = 60*60; % determines width of sliding window
-sampleSize = 8000;
+sampleSize = 10000;
 maxWorkers = 25;
 alphaFrac = 1302 / 6000;
 % default paths
@@ -199,7 +199,7 @@ for t = 1:length(inference_times)
                 v_init = param_init.v;                        
                 noise_init = param_init.noise;
                 %--------------------LocalEM Call-------------------------%
-                local_out = local_em_MS2_reduced_memory_truncated(fluo_data, ...
+                local_out = local_em_MS2_reduced_memory(fluo_data, ...
                     v_init, noise_init, pi0_log_init', A_log_init, K, w, ...
                     alpha, n_steps_max, eps);                    
                 %---------------------------------------------------------%                
