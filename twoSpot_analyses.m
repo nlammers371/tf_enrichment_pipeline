@@ -1,4 +1,5 @@
 clear
+close all;
 
 hbProject = 'Dl-Ven x hbP2P';
 snaProject = 'Dl-Ven x snaBAC';
@@ -13,44 +14,59 @@ twoSpotDataPath = [dropboxFolder '\ProcessedEnrichmentData\' twoSpotProject '/']
 writePath = 'E:\Nick\Dropbox (Garcia Lab)\LocalEnrichmentFigures\twoSpot\';
 
 %% Load hb, sna, and twoSpot datasets
+% Filter for qc_flag & against unique nuclei
 load([dropboxFolder '\ProcessedEnrichmentData\' hbProject '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
-nucleus_struct_protein_hb = nucleus_struct_protein;
-[nucleus_struct_protein_hb.locus_identity] = deal('hbP2P');
+nucleus_struct_filtered_hb = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
+[nucleus_struct_filtered_hb.locus_identity] = deal('hbP2P');
 
 load([dropboxFolder '\ProcessedEnrichmentData\' snaProject '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
-nucleus_struct_protein_sna = nucleus_struct_protein;
-[nucleus_struct_protein_sna.locus_identity] = deal('snaBAC');
+nucleus_struct_filtered_sna = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
+[nucleus_struct_filtered_sna.locus_identity] = deal('snaBAC');
 
 load([twoSpotDataPath '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
-nucleus_struct_protein_twoSpot = nucleus_struct_protein;
-[nucleus_struct_protein_twoSpot.locus_identity] = deal('twoSpot');
+nucleus_struct_filtered_twoSpot = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
+[nucleus_struct_filtered_twoSpot.locus_identity] = deal('twoSpot');
 
 %% Make cell arrays containing the identities of the loci to be used as
 % nominal variables
-nucleus_struct_locusID_hb = {nucleus_struct_protein_hb.locus_identity}';
-nucleus_struct_locusID_sna = {nucleus_struct_protein_sna.locus_identity}';
+nucleus_struct_locusID_hb = {nucleus_struct_filtered_hb.locus_identity}';
+nucleus_struct_locusID_sna = {nucleus_struct_filtered_sna.locus_identity}';
 
 % Calculate metrics for use in the regression
 [nucleus_struct_metrics_hb, tOff_hb, fluoStartEndRatio_hb, fluoMean_hb, ...
     fluoVar_hb, fluoMax_hb, index_hb, fluoMaxTime_hb, fluoCenterMass_hb] = ...
-    calcRegressionMetrics(nucleus_struct_protein_hb);
+    calcRegressionMetrics(nucleus_struct_filtered_hb);
 [nucleus_struct_metrics_sna, tOff_sna, fluoStartEndRatio_sna, fluoMean_sna, ...
     fluoVar_sna, fluoMax_sna, index_sna, fluoMaxTime_sna, fluoCenterMass_sna] = ... 
-    calcRegressionMetrics(nucleus_struct_protein_sna);
+    calcRegressionMetrics(nucleus_struct_filtered_sna);
 [nucleus_struct_metrics_twoSpot, tOff_twoSpot, fluoStartEndRatio_twoSpot,...
     fluoMean_twoSpot, fluoVar_twoSpot, fluoMax_twoSpot, index_twoSpot, ...
     fluoMaxTime_twoSpot, fluoCenterMass_twoSpot] = ...
-    calcRegressionMetrics(nucleus_struct_protein_twoSpot);
+    calcRegressionMetrics(nucleus_struct_filtered_twoSpot);
 
 % Trim & combine metrics to make training and testing datasets
-hbTrainDataLength = 300; % = numel(nucleus_struct_protein_hb);
-snaTrainDataLength = 300; % = numel(nucleus_struct_protein_sna);
-hbTestDataLength = numel(nucleus_struct_protein_hb) - hbTrainDataLength;
-snaTestDataLength = numel(nucleus_struct_protein_sna) - snaTrainDataLength;
-
-nucleus_struct_metrics_train = cat(1, nucleus_struct_metrics_hb(1:hbTrainDataLength,:), nucleus_struct_metrics_sna(1:snaTrainDataLength,:)); 
+hbTrainDataLength = int16(numel(nucleus_struct_filtered_hb)/2) - 1;
+snaTrainDataLength = int16(numel(nucleus_struct_filtered_sna)/2) - 1;
+hbTestDataLength = numel(nucleus_struct_filtered_hb) - hbTrainDataLength;
+snaTestDataLength = numel(nucleus_struct_filtered_sna) - snaTrainDataLength;
+% Ensure hb & sna datasets are the same size - replicate the hb training
+% data until it matches the amount of sna training data
+hbsnaTrainRemain = mod(snaTrainDataLength,hbTrainDataLength);
+hbsnaTrainQuotient = (snaTrainDataLength-hbsnaTrainRemain)/hbTrainDataLength;
+nucleus_struct_metrics_train_hb = nucleus_struct_metrics_hb(1:hbTrainDataLength,:);
+nucleus_struct_locusID_train_hb = nucleus_struct_locusID_hb(1:hbTrainDataLength,:);
+for i = 1:(hbsnaTrainQuotient-1)
+    nucleus_struct_metrics_train_hb = cat(1, nucleus_struct_metrics_train_hb,nucleus_struct_metrics_hb(1:hbTrainDataLength,:));
+    nucleus_struct_locusID_train_hb = cat(1, nucleus_struct_locusID_train_hb,nucleus_struct_locusID_train_hb(1:hbTrainDataLength,:));
+end
+if hbsnaTrainRemain ~= 0
+    nucleus_struct_metrics_train_hb = cat(1, nucleus_struct_metrics_train_hb,nucleus_struct_metrics_hb(1:hbsnaTrainRemain,:));
+    nucleus_struct_locusID_train_hb = cat(1, nucleus_struct_locusID_train_hb,nucleus_struct_locusID_hb(1:hbsnaTrainRemain,:));
+end
+% Create final training & testing structures
+nucleus_struct_metrics_train = cat(1, nucleus_struct_metrics_train_hb, nucleus_struct_metrics_sna(1:snaTrainDataLength,:)); 
 nucleus_struct_metrics_test = cat(1, nucleus_struct_metrics_hb(hbTrainDataLength+1:end,:), nucleus_struct_metrics_sna(snaTrainDataLength+1:end,:)); 
-nucleus_struct_locusID_train = cat(1, nucleus_struct_locusID_hb(1:hbTrainDataLength), nucleus_struct_locusID_sna(1:snaTrainDataLength)); 
+nucleus_struct_locusID_train = cat(1, nucleus_struct_locusID_train_hb, nucleus_struct_locusID_sna(1:snaTrainDataLength)); 
 nucleus_struct_locusID_test = cat(1, nucleus_struct_locusID_hb(hbTrainDataLength+1:end), nucleus_struct_locusID_sna(snaTrainDataLength+1:end)); 
 
 
@@ -60,6 +76,7 @@ nucleus_struct_locusID_hbsna = cat(1, nucleus_struct_locusID_hb, nucleus_struct_
 
 
 %% Run multinomial logistic regression
+% 1 = hb, 2 = sna
 % Testing
 locusID_train = nominal(nucleus_struct_locusID_train);
 locusID_train = double(locusID_train);
@@ -77,26 +94,32 @@ prob_twoSpot = mnrval(B_twoSpot,nucleus_struct_metrics_twoSpot);
 %% Figures
 cm_plot = jet(128);
 
+% Plot histograms of the metrics
+plotMetrics('tOff', tOff_hb, tOff_sna, 'Time locus turns off (sec from start of nc14)', writePath);
+plotMetrics('fluoMaxTime', fluoMaxTime_hb, fluoMaxTime_sna, 'Time of maximum locus fluorescence (sec from start of nc14)', writePath)
+plotMetrics('fluoCenterMass', fluoCenterMass_hb, fluoCenterMass_sna, 'Center of mass of fluorescence trace (sec from start of nc14)', writePath)
+plotMetrics('fluoMean', fluoMean_hb, fluoMean_sna, 'Mean locus fluorescence (au)', writePath)
+plotMetrics('fluoVar', fluoVar_hb, fluoVar_sna, 'Variance of locus fluorescence (au)', writePath)
+
 % Plot results of testing the regression on known data
 probBins = linspace(0,1,11);
-
+% Known hb loci
 hbProbFig = figure;
-hbProbCt = histc(prob_test(1:243,1),probBins);
+hbProbCt = histc(prob_test(1:hbTestDataLength,1),probBins); % column 1 contains prob locus is hb
 bar(probBins,hbProbCt,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
 title('Particles known to be hb loci')
 xlabel('Probability particle is hb locus')
 ylabel('Number of particles')
-ylim([0 250])
 saveas(hbProbFig,[writePath 'regression_test_hb_prob.png']);
-
+% Known sna loci
 snaProbFig = figure;
-snaProbCt = histc(prob_test(244:end,2),probBins);
+snaProbCt = histc(prob_test(hbTestDataLength+1:end,2),probBins);    % column 2 contains prob locus is sna
 bar(probBins,snaProbCt,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
 title('Particles known to be sna loci')
 xlabel('Probability particle is sna locus')
 ylabel('Number of particles')
 saveas(snaProbFig,[writePath 'regression_test_sna_prob.png']);
-
+% 2spot loci
 twoSpotProbFig = figure;
 twospotProbCt = histc(prob_twoSpot,probBins);
 bar(probBins,twospotProbCt,'FaceAlpha',.5,'FaceColor',cm_plot(120,:));
@@ -105,81 +128,6 @@ xlabel('Probability particle is sna locus')
 ylabel('Number of particles')
 saveas(twoSpotProbFig,[writePath 'regression_twoSpot_prob.png']);
 
-%% Plot the metrics
-bins_tOff = linspace(min([tOff_hb ; tOff_sna]),max([tOff_hb ; tOff_sna]),10);
-tOff_hb_ct = histc(tOff_hb, bins_tOff);
-tOff_sna_ct = histc(tOff_sna, bins_tOff);
-
-tOffFig = figure;
-hold on
-b_sna = bar(bins_tOff,tOff_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
-b_hb = bar(bins_tOff,tOff_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
-title('hb vs sna loci metrics: toff')
-xlabel('Time locus shuts off (sec from start of nc14)')
-ylabel('Number of particles')
-legend ([b_sna b_hb], 'sna','hb')
-hold off
-saveas(tOffFig,[writePath 'tOff_hbVsSna.png']);
-
-bins_fluoMaxTime = linspace(min([fluoMaxTime_hb ; fluoMaxTime_sna]),max([fluoMaxTime_hb ; fluoMaxTime_sna]),10);
-tOff_hb_ct = histc(fluoMaxTime_hb, bins_fluoMaxTime);
-tOff_sna_ct = histc(fluoMaxTime_sna, bins_fluoMaxTime);
-
-fluoMaxTimeFig = figure;
-hold on
-b_sna = bar(bins_fluoMaxTime,tOff_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
-b_hb = bar(bins_fluoMaxTime,tOff_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
-title('hb vs sna loci metrics: time of max fluorescence')
-xlabel('Time of maximum locus fluorescence (sec from start of nc14)')
-ylabel('Number of particles')
-legend ([b_sna b_hb], 'sna','hb')
-hold off
-saveas(fluoMaxTimeFig,[writePath 'fluoMaxTime_hbVsSna.png']);
-
-bins_fluoCenterMass = linspace(min([fluoCenterMass_hb ; fluoCenterMass_sna]),max([fluoCenterMass_hb ; fluoCenterMass_sna]),10);
-fluoCentMass_hb_ct = histc(fluoCenterMass_hb, bins_fluoCenterMass);
-fluoCentMass_sna_ct = histc(fluoCenterMass_sna, bins_fluoCenterMass);
-
-fluoCentMassFig = figure;
-hold on
-b_sna = bar(bins_fluoCenterMass,fluoCentMass_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
-b_hb = bar(bins_fluoCenterMass,fluoCentMass_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
-title('hb vs sna loci metrics: Fluorescence profile')
-xlabel('Center of mass of fluorescence (sec from start of nc14)')
-ylabel('Number of particles')
-legend ([b_sna b_hb], 'sna','hb')
-hold off
-saveas(fluoCentMassFig,[writePath 'fluoCenterMass_hbVsSna.png']);
-
-bins_fluoMean = linspace(min([fluoMean_hb ; fluoMean_sna]),max([fluoMean_hb ; fluoMean_sna]),10);
-fluoMean_hb_ct = histc(fluoMean_hb, bins_fluoMean);
-fluoMean_sna_ct = histc(fluoMean_sna, bins_fluoMean);
-
-fluoMeanFig = figure;
-hold on
-b_sna = bar(bins_fluoMean,fluoMean_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
-b_hb = bar(bins_fluoMean,fluoMean_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
-title('hb vs sna loci metrics: Mean spot fluorescence')
-xlabel('Mean fluorescence (au)')
-ylabel('Number of particles')
-legend ([b_sna b_hb], 'sna','hb')
-hold off
-saveas(fluoMeanFig,[writePath 'fluoMean_hbVsSna.png']);
-
-bins_fluoVar = linspace(min([fluoVar_hb ; fluoVar_sna]),max([fluoVar_hb ; fluoVar_sna]),10);
-fluoVar_hb_ct = histc(fluoVar_hb, bins_fluoVar);
-fluoVar_sna_ct = histc(fluoVar_sna, bins_fluoVar);
-
-fluoVarFig = figure;
-hold on
-b_sna = bar(bins_fluoVar,fluoVar_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
-b_hb = bar(bins_fluoVar,fluoVar_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
-title('hb vs sna loci metrics: Variance of spot fluorescence')
-xlabel('Variance of spot fluorescence (au)')
-ylabel('Number of particles')
-legend ([b_sna b_hb], 'sna','hb')
-hold off
-saveas(fluoVarFig,[writePath 'fluoVar_hbVsSna.png']);
 
 % ---------------- LOCAL FUNCTION calcRegressionMetrics -----------------
 function [nucleus_struct_metrics, tOff, fluoStartEndRatio, fluoMean, ...
@@ -200,13 +148,13 @@ function [nucleus_struct_metrics, tOff, fluoStartEndRatio, fluoMean, ...
     nucleus_struct_metrics = nan(numel(nucleus_struct_protein),numMetrics);
 
     for i = 1:numel(nucleus_struct_protein)
-        if (nucleus_struct_protein(i).frames > 9) & (sum(~isnan(nucleus_struct_protein(i).fluo)) > 40)
+        if nucleus_struct_protein(i).qc_flag == 1
             tOff(i,1) = nucleus_struct_protein(i).time(end);
             fluo = nucleus_struct_protein(i).fluo;
             fluoStartEndRatio(i,1) = fluo(1) / fluo(end);
-            fluoMean(i,1) = mean(~isnan(fluo));
-            fluoVar(i,1) = var(~isnan(fluo));
-            [fluoMax(i,1), index(i,1)] = max(~isnan(fluo));
+            fluoMean(i,1) = nanmean(fluo);
+            fluoVar(i,1) = nanvar(fluo);
+            [fluoMax(i,1), index(i,1)] = nanmax(fluo);
             time = nucleus_struct_protein(i).time;
             fluoMaxTime(i,1) = time(index(i,1));
             fluoCenterMass(i,1) = nansum(fluo .* time) / nansum(fluo);
@@ -223,4 +171,23 @@ function [nucleus_struct_metrics, tOff, fluoStartEndRatio, fluoMean, ...
     nucleus_struct_metrics(:,5) = fluoVar;
 %     nucleus_struct_metrics(:,6) = fluoStartEndRatio;
 
+end
+
+% ---------------- LOCAL FUNCTION plotMetrics -----------------
+function plotMetrics(metricName, metric_hb, metric_sna, xlabelString, writePath)
+    cm_plot = jet(128);    
+    bins_metric = linspace(min([metric_hb ; metric_sna]),max([metric_hb ; metric_sna]),10);
+    metric_hb_ct = histc(metric_hb, bins_metric);
+    metric_sna_ct = histc(metric_sna, bins_metric);
+
+    metricFigure = figure;
+    hold on
+    b_sna = bar(bins_metric,metric_sna_ct,'FaceAlpha',.5,'FaceColor',cm_plot(60,:));
+    b_hb = bar(bins_metric,metric_hb_ct,'FaceAlpha',.5,'FaceColor',cm_plot(20,:));
+    title(['hb vs sna loci metrics: ', metricName])
+    xlabel(xlabelString)
+    ylabel('Number of loci')
+    legend ([b_sna b_hb], 'sna','hb')
+    hold off
+    saveas(metricFigure,[writePath, metricName, '_hbVsSna.png']);
 end
