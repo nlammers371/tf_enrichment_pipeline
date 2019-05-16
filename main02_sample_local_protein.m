@@ -27,7 +27,7 @@ function nucleus_struct_protein = main02_sample_local_protein(project,varargin)
 zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
-minEdgeSepUm = .8; %um
+minEdgeSepUm = .2; %um
 segmentNuclei = 0;
 % dataPath = ['../dat/' project '/'];
 % numWorkers = 4;
@@ -286,7 +286,7 @@ if segmentNuclei
     end
     disp('saving segmentation results...')
     % save arrays
-    for w = 1:size(set_frame_array,1)    
+    for w = 1:numel(segment_indices)
         i = segment_indices(w);
         setID_temp = set_frame_array(i,1);
         frame_temp = set_frame_array(i,2);  
