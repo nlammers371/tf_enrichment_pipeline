@@ -129,21 +129,6 @@ if soft_fit_flag
 else
     load([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 end
-%%% extract protein info
-particle_vec = [];
-for i = 1:numel(nucleus_struct_protein)
-    particle_vec = [particle_vec repelem(nucleus_struct_protein(i).ParticleID,numel(nucleus_struct_protein(i).time))];
-end
-time_vec = [nucleus_struct_protein.time];
-fluo_vec = [nucleus_struct_protein.fluo];
-spot_protein_vec = [nucleus_struct_protein.spot_protein_vec];
-spot_protein_vec_3D = [nucleus_struct_protein.spot_protein_vec_3d];
-spot_mcp_vec = [nucleus_struct_protein.spot_mcp_vec];
-null_protein_vec = [nucleus_struct_protein.edge_null_protein_vec];
-mf_protein_vec = [nucleus_struct_protein.mf_null_protein_vec] / voxel_size;
-serial_protein_vec = [nucleus_struct_protein.serial_null_protein_vec];
-serial_protein_vec_3D = [nucleus_struct_protein.serial_null_protein_vec_3d];
-
 
 %%% now extract corresponding hmm traces
 hmm_input_output = [];
@@ -156,18 +141,15 @@ for i = qc_indices%1:numel(particle_index)
     end
     temp = struct;
     % extract relevant vectors from protein struct    
-    ff_pt = fluo_vec(particle_vec==ParticleID);
-    mcp_pt = spot_mcp_vec(particle_vec==ParticleID);
-    sp_pt = spot_protein_vec(particle_vec==ParticleID);
-    sp_pt_3D = spot_protein_vec_3D(particle_vec==ParticleID);
-    nn_pt = null_protein_vec(particle_vec==ParticleID);
-    mf_pt = mf_protein_vec(particle_vec==ParticleID);
-    sr_pt = serial_protein_vec(particle_vec==ParticleID);       
-    sr_pt_3D = serial_protein_vec_3D(particle_vec==ParticleID);       
-    tt_pt = time_vec(particle_vec==ParticleID);
-    % check to see if we ran inference for this one
-    time_raw = nucleus_struct(i).time;
-    mcp_raw = nucleus_struct(i).fluo;
+    ff_pt = nucleus_struct_protein(i).fluo;
+    mcp_pt = nucleus_struct_protein(i).spot_mcp_vec;
+    sp_pt = nucleus_struct_protein(i).spot_protein_vec;
+    sp_pt_3D = nucleus_struct_protein(i).spot_protein_vec_3d;
+    nn_pt = nucleus_struct_protein(i).edge_null_protein_vec;
+    mf_pt = nucleus_struct_protein(i).mf_null_protein_vec;
+    sr_pt = nucleus_struct_protein(i).serial_null_protein_vec;       
+    sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
+    tt_pt = nucleus_struct_protein(i).time;
     
     master_time = nucleus_struct_protein(i).time_interp;
     master_fluo = nucleus_struct_protein(i).fluo_interp;
@@ -206,7 +188,7 @@ for i = qc_indices%1:numel(particle_index)
         temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);
         temp.serial_protein_3D = interp1(tt_pt(~isnan(sr_pt_3D)),sr_pt_3D(~isnan(sr_pt_3D)),temp.time);
         % reset values to NaN that are too far removed from true ref point        
-        input_times = time_raw(~isnan(mcp_raw));
+        input_times = tt_pt(~isnan(ff_pt));
         dt_vec_gap = NaN(size(temp.time));
         for t = 1:numel(dt_vec_gap)
             dt_vec_gap(t) = min(abs(temp.time(t)-input_times));   
@@ -225,18 +207,22 @@ time_vec = unique([nucleus_struct_protein.time_interp]);%nucleus_struct_protein(
 mf_array = NaN(numel(time_vec),numel(hmm_input_output));
 start_time_vec = NaN(size(hmm_input_output));
 stop_time_vec = NaN(size(hmm_input_output));
+set_vec = NaN(size(hmm_input_output));
 for i = 1:numel(hmm_input_output)
     t_vec = hmm_input_output(i).time;
     mf_vec = hmm_input_output(i).mf_protein;
     mf_array(ismember(time_vec,t_vec),i) = mf_vec;
     start_time_vec(i) = min(t_vec);
     stop_time_vec(i) = max(t_vec);
+    set_vec(i) = floor(hmm_input_output(i).ParticleID);
 end
 % now find closest match for each nucleus
 for i = 1:numel(hmm_input_output)
     mf_i = mf_array(:,i);       
-    dt_mf_vec = nanmean(abs(mf_array-mf_i));    
-    dt_mf_vec(start_time_vec>start_time_vec(i)|stop_time_vec<stop_time_vec(i)) = NaN;
+    dt_mf_vec = nanmean(abs(mf_array-mf_i));   
+    setID = set_vec(i);
+    % only accept traces that are as long or longer
+    dt_mf_vec(start_time_vec>start_time_vec(i)|stop_time_vec<stop_time_vec(i)|set_vec~=setID) = NaN;
     dt_mf_vec(i) = NaN;
     [~, best_ind] = nanmin(dt_mf_vec);
     % record vales 
