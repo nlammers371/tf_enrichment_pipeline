@@ -8,7 +8,7 @@ for i=1:length(PlotHandle)
 
     %Line style
     
-    if ~strcmpi(get(PlotHandle(i),'Type'),'scatter')
+    if ~strcmpi(get(PlotHandle(i),'Type'),'scatter')  && ~strcmpi(get(PlotHandle(i),'Type'),'image')
         LineStyle=get(PlotHandle(i),'LineStyle');
         if (~isempty(strmatch(LineStyle,'-')))|...
                 (~isempty(strmatch(LineStyle,'--')))|...
@@ -19,7 +19,7 @@ for i=1:length(PlotHandle)
     end
 
     %Marker style. Do this only if we're not dealing with a histogram
-    if ~strcmp(get(PlotHandle(i),'Type'),'histogram')
+    if ~strcmp(get(PlotHandle(i),'Type'),'histogram')  && ~strcmpi(get(PlotHandle(i),'Type'),'image')
         if ~strcmp(get(PlotHandle(i),'Marker'),'none')
             if get(PlotHandle(i),'Marker')=='.'
                 set(PlotHandle(i),'MarkerSize',15)
@@ -59,14 +59,15 @@ for i=1:length(PlotHandle)
 %         if isempty(strmatch(get(PlotHandle(i),'Color'),'auto'))
 %             ChangeColorPBoC2(PlotHandle(i),'Color')
 %         end
+        if ~strcmpi(get(PlotHandle(i),'Type'),'image')
+            if isempty(strmatch(get(PlotHandle(i),'MarkerEdgeColor'),'auto'))
+                ChangeColorPBoC2(PlotHandle(i),'MarkerEdgeColor')
+            end
 
-        if isempty(strmatch(get(PlotHandle(i),'MarkerEdgeColor'),'auto'))
-            ChangeColorPBoC2(PlotHandle(i),'MarkerEdgeColor')
-        end
-
-        if isempty(strmatch(get(PlotHandle(i),'MarkerFaceColor'),'auto'))&...
-                isempty(strmatch(get(PlotHandle(i),'MarkerFaceColor'),'none'))
-            ChangeColorPBoC2(PlotHandle(i),'MarkerFaceColor')
+            if isempty(strmatch(get(PlotHandle(i),'MarkerFaceColor'),'auto'))&...
+                    isempty(strmatch(get(PlotHandle(i),'MarkerFaceColor'),'none'))
+                ChangeColorPBoC2(PlotHandle(i),'MarkerFaceColor')
+            end
         end
     end
     
