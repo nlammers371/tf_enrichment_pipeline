@@ -1,14 +1,14 @@
 % Script to assign likelihood scores to sna and hbP2P traces
 function nucleus_struct = classify01_assign_spot_likelihood_scores(project,varargin)
 % assumes that two possibilities are snail and hbP2P
-sna_project = 'Dl-Ven x snaBAC';
-hbP2P_project = 'Dl-Ven x hbP2P';
+sna_project = 'Dl-Ven_snaBAC-mCh';
+hbP2P_project = 'Dl-Ven_hbP2P-mCh';
 
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataRoot = [dropboxFolder 'ProcessedEnrichmentData\'];
 w = 7;
 K = 3;
-
+addpath('./utilities')
 for i = 1:(numel(varargin)-1)  
     if ischar(varargin{i}) && ~strcmpi(varargin{i},'dropboxFolder')
         if i ~= numel(varargin)

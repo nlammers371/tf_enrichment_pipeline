@@ -10,7 +10,9 @@ figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '/'];
 mkdir(figPath);
 w = 7;
 K = 3;
-
+% establish time classes to investigate
+time_class_cell = {1:60,1:15,16:25,26:35,36:45,46:60};
+fluo_feature_quantile_vec = [33,11,11,11,11,11];
 % window analysis params
 window_size = 15; 
 out_quantiles = 11; % number of quantiles to use for output arrays
@@ -18,8 +20,7 @@ out_quantiles = 11; % number of quantiles to use for output arrays
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 % generate average fluo change vector
 kernel_size = 1;
-for i = 1:numel(hmm_input_output)
-    dt_gap_filter = hmm_input_output(i).dt_filter_gap;
+for i = 1:numel(hmm_input_output)    
     fluo_interp = hmm_input_output(i).fluo;
     fluo_diff = [0 diff(fluo_interp)];
     hmm_input_output(i).fluo_diff_sm = imgaussfilt(fluo_diff,kernel_size);    
@@ -30,9 +31,6 @@ gap_filter_vec = [hmm_input_output.dt_filter_gap];
 time_vec = round([hmm_input_output.time]/60);
 % initialize results structure
 results_struct = struct;
-% establish time classes to investigate
-time_class_cell = {1:60,1:15,16:25,26:35,36:45,46:60};
-fluo_feature_quantile_vec = [22,11,11,11,11,11];
 for ti = 1:numel(time_class_cell)
     fluo_feature_quantiles = fluo_feature_quantile_vec(ti); % number of quantiles to use for feature classification
     time_range = time_class_cell{ti};
@@ -82,7 +80,7 @@ for ti = 1:numel(time_class_cell)
                 true_range = full_range(full_range>0&full_range<=numel(virtual_protein));
                 % record
                 ft1 = ismember(full_range,true_range);
-                if sum(~isnan(spot_protein)) >= window_size && sum(~isnan(swap_spot_protein)) && sum(~isnan(virtual_protein))
+                if sum(~isnan(spot_protein)) >= window_size && sum(~isnan(swap_spot_protein)) >= window_size && sum(~isnan(virtual_protein)) >= window_size
                     spot_fragment = spot_protein(true_range);
                     swap_fragment = swap_spot_protein(true_range);
                     virtual_fragment = virtual_protein(true_range);
@@ -126,26 +124,5 @@ bl = [115 143 193]/256; % blue
 rd = [213 108 85]/256; % red
 gr = [191 213 151]/256; % green
 br = [207 178 147]/256; % brown
-
-
-% plot_range = 1:size(fluo_activity_array,1);
-% for p = 1:numel(plot_range)
-%     pi = plot_range(p);
-%     fluo_fig = figure;
-%     hold on
-%     yyaxis left
-%     plot(window_vec*20/60,fluo_activity_array(pi,:,6),'-','Color','black','LineWidth',1.3)
-%     ylim([-50 50])
-%     ylabel('transcriptional activity (au)')
-%     yyaxis right
-%     plot(window_vec*20/60,spot_protein_array(pi,:,6),'-','Color',bl,'LineWidth',1.3)
-%     plot(window_vec*20/60,swap_protein_array(pi,:,6),'-','Color',rd,'LineWidth',1)
-%     plot(window_vec*20/60,virtual_protein_array(pi,:,6),'-','Color',yw,'LineWidth',1)
-%     ylabel('Dl concentration (au)')
-%     ylim([-10 10])
-%     xlabel('offset (minutes)')
-%     legend('transcription','target locus','control (swap)','control (virtual spot)','Location','northwest')    
-%     saveas(fluo_fig,[figPath 'fluo_feature_d' num2str(round(p/numel(plot_range))) '.png'])
-% end
-
-save([dataPath 'input_output_results.mat'],'results_struct')
+% save
+save([dataPath 'fluo_input_output_results.mat'],'results_struct')
