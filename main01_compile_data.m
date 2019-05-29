@@ -23,7 +23,7 @@
 % particle attributes
 
 function nucleus_struct = main01_compile_data(project,varargin)
-
+addpath('./utilities')
 % set defaults
 firstNC = 14;
 minDP = 15;

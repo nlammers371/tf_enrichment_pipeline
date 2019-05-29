@@ -23,7 +23,7 @@
 % OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
 function nucleus_struct_protein = main02_sample_local_protein(project,varargin)
-
+addpath('./utilities')
 zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
@@ -674,5 +674,5 @@ toc
 % save updated nucleus structure
 disp('saving nucleus structure...')
 nucleus_struct_protein = nucleus_struct;
-save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein') 
 save([dataPath 'qc_ref_struct.mat'],'qc_ref_struct')
+save([dataPath 'nucleus_struct_protein.mat'],'nucleus_struct_protein','-v7.3') 
