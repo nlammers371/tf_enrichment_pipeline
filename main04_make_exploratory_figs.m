@@ -3,7 +3,7 @@ function main04_make_exploratory_figs(project,protein_string,gene_string,varargi
 
 close all
 
-DataPath = ['../../dat/' project '/'];
+dataPath = ['../../dat/' project '/'];
 figPath = ['../../fig/' project '/'];
 DistLim = .8; % min distance from edge permitted (um)
 NBoots = 20;%00; % number of bootstrap samples to use for estimating SE
@@ -12,10 +12,12 @@ Colormap_plot = jet(128); %specifies the colomap used to make plots/graphs
 Colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
 relEnrich_ub = 1.3; %upper bound of relative enrichment for consistency
 relEnrich_lb = 0.85; %lower bound of relative enrichment for consistency
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'dropboxFolder')        
-        DataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
+        dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
         figPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/'];        
     elseif ischar(varargin{i})
         if ismember(varargin{i}, {'ControlType','ROIRadiusSpot','DistLim','NBoots','ManualDistThreshold'}) 
@@ -33,7 +35,7 @@ mkdir(figPath)
 
 
 % Load analysis data
-load([DataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
+load([dataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
 
 % extract protein, gene, fluorophore info
 pt_dash = strfind(protein_string,'-');
@@ -449,7 +451,7 @@ X = [ones(sum(nan_filter),1) mf_protein_vec_dist(nan_filter)'];
 % linear model
 beta = X \ delta_protein_vec_dist(nan_filter)';
 % second order polynomial
-p = polyfit(mf_protein_vec_dist(nan_filter),delta_protein_vec_dist(nan_filter),2);
+p = polyfit(mf_protein_vec_dist(nan_filter),delta_protein_vec_dist(nan_filter),3);
 
 enrichment_pd1 =  beta(1) + beta(2)*mf_index;
 enrichment_pd2 = polyval(p,mf_index);
@@ -462,7 +464,7 @@ e = errorbar(mf_index,delta_v_mf_c_tt_mean(:,end),delta_v_mf_c_tt_ste(:,end),'Co
 e.CapSize = 0;
 plot(mf_index,enrichment_pd1,'Color',cm(10,:))
 plot(mf_index,enrichment_pd2,'Color',cm(120,:))
-legend('data','poly 1','poly 2','Location','northwest')
+legend('data','poly 1','poly 3','Location','northwest')
 xlabel(['average ' protein_name ' concentration (au)'])
 ylabel(['absolute ' protein_name ' enrichment (au)'])
 grid on
@@ -550,6 +552,11 @@ r_spot_ste = nanstd(r_spot_mat);
 
 r_null_mean = nanmean(r_null_mat);
 r_null_ste = nanstd(r_null_mat);
+
+% save table with radial profile results
+radial_table = array2table([dist_index',r_spot_mean',r_spot_ste',r_null_mean',r_null_ste'],...
+            'VariableNames',{'radial_distance','mean_locus_protein','ste_locus_protein','mean_control_protein','ste_control_protein'});
+writetable(radial_table,[dataPath 'radial_profile_data.csv'])
 
 % make figure
 cm = Colormap_plot;
