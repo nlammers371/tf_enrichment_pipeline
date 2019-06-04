@@ -330,8 +330,10 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).TresInterp = TresInterp;
 end
 % call function to calculate average psf difs
-disp('calculating psf dims...')
-calculate_average_psf(project);
 % save
 save(nucleus_name ,'nucleus_struct') 
+
+disp('calculating psf dims...')
+calculate_average_psf(project);
+
 disp('done.')
