@@ -28,7 +28,11 @@ addpath('./utilities')
 firstNC = 14;
 minDP = 15;
 pctSparsity = 1;
-two_spot_flag = false;
+if contains(project, '2spot')
+    two_spot_flag = true;
+else
+    two_spot_flag = false;
+end
 min_time = 6*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 % expType = 'input_output';
