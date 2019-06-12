@@ -12,10 +12,43 @@ figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\burst_analyses\'];
 mkdir(figPath)
 % load data
 load([dataPath 'hmm_input_output_results.mat'])
+w = 7;
+K = 3;
+load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+
+%%% Make Illustrative burst calling figure
+hm_cm = flipud(brewermap([],'RdYlBu'));
+index = 129;
+burst_fig = figure;
+z_vec = hmm_input_output(129).z_vec > 1;
+spot_vec = hmm_input_output(129).spot_protein;
+time_vec = hmm_input_output(129).time;
+
+yyaxis left
+pp = plot(time_vec/60,spot_vec,'LineWidth',1.5,'Color',hm_cm(end-10,:));
+ax = gca;
+ax.YColor = 'black';
+ylabel('Dorsal concentration (au)')
+
+yyaxis right 
+hold on
+x = [time_vec/60 time_vec/60];
+y = [z_vec' z_vec'];
+s = area(x,y,'FaceColor',[0 0 0],'EdgeAlpha',0,'FaceAlpha',.3);
+ylim([0 1.35])
+ax = gca;
+ax.YColor = 'black';
+ylabel('activity state')
+p = plot(0,0);
+xlabel('minutes')
+xlim([10 40])
+legend([pp s],'protein level','transcriptional activity');
+StandardFigure(p,gca)
+saveas(burst_fig, [figPath 'burst_example.tif'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% uncontrolled burst duration figures
-hm_cm = flipud(brewermap([],'RdYlBu'));
+
 % burst rises rise
 if strcmp(project,'Dl-Ven_hbP2P-mCh')
     burst_range = 5:10;
@@ -28,6 +61,7 @@ min_buffer_len = 6;
 % extract relevant arrays
 lag_dur_vec = results_struct.lag_dur_vec;
 lead_dur_vec = results_struct.lead_dur_vec;
+lead_sz_vec = results_struct.lead_size_vec;
 feature_sign_vec = results_struct.feature_sign_vec;
 hmm_array = results_struct.hmm_array;
 spot_array = results_struct.spot_array;
@@ -137,7 +171,7 @@ for i = 1:numel(burst_range)
 end
 xlabel('offset (min)')
 set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)    
-zlabel('Dorsal levels (au)')    
+zlabel('sna activity (au)')    
 view(-15,20)
 grid on
 saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
@@ -247,7 +281,7 @@ if ~strcmp(project,'Dl-Ven_hbP2P-mCh')
     end
     xlabel('offset (min)')
     set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)    
-    zlabel('Dorsal levels (au)')    
+    zlabel('sna activity (au)')    
     view(15,20)
     grid on
     saveas(hmm_fall_dur_wt, [figPath 'burst_dur_fall_waterfall_hmm.tif'])

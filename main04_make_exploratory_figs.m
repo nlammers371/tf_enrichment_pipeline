@@ -2,7 +2,7 @@
 function main04_make_exploratory_figs(project,protein_string,gene_string,varargin)
 
 close all
-
+addpath('utilities')
 dataPath = ['../../dat/' project '/'];
 figPath = ['../../fig/' project '/'];
 DistLim = .8; % min distance from edge permitted (um)
@@ -14,7 +14,8 @@ relEnrich_ub = 1.3; %upper bound of relative enrichment for consistency
 relEnrich_lb = 0.85; %lower bound of relative enrichment for consistency
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-
+dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\'];
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'dropboxFolder')        
         dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
@@ -25,14 +26,12 @@ for i = 1:numel(varargin)
         end
     end
 end
-
+mkdir(figPath)
 paperFigPath = [figPath 'paperFigs/'];
 mkdir(paperFigPath);
 
 figPath = [figPath 'basicFigs/'];
 mkdir(figPath)
-
-
 
 % Load analysis data
 load([dataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
@@ -137,70 +136,6 @@ fluo_vec_dist = fluo_vec_dist(dist_vec>=DistLim);
 mf_protein_vec_dist = [nucleus_struct_protein.mf_null_protein_vec];
 mf_protein_vec_dist = mf_protein_vec_dist(dist_vec>=DistLim);
 
-
-% delta_norm_protein_vec_dist = (spot_protein_vec_dist-null_protein_vec_dist) / nanmean(null_protein_vec_dist);
-% 
-% n_unique = numel(unique([null_protein_vec_dist spot_protein_vec_dist]));
-% % plot raw distributions
-% lb = .9*prctile([null_protein_vec_dist spot_protein_vec_dist],1);
-% ub = 1.1*prctile([null_protein_vec_dist spot_protein_vec_dist],99);
-% bins = linspace(lb,ub,min([ceil(n_unique/20),100]));
-% 
-% spot_ct = histc(spot_protein_vec_dist,bins);
-% null_ct = histc(null_protein_vec_dist,bins);
-% spot_ct = spot_ct / sum(spot_ct);
-% null_ct = null_ct / sum(null_ct);
-% 
-% raw_hist_fig = figure;
-% cm = Colormap_plot;
-% hold on
-% % hist plots
-% yyaxis left
-% b1 = bar(bins,null_ct,1,'FaceAlpha',.5,'FaceColor',cm(30,:));
-% b2 = bar(bins,spot_ct,1,'FaceAlpha',.5,'FaceColor',cm(100,:));
-% ylabel('share')
-% ax = gca;
-% ax.YColor = 'black';
-% % cumulative plots
-% yyaxis right
-% plot(bins,cumsum(null_ct),'-','LineWidth',1.5,'Color',cm(30,:));
-% plot(bins,cumsum(spot_ct),'-','LineWidth',1.5,'Color',cm(100,:));
-% ylabel('cumulative share')
-% ax = gca;
-% ax.YColor = 'black';
-% 
-% legend('control',['active locus (' gene_name ')'])
-% xlabel('concentration (au)')
-% title([protein_name '-' protein_fluor ' Concentrations'])
-% grid on
-% saveas(raw_hist_fig,[figPath 'hist_plots_' write_string '_dist_' num2str(DistLim) '.png']); 
-% 
-% % plot delta distribution
-% pd = fitdist(delta_norm_protein_vec_dist','Normal');
-% lb = .9*prctile(delta_norm_protein_vec_dist,1);
-% ub = 1.1*prctile(delta_norm_protein_vec_dist,99);
-% bins = linspace(lb,ub,min([n_unique/20,100]));
-% 
-% delta_ct = histc(delta_norm_protein_vec_dist,bins);
-% delta_ct = delta_ct / sum(delta_ct);
-%    
-% 
-% delta_hist_fig = figure;
-% cm = Colormap_plot;
-% hold on
-% % hist plots
-% b = bar(bins,delta_ct,1,'FaceAlpha',.5,'FaceColor',cm(60,:)/1.2);
-% norm_vec = exp(-.5*((bins-pd.mu)/pd.sigma).^2);
-% p = plot(bins,norm_vec/sum(norm_vec),'LineWidth',2);
-% ylabel('share')
-% legend([b,p],['\Delta F ('  gene_name ')'], ...
-%     ['Gaussian Fit (\mu=' num2str(pd.mu) ' \sigma=' num2str(pd.sigma)],'Location','best')
-% xlabel('concentration (au)')
-% title(['Enrichment at Active Locus Relative to Control (' id_string ')'])
-% grid on
-% saveas(delta_hist_fig,[figPath 'delta_hist_' write_string '_dist_' num2str(DistLim) '.png']); 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%% Compare protein snippets %%%%%%%%%%%%%%%%%%%%%%%%%
 % apply distance filter
 spot_protein_snips_dist = spot_protein_snips(:,:,dist_vec>=DistLim);
@@ -236,22 +171,22 @@ ytick_string = "set(gca,'ytick',1:5:snip_size,'yticklabel',round(((1:5:snip_size
 % Plot heatmaps
 spot_protein_snip_mean_title = [protein_name '-' protein_fluor ' at ' 'Active ' gene_name ' Locus'];
 spot_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' concentration (au)'];
-makeHeatmapPlots(spot_protein_snip_mean, spot_protein_snip_mean_title, spot_protein_snip_mean_ylabel, '_mean_pt_snippet_spot')
-
+makeHeatmapPlots(spot_protein_snip_mean, spot_protein_snip_mean_title, spot_protein_snip_mean_ylabel, '_mean_pt_snippet_spot',...
+    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
 null_protein_snip_mean_title = [protein_name '-' protein_fluor ' at Control Locus'];
 null_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' concentration (au)'];
-makeHeatmapPlots(null_protein_snip_mean, null_protein_snip_mean_title, null_protein_snip_mean_ylabel, '_mean_pt_snippet_null')
+makeHeatmapPlots(null_protein_snip_mean, null_protein_snip_mean_title, null_protein_snip_mean_ylabel, '_mean_pt_snippet_null',...
+    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
 
 
-% Make diff image
+% Make fold diff image
 rel_protein_snip_mean = (spot_protein_snip_mean) ./ null_protein_snip_mean;
 % caxis([lb ub])
 rel_protein_snip_mean_title = ['Relative ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
 rel_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' fold enrichment'];
-makeHeatmapPlots(rel_protein_snip_mean, rel_protein_snip_mean_title, rel_protein_snip_mean_ylabel, '_mean_pt_snippet_rel')
+makeHeatmapPlots(rel_protein_snip_mean, rel_protein_snip_mean_title, rel_protein_snip_mean_ylabel, '_mean_pt_snippet_rel',...
+    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,relEnrich_lb,relEnrich_ub)
 
-
-% Compare mcp snippets
 
 null_mean_fluo = nanmean(null_mcp_snips_mixed,3);
 spot_mean_fluo = nanmean(spot_mcp_snips_mixed,3);
@@ -261,45 +196,21 @@ lb = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],1);
 spot_mean_fluo_title = [gene_fluor ' Intensity at Active Locus (' gene_name ')'];
 null_mean_fluo_title = [gene_fluor ' Intensity at Control Locus'];
 mean_fluo_ylabel = [gene_name ' expression (au)'];
-makeHeatmapPlots(spot_mean_fluo, spot_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_spot')
-makeHeatmapPlots(null_mean_fluo, null_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_null')
-
-
-%%%%%%% Nested function to make basic and PBoC-style heatmap plots %%%%%%%
-function makeHeatmapPlots(Data, Title, YLabel, FileName)
-    snippet_fig = figure;
-    colormap(Colormap_heat)
-    snippet_im = imagesc(Data);
-    title(Title)
-    if contains(FileName, 'rel')
-        caxis([relEnrich_lb relEnrich_ub])
-    else
-        caxis([lb ub])
-    end
-    h = colorbar;
-    ylabel('\mum','FontSize',12)
-    xlabel('\mum','FontSize',12)
-    ylabel(h,YLabel,'FontSize',12)
-    eval(xtick_string)
-    eval(ytick_string)
-    saveas(snippet_fig,[figPath write_string FileName '.png']);
-
-    % make paper fig in PBoC style
-    snippet_ax = gca;
-    StandardFigurePBoC(snippet_im,snippet_ax);
-    saveas(snippet_fig, [paperFigPath write_string FileName '.pdf'])
-end
+makeHeatmapPlots(spot_mean_fluo, spot_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_spot'...
+    ,xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
+makeHeatmapPlots(null_mean_fluo, null_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_null'...
+    ,xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
 
 
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
 
 % take bootstrap samples
-tt_index = 0:120:round(max(time_vec_dist));
+tt_index = 0:60:round(max(time_vec_dist));
 delta_protein_time_mat = NaN(numel(tt_index),NBoots);
 fluo_time_mat = NaN(numel(tt_index),NBoots);
 spot_protein_time_mat = NaN(numel(tt_index),NBoots);
 null_protein_time_mat = NaN(numel(tt_index),NBoots);
-tt_sigma = 120; % seconds
+tt_sigma = 60; % seconds
 for n = 1:NBoots
     s_ids = randsample(1:numel(delta_protein_vec_dist),numel(delta_protein_vec_dist),true);
     dv_samp1 = delta_protein_vec_dist(s_ids);    
@@ -321,18 +232,18 @@ end
 % calculate average and standard error
 time_delta_mean = nanmean(delta_protein_time_mat,2);
 time_delta_ste = nanstd(delta_protein_time_mat,[],2);
-% time_null_mean = nanmean(null_protein_time_mat,2);
-% time_null_ste = nanstd(null_protein_time_mat,[],2);
-% time_spot_mean = nanmean(spot_protein_time_mat,2);
-% time_spot_ste = nanstd(spot_protein_time_mat,[],2);
+time_null_mean = nanmean(null_protein_time_mat,2);
+time_null_ste = nanstd(null_protein_time_mat,[],2);
+time_spot_mean = nanmean(spot_protein_time_mat,2);
+time_spot_ste = nanstd(spot_protein_time_mat,[],2);
 time_fluo_mean = nanmean(fluo_time_mat,2);
 time_fluo_ste = nanstd(fluo_time_mat,[],2);
+cm1 = brewermap([],'Set3');
 
 delta_time_fig = figure;
 yyaxis left
-e = errorbar(tt_index/60,time_delta_mean,time_delta_ste,'LIneWidth',1.5);
+e = errorbar(tt_index/60,time_delta_mean,time_delta_ste,'Color',cm1(5,:),'LineWidth',2);
 e.CapSize = 0;
-
 ylabel([protein_name ' enrichment at locus (au)'])
 grid on
 y_max = nanmax(time_delta_mean);
@@ -340,18 +251,55 @@ y_min = nanmin(time_delta_mean);
 ylim([y_min-.1*y_min*sign(y_min) 1.1*y_max])
 
 yyaxis right
-e = errorbar(tt_index/60, time_fluo_mean,time_fluo_ste,'LineWidth',1,'Color',[.2 .2 .2]);
+plot(tt_index/60, time_fluo_mean,'LineWidth',2,'Color',cm1(9,:));
 e.CapSize = 0;
+hold on
+p = plot(0,0);
 ax = gca;
 ax.YColor = [.2 .2 .2];
-ylim([100 240])
+xlim([6 60])
 ylabel([gene_name ' activity (au)'])
-
 legend('enrichment trend','activity trend', 'Location','northeast')
 xlabel('minutes')
-title(['Enrichment of ' id_string])
+% title(['Enrichment of ' id_string])
+StandardFigure(p,gca);
+saveas(delta_time_fig, [figPath write_string '_temporal_enrichment_w_mcp.png'])
 
+% make individual plots
+delta_time_fig = figure;
+e = errorbar(tt_index/60,time_delta_mean,time_delta_ste,'Color',cm1(5,:),'LineWidth',1.5);
+e.CapSize = 0;
+ylabel([protein_name ' enrichment at locus (au)'])
+grid on
+StandardFigure(e,gca);
+xlabel('minutes')
+xlim([6 60])
 saveas(delta_time_fig, [figPath write_string '_temporal_enrichment.png'])
+
+
+null_time_fig = figure;
+yyaxis left
+e = errorbar(tt_index/60,time_null_mean,time_null_ste,'Color',cm1(4,:),'LineWidth',2);
+e.CapSize = 0;
+ylabel(['average ' protein_name ' conc.(au)'])
+ax = gca;
+ax.YColor = cm1(4,:);
+
+yyaxis right
+plot(tt_index/60, time_fluo_mean,'LineWidth',2,'Color',cm1(9,:));
+hold on
+p = plot(0,0);
+ax = gca;
+ax.YColor = cm1(9,:);
+xlim([6 60])
+ylabel([gene_name ' activity (au)'])
+
+legend('background trend','activity trend', 'Location','northeast')
+StandardFigure(p,gca);
+xlabel('minutes')
+xlim([6 60])
+saveas(null_time_fig, [figPath write_string '_temporal_background_w_fluo.png'])
+
 
 %%%%%%%%%%% Is trend a function of time or protein concentration? %%%%%%%%%
 prctile_vec = [0 20 40 60 80 100];
@@ -375,7 +323,7 @@ mf_index = linspace(min(mf_protein_vec_dist),prctile(mf_protein_vec_dist,99),50)
 delta_v_tt_c_mf_array = NaN(numel(tt_index),numel(prctile_vec)-1,NBoots);
 delta_v_mf_c_tt_array = NaN(numel(mf_index),numel(prctile_vec)-1,NBoots);
 
-mf_sigma = 2*median(diff(mf_index));
+mf_sigma = median(diff(mf_index));
 
 dep_var_cell = {'mf','tt'};
 dynamic_ids = [];
@@ -415,8 +363,8 @@ for i = 1:numel(dep_var_cell)
 end    
 
 % make protein cohort figures
-cm = jet(128);
-color_array = cm(1:30:128,:);
+cm2 = brewermap(128,'Spectral');
+color_array = cm2(1:30:128,:);
 constant_mf_fig = figure;
 hold on
 lgd_str = {};
@@ -450,81 +398,57 @@ nan_filter = ~isnan(mf_protein_vec_dist) & ~isnan(delta_protein_vec_dist);
 X = [ones(sum(nan_filter),1) mf_protein_vec_dist(nan_filter)'];
 % linear model
 beta = X \ delta_protein_vec_dist(nan_filter)';
-% second order polynomial
+% third order polynomial
 p = polyfit(mf_protein_vec_dist(nan_filter),delta_protein_vec_dist(nan_filter),3);
+[param]=sigm_fit(mf_protein_vec_dist(nan_filter),delta_protein_vec_dist(nan_filter));
 
 enrichment_pd1 =  beta(1) + beta(2)*mf_index;
 enrichment_pd2 = polyval(p,mf_index);
+enrichment_pd3 = param(1)+(param(2)-param(1))./(1+10.^((param(3)-mf_index)*param(4)));
 
-cm = jet(128);
-lin_fit_fig = figure;
+fit_fig = figure;
+e = errorbar(mf_index,delta_v_mf_c_tt_mean(:,end),delta_v_mf_c_tt_ste(:,end),'Color',[.6 .6 .6],'LineWidth',2);
 hold on
-% scatter(mf_protein_vec_dist,delta_protein_vec_dist,'MarkerFaceColor',[.3 .3 .3],'MarkerFaceAlpha',.05)
-e = errorbar(mf_index,delta_v_mf_c_tt_mean(:,end),delta_v_mf_c_tt_ste(:,end),'Color','black');
 e.CapSize = 0;
-plot(mf_index,enrichment_pd1,'Color',cm(10,:))
-plot(mf_index,enrichment_pd2,'Color',cm(120,:))
-legend('data','poly 1','poly 3','Location','northwest')
+p1 = plot(mf_index,enrichment_pd1,'Color',cm2(120,:),'LineWidth',1.5);
+p2 = plot(mf_index,enrichment_pd3,'Color',cm2(10,:),'LineWidth',1.5);
+p3 = plot(0,0);
+legend([e p1 p2],'data','linear','sigmoid','Location','northwest')
 xlabel(['average ' protein_name ' concentration (au)'])
 ylabel(['absolute ' protein_name ' enrichment (au)'])
 grid on
-saveas(lin_fit_fig,[figPath 'mf_enrichment_linear.png'])
+StandardFigure([p3],gca)
+xlim([50,400])
+saveas(fit_fig,[figPath 'mf_enrichment_prediction.png'])
 
-% Not truly linear, but close enough for now. Let's see if we can re-create
-% temporal profile using this model
-% pd1_delta_protein_time_mat = NaN(numel(tt_index),NBoots);
-pd2_delta_protein_time_mat = NaN(numel(tt_index),NBoots);
-% pd1_delta_protein_vec = beta(1) + beta(2)*mf_protein_vec_dist;
-pd2_delta_protein_vec = polyval(p,mf_protein_vec_dist);
-for n = 1:NBoots
-    s_ids = randsample(1:numel(delta_protein_vec_dist),numel(delta_protein_vec_dist),true);
-%     dv_samp1 = pd1_delta_protein_vec(s_ids);     
-    dv_samp2 = pd2_delta_protein_vec(s_ids);     
-    time_samp = time_vec_dist(s_ids);
-    for t = 1:numel(tt_index)
-        if tt_index(t) < min(time_vec_dist) || tt_index(t) > max(time_vec_dist)
-            continue
-        end
-        t_weights = exp(-.5*((time_samp-tt_index(t))/tt_sigma).^2);
-%         pd1_delta_protein_time_mat(t,n) = nansum(dv_samp1.*t_weights)/nansum(t_weights);     
-        pd2_delta_protein_time_mat(t,n) = nansum(dv_samp2.*t_weights)/nansum(t_weights); 
+
+pd3_delta_protein_tt = param(1)+(param(2)-param(1))./(1+10.^((param(3)-mf_protein_vec_dist)*param(4)));
+pd3_delta_vec = NaN(size(tt_index));
+for t = 1:numel(tt_index)
+    if tt_index(t) < min(time_vec_dist) || tt_index(t) > max(time_vec_dist)
+        continue
     end
+    t_weights = exp(-.5*((time_vec_dist-tt_index(t))/tt_sigma).^2);
+    pd3_delta_vec(t) = nansum(pd3_delta_protein_tt.*t_weights)/nansum(t_weights);        
 end
-
-% pd1_time_delta_mean = nanmean(pd1_delta_protein_time_mat,2);
-% pd1_time_delta_ste = nanstd(pd1_delta_protein_time_mat,[],2);
-
-pd2_time_delta_mean = nanmean(pd2_delta_protein_time_mat,2);
-pd2_time_delta_ste = nanstd(pd2_delta_protein_time_mat,[],2);
 
 % remake figure
 delta_time_fig = figure;
-yyaxis left
 hold on
-plot(tt_index/60,time_delta_mean,'LineWidth',1.5);
-% plot(tt_index/60,pd1_time_delta_mean,'LineWidth',1.5);
-plot(tt_index/60,pd2_time_delta_mean,'-','LineWidth',1.5,'Color',cm(120,:));
-
+e = errorbar(tt_index/60,time_delta_mean,time_delta_ste,'LineWidth',1.5,'Color',[.6 .6 .6]);
+e.CapSize = 0;
+s = plot(tt_index/60,pd3_delta_vec,'-','LineWidth',1.5,'Color',cm2(10,:));
 ylabel([protein_name ' enrichment at locus (au)'])
 grid on
-y_max = nanmax(time_delta_mean);
-y_min = nanmin(time_delta_mean);
-ylim([y_min-.1*y_min*sign(y_min) 1.1*y_max])
-ax = gca;
-ax.YColor = 'black';
-
-yyaxis right
-plot(tt_index/60, time_fluo_mean,'--','LineWidth',1,'Color',[.2 .2 .2 .4]);
-ax = gca;
-ax.YColor = [.2 .2 .2];
-ylabel([gene_name ' activity (au)'])
-ylim([100 240])
-legend('enrichment trend (actual)','predicted enrichment (poly 2)','activity trend',...
-    'Location','northeast')
+xlim([6 60])
 xlabel('minutes')
-title(['Enrichment of ' id_string])
-
-saveas(delta_time_fig, [figPath write_string '_temporal_enrichment_pd.png'])
+% title(['Enrichment of ' id_string])
+box on
+p = plot(0,0);
+legend([e s],'enrichment trend (actual)','predicted enrichment (sigmoid)',...
+    'Location','northeast')
+StandardFigure(p,gca)
+saveas(delta_time_fig, [figPath write_string '_temporal_enrichment_prediction.png'])
 
 
 %%%%%%%%%%%%%%%%%%%%% Make Radial Profile Figure %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,13 +483,13 @@ radial_table = array2table([dist_index',r_spot_mean',r_spot_ste',r_null_mean',r_
 writetable(radial_table,[dataPath 'radial_profile_data.csv'])
 
 % make figure
-cm = Colormap_plot;
+cm2 = Colormap_plot;
 r_fig = figure;
 r_ax = gca;
 hold on
 e = errorbar(dist_index,r_null_mean / r_null_mean(1),r_null_ste / r_null_mean(1),'Color','black','LineWidth',1.75);
 e.CapSize = 0;
-e = errorbar(dist_index,r_spot_mean / r_null_mean(1),r_spot_ste / r_null_mean(1),'Color',cm(35,:),'LineWidth',1.75);
+e = errorbar(dist_index,r_spot_mean / r_null_mean(1),r_spot_ste / r_null_mean(1),'Color',cm2(35,:),'LineWidth',1.75);
 e.CapSize = 0;
 grid on
 r_ax.XLabel.String = 'radius (\mu m)';

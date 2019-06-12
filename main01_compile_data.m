@@ -28,12 +28,9 @@ addpath('./utilities')
 firstNC = 14;
 minDP = 15;
 pctSparsity = 1;
-if contains(project, '2spot')
-    two_spot_flag = true;
-else
-    two_spot_flag = false;
-end
+two_spot_flag = contains(project, '2spot');
 min_time = 6*60; % take no fluorescence data prior to this point
+
 TresInterp = 20; 
 % expType = 'input_output';
 % dataPath = ['../dat/' project '/']; % data mat directory
@@ -334,8 +331,10 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).TresInterp = TresInterp;
 end
 % call function to calculate average psf difs
-disp('calculating psf dims...')
-calculate_average_psf(project);
 % save
 save(nucleus_name ,'nucleus_struct') 
+
+disp('calculating psf dims...')
+calculate_average_psf(project);
+
 disp('done.')
