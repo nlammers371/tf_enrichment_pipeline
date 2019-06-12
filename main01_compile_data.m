@@ -28,8 +28,9 @@ addpath('./utilities')
 firstNC = 14;
 minDP = 15;
 pctSparsity = 1;
-two_spot_flag = false;
-min_time = 0*60; % take no fluorescence data prior to this point
+two_spot_flag = contains(project, '2spot');
+min_time = 6*60; % take no fluorescence data prior to this point
+
 TresInterp = 20; 
 % expType = 'input_output';
 % dataPath = ['../dat/' project '/']; % data mat directory
