@@ -5,6 +5,7 @@ close all
 rawDynamicsData = 'E:\LocalEnrichment\Data\RawDynamicsData\';
 date = '2019-05-21';
 project = '60mer-eGFP_injectedEmbryos';
+load("E:\Nick\Dropbox (Garcia Lab)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh\psf_dims.mat");
 dataPath = [rawDynamicsData filesep date filesep project filesep 'AnalyzedImages' filesep];
 % specify fit parameters 
 xy_snip_rad = 7;
@@ -13,11 +14,8 @@ min_blob_size = 5; % minimum number of pixels in blob
 max_blob_size = 50; % this is a bit arbitrary at the moment
 pixelSize = .1079;
 zSize = .2;
-ROIRadiusSpot = .3;
-approximate_psf_dims = [.1 .1 .5];
-psf_dims_px = approximate_psf_dims;
-psf_dims_px(1:2) = ceil(2*psf_dims_px(1:2) / pixelSize);
-psf_dims_px(3) = ceil(2*psf_dims_px(3)/zSize);
+ROIRadiusSpot = .2;
+psf_dims_px = [psf_dims.xy_sigma psf_dims.xy_sigma psf_dims.z_sigma];
 % generate approximate psf
 % psf_filter = nonIsotropicGaussianPSF(psf_dims_px,3);
 % vol_px = pi^1.5 * prod(psf_dims_px);
@@ -126,11 +124,17 @@ for im = 1:numel(image_struct)
     zDim = size(im_stack_bin,3);  
     % make labeled stack
     im_stack_lb = bwlabeln(im_stack_bin);
-    im_stats = regionprops3(im_stack_lb,'Centroid','Solidity','Volume');
+    im_stats = regionprops3(im_stack_lb,'Centroid','Solidity','Volume','VoxelList');
+    % find number of unique z slices covered by each potential spot
+    n_z_vec = NaN(1,numel(im_stats.VoxelList));
+    for k = 1:numel(im_stats.VoxelList)
+        voxel_list = im_stats.VoxelList{k};
+        n_z_vec(k) = numel(unique(voxel_list(:,3)));
+    end
     z_vec = im_stats.Centroid(:,3);
     vol_vec = [im_stats.Volume];
     sol_vec = [im_stats.Solidity];
-    keep_indices = find(vol_vec >=min_blob_size & vol_vec <= max_blob_size & z_vec >1 & z_vec < zDim & sol_vec >=.8);
+    keep_indices = find(vol_vec >=min_blob_size & vol_vec <= max_blob_size & z_vec >1 & z_vec < zDim & sol_vec >=.8&n_z_vec'>1);
     im_stats_clean = im_stats(keep_indices,:);
     % plot inferred spot centroids over top of original image
     centroid_array = vertcat(im_stats_clean.Centroid);
@@ -184,11 +188,12 @@ for im = 1:numel(image_struct)
         snipFilt = imgaussfilt3(snip3D,1);
         [~,mi] = max(snipFilt(:));
         [yc,xc,zc] = ind2sub(size(snip3D),mi);
-        dx_mesh = abs(mesh_x-xc);
-        dy_mesh = abs(mesh_y-yc);
+        dx_mesh = abs(mesh_x-xc)*pixelSize;
+        dy_mesh = abs(mesh_y-yc)*pixelSize;
         dz_mesh = abs(mesh_z-zc);
-        ft_mat = dx_mesh<=psf_dims_px(2)&dy_mesh<=psf_dims_px(1)&dz_mesh<=psf_dims_px(3);
-        roi_integral_vec(i) = sum(ft_mat(:).*snip3D(:)) - sum(ft_mat(:))*bkg_fluo;
+%         ft_mat = dx_mesh<=psf_dims_px(2)&dy_mesh<=psf_dims_px(1)&dz_mesh<=psf_dims_px(3);
+        ft_mat = sqrt(dx_mesh(:,:,zc).^2 + dy_mesh(:,:,zc).^2)<=ROIRadiusSpot;
+        roi_integral_vec(i) = sum(sum(ft_mat.*snip3D(:,:,zc))) - sum(ft_mat(:))*bkg_fluo;
         %%%%%%%%%%%%%%%%%
         % define constrained fit function
 %         single3DGaussian = @(params) params(1)*...
@@ -224,7 +229,8 @@ for im = 1:numel(image_struct)
     image_struct(im).im_stats = im_stats_clean;    
     image_struct(im).spot_status_vec = spot_status_vec;
 end
-%% Analyze results
+
+%%% Analyze results
 Gauss_fit_array = vertcat(image_struct.Gauss_fit_array);
 gauss_int_vec = [image_struct.Gauss_integral_vec];
 roi_int_vec = [image_struct.roi_integral_vec];
@@ -234,8 +240,10 @@ spot_flag_vec = [image_struct.spot_status_vec];
 qc_roi_fig = figure;
 hold on
 histogram(roi_int_vec(spot_flag_vec==1),'Normalization','probability')
-% histogram(roi_int_vec(spot_flag_vec==0),'Normalization','probability')
-%%
-au_per_gfp = nanmean(roi_int_vec(spot_flag_vec==1)) * 6 / 50 / 60
+xlabel('fluorescence (au)')
+ylabel('share')
+grid on
+xlim([-5 30])
 
-au_per_gfp = nanmean(roi_int_vec(spot_flag_vec==1)) * 35 /50 /60 * 24
+au_per_gfp = nanmedian(roi_int_vec(spot_flag_vec==1)) * 6 / 50 / 60
+

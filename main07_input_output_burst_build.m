@@ -2,7 +2,7 @@ clear
 close all
 
 % define core ID variables
-project = 'Dl-Ven_hbP2P-mCh';
+project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_hbP2P-mCh';
 dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
@@ -23,7 +23,6 @@ for i = 1:numel(hmm_input_output)
     dur_vec_lag = diff([change_points NaN]);
     dur_vec_lead = diff([NaN change_points]);
     % calculate intensity of bursts
-%     end_points = unique([change_points numel(z_vec)+1]);
     sz_vec_lag = NaN(size(dur_vec_lag));
     sz_vec_lead = NaN(size(dur_vec_lag));
     for j = 1:numel(change_points)-1
@@ -47,6 +46,22 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).sz_lead_vec = sz_lead_vec;
     hmm_input_output(i).z_diff_vec = zd;
     hmm_input_output(i).z_prob_vec = z_prob_vec';
+    % detrend data
+    spot_pt_vec = hmm_input_output(i).spot_protein;%(~dt_filter_gap);
+    time_vec = hmm_input_output(i).time;%(~dt_filter_gap);
+    p = polyfit(time_vec,spot_pt_vec,2);
+    spot_pt_trend = polyval(p,time_vec);
+    hmm_input_output(i).spot_protein_dt = spot_pt_vec - spot_pt_trend; 
+    % virtual spot protein
+    virtual_pt_vec = hmm_input_output(i).serial_protein;%(~dt_filter_gap);    
+    p = polyfit(time_vec,virtual_pt_vec,2);
+    virtual_pt_trend = polyval(p,time_vec);
+    hmm_input_output(i).serial_protein_dt = virtual_pt_vec - virtual_pt_trend;
+    % swap spot protein
+    swap_pt_vec = hmm_input_output(i).swap_spot_protein;%(~dt_filter_gap);    
+    p = polyfit(time_vec,swap_pt_vec,2);
+    swap_pt_trend = polyval(p,time_vec);
+    hmm_input_output(i).swap_spot_protein_dt = swap_pt_vec - swap_pt_trend;
 end
 
 % generate master set of vectors for feature classification
@@ -95,11 +110,11 @@ for j = 1:numel(hmm_input_output)
     z_diff_vec = hmm_input_output(j).z_diff_vec;  
     % activity
     fluo = hmm_input_output(j).fluo;
-    z_vec = hmm_input_output(j).z_prob_vec';
+    r_vec = hmm_input_output(j).r_vec';
     % protein fields                        
-    spot_protein = hmm_input_output(j).spot_protein;
-    swap_spot_protein = hmm_input_output(j).swap_spot_protein;
-    virtual_protein = hmm_input_output(j).serial_protein;        
+    spot_protein = hmm_input_output(j).spot_protein_dt;
+    swap_spot_protein = hmm_input_output(j).swap_spot_protein_dt;
+    virtual_protein = hmm_input_output(j).serial_protein_dt;        
     % apply filter             
     spot_protein(gap_filter) = NaN;
     swap_spot_protein(gap_filter) = NaN;
@@ -112,23 +127,24 @@ for j = 1:numel(hmm_input_output)
         % record
         ft1 = ismember(full_range,true_range);
         % qc check
-        if sum(~isnan(spot_protein)) >= window_size && sum(~isnan(swap_spot_protein)) >= window_size && sum(~isnan(virtual_protein)) >= window_size
+        if sum(~isnan(spot_protein(true_range))) >= window_size && sum(~isnan(swap_spot_protein(true_range)))...
+                >= window_size && sum(~isnan(virtual_protein(true_range))) >= window_size
             % extract raw fragments
             spot_fragment = spot_protein(true_range);
             swap_fragment = swap_spot_protein(true_range);
             virtual_fragment = virtual_protein(true_range);
             fluo_fragment = fluo(true_range);
-            hmm_fragment = z_vec(true_range);
+            hmm_fragment = r_vec(true_range);
             % fit linear offsets            
             fit_sub_array = fit_array(ft1,:);
-            spot_fit = fit_sub_array(~isnan(spot_fragment),:) \ spot_fragment(~isnan(spot_fragment))';
-            swap_fit = fit_sub_array(~isnan(swap_fragment),:) \ swap_fragment(~isnan(swap_fragment))';
-            virtual_fit = fit_sub_array(~isnan(virtual_fragment),:) \ virtual_fragment(~isnan(virtual_fragment))';                
+%             spot_fit = fit_sub_array(~isnan(spot_fragment),:) \ spot_fragment(~isnan(spot_fragment))';
+%             swap_fit = fit_sub_array(~isnan(swap_fragment),:) \ swap_fragment(~isnan(swap_fragment))';
+%             virtual_fit = fit_sub_array(~isnan(virtual_fragment),:) \ virtual_fragment(~isnan(virtual_fragment))';                
             fluo_fit = fit_sub_array(~isnan(fluo_fragment),:) \ fluo_fragment(~isnan(fluo_fragment))';
-            % save time snips               
-            spot_array(iter,ft1) = spot_fragment - spot_fit(1) - spot_fit(2)*window_vec(ft1);
-            swap_array(iter,ft1) = swap_fragment - swap_fit(1) - swap_fit(2)*window_vec(ft1);
-            virtual_array(iter,ft1) = virtual_fragment - virtual_fit(1) - virtual_fit(2)*window_vec(ft1);
+%             % save time snips               
+            spot_array(iter,ft1) = spot_fragment;
+            swap_array(iter,ft1) = swap_fragment;
+            virtual_array(iter,ft1) = virtual_fragment;
             fluo_array(iter,ft1) = fluo_fragment - fluo_fit(1) - fluo_fit(2)*window_vec(ft1);
             hmm_array(iter,ft1) = hmm_fragment;
             % save other info
