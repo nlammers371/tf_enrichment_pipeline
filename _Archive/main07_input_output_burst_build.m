@@ -76,7 +76,6 @@ z_diff_list = [hmm_input_output.z_diff_vec];
 results_struct = struct;
 % arrays for fitting linear offsets
 window_vec = -window_size:window_size;
-fit_array = [ones(numel(window_vec),1) window_vec'];
    
 % calculate expected number of features for pre-allocation
 n_entries = sum(z_diff_list~=0&~gap_filter_vec);
