@@ -3,28 +3,44 @@ close all;
 
 hbProject = 'Dl-Ven_hbP2P-mCh';
 snaProject = 'Dl-Ven_snaBAC-mCh';
-twoSpotProject = '_Archive\Dl_Venus_hbP2PsnaBAC_MCPmCherry';
+twoSpotProject = 'Dl-Ven_2spot-mCh';
 dropboxFolder = 'E:\Nick\Dropbox (Garcia Lab)\';
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
 
-twoSpotDataPath = [dropboxFolder '\ProcessedEnrichmentData\' twoSpotProject '/'];
+twoSpotDataPath = [dropboxFolder '\ProcessedEnrichmentData\' twoSpotProject '\'];
 writePath = 'E:\Nick\Dropbox (Garcia Lab)\LocalEnrichmentFigures\twoSpot\';
 
 %% Load hb, sna, and twoSpot datasets
 % Filter for qc_flag & against unique nuclei
-load([dropboxFolder '\ProcessedEnrichmentData\' hbProject '\nucleus_struct.mat'],'nucleus_struct')
-nucleus_struct_filtered_hb = nucleus_struct([nucleus_struct.qc_flag]==1);
+load([dropboxFolder '\ProcessedEnrichmentData\' hbProject '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
+nucleus_struct_filtered_hb = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
 [nucleus_struct_filtered_hb.locus_identity] = deal('hbP2P');
 
 
-load([dropboxFolder '\ProcessedEnrichmentData\' snaProject '\nucleus_struct.mat'],'nucleus_struct')
-nucleus_struct_filtered_sna = nucleus_struct([nucleus_struct.qc_flag]==1);
+load([dropboxFolder '\ProcessedEnrichmentData\' snaProject '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
+nucleus_struct_filtered_sna = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
 [nucleus_struct_filtered_sna.locus_identity] = deal('snaBAC');
 
-load([twoSpotDataPath '\nucleus_struct.mat'],'nucleus_struct')
-nucleus_struct_filtered_twoSpot = nucleus_struct([nucleus_struct.qc_flag]==1);
+load([twoSpotDataPath '\nucleus_struct_protein.mat'],'nucleus_struct_protein')
+nucleus_struct_filtered_twoSpot = nucleus_struct_protein([nucleus_struct_protein.qc_flag]==1);
 [nucleus_struct_filtered_twoSpot.locus_identity] = deal('twoSpot');
+
+% Sort 2spot data by nucleus ID & remove nuclei with only 1 spot
+% twoSpotFields = fieldnames(nucleus_struct_filtered_twoSpot);
+% twoSpotCellcell = struct2cell(nucleus_struct_filtered_twoSpot);
+% twoSpotCell = struct2cell(nucleus_struct_filtered_twoSpot);
+% sz = size(twoSpotCell);
+% twoSpotCell = reshape(twoSpotCell, sz(1), []);  % Convert to a matrix
+% twoSpotCell = twoSpotCell'; % Make each field a column
+% [~,idxu,idxc] = unique(cell2mat(twoSpotCell(:,17))); % Unique values
+% [count, ~, idxcount] = histcounts(idxc,numel(idxu));   % count unique values (use histc in <=R2014b)
+% idxkeep = count(idxcount)>1;    % Where is greater than one occurence
+% twoSpotCellTemp = twoSpotCell(idxkeep,:);  % Extract non-unique values from the cell
+% szTemp = size(twoSpotCellTemp);
+% twoSpotCellTemp = sortrows(twoSpotCellTemp, 17);  % Sort by 17th field "Nucleus"
+% twoSpotCellTemp = reshape(twoSpotCellTemp', szTemp);    % Put back into original cell array format
+% nucleus_struct_filtered_twoSpot_sorted = cell2struct(twoSpotCellTemp, twoSpotFields', 1);   % Convert to Struct
 
 %% Make cell arrays containing the identities of the loci to be used as
 % nominal variables
@@ -39,10 +55,10 @@ nucleus_struct_locusID_sna = {nucleus_struct_filtered_sna.locus_identity}';
     fluoVar_sna, fluoMax_sna, index_sna, fluoMaxTime_sna, ...
     fluoCenterMass_sna] = ... %, mhmmLogLDiff_sna
     calcRegressionMetrics(nucleus_struct_filtered_sna);
-% [nucleus_struct_metrics_twoSpot, tOff_twoSpot, fluoStartEndRatio_twoSpot,...
-%     fluoMean_twoSpot, fluoVar_twoSpot, fluoMax_twoSpot, index_twoSpot, ...
-%     fluoMaxTime_twoSpot, fluoCenterMass_twoSpot, mhmmLogLDiff_twoSpot] = ...
-%     calcRegressionMetrics(nucleus_struct_filtered_twoSpot);
+[nucleus_struct_metrics_twoSpot, tOff_twoSpot, fluoStartEndRatio_twoSpot,...
+    fluoMean_twoSpot, fluoVar_twoSpot, fluoMax_twoSpot, index_twoSpot, ...
+    fluoMaxTime_twoSpot, fluoCenterMass_twoSpot] = ... %, mhmmLogLDiff_twoSpot
+    calcRegressionMetrics(nucleus_struct_filtered_twoSpot);
 
 % Trim & combine metrics to make training and testing datasets
 hbTrainDataLength = int16(numel(nucleus_struct_filtered_hb)/2) - 1;
@@ -87,11 +103,29 @@ metrics_paired_test = cat(1, metrics_spotAisHb_test, metrics_spotBisHb_test);
 locusID_paired_test(1:pairedTestSplit,1) = {'Spot A is hbP2P'};
 locusID_paired_test(pairedTestSplit+1:pairedTestLength,1) = {'Spot B is hbP2P'};
 
-% Full datasets for unpaired twoSpot analysis
+% Full training dataset for unpaired twoSpot analysis
 nucleus_struct_metrics_hbsna = cat(1, nucleus_struct_metrics_hb, nucleus_struct_metrics_sna);
 nucleus_struct_locusID_hbsna = cat(1, nucleus_struct_locusID_hb, nucleus_struct_locusID_sna); 
 
-% Full datasets for paired twoSpot analysis
+% Full training dataset for paired twoSpot analysis
+hbsnaRemain = mod(numel(nucleus_struct_filtered_sna),numel(nucleus_struct_filtered_hb));
+hbsnaQuotient = (numel(nucleus_struct_filtered_sna)-hbsnaRemain)/numel(nucleus_struct_filtered_hb);
+metrics_fullTrain_hb = nucleus_struct_metrics_hb(1:numel(nucleus_struct_filtered_hb),:);
+locusID_fullTrain_hb = nucleus_struct_locusID_hb(1:numel(nucleus_struct_filtered_hb),:);
+for i = 1:(hbsnaQuotient-1)
+    metrics_fullTrain_hb = cat(1, metrics_fullTrain_hb,nucleus_struct_metrics_hb(1:numel(nucleus_struct_filtered_hb),:));
+    locusID_fullTrain_hb = cat(1, locusID_fullTrain_hb,nucleus_struct_locusID_hb(1:numel(nucleus_struct_filtered_hb),:));
+end
+if hbsnaTrainRemain ~= 0
+    metrics_fullTrain_hb = cat(1, metrics_fullTrain_hb,nucleus_struct_metrics_hb(1:hbsnaRemain,:));
+    locusID_fullTrain_hb = cat(1, locusID_fullTrain_hb,nucleus_struct_locusID_hb(1:hbsnaRemain,:));
+end
+fullTestPairedLength = numel(nucleus_struct_filtered_sna);
+fullTestPairedSplit = int16(numel(nucleus_struct_filtered_sna)/2) - 1;
+metrics_paired_fullTrain(1:fullTestPairedSplit,:) = metrics_fullTrain_hb(1:fullTestPairedSplit,:) - nucleus_struct_metrics_sna(1:fullTestPairedSplit,:); 
+metrics_paired_fullTrain(fullTestPairedSplit+1:fullTestPairedLength,:) = nucleus_struct_metrics_sna(fullTestPairedSplit+1:fullTestPairedLength,:) - metrics_fullTrain_hb(fullTestPairedSplit+1:fullTestPairedLength,:); 
+locusID_paired_fullTrain(1:fullTestPairedSplit,1) = {'Spot A is hbP2P'};
+locusID_paired_fullTrain(fullTestPairedSplit+1:fullTestPairedLength,1) = {'Spot B is hbP2P'};
 
 % Plot histograms of the metrics
 plotMetrics('tOff', tOff_hb, tOff_sna, ...
@@ -135,13 +169,31 @@ for i = 2:numel(B_testWeights_paired)
     B_testWeights_paired(i) = B_test_paired(i) * metrics_paired_train(1,(i-1));
 end
 
-% % twoSpot Analysis
-% % Train regression
-% locusID_hbsna = nominal(nucleus_struct_locusID_hbsna);
-% locusID_hbsna = double(locusID_hbsna);
-% [B_twoSpot,dev_twoSpot,stats_twoSpot] = mnrfit(nucleus_struct_metrics_hbsna,locusID_hbsna);
+% twoSpot Analysis
+% Train unpaired regression
+locusID_hbsna = nominal(nucleus_struct_locusID_hbsna);
+locusID_hbsna = double(locusID_hbsna);
+[B_twoSpot,dev_twoSpot,stats_twoSpot] = mnrfit(nucleus_struct_metrics_hbsna,locusID_hbsna);
+% Fit twoSpot data
+prob_twoSpot = mnrval(B_twoSpot,nucleus_struct_metrics_twoSpot);
+% Label twoSpot data
+for i = 1:size(prob_twoSpot,1)
+    if prob_twoSpot(i,1) > 0.5
+        nucleus_struct_filtered_twoSpot(i).locus_identity = 'hbP2P';
+        nucleus_struct_filtered_twoSpot(i).locus_identityNum = 1;
+    elseif prob_twoSpot(i,2) > 0.5
+        nucleus_struct_filtered_twoSpot(i).locus_identity = 'snaBAC';
+        nucleus_struct_filtered_twoSpot(i).locus_identityNum = 2;
+    end
+end
+save([twoSpotDataPath 'nucleus_struct_filtered_twoSpot.mat'],'nucleus_struct_filtered_twoSpot')
+
+% Train paired regression
+% locusID_fullPaired = nominal(locusID_paired_fullTrain);
+% locusID_fullPaired = double(locusID_fullPaired);
+% [B_twoSpot_paired,dev_twoSpot_paired,stats_twoSpot_paired] = mnrfit(metrics_paired_fullTrain,locusID_fullPaired);
 % % Fit twoSpot data
-% prob_twoSpot = mnrval(B_twoSpot,nucleus_struct_metrics_twoSpot);
+% prob_twoSpot_paired = mnrval(B_twoSpot_paired,metrics_twoSpot_paired);
 
 %% Plot results of testing the regression on known data
 cm_plot = jet(128);
@@ -182,14 +234,14 @@ xlabel('Probability Spot B is hb locus')
 ylabel('Number of particles')
 saveas(snaProbFigPaired,[writePath 'regression_test_sna_prob_paired.png']);
 
-% % 2spot loci
-% twoSpotProbFig = figure;
-% twospotProbCt = histc(prob_twoSpot,probBins);
-% bar(probBins,twospotProbCt,'FaceAlpha',.5,'FaceColor',cm_plot(120,:));
-% title('Particles from 2spot dataset - ID unknown')
-% xlabel('Probability particle is sna locus')
-% ylabel('Number of particles')
-% saveas(twoSpotProbFig,[writePath 'regression_twoSpot_prob.png']);
+% 2spot loci
+twoSpotProbFig = figure;
+twospotProbCt = histc(prob_twoSpot,probBins);
+bar(probBins,twospotProbCt,'FaceAlpha',.5,'FaceColor',cm_plot(120,:));
+title('Particles from 2spot dataset - ID unknown')
+xlabel('Probability particle is sna locus')
+ylabel('Number of particles')
+saveas(twoSpotProbFig,[writePath 'regression_twoSpot_prob.png']);
 
 
 % ---------------- LOCAL FUNCTION calcRegressionMetrics -----------------
@@ -208,6 +260,8 @@ function [nucleus_struct_metrics, tOff, fluoStartEndRatio, fluoMean, ...
     fluoMaxTime = nan(numel(nucleus_struct),1);
     fluoCenterMass = nan(numel(nucleus_struct),1);
 %     mhmmLogLDiff = nan(numel(nucleus_struct),1);
+    %AP position
+    %nuclear dorsal concentration
     
     
     numMetrics = 5;
