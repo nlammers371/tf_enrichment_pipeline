@@ -124,7 +124,9 @@ for i = 1:numel(hmm_input_output)
     swap_spot_protein_dt(nan_ft) = swap_pt_vec(nan_ft) - swap_pt_trend;
     hmm_input_output(i).swap_spot_protein_dt = swap_spot_protein_dt;
 end
-
+% save update structure
+save([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+%%
 %%% initialize lists to store burst characteristics
 % protein-weighted center of mass
 pt_cm_spot_vec = NaN(n_features,1); 
@@ -223,7 +225,8 @@ for j = 1:numel(hmm_input_output)
     end    
 end        
 % make results table
-results_table = array2table([particle_id_vec, feature_time_vec, tr_burst_class_vec, fluo_vec, tr_amp_vec, tr_amp_prev_vec, tr_dur_vec, tr_dur_prev_vec,...
+results_table = array2table([particle_id_vec, feature_time_vec, tr_burst_class_vec, ...
+    fluo_vec, tr_amp_vec, tr_amp_prev_vec, tr_dur_vec, tr_dur_prev_vec,...
     pt_mf_vec, pt_cm_spot_vec, pt_cm_swap_vec, pt_cm_virtual_vec,...
     pt_net_spot_vec, pt_net_swap_vec, pt_net_virtual_vec, pt_net2_spot_vec, pt_net2_swap_vec, pt_net2_virtual_vec,burst_dist_prev_vec],...
     'VariableNames',{'ParticleID', 'time', 'burst_class', 'fluo', 'tr_amp', 'tr_amp_prev', 'tr_dur', 'tr_dur_prev', 'pt_mf', 'pt_cm_spot', 'pt_cm_swap', 'pt_cm_virtual',...
@@ -282,9 +285,9 @@ for j = 1:numel(hmm_input_output)
     fluo = hmm_input_output(j).fluo;
     r_vec = hmm_input_output(j).r_vec';
     % protein fields                        
-    spot_protein = hmm_input_output(j).spot_protein_dt;
-    swap_spot_protein = hmm_input_output(j).swap_spot_protein_dt;
-    virtual_protein = hmm_input_output(j).serial_protein_dt;        
+    spot_protein = hmm_input_output(j).spot_protein;
+    swap_spot_protein = hmm_input_output(j).swap_spot_protein;
+    virtual_protein = hmm_input_output(j).serial_protein;        
     % apply filter             
     spot_protein(gap_filter) = NaN;
     swap_spot_protein(gap_filter) = NaN;
@@ -308,10 +311,13 @@ for j = 1:numel(hmm_input_output)
             % fit linear offset          
             fit_sub_array = fit_array(ft1,:);
             fluo_fit = fit_sub_array(~isnan(fluo_fragment),:) \ fluo_fragment(~isnan(fluo_fragment))';
+            spot_fit = fit_sub_array(~isnan(spot_fragment),:) \ spot_fragment(~isnan(spot_fragment))';
+            swap_fit = fit_sub_array(~isnan(swap_fragment),:) \ swap_fragment(~isnan(swap_fragment))';
+            virtual_fit = fit_sub_array(~isnan(virtual_fragment),:) \ virtual_fragment(~isnan(virtual_fragment))';           
 %           % save time snips               
-            spot_array(iter,ft1) = spot_fragment;
-            swap_array(iter,ft1) = swap_fragment;
-            virtual_array(iter,ft1) = virtual_fragment;
+            spot_array(iter,ft1) = spot_fragment - spot_fit(1) - spot_fit(2)*window_vec(ft1);
+            swap_array(iter,ft1) = swap_fragment - swap_fit(1) - swap_fit(2)*window_vec(ft1); 
+            virtual_array(iter,ft1) = virtual_fragment  - virtual_fit(1) - virtual_fit(2)*window_vec(ft1);
             fluo_array(iter,ft1) = fluo_fragment - fluo_fit(1) - fluo_fit(2)*window_vec(ft1);
             hmm_array(iter,ft1) = hmm_fragment;
             % save other info
