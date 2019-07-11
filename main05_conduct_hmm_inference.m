@@ -21,7 +21,7 @@
 % K: number of states
 % minDp: min data points needed to be included in inferece
 %
-% OUTPUT: nucleus_struct: compiled data set with protein samples
+% OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
 function output = main05_conduct_hmm_inference(project,varargin)
 
@@ -33,13 +33,16 @@ w = 7;
 minDp = 10;
 dpBootstrap = 1;
 nBoots = 1;
+protein_bin_flag = 1;
+n_protein_bins = 10;
+time_bin_flag = 0;
 inference_times = 30*60;%(7.5:2.5:40)*60;%fliplr((25:2.5:40)*60);
 tWindow = 60*60; % determines width of sliding window
-sampleSize = 10000;
-maxWorkers = 25;
+sampleSize = 4000;
+maxWorkers = 12;
 alphaFrac = 1302 / 6000;
 % default paths
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 % default path to model scripts
 modelPath = './utilities';
@@ -60,14 +63,14 @@ for i = 1:numel(varargin)
 end
 
 addpath(modelPath); % Route to utilities folder
-load([dataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
+load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
 % check that we have prpoer fields
 if ~dpBootstrap
     warning('Bootstrap option not selected. Setting nBoots to 1')
     nBoots = 1;
 end
 %-------------------------------System Vars-------------------------------%
-Tres = nucleus_struct(1).TresInterp; % Time Resolution
+Tres = nucleus_struct_protein(1).TresInterp; % Time Resolution
 alpha = alphaFrac*w;
 %----------------------------Bootstrap Vars-------------------------------
                                        
@@ -82,7 +85,7 @@ if dpBootstrap
 end
 
 % Set write path (inference results are now written to external directory)
-out_suffix =  ['/hmm_inference/w' num2str(w) '_K' num2str(K) '/']; 
+out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
 % set write path
 if savio
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
@@ -94,26 +97,50 @@ mkdir(outDir);
 
 % apply time filtering 
 trace_struct_filtered = [];
-for i = 1:length(nucleus_struct)
+for i = 1:length(nucleus_struct_protein)
     temp = struct;
-    time = nucleus_struct(i).time_interp;%(w+1:end); % we must ignore first w + 1 time points for windowed inference         
-    fluo = nucleus_struct(i).fluo_interp;%(w+1:end); 
+    time = nucleus_struct_protein(i).time_interp;%(w+1:end); % we must ignore first w + 1 time points for windowed inference         
+    fluo = nucleus_struct_protein(i).fluo_interp;%(w+1:end); 
     if length(time) >= minDp
         temp.fluo = fluo;
         temp.time = time;
-        temp.qc_flag = nucleus_struct(i).qc_flag;
-        temp.ParticleID = nucleus_struct(i).ParticleID;        
+        temp.mf_protein = nanmean(nucleus_struct_protein(i).mf_null_protein_vec);
+        temp.qc_flag = nucleus_struct_protein(i).qc_flag;
+        temp.ParticleID = nucleus_struct_protein(i).ParticleID;        
         trace_struct_filtered = [trace_struct_filtered temp];
     end
 end
 trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1);
+mf_index = [trace_struct_filtered.mf_protein];
+% generate protein groupings
+mf_prctile_vec = NaN(1,n_protein_bins+1);
+mf_prctile_vec(1) = 0;
+inc = 100 / n_protein_bins;
+for i = 1:n_protein_bins
+    mf_prctile_vec(i+1) = prctile(mf_index,inc*i);
+end
+% assign traces to groups
+[~, rank_num] = sort(mf_index);
+id_vec = ceil(rank_num/numel(rank_num)*n_protein_bins);
+for i = 1:numel(trace_struct_filtered)
+    trace_struct_filtered(i).mf_protein_bin = id_vec(i);
+end
+% define iteration wrapper
+iter_list = 1;
+iter_ref_index = ones(size(trace_struct_filtered));
+if protein_bin_flag
+    iter_list = mf_prctile_vec;
+    iter_ref_index = [trace_struct_filtered.mf_protein_bin];
+elseif time_bin_flag
+    error('time grouping functionality not yet added')
+    iter_list = inference_times;
+end
 
 %%% Conduct Inference
 % structure array to store the analysis data  
-for t = 1:length(inference_times)
-    t_inf = inference_times(t);
-    t_start = t_inf - tWindow/2;
-    t_stop = t_inf + tWindow/2;    
+for t = 1:length(iter_list)
+%     iter_bin = iter_list(t);     
+    iter_filter = iter_ref_index == t;
     for b = 1:nBoots
         iter_start = now;
         local_struct = struct;    
@@ -124,19 +151,8 @@ for t = 1:length(inference_times)
         % Generate filenames            
         fName_sub = ['hmm_results_t' inference_id '.mat'];                
         out_file = [outDir '/' fName_sub];  
-        % Extract fluo_data
-        trace_ind = 1:numel(trace_struct_filtered);
-        inference_set = [];
-        for m = 1:length(trace_ind)
-            temp = trace_struct_filtered(trace_ind(m));
-            tt = temp.time;
-            ft = temp.fluo;
-            temp.time = tt(tt>=t_start & tt < t_stop);
-            temp.fluo = ft(tt>=t_start & tt < t_stop);
-            if sum(temp.fluo>0) > minDp % exclude strings of pure zeros
-                inference_set = [inference_set temp];
-            end
-        end
+        % Extract fluo_data        
+        inference_set = trace_struct_filtered(iter_filter);        
         skip_flag = 0;
         set_size = length([inference_set.fluo]);                 
         if isempty(inference_set)
@@ -230,11 +246,16 @@ for t = 1:length(inference_times)
             output.total_time = 100000*(now - iter_start);            
             % other inference characteristics
             output.t_window = tWindow;
-            output.t_inf = t_inf;
-            output.fluo_type = fluo_field;
+            if time_bin_flag
+                output.t_inf = t_inf;
+            end
+            output.protein_bin_flag = protein_bin_flag;
+            if protein_bin_flag
+                output.protein_bin = t;
+                output.protein_bin_list = iter_list;
+            end
             output.dp_bootstrap_flag = dpBootstrap;   
-            output.iter_id = b;
-            output.start_time_inf = 0;                    
+            output.iter_id = b;            
             output.clipped = clipped;            
             output.particle_ids = sample_particles;
             if dpBootstrap                                    

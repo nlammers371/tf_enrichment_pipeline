@@ -47,7 +47,7 @@ load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load d
 minDP = nucleus_struct_protein(1).minDP;
 
 Tres = nucleus_struct_protein(1).TresInterp; % Time Resolution
-maxDT = 1.2*Tres;
+maxDT = Tres / 2;
 alpha = alphaFrac*w;
 % generate alpha kernel 
 alpha_kernel = NaN(1,w);
@@ -249,7 +249,7 @@ for i = 1:numel(hmm_input_output)
     dist_vec = dist_mat_r(i,:);               
     dist_vec(~option_filter) = NaN;
     dist_vec(i) = NaN;
-    [best_r, best_ind_dist] = nanmin(dist_vec);
+    [~, best_ind_dist] = nanmin(dist_vec);
     % record vales 
     time_swap_dist = hmm_input_output(best_ind_dist).time;       
     % fill
@@ -271,7 +271,6 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).mf_swap_hmm = r_fluo_mf;
     hmm_input_output(i).mf_swap_dt_filter_gap = dt_filter_mf;
     % record dist
-    hmm_input_output(i).nn_best_r = best_r;
     hmm_input_output(i).dist_swap_ind = best_ind_dist;
     hmm_input_output(i).dist_swap_spot_protein = s_pt_dist;
     hmm_input_output(i).dist_swap_mf_protein = mf_pt_dist;

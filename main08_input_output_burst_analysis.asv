@@ -4,8 +4,8 @@ clear
 close all
 addpath('utilities')
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-mCh';
-project = 'Dl-Ven_hbP2P-mCh';
+project = 'Dl-Ven_snaBAC-mCh';
+% project = 'Dl-Ven_hbP2P-mCh';
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
 figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\burst_analyses\'];
@@ -26,7 +26,7 @@ if strcmp(project,'Dl-Ven_hbP2P-mCh')
     burst_sigma = 3;
 else
     burst_range = 2:12;
-    burst_sigma = 3;
+    burst_sigma = 2;
 end
 min_buffer_len = 5;
 max_buffer_len = 30;
