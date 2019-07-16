@@ -34,7 +34,7 @@ min_time = 6*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 % expType = 'input_output';
 % dataPath = ['../dat/' project '/']; % data mat directory
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 folderPath = [dropboxFolder 'LocalEnrichmentResults\'];
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 for i = 1:numel(varargin)
@@ -335,6 +335,6 @@ end
 save(nucleus_name ,'nucleus_struct') 
 
 disp('calculating psf dims...')
-calculate_average_psf(project);
+calculate_average_psf(project,'dropboxFolder',dropboxFolder);
 
 disp('done.')

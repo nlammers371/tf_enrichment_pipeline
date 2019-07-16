@@ -4,7 +4,7 @@ function psf_dims = calculate_average_psf(project,varargin)
 close all
 addpath('./utilities')
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 % sampling parameters
 n_spots = 1000;
