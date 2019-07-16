@@ -2,8 +2,8 @@ clear
 close all
 
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-mCh';
-project = 'Dl-Ven_hbP2P-mCh';
+project = 'Dl-Ven_snaBAC-mCh';
+% project = 'Dl-Ven_hbP2P-mCh';
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 w = 7;
@@ -102,9 +102,6 @@ for i = 1:numel(hmm_input_output)
     spot_pt_vec = hmm_input_output(i).spot_protein; 
     spot_nan_ft = ~isnan(spot_pt_vec)&~dt_filter_gap;
     spot_protein_fit = detrend(spot_pt_vec(spot_nan_ft),2,'SamplePoints',time_vec(spot_nan_ft));
-%     ob_fun = @(params) spot_pt_vec(spot_nan_ft) - params(1)*spot_trend_vec(spot_nan_ft) - params(2);
-%     spot_fit = lsqnonlin(ob_fun,[1 0],[.2 -300],[5 300],options);    
-%     spot_pt_trend = spot_fit(1)*spot_trend_vec(spot_nan_ft) + spot_fit(2);
     spot_protein_dt = NaN(size(dt_filter_gap));
     spot_protein_dt(spot_nan_ft) = spot_protein_fit;
     hmm_input_output(i).spot_protein_dt = spot_protein_dt;
@@ -139,17 +136,23 @@ sz_lead_list = [hmm_input_output.sz_lead_vec];
 z_diff_list = [hmm_input_output.z_diff_vec];
 c = [hmm_input_output.z_diff_vec];
 % initialize results structure
-results_struct = struct;
-   
+results_struct = struct;   
 % calculate expected number of features for pre-allocation
 n_entries = sum(z_diff_list~=0&~gap_filter_vec);
 % initialize arrays to store time series snip
 fluo_array = NaN(n_entries,2*window_size+1);
 hmm_array = NaN(n_entries,2*window_size+1);
-swap_hmm_array = NaN(n_entries,2*window_size+1);
-spot_array = NaN(n_entries,2*window_size+1);
-swap_array = NaN(n_entries,2*window_size+1);
-virtual_array = NaN(n_entries,2*window_size+1);        
+% de-meaned arrays
+swap_hmm_array_dm = NaN(n_entries,2*window_size+1);
+spot_array_dm = NaN(n_entries,2*window_size+1);
+swap_array_dm = NaN(n_entries,2*window_size+1);
+virtual_array_dm = NaN(n_entries,2*window_size+1);        
+% detrended arrays
+swap_hmm_array_dt = NaN(n_entries,2*window_size+1);
+spot_array_dt = NaN(n_entries,2*window_size+1);
+swap_array_dt = NaN(n_entries,2*window_size+1);
+mf_array = NaN(n_entries,2*window_size+1);
+virtual_array_dt = NaN(n_entries,2*window_size+1);        
 % initialize arrays to store id variables
 mf_protein_vec = NaN(1,n_entries);
 particle_id_vec = NaN(1,n_entries);
@@ -179,53 +182,57 @@ for j = 1:numel(hmm_input_output)
     fluo = hmm_input_output(j).fluo;
     swap_r_vec = hmm_input_output(j).dist_swap_hmm;
     r_vec = hmm_input_output(j).r_vec';
-    % protein fields                        
-    spot_protein = hmm_input_output(j).spot_protein_dt;
-    swap_spot_protein = hmm_input_output(j).swap_spot_protein_dt;
-    virtual_protein = hmm_input_output(j).serial_protein_dt;        
+    % raw protein fields
+    spot_protein_raw = hmm_input_output(j).spot_protein;
+    swap_spot_protein_raw = hmm_input_output(j).swap_spot_protein;
+    virtual_protein_raw = hmm_input_output(j).serial_protein;    
+    mf_protein_raw = hmm_input_output(j).mf_protein;    
+    % de-trended protein fields                        
+    spot_protein_dt = hmm_input_output(j).spot_protein_dt;
+    swap_spot_protein_dt = hmm_input_output(j).swap_spot_protein_dt;
+    virtual_protein_dt = hmm_input_output(j).serial_protein_dt;        
     % apply filter to remove observations far too far from true points             
-    spot_protein(gap_filter) = NaN;
-    swap_spot_protein(gap_filter_swap) = NaN;
-    virtual_protein(gap_filter) = NaN;
+    spot_protein_dt(gap_filter) = NaN;
+    spot_protein_raw(gap_filter) = NaN;
+    swap_spot_protein_dt(gap_filter_swap) = NaN;
+    swap_spot_protein_raw(gap_filter_swap) = NaN;
+    virtual_protein_dt(gap_filter) = NaN;
+    virtual_protein_raw(gap_filter) = NaN;
+    mf_protein_raw(gap_filter) = NaN;
     % find features
     id_list = find(z_diff_vec~=0&~gap_filter);
     for id = id_list
         full_range = id - window_size:id+window_size;
-        true_range = full_range(full_range>0&full_range<=numel(virtual_protein));
+        true_range = full_range(full_range>0&full_range<=numel(virtual_protein_dt));
         % record
         ft1 = ismember(full_range,true_range);
-        ft2 = ~isnan(spot_protein(true_range)) & ~isnan(swap_spot_protein(true_range))&~isnan(virtual_protein(true_range));
+        ft2 = ~isnan(spot_protein_dt(true_range)) & ~isnan(swap_spot_protein_dt(true_range))&~isnan(virtual_protein_dt(true_range));
         % qc check
         if sum(ft2) >= window_size
-            % extract raw fragments and de-mean
-            spot_fragment = spot_protein(true_range);% - nanmean(spot_protein(true_range));
-            swap_fragment = swap_spot_protein(true_range);% - nanmean(swap_spot_protein(true_range));
-            virtual_fragment = virtual_protein(true_range);% - nanmean(virtual_protein(true_range));
+            % extract rde-trended fragments 
+            spot_fragment_dt = spot_protein_dt(true_range);% - nanmean(spot_protein(true_range));
+            swap_fragment_dt = swap_spot_protein_dt(true_range);% - nanmean(swap_spot_protein(true_range));
+            virtual_fragment_dt = virtual_protein_dt(true_range);% - nanmean(virtual_protein(true_range));
+            % de-mean raw protein fragments
+            spot_fragment_dm = spot_protein_raw(true_range); - nanmean(spot_protein(true_range));
+            swap_fragment_dm = swap_spot_protein_raw(true_range) - nanmean(swap_spot_protein_raw(true_range));
+            virtual_fragment_dm = virtual_protein_raw(true_range) - nanmean(virtual_protein_raw(true_range));
+            % output and mf fragments
             fluo_fragment = fluo(true_range);
             hmm_fragment = r_vec(true_range);
             swap_hmm_fragment = swap_r_vec(true_range);
-            % fit linear offset          
-            fit_sub_array = fit_array(ft1,:);
-%             fluo_fit = fit_sub_array(~isnan(fluo_fragment),:) \ fluo_fragment(~isnan(fluo_fragment))';
-%             spot_fit = fit_sub_array(ft2,:) \ spot_fragment(ft2)';
-%             swap_fit = fit_sub_array(ft2,:) \ swap_fragment(ft2)';
-%             virtual_fit = fit_sub_array(ft2,:) \ virtual_fragment(ft2)';     
-            % ensure identical entries for swap and spot snips
-%             swap_fragment(~ft2) = NaN;
-%             spot_fragment(~ft2) = NaN;
-%             virtual_fragment(~ft2) = NaN;
-%             hmm_fragment(~ft2) = NaN;
-%             swap_hmm_fragment(~ft2) = NaN;
+            mf_fragment = mf_protein_raw(true_range);
             
-%           % save time snips               
-            spot_array(iter,ft1) = spot_fragment;% - spot_fit(1) - spot_fit(2)*window_vec(ft1);
-            swap_array(iter,ft1) = swap_fragment;% - swap_fit(1) - swap_fit(2)*window_vec(ft1); 
-            virtual_array(iter,ft1) = virtual_fragment;% - virtual_fit(1) - virtual_fit(2)*window_vec(ft1);
-            fluo_array(iter,ft1) = fluo_fragment;% - fluo_fit(1) - fluo_fit(2)*window_vec(ft1);
+            % save time snips               
+            spot_array_dt(iter,ft1) = spot_fragment_dt;
+            swap_array_dt(iter,ft1) = swap_fragment_dt; 
+            mf_array(iter,ft1) = mf_fragment;
+            virtual_array_dt(iter,ft1) = virtual_fragment_dt;
+            fluo_array(iter,ft1) = fluo_fragment;
             hmm_array(iter,ft1) = hmm_fragment;
-            swap_hmm_array(iter,ft1) = swap_hmm_fragment;
+            swap_hmm_array_dt(iter,ft1) = swap_hmm_fragment;
             % save other info
-            mf_protein_vec(iter) = nanmean(virtual_fragment);
+            mf_protein_vec(iter) = nanmean(virtual_fragment_dt);
             particle_id_vec(iter) = ParticleID;
             center_time_vec(iter) = time(id);
             lag_dur_vec(iter) = z_dur_lag_vec_full(id);
@@ -242,13 +249,19 @@ for j = 1:numel(hmm_input_output)
         end
     end    
 end        
-% record data
-results_struct.spot_array = spot_array;
-results_struct.swap_array = swap_array;
-results_struct.virtual_array = virtual_array;
+%%% record data
+results_struct.mf_array = mf_array;
+% detrended protein snips
+results_struct.spot_array_dt = spot_array_dt;
+results_struct.swap_array_dt = swap_array_dt;
+results_struct.virtual_array_dt = virtual_array_dt;
+% raw protein snips
+
+% transcriptional response snips
 results_struct.fluo_array = fluo_array;
 results_struct.hmm_array = hmm_array;  
-results_struct.swap_hmm_array = swap_hmm_array;  
+results_struct.swap_hmm_array = swap_hmm_array_dt;  
+% ID variables
 particle_id_vec(iter) = ParticleID;
 results_struct.mf_protein_vec = mf_protein_vec;
 results_struct.center_time_vec = center_time_vec;

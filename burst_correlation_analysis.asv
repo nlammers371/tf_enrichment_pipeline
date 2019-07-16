@@ -36,7 +36,7 @@ tr_burst_size_vec = lag_dur_vec.*lag_size_vec;
 % make rise filter
 rise_ft = feature_sign_vec == 1;
 analysis_ft = rise_ft & lead_dur_vec>5 & ~isnan(locus_protein_vec);
-%%
+
 %%% Make Bivariate heatmaps
 % n_bins = 100;
 close all
@@ -69,11 +69,10 @@ imagesc(mf_curr_burst_mat);
 h = colorbar;
 ylabel(h,'protein burst size (au)')
 ylabel('average Dl concentration')
-xlabel('transcription burst size (au \times min)')
+xlabel('transcription burst size (au/min)')
 set(gca,'Fontsize',14)
-set(gca,'ytick',1:4:25,'yticklabels',round(mf_bins(1:4:25)/5)*5)
-set(gca,'xtick',1:4:25,'xticklabels',round(burst_size_bins(1:4:25)/3,1))
-caxis([-10 40])
+set(gca,'ytick',1:5:25,'yticklabels',round(mf_bins(1:5:25)/5)*5)
+set(gca,'xtick',1:5:25,'xticklabels',round(burst_size_bins(1:5:25)/3,1))
 saveas(mf_dur_fig,[figPath 'mf_trSize_protein_hm.tif'])
 
 % mean Dl vs. prev lag duration
@@ -95,9 +94,8 @@ ylabel(h,'protein burst size (au)')
 xlabel('average Dl concentration (au)')
 ylabel('preceding trough duration (min)')
 set(gca,'Fontsize',14)
-set(gca,'xtick',1:4:25,'xticklabels',round(mf_bins(1:4:25)/5)*5)
+set(gca,'xtick',1:5:25,'xticklabels',round(mf_bins(1:5:25)/5)*5)
 set(gca,'ytick',1:2:11,'yticklabels',round(off_dur_bins(1:2:11)/3,1))
-caxis([-10 40])
 saveas(prev_mf_fig,[figPath 'prev_mf_protein_hm.tif'])
 
 % curr vs prev dur
@@ -111,18 +109,17 @@ for b = 1:numel(burst_size_bins)
 end
 
 % make figure
-prev_sz_fig = figure;
+prev_mf_fig = figure;
 colormap(hm_cm);
-imagesc(prev_curr_burst_mat');
+imagesc(mf_prev_burst_mat');
 h = colorbar;
 ylabel(h,'protein burst size (au)')
-xlabel('transcription burst size (au \times min)')
+xlabel('average Dl concentration (au)')
 ylabel('preceding trough duration (min)')
 set(gca,'Fontsize',14)
-set(gca,'xtick',1:4:25,'xticklabels',round(burst_size_bins(1:4:25)/3,1))
+set(gca,'xtick',1:5:25,'xticklabels',round(mf_bins(1:5:25)/5)*5)
 set(gca,'ytick',1:2:11,'yticklabels',round(off_dur_bins(1:2:11)/3,1))
-caxis([-10 40])
-saveas(prev_sz_fig,[figPath 'prev_trSize_protein_hm.tif'])
+saveas(prev_mf_fig,[figPath 'prev_mf_protein_hm.tif'])
 
 %%
 % % prev-mf heatmap
@@ -136,86 +133,86 @@ saveas(prev_sz_fig,[figPath 'prev_trSize_protein_hm.tif'])
 % set(gca,'Fontsize',14)
 
 %%% Examine protein burst duration as a function of transcription burst length
-% spot_array = results_struct.spot_array;
+spot_array = results_struct.spot_array;
+
+spot_profile_mat = NaN(numel(burst_size_bins)-1, window_size+2);
+for i = 1:numel(burst_size_bins)-1
+    bdh = burst_size_bins(i+1);
+    if i+1 == numel(burst_size_bins)
+        bdh = Inf;
+    end
+    bdl = burst_size_bins(i);
+    iter_ft = rise_ft & lag_dur_vec >=bdl& lag_dur_vec <bdh & lead_dur_vec > 3;
+    spot_profile_mat(i,:) = nanmean(spot_array(iter_ft,window_size-2:end-2));
+end
+
+% profile hm
+profile_fig = figure;
+colormap(hm_cm);
+p = imagesc(imgaussfilt(spot_profile_mat,1));
+h = colorbar;
+ylabel(h,'protein burst size (au)')
+ylabel('transcription burst duration')
+xlabel('position')
+set(gca,'Fontsize',14)
 % 
-% spot_profile_mat = NaN(numel(burst_size_bins)-1, window_size+2);
-% for i = 1:numel(burst_size_bins)-1
-%     bdh = burst_size_bins(i+1);
-%     if i+1 == numel(burst_size_bins)
-%         bdh = Inf;
-%     end
-%     bdl = burst_size_bins(i);
-%     iter_ft = rise_ft & lag_dur_vec >=bdl& lag_dur_vec <bdh & lead_dur_vec > 3;
-%     spot_profile_mat(i,:) = nanmean(spot_array(iter_ft,window_size-2:end-2));
-% end
-% 
-% % profile hm
-% profile_fig = figure;
-% colormap(hm_cm);
-% p = imagesc(imgaussfilt(spot_profile_mat,1));
-% h = colorbar;
-% ylabel(h,'protein burst size (au)')
-% ylabel('transcription burst duration')
-% xlabel('position')
-% set(gca,'Fontsize',14)
-% % 
-% % close all
-% mf_index = 100:2:300;%linspace(prctile(mf_protein_vec(analysis_ft),5),prctile(mf_protein_vec(analysis_ft),95));
-% pt_burst_index = -50:1.5:100;%linspace(prctile(locus_protein_vec(analysis_ft),5),prctile(locus_protein_vec(analysis_ft),99));
-% 
-% mf1 = mf_protein_vec(analysis_ft).^1;
-% mf2 = mf_protein_vec(analysis_ft).^2;
-% mf3 = mf_protein_vec(analysis_ft).^3;
-% X = [mf1' mf2' mf3'];
-% % fit to locus burst size
-% mdl_locus = fitlm(X,locus_protein_vec(analysis_ft));
-% mdl_swap = fitlm(X,swap_protein_vec(analysis_ft));
-% 
-% % generate predicted trends
-% pd_burst_locus = predict(mdl_locus,[mf_index' (mf_index.^2)' (mf_index.^3)']);
-% pd_burst_swap = predict(mdl_swap,[mf_index' (mf_index.^2)' (mf_index.^3)']);
-% 
-% % make figures
-% locus_pd_scatter = figure;
-% hold on
-% scatter(mf_protein_vec(analysis_ft),locus_protein_vec(analysis_ft)',20,'MarkerFaceColor',...
-%     [.6 .6 .6],'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',0);
-% plot(mf_index,pd_burst_locus,'Color',hm_cm(end,:),'LineWidth',1.5)
-% grid on
-% xlabel('average Dl concentration')
-% ylabel('protein burst size (locus)')
-% legend('raw data','trend')
-% set(gca,'Fontsize',14)
-% xlim([100 300])
-% ylim([-50 50])
-% saveas(locus_pd_scatter,[figPath 'locus_mf_vs_pt_burst_scatter.tif'])
-% 
-% swap_pd_scatter = figure;
-% hold on
-% scatter(mf_protein_vec(analysis_ft),swap_protein_vec(analysis_ft)',20,'MarkerFaceColor',...
-%     [.6 .6 .6],'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',0);
-% plot(mf_index,pd_burst_swap,'Color',hm_cm(15,:),'LineWidth',1.5)
-% grid on
-% xlabel('average Dl concentration')
-% ylabel('protein burst size (swap control)')
-% legend('raw data','trend')
-% set(gca,'Fontsize',14)
-% xlim([100 300])
-% ylim([-50 50])
-% saveas(swap_pd_scatter,[figPath 'swap_mf_vs_pt_burst_scatter.tif'])
-% 
-% trend_comp_fig = figure;
-% hold on
-% plot(mf_index,pd_burst_locus,'Color',hm_cm(end,:),'LineWidth',1.5)
-% plot(mf_index,pd_burst_swap,'Color',hm_cm(15,:),'LineWidth',1.5)
-% grid on
-% xlabel('average Dl concentration')
-% ylabel('protein burst size (swap control)')
-% legend('trend (locus)','trend (control)', 'Location','northwest')
-% set(gca,'Fontsize',14)
-% xlim([100 300])
-% ylim([-5 20])
-% saveas(trend_comp_fig,[figPath 'mf_vs_pt_burst_trends.tif'])
+% close all
+mf_index = 100:2:300;%linspace(prctile(mf_protein_vec(analysis_ft),5),prctile(mf_protein_vec(analysis_ft),95));
+pt_burst_index = -50:1.5:100;%linspace(prctile(locus_protein_vec(analysis_ft),5),prctile(locus_protein_vec(analysis_ft),99));
+
+mf1 = mf_protein_vec(analysis_ft).^1;
+mf2 = mf_protein_vec(analysis_ft).^2;
+mf3 = mf_protein_vec(analysis_ft).^3;
+X = [mf1' mf2' mf3'];
+% fit to locus burst size
+mdl_locus = fitlm(X,locus_protein_vec(analysis_ft));
+mdl_swap = fitlm(X,swap_protein_vec(analysis_ft));
+
+% generate predicted trends
+pd_burst_locus = predict(mdl_locus,[mf_index' (mf_index.^2)' (mf_index.^3)']);
+pd_burst_swap = predict(mdl_swap,[mf_index' (mf_index.^2)' (mf_index.^3)']);
+
+% make figures
+locus_pd_scatter = figure;
+hold on
+scatter(mf_protein_vec(analysis_ft),locus_protein_vec(analysis_ft)',20,'MarkerFaceColor',...
+    [.6 .6 .6],'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',0);
+plot(mf_index,pd_burst_locus,'Color',hm_cm(end,:),'LineWidth',1.5)
+grid on
+xlabel('average Dl concentration')
+ylabel('protein burst size (locus)')
+legend('raw data','trend')
+set(gca,'Fontsize',14)
+xlim([100 300])
+ylim([-50 50])
+saveas(locus_pd_scatter,[figPath 'locus_mf_vs_pt_burst_scatter.tif'])
+
+swap_pd_scatter = figure;
+hold on
+scatter(mf_protein_vec(analysis_ft),swap_protein_vec(analysis_ft)',20,'MarkerFaceColor',...
+    [.6 .6 .6],'MarkerFaceAlpha',.2,'MarkerEdgeAlpha',0);
+plot(mf_index,pd_burst_swap,'Color',hm_cm(15,:),'LineWidth',1.5)
+grid on
+xlabel('average Dl concentration')
+ylabel('protein burst size (swap control)')
+legend('raw data','trend')
+set(gca,'Fontsize',14)
+xlim([100 300])
+ylim([-50 50])
+saveas(swap_pd_scatter,[figPath 'swap_mf_vs_pt_burst_scatter.tif'])
+
+trend_comp_fig = figure;
+hold on
+plot(mf_index,pd_burst_locus,'Color',hm_cm(end,:),'LineWidth',1.5)
+plot(mf_index,pd_burst_swap,'Color',hm_cm(15,:),'LineWidth',1.5)
+grid on
+xlabel('average Dl concentration')
+ylabel('protein burst size (swap control)')
+legend('trend (locus)','trend (control)', 'Location','northwest')
+set(gca,'Fontsize',14)
+xlim([100 300])
+ylim([-5 20])
+saveas(trend_comp_fig,[figPath 'mf_vs_pt_burst_trends.tif'])
 
 
 

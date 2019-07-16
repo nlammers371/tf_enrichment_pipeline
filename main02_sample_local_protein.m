@@ -33,7 +33,7 @@ segmentNuclei = 0;
 % numWorkers = 4;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 
 for i = 1:(numel(varargin)-1)  
