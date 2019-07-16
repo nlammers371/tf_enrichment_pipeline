@@ -76,7 +76,7 @@ while ~exit_flag
         x_origin = qc_spot.x_origin;
         y_origin = qc_spot.y_origin;
         
-        qc_fig = figure;%('Position',[0 0 512 512]);                 
+        qc_fig = figure(1);%('Position',[0 0 512 512]);                 
 %         subplot(1,2,1)
         imshow(imadjust(mat2gray(qc_spot.mcp_snip)),'InitialMagnification','fit');                        
         hold on
@@ -117,6 +117,7 @@ while ~exit_flag
 %     close all
     if exit_flag
         disp('Exiting')
+        close all
         break
     end
 end

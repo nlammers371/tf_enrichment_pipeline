@@ -12,9 +12,8 @@ Colormap_plot = jet(128); %specifies the colomap used to make plots/graphs
 Colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
 relEnrich_ub = 1.3; %upper bound of relative enrichment for consistency
 relEnrich_lb = 0.85; %lower bound of relative enrichment for consistency
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
 figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\'];
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'dropboxFolder')        
@@ -93,7 +92,7 @@ delta_dist_ste = nanstd(delta_dist_mat,[],2);
 
 null_dist_mean = nanmean(null_dist_mat,2);
 
-% make dist-dependent fold enrichment figure and select distance threshold
+%% make dist-dependent fold enrichment figure and select distance threshold
 pass = 0;
 while ~pass
     delta_dist_fig = figure;
@@ -186,6 +185,16 @@ rel_protein_snip_mean_title = ['Relative ' protein_name '-' protein_fluor ' Enri
 rel_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' fold enrichment'];
 makeHeatmapPlots(rel_protein_snip_mean, rel_protein_snip_mean_title, rel_protein_snip_mean_ylabel, '_mean_pt_snippet_rel',...
     xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,relEnrich_lb,relEnrich_ub)
+
+% Make absolute diff image
+absDiff_protein_snip_mean = (spot_protein_snip_mean) - null_protein_snip_mean;
+sumEnrichedProtein = sum(sum(absDiff_protein_snip_mean));
+disp(['Total additional protein (au) at locus (sum of all pixels of absolute different between spot and null snips)' num2str(sumEnrichedProtein)])
+% caxis([lb ub])
+absDiff_protein_snip_mean_title = ['Absolute Difference ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
+absDiff_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' fold enrichment'];
+makeHeatmapPlots(absDiff_protein_snip_mean, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_ylabel, '_mean_pt_snippet_absDiff',...
+    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,0,inf)
 
 
 null_mean_fluo = nanmean(null_mcp_snips_mixed,3);
@@ -300,7 +309,7 @@ xlabel('minutes')
 xlim([6 60])
 saveas(null_time_fig, [figPath write_string '_temporal_background_w_fluo.png'])
 
-
+%%
 %%%%%%%%%%% Is trend a function of time or protein concentration? %%%%%%%%%
 prctile_vec = [0 20 40 60 80 100];
 mf_prctile_vec = NaN(size(prctile_vec));
