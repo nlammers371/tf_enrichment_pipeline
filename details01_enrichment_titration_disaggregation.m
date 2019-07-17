@@ -34,11 +34,11 @@ saveas(aggregate_hist,[figPath 'aggregate_event_hist.tif'])
 
 % break down by time and by protein concentration
 t_window = 5;
-time_bins = (10:1:60)-5;
+time_bins = (10:2:60)-5;
 mf_bins = linspace(prctile(null_protein_vec,5),prctile(null_protein_vec,95),numel(time_bins));
 mf_window = median(diff(mf_bins)) * 5;
 % initialize arrays
-e_bins = linspace(-200,600,50);
+e_bins = linspace(-200,600,numel(time_bins));
 mf_dist_array = zeros(numel(time_bins), numel(e_bins)-1);
 time_dist_array = zeros(numel(time_bins), numel(e_bins)-1);
 mf_vs_time_array = NaN(numel(time_bins),numel(mf_bins));
@@ -71,13 +71,13 @@ hm_cm1 = flipud(brewermap([],'RdYlBu'));
 colormap(hm_cm1)
 imagesc(time_dist_array);
 xlabel('Dl enrichment at{\it sna} locus (au)')
-set(gca,'xtick',5:10:45,'xticklabels',round(e_bins(5:10:45)/5)*5)
+set(gca,'xtick',1:5:26,'xticklabels',round(e_bins(1:5:26)/5)*5)
 ylabel('time (min)')
-set(gca,'ytick',(5:10:45)+1,'yticklabels',time_bins(1+(5:10:45)))
+set(gca,'ytick',(1:5:26),'yticklabels',time_bins((1:5:26)))
 h = colorbar;
 ylabel(h, 'share')
 set(gca,'FontSize', 12);
-caxis([0 .1])
+caxis([0 .175])
 saveas(time_dist_hm,[figPath 'time_event_heatmap.tif'])
 
 mf_dist_hm = figure;
@@ -85,17 +85,17 @@ hm_cm1 = flipud(brewermap([],'RdYlBu'));
 colormap(hm_cm1)
 imagesc(mf_dist_array);
 xlabel('Dl enrichment at{\it sna} locus (au)')
-set(gca,'xtick',5:10:45,'xticklabels',round(e_bins(5:10:45)/5)*5)
+set(gca,'xtick',1:5:26,'xticklabels',round(e_bins(1:5:26)/5)*5)
 ylabel('background Dl concentration (au)')
-set(gca,'ytick',5:10:45,'yticklabels',round(mf_bins(5:10:45)/5)*5)
+set(gca,'ytick',1:5:26,'yticklabels',round(mf_bins(1:5:26)/5)*5)
 h = colorbar;
 ylabel(h, 'share')
 set(gca,'FontSize', 12);
-caxis([0 .1])
+caxis([0 .175])
 saveas(mf_dist_hm,[figPath 'mf_event_heatmap.tif'])
 
 pt_array = mf_vs_time_array;
-
+%%
 mf_vs_time_hm = figure;
 hm_cm2 = flipud(brewermap([],'RdBu'));
 colormap(hm_cm1)
@@ -103,8 +103,8 @@ p = imagesc(pt_array');
 p.AlphaData = .2+(ct_array'>25);
 xlabel('time (min)')
 ylabel('background Dl concentration (au)')
-set(gca,'ytick',5:10:45,'yticklabels',round(mf_bins(5:10:45)/5)*5)
-set(gca,'xtick',(5:10:45)+1,'xticklabels',time_bins(1+(5:10:45)))
+set(gca,'ytick',1:5:26,'yticklabels',round(mf_bins(1:5:26)/5)*5)
+set(gca,'xtick',(1:5:26),'xticklabels',time_bins((1:5:26)))
 h = colorbar;
 ylabel(h, 'Dl enrichment at{\it sna} locus')
 set(gca,'FontSize', 12);

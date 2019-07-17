@@ -169,33 +169,41 @@ legend([p1 p2 p3 p4 p5],'snail transcription','control 1 (virtual spot)',...
 
 set(gca,'Fontsize',12,'xtick',-4:2:4)
 % save
-saveas(burst_trend_fig,[figPath 'locus_trend_w_controls.tif'])
-saveas(burst_trend_fig,[figPath 'locus_trend_w_controls.pdf'])
+saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.tif'])
+saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.pdf'])
 %%
 % (3) Make violin plots of preceding - succeeding 2 minutes
 before_ids = time_axis < 0 & time_axis >=-2;
 after_ids = time_axis > 0 & time_axis <=2;
 % generate difference vectors
-burst_rise_spot_diff = nanmean(spot_array_dt(burst_ft_primary,after_ids),2)-nanmean(spot_array_dt(burst_ft_primary,before_ids),2);
-burst_rise_swap_diff = nanmean(swap_array_dt(burst_ft_primary,after_ids),2)-nanmean(swap_array_dt(burst_ft_primary,before_ids),2);
-burst_rise_virt_diff = nanmean(virtual_array_dt(burst_ft_primary,after_ids),2)-nanmean(virtual_array_dt(burst_ft_primary,before_ids),2);
-burst_rise_bio_diff = nanmean(biocontrol_array_dt(burst_ft_control,after_ids),2)...
-            -nanmean(biocontrol_array_dt(burst_ft_control,before_ids),2);
-% generate reference distributions
-shuffle_vec = sign(rand(size(burst_rise_virt_diff)) - .5);
-% test hypothesis that before is differenta than after (using
+burst_rise_spot_after = nanmean(spot_array_dt(burst_ft_primary,after_ids),2);
+burst_rise_spot_before = nanmean(spot_array_dt(burst_ft_primary,before_ids),2);
+
+burst_rise_swap_after = nanmean(swap_array_dt(burst_ft_primary,after_ids),2);
+burst_rise_swap_before = nanmean(swap_array_dt(burst_ft_primary,before_ids),2);
+
+burst_rise_virt_after = nanmean(virtual_array_dt(burst_ft_primary,after_ids),2);
+burst_rise_virt_before = nanmean(virtual_array_dt(burst_ft_primary,before_ids),2);
+
+burst_rise_bio_after = nanmean(biocontrol_array_dt(burst_ft_control,after_ids),2);
+burst_rise_bio_before = nanmean(biocontrol_array_dt(burst_ft_control,before_ids),2);
+
 % Kolmogorov–Smirnov test)
-rng(123) % for reproducibility
-[~, p_virt] = kstest2(burst_rise_virt_diff,burst_rise_virt_diff.*shuffle_vec)
-[~, p_swap] = kstest2(burst_rise_swap_diff,burst_rise_swap_diff.*shuffle_vec)
-[~, p_bio] = kstest2(burst_rise_bio_diff,burst_rise_bio_diff.*shuffle_vec)
-[~, p_spot] = kstest2(burst_rise_spot_diff,burst_rise_spot_diff.*shuffle_vec)
-% make figure
-violin_fig = figure;
-[~,L,MX,MED,bw]=violin([burst_rise_virt_diff burst_rise_swap_diff burst_rise_spot_diff],...
-    'facecolor',[cmap1(3,:);cmap1(5,:);cmap1(2,:)]);
+[~, p_virt] = kstest2(burst_rise_virt_before,burst_rise_virt_after)
+[~, p_swap] = kstest2(burst_rise_swap_before,burst_rise_swap_after)
+[~, p_bio] = kstest2(burst_rise_bio_before,burst_rise_bio_after)
+[~, p_spot] = kstest2(burst_rise_spot_before,burst_rise_spot_after)
+%%
+bar_array = [nanmean(burst_rise_spot_after), nanmean(burst_rise_spot_after);
+             nanmeanburst_rise_swap_after), nanmean(burst_rise_swap_after);
+             burst_rise_virt_after, burst_rise_virt_after;
+             burst_rise_bio_after, burst_rise_bio_after];
+         
+bar(bar_array)         
+%%
 ylim([-200 300])
-set(gca,'xtick',1:3,'xticklabel',{'virtual spot','nearest neighbor','target locus'});
+set(gca,'xtick',1:4,'xticklabel',{'virtual spot','nearest neighbor','biological control','target locus'});
+xtickangle(30)
 ylabel('relative Dorsal enrichment')
 set(gca,'Fontsize',12)
 grid on

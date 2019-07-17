@@ -380,8 +380,8 @@ for i = 1:size(set_frame_array,1)
         int_id = spot_roi_frame(y_spot,x_spot);        
         % regardless of qc issues filtered fpor later on, take pt samples
         % in vicinity of spot       
-        spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame)) / voxel_size;
-        spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame)) / voxel_size;            
+        spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame));% / voxel_size;
+        spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));% / voxel_size;            
         % volume protein sampling 
         sample_box = NaN(2*xy_vol_dim+1,2*xy_vol_dim+1,2*z_vol_dim+1);
         xv_range_full = x_spot - xy_vol_dim:x_spot + xy_vol_dim;
@@ -395,7 +395,7 @@ for i = 1:size(set_frame_array,1)
             ismember(zv_range_full,zv_range)) = protein_stack(yv_range,xv_range,zv_range);
         vol_pt_spot = sample_box.*vol_box_bin;
         vol_denominator = ~isnan(sample_box).*vol_box_bin;
-        spot_protein_vec_3d(j) = nansum(vol_pt_spot(:)) / sum(vol_denominator(:)) / voxel_size; 
+        spot_protein_vec_3d(j) = nanmean(vol_pt_spot(:));% / sum(vol_denominator(:)) / voxel_size; 
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            
@@ -423,8 +423,8 @@ for i = 1:size(set_frame_array,1)
        
         % Take average across all pixels in nucleus mask
 %         mf_filter = spot_sep_vec >= minSampleSep & abs(nc_edge_dist_vec-spot_edge_dist) <= mfTolerance;                    
-        mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask)) / voxel_size;
-        mf_null_mcp_vec(j) = nanmean(mcp_frame(spot_nc_mask)) / voxel_size;
+        mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask));% / voxel_size;
+        mf_null_mcp_vec(j) = nanmean(mcp_frame(spot_nc_mask));% / voxel_size;
         
         % Edge sampling 
         spot_edge_dist = nc_dist_frame(y_spot,x_spot);        
@@ -476,8 +476,8 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame = zeros(size(protein_frame));
             null_dist_frame(yc,xc) = 1;
             null_dist_frame = bwdist(null_dist_frame);
-            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix)) / voxel_size;
-            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix)) / voxel_size;
+            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
+            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
             % draw snips      
             x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
             y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
@@ -559,8 +559,8 @@ for i = 1:size(set_frame_array,1)
         % samples below default to NaN if no sample taken
         % sample protein
         serial_qc_flag_vec(j) = ~isnan(xc);
-        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix)) / voxel_size;
-        serial_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix)) / voxel_size;
+        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
+        serial_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
         % record
         serial_null_x_vec(j) = xc;
         serial_null_y_vec(j) = yc;
@@ -578,7 +578,7 @@ for i = 1:size(set_frame_array,1)
             ismember(zv_range_full,zv_range)) = protein_stack(yv_range,xv_range,zv_range);
         vol_pt_null = sample_box.*vol_box_bin;
         vol_denominator = ~isnan(sample_box).*vol_box_bin;
-        serial_null_protein_vec_3d(j) = nansum(vol_pt_null(:)) / sum(vol_denominator(:)) / voxel_size;                 
+        serial_null_protein_vec_3d(j) = nanmean(vol_pt_null(:));% / sum(vol_denominator(:)) / voxel_size;                 
         % check for presence of sister spot
         x_spot_sister = NaN;
         y_spot_sister = NaN;

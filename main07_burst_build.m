@@ -236,7 +236,7 @@ for j = 1:numel(hmm_input_output)
             hmm_array(iter,ft1) = hmm_fragment;
             swap_hmm_array_dt(iter,ft1) = swap_hmm_fragment;
             % save other info
-            mf_protein_vec(iter) = nanmean(virtual_fragment_dt);
+            mf_protein_vec(iter) = nanmean(mf_fragment);
             particle_id_vec(iter) = ParticleID;
             center_time_vec(iter) = time(id);
             lag_dur_vec(iter) = z_dur_lag_vec_full(id);
