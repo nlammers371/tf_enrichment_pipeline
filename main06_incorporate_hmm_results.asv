@@ -219,9 +219,31 @@ for i = 1:numel(hmm_input_output)
     % within 5 min of locus trace
     setID = set_vec(i);  
     option_filter = ((start_time_vec-start_time_vec(i)) <= 3*60) & ...
-        ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;        
+        ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;
+    %%% MF nearest neighbor
+    mf_i = mf_array(:,i);       
+    dt_mf_vec = nanmean(abs(mf_array-mf_i));   
+    % filter out innappropriate matches
+    dt_mf_vec(~option_filter) = NaN;
+    dt_mf_vec(i) = NaN;
+    [~, best_ind_mf] = nanmin(dt_mf_vec);
+    % record vales 
+    time_swap = hmm_input_output(best_ind_mf).time;  
+    time_i = hmm_input_output(i).time; 
+    % fill
+    swap_ft = ismember(time_swap,time_i);
+    target_ft = ismember(time_i,time_swap);
+    s_pt_mf = NaN(size(time_i));
+    s_pt_mf(target_ft) = hmm_input_output(best_ind_mf).spot_protein(swap_ft);
+    mf_pt_mf = NaN(size(time_i));
+    mf_pt_mf(target_ft) = hmm_input_output(best_ind_mf).mf_protein(swap_ft);
+    r_fluo_mf = NaN(size(time_i));
+    r_fluo_mf(target_ft) = hmm_input_output(best_ind_mf).r_vec(swap_ft);
+    dt_filter_mf = true(size(time_i));
+    dt_filter_mf(target_ft) = hmm_input_output(best_ind_mf).dt_filter_gap(swap_ft);
     
-    %%% Spatial Nearest Neighbor   
+    %%% Spatial Nearest Neighbor
+    %%% MF nearest neighbor
     dist_vec = dist_mat_r(i,:);               
     dist_vec(~option_filter) = NaN;
     dist_vec(i) = NaN;
@@ -240,6 +262,12 @@ for i = 1:numel(hmm_input_output)
     dt_filter_dist = true(size(time_i));
     dt_filter_dist(target_ft) = hmm_input_output(best_ind_dist).dt_filter_gap(swap_ft);
     
+    % record mf
+    hmm_input_output(i).mf_swap_ind = best_ind_mf;
+    hmm_input_output(i).mf_swap_spot_protein = s_pt_mf;
+    hmm_input_output(i).mf_swap_mf_protein = mf_pt_mf;
+    hmm_input_output(i).mf_swap_hmm = r_fluo_mf;
+    hmm_input_output(i).mf_swap_dt_filter_gap = dt_filter_mf;
     % record dist
     hmm_input_output(i).nn_best_r = best_r;
     hmm_input_output(i).dist_swap_ind = best_ind_dist;
