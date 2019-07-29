@@ -1,4 +1,4 @@
-% main05_conduct_hmm_inference(project,varargin)
+% hmmm02_conduct_hmm_inference(project, modelPath, w)
 %
 % DESCRIPTION
 % Script to conduct HMM inference
@@ -142,22 +142,20 @@ elseif time_bin_flag
 end
 
 %%% Conduct Inference
-
-% iterate through designated groups
+% structure array to store the analysis data  
 for t = 1:length(iter_list)
+%     iter_bin = iter_list(t);     
     iter_filter = iter_ref_index == t;
     for b = 1:nBoots
         iter_start = now;
         local_struct = struct;    
         output = struct;
-        
         % Use current time as unique inference identifier 
         inference_id = num2str(round(10e5*now));
 
         % Generate filenames            
         fName_sub = ['hmm_results_t' inference_id '.mat'];                
         out_file = [outDir '/' fName_sub];  
-        
         % Extract fluo_data        
         inference_set = trace_struct_filtered(iter_filter);        
         skip_flag = 0;
@@ -235,10 +233,11 @@ for t = 1:length(iter_list)
                 local_struct(i_local).r = exp(local_out.v_logs).*local_out.v_signs / Tres;                                
                 local_struct(i_local).noise = 1/exp(local_out.lambda_log);
                 local_struct(i_local).pi0 = exp(local_out.pi0_log);
+%                         local_struct(i_local).total_time = local_out.runtime;
                 local_struct(i_local).total_steps = local_out.n_iter;               
                 local_struct(i_local).soft_struct = local_out.soft_struct;               
             end
-            [~, max_index] = max([local_struct.logL]); % Get index of best result                    
+            [logL, max_index] = max([local_struct.logL]); % Get index of best result                    
             % Save parameters from most likely local run
             output.pi0 =local_struct(max_index).pi0;                        
             output.r = local_struct(max_index).r(:);          
@@ -250,11 +249,10 @@ for t = 1:length(iter_list)
             % Info about run time
             output.total_steps = local_struct(max_index).total_steps;                                  
             output.total_time = 100000*(now - iter_start);            
-            % other inference characteristics            
-            output.time_bin_flag = time_bin_flag;
+            % other inference characteristics
+            output.t_window = tWindow;
             if time_bin_flag
                 output.t_inf = t_inf;
-                output.t_window = tWindow;
             end
             output.protein_bin_flag = protein_bin_flag;
             if protein_bin_flag
@@ -271,7 +269,6 @@ for t = 1:length(iter_list)
             output.w = w;
             output.alpha = alpha;
             output.deltaT = Tres; 
-            
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;

@@ -21,11 +21,9 @@ roi_window = 6;
 window_size = 15;
 start = window_size + 2;
 % extract roi_vectors from wapo and locus arrays
-locus_protein_vec = nanmean(results_struct.spot_array(:,start:start + roi_window),2);
-swap_protein_vec = nanmean(results_struct.swap_array(:,start:start + roi_window),2);
+locus_protein_vec = nanmean(results_struct.spot_array_dt(:,start:start + roi_window),2);
+swap_protein_vec = nanmean(results_struct.swap_array_dt(:,start:start + roi_window),2);
 mf_protein_vec = nanmean(results_struct.mf_array(:,start:start + roi_window),2);
-hmm_curr_vec = nanmean(results_struct.hmm_array(:,start:start + roi_window),2);
-hmm_prev_vec = nanmean(results_struct.hmm_array(:,start -1 - roi_window:start),2);
 % pull other trend vectors
 feature_sign_vec = results_struct.feature_sign_vec';
 lag_size_vec = results_struct.lag_size_vec';

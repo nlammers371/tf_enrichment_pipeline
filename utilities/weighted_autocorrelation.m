@@ -1,5 +1,6 @@
 %Create Weighted Average Autocorrelation
-function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = weighted_autocorrelation(traces, lags, bootstrap,n_boots,trace_weights)
+function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = ...
+    weighted_autocorrelation(traces, lags, bootstrap,n_boots,trace_weights)
     %traces: array of traces with zeros preceeding and succeeding period of
     %        activity. Oriented column-wise
     %lags: num lags to use
@@ -31,18 +32,15 @@ function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = weighted_autocorr
             if sum(isnan(trace)) > 0 
                 error('Problem with NaN filtering');
             end            
-            %Isolate active portion
-%             trace
-%             find(trace,1)
-%             find(trace,1,'last')
             trace_active = trace(find(trace,1):find(trace,1,'last'));
             if length(trace_active) < lags + 1
-                warning('Length of input trace insufficient for specified number of lags')
+%                 warning('Length of input trace insufficient for specified number of lags')
                 t_lags = length(trace_active) - 1;
             else
                 t_lags = lags;
-            end            
-            auto_array(1:t_lags+1,col) = autocorr(trace_active,t_lags);
+            end       
+            xcv = xcov(trace_active,t_lags,'Normalized');
+            auto_array(1:t_lags+1,col) = xcv(t_lags+1:end);
             time_steps(1:t_lags+1,col) = fliplr((length(trace_active)-t_lags):length(trace_active));
         end
         %Take weighted mean. Traces with length < lags should just not be
