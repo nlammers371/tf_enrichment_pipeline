@@ -142,6 +142,7 @@ lead_dur_vec = NaN(1,n_entries);
 lag_size_vec = NaN(1,n_entries);
 lead_size_vec = NaN(1,n_entries);
 feature_sign_vec = NaN(1,n_entries);
+prev_burst_dist_vec = NaN(1,n_entries);
 % iterate through structure
 iter = 1;                    
 for j = 1:numel(hmm_input_output)
@@ -155,7 +156,8 @@ for j = 1:numel(hmm_input_output)
     z_dur_lead_vec_full = hmm_input_output(j).z_dur_lead_vec;  
     sz_lag_vec_full = hmm_input_output(j).sz_lag_vec;            
     sz_lead_vec_full = hmm_input_output(j).sz_lead_vec;
-    z_diff_vec = hmm_input_output(j).z_diff_vec;      
+    z_diff_vec = hmm_input_output(j).z_diff_vec;  
+    z_burst_dist_vec = hmm_input_output(j).z_burst_dist_vec;
     % activity
     fluo = hmm_input_output(j).fluo;
     swap_r_vec = hmm_input_output(j).dist_swap_hmm;
@@ -184,14 +186,13 @@ for j = 1:numel(hmm_input_output)
         true_range = full_range(full_range>0&full_range<=numel(virtual_protein_dt));
         % record
         ft1 = ismember(full_range,true_range);
-        ft2 = ~isnan(spot_protein_dt(true_range)) & ~isnan(swap_spot_protein_dt(true_range))...
-            &~isnan(virtual_protein_dt(true_range));
+        ft2 = ~isnan(spot_protein_dt(true_range)) & ~isnan(swap_spot_protein_dt(true_range))&~isnan(virtual_protein_dt(true_range));
         % qc check
         if sum(ft2) >= window_size
             % extract rde-trended fragments 
-            spot_fragment_dt = spot_protein_dt(true_range);
-            swap_fragment_dt = swap_spot_protein_dt(true_range);
-            virtual_fragment_dt = virtual_protein_dt(true_range);
+            spot_fragment_dt = spot_protein_dt(true_range);% - nanmean(spot_protein(true_range));
+            swap_fragment_dt = swap_spot_protein_dt(true_range);% - nanmean(swap_spot_protein(true_range));
+            virtual_fragment_dt = virtual_protein_dt(true_range);% - nanmean(virtual_protein(true_range));
             % de-mean raw protein fragments
             spot_fragment_dm = spot_protein_raw(true_range) - nanmean(spot_protein_raw(true_range));
             swap_fragment_dm = swap_spot_protein_raw(true_range) - nanmean(swap_spot_protein_raw(true_range));
@@ -221,7 +222,8 @@ for j = 1:numel(hmm_input_output)
             lag_dur_vec(iter) = z_dur_lag_vec_full(id);
             lead_dur_vec(iter) = z_dur_lead_vec_full(id);
             lag_size_vec(iter) = sz_lag_vec_full(id);
-            lead_size_vec(iter) = sz_lead_vec_full(id);            
+            lead_size_vec(iter) = sz_lead_vec_full(id);
+            prev_burst_dist_vec(iter) = z_burst_dist_vec(id);
             feature_sign_vec(iter) = sign(z_diff_vec(id));
         end
         % increment
@@ -254,5 +256,6 @@ results_struct.lead_dur_vec = lead_dur_vec;
 results_struct.lag_size_vec = lag_size_vec;
 results_struct.lead_size_vec = lead_size_vec;
 results_struct.feature_sign_vec = feature_sign_vec;
+results_struct.prev_burst_dist = prev_burst_dist_vec;
 % save
 save([dataPath 'hmm_input_output_results.mat'],'results_struct')
