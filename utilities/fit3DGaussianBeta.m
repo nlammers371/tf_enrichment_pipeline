@@ -16,7 +16,7 @@
 %        (8-10) y,x,and z sigma covariance coefficients
 %        (11) inferred background offset
 
-function GaussFit = fit3DGaussianBeta(snip3D,varargin)
+function [GaussFit, totalVol] = fit3DGaussianBeta(snip3D,varargin)
 
 % define initial parameters
 xDim = size(snip3D,1);
@@ -59,8 +59,10 @@ single3DGaussian = @(params) params(1).*...
     exp(-.5*reshape(sum(reshape(sum(xyz_array(params).*cov_array(params),1),3,1,[]).*...
     xyz_vec(params),1),size(mesh_x,1),size(mesh_x,2),size(mesh_x,3)));
 
-% snip3D = single3DGaussian(test_parameters) + initial_parameters(end) + rand(size(snip3D))/50;
 % define objective function
 single3DObjective = @(params) single3DGaussian(params) + params(11) - double(snip3D);     
 % attempt to fit
 GaussFit = lsqnonlin(single3DObjective,initial_parameters,lb_vec,ub_vec);
+
+% total fluorescence
+totalVol = GaussFit(1) * sqrt((2*pi)^3 * det(cov_mat(GaussFit)));
