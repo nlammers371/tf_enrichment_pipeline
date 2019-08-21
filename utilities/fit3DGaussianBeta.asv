@@ -16,9 +16,9 @@
 %        (8-10) y,x,and z sigma covariance coefficients
 %        (11) inferred background offset
 
-% totalFluo: Estimate of total fluorescence using fit parameters
+% totalFluo: 
 
-function [GaussFit, totalFluo] = fit3DGaussianBeta(snip3D,varargin)
+function [GaussFit, totalVol] = fit3DGaussianBeta(snip3D,varargin)
 
 % define initial parameters
 xDim = size(snip3D,1);
@@ -67,4 +67,4 @@ single3DObjective = @(params) single3DGaussian(params) + params(11) - double(sni
 GaussFit = lsqnonlin(single3DObjective,initial_parameters,lb_vec,ub_vec);
 
 % total fluorescence
-totalFluo = GaussFit(1) * sqrt((2*pi)^3 * det(cov_mat(GaussFit)));
+totalVol = GaussFit(1) * sqrt((2*pi)^3 * det(cov_mat(GaussFit)));
