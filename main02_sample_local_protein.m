@@ -178,7 +178,7 @@ qc_structure = struct;
 xDim = nucleus_struct(1).xDim;
 yDim = nucleus_struct(1).yDim;
 zDim = nucleus_struct(1).zDim;
-[x_ref,y_ref,z_ref] = meshgrid(1:xDim,1:yDim,1:zDim);
+[x_ref,y_ref,~] = meshgrid(1:xDim,1:yDim,1:zDim);
 % first check to see if segmentation files exist
 segment_indices = 1:size(set_frame_array,1);
 spot_frame_vec = false(1,size(set_frame_array,1));
