@@ -11,7 +11,7 @@
 
 function nucleus_struct = hmmm01_interpolate_data(project,varargin)
 
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 for i = 1:numel(varargin)
     if strcmpi(varargin{i},'dropboxFolder')
