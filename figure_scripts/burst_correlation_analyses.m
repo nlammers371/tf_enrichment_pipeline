@@ -8,7 +8,7 @@ project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_hbP2P-mCh';
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\burst_correlation_figs\'];
+figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\_paper_figures\input_output02\'];
 mkdir(figPath)
 % load data
 load([dataPath 'hmm_input_output_results.mat'])
@@ -21,7 +21,7 @@ roi_window = 6; % in time steps
 window_size = 15;
 start = window_size + 2;
 
-% extract roi_vectors from wapo and locus arrays
+% extract roi_vectors from swap and locus arrays
 spot_protein_vec = nanmean(results_struct.spot_array_dt(:,start:start + roi_window-1),2) - ...
     nanmean(results_struct.spot_array_dt(:,start-roi_window-1:start-2),2);
 swap_protein_vec = nanmean(results_struct.swap_array_dt(:,start:start + roi_window-1),2) - ...

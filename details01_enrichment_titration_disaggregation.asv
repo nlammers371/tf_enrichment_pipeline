@@ -11,8 +11,9 @@ figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\enrichment_disaggre
 mkdir(figPath)
 % load data
 load([dataPath 'nucleus_struct_protein.mat'])
-%%
-tic
+
+
+
 %%% Examine distribution of enrichment event sizes
 DistLim = .8;
 PixelSize = nucleus_struct_protein(1).PixelSize;
@@ -49,13 +50,13 @@ for t = 1:numel(time_bins)
     % generate time counts
     t_center = time_bins(t);
     t_ft = time_vec/60 >= t_center - t_window & time_vec/60 < t_center + t_window;
-    t_ct = histcounts(enrichment_vec(dist_filter & t_ft),e_bins,'Normalization','probability');
-    time_dist_array(t,:) = t_ct;
-    % generate mf counts
-    mf_center = mf_bins(t);
-    mf_ft = null_protein_vec >= mf_center - mf_window & null_protein_vec < mf_center + mf_window;
-    mf_ct = histcounts(enrichment_vec(dist_filter & mf_ft),e_bins,'Normalization','probability');
-    mf_dist_array(t,:) = mf_ct;    
+%     t_ct = histcounts(enrichment_vec(dist_filter & t_ft),e_bins,'Normalization','probability');
+%     time_dist_array(t,:) = t_ct;
+%     % generate mf counts
+%     mf_center = mf_bins(t);
+%     mf_ft = null_protein_vec >= mf_center - mf_window & null_protein_vec < mf_center + mf_window;
+%     mf_ct = histcounts(enrichment_vec(dist_filter & mf_ft),e_bins,'Normalization','probability');
+%     mf_dist_array(t,:) = mf_ct;    
     for m = 1:numel(mf_bins)
         mf_center = mf_bins(m);
         mf_ft = null_protein_vec >= mf_center - mf_window & null_protein_vec < mf_center + mf_window;
@@ -65,7 +66,7 @@ for t = 1:numel(time_bins)
     end
 end
 
-
+%%
 % make figures
 % time heatmap 
 time_dist_hm = figure;
@@ -112,4 +113,3 @@ ylabel(h, 'Dl enrichment at{\it sna} locus')
 set(gca,'FontSize', 12);
 caxis([60 180])
 saveas(mf_vs_time_hm,[figPath 'mf_vs_time_enrichment_heatmap.tif'])
-toc
