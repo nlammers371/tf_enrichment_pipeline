@@ -9,7 +9,7 @@ controlProject = 'Dl-Ven_hbP2P-mCh';
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPathTarget = [dropboxFolder 'ProcessedEnrichmentData\' targetProject '\'];
 dataPathControl = [dropboxFolder 'ProcessedEnrichmentData\' controlProject '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' targetProject '\input_output01\'];
+figPath = [dropboxFolder 'LocalEnrichmentFigures\' targetProject '\_paper_figures\input_output01\'];
 mkdir(figPath)
 
 % load data
@@ -43,7 +43,7 @@ nBoots = 100; % number of bootstrap samples to use
 min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
 
-%% (1) make basic input-output figure
+%%% (1) make basic input-output figure
 close all
 burst_rise_hmm_array = NaN(nBoots,n_col);
 burst_rise_spot_array = NaN(nBoots,n_col);
@@ -65,14 +65,14 @@ burst_rise_spot_ste = nanstd(burst_rise_spot_array);
 % calculate upper and lower bound vectors
 br_spot_ub = burst_rise_spot_mean + burst_rise_spot_ste;
 br_spot_lb = burst_rise_spot_mean - burst_rise_spot_ste;
-
+%%
 % make figure
 burst_trend_fig = figure;
 cmap1 = brewermap([],'Set2');
 
 % snail activity
 yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',[.6 .6 .6],'LineWidth',1.5,'FaceAlpha',.2);
+p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(6,:)/2,'LineWidth',1.5,'FaceAlpha',.2);
 ylabel('snail transcription (au)')
 set(gca,'ytick',.2:.1:1.2)
 ylim([.2 1.2])
@@ -172,7 +172,8 @@ legend([p1 p2 p3 p4 p5],'snail transcription','virtual spot',...
     'nearest neighbor','off-target ({\ithbP2P})','target ({\itsnail})',...
     'Location','northwest')
 set(gca,'Fontsize',12,'xtick',-4:2:4)
-uistack(p1,'bottom')
+chH = get(gca,'Children');
+set(gca,'Children',flipud(chH));
 % save
 saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.tif'])
 saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.pdf'])
@@ -191,7 +192,7 @@ ax.YColor = 'black';
 yyaxis left
 hold on
 % swap control
-fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.3,'EdgeAlpha',0)
+fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',2);
 % locus
 fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
@@ -206,12 +207,13 @@ xlabel('offset (minutes)')
 legend([p1 p3 p5],'snail transcription','control','target locus',...
     'Location','northwest')
 set(gca,'Fontsize',12,'xtick',-4:2:4)
-uistack(p1,'bottom')
+chH = get(gca,'Children');
+set(gca,'Children',flipud(chH));
 % save
-saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.tif'])
-saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.pdf'])
-%%
-% (3) Make violin plots of preceding - succeeding 2 minutes
+saveas(burst_dt_fig,[figPath 'locus_trend_w_swap_control.tif'])
+saveas(burst_dt_fig,[figPath 'locus_trend_w_swap_control.pdf'])
+
+%%% (3) Make bar plots of preceding and succeeding 2 minutes
 before_ids = time_axis < 0 & time_axis >=-2;
 after_ids = time_axis > 0 & time_axis <=2;
 % generate difference vectors
@@ -236,9 +238,9 @@ burst_rise_bio_before = nanmean(biocontrol_array_dt(burst_ft_control,before_ids)
 bar_fig = figure;
 cmap2 = brewermap([],'Paired');
 colormap(cmap2);
-bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after);
-             nanmean(burst_rise_swap_before), nanmean(burst_rise_swap_after);
-             nanmean(burst_rise_virt_before), nanmean(burst_rise_virt_after);
+bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after)
+             nanmean(burst_rise_swap_before), nanmean(burst_rise_swap_after)
+             nanmean(burst_rise_virt_before), nanmean(burst_rise_virt_after)
              nanmean(burst_rise_bio_before), nanmean(burst_rise_bio_after)];
          
 b = bar(bar_array,'FaceColor','flat');
@@ -253,11 +255,3 @@ ylim([-8 14])
 grid on
 saveas(bar_fig,[figPath 'bar_plots.tif'])
 saveas(bar_fig,[figPath 'bar_plots.pdf'])
-%%
-ylim([-200 300])
-
-xtickangle(30)
-
-set(gca,'Fontsize',12)
-grid on
-

@@ -72,7 +72,7 @@ cmap1 = brewermap([],'Set2');
 
 % snail activity
 yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',[.6 .6 .6],'LineWidth',1.5,'FaceAlpha',.2);
+p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1.5,'FaceAlpha',.4);
 ylabel('snail transcription (au)')
 set(gca,'ytick',.2:.1:1.2)
 ylim([.2 1.2])
@@ -82,8 +82,8 @@ ax.YColor = 'black';
 % Dorsal activity
 yyaxis left
 hold on
-fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.2,'EdgeAlpha',0)
-p2 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',1.5);
+fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
 set(gca,'ytick',-20:4:20)
 ax = gca;
@@ -93,11 +93,13 @@ grid on
 xlabel('offset (minutes)')
 legend([p1 p2],'snail transcription','Dl concentration','Location','northwest')
 set(gca,'Fontsize',12,'xtick',-4:2:4)
+chH = get(gca,'Children');
+set(gca,'Children',flipud(chH));
 % save
 saveas(burst_trend_fig,[figPath 'de-meaned_locus_trend.tif'])
 saveas(burst_trend_fig,[figPath 'de-meaned_locus_trend.pdf'])
 
-%%% (2) make de-trended input-output figure with controls
+% (2) make de-trended input-output figure with controls
 
 burst_rise_spot_array_dt = NaN(nBoots,n_col);
 burst_rise_swap_array_dt = NaN(nBoots,n_col);
@@ -140,7 +142,7 @@ br_bio_lb = burst_rise_bio_mean - burst_rise_bio_ste;
 burst_dt_fig = figure;
 % snail activity
 yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',[.6 .6 .6],'LineWidth',1.5,'FaceAlpha',.2);
+p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1,'FaceAlpha',.25);
 ylabel('snail transcription (au)')
 set(gca,'ytick',.2:.1:1.2)
 ylim([.2 1.2])
@@ -150,14 +152,14 @@ ax.YColor = 'black';
 yyaxis left
 hold on
 % virtual control
-fill([time_axis fliplr(time_axis)],[br_virt_ub fliplr(br_virt_lb)],cmap1(3,:),'FaceAlpha',.3,'EdgeAlpha',0)
-p2 = plot(time_axis,burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+fill([time_axis fliplr(time_axis)],[br_virt_ub fliplr(br_virt_lb)],cmap1(3,:),'FaceAlpha',.15,'EdgeAlpha',0)
+p2 = plot(time_axis,burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',1.5);
 % swap control
-fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.3,'EdgeAlpha',0)
-p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',2);
+fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.15,'EdgeAlpha',0)
+p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',1.5);
 % biological control
-fill([time_axis fliplr(time_axis)],[br_bio_ub fliplr(br_bio_lb)],cmap1(end,:),'FaceAlpha',.3,'EdgeAlpha',0)
-p4 = plot(time_axis,burst_rise_bio_mean,'-','Color',cmap1(end,:),'LineWidth',2);
+fill([time_axis fliplr(time_axis)],[br_bio_ub fliplr(br_bio_lb)],cmap1(6,:),'FaceAlpha',.15,'EdgeAlpha',0)
+p4 = plot(time_axis,burst_rise_bio_mean,'-','Color',cmap1(6,:),'LineWidth',1.5);
 % locus
 fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
@@ -182,7 +184,7 @@ saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.pdf'])
 burst_dt_fig_swap = figure;
 % snail activity
 yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',[.6 .6 .6],'LineWidth',1.5,'FaceAlpha',.2);
+p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1.5,'FaceAlpha',.2);
 ylabel('snail transcription (au)')
 set(gca,'ytick',.2:.1:1.2)
 ylim([.2 1.2])
@@ -210,9 +212,9 @@ set(gca,'Fontsize',12,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
 % save
-saveas(burst_dt_fig,[figPath 'locus_trend_w_swap_control.tif'])
-saveas(burst_dt_fig,[figPath 'locus_trend_w_swap_control.pdf'])
-
+saveas(burst_dt_fig_swap,[figPath 'locus_trend_w_swap_control.tif'])
+saveas(burst_dt_fig_swap,[figPath 'locus_trend_w_swap_control.pdf'])
+%%
 %%% (3) Make bar plots of preceding and succeeding 2 minutes
 before_ids = time_axis < 0 & time_axis >=-2;
 after_ids = time_axis > 0 & time_axis <=2;
@@ -244,9 +246,9 @@ bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after)
              nanmean(burst_rise_bio_before), nanmean(burst_rise_bio_after)];
          
 b = bar(bar_array,'FaceColor','flat');
-b(1).CData = cmap1([2 5 3 64],:);
+b(1).CData = cmap1([2 5 3 6],:);
 b(1).FaceAlpha = .3;
-b(2).CData = cmap1([2 5 3 64],:)/1.2;
+b(2).CData = cmap1([2 5 3 6],:)/1.2;
 set(gca,'xtick',1:4,'xticklabel',{'target locus','nearest neighbor','virtual spot','biological control',});
 set(gca,'Fontsize',14)
 xtickangle(30)
