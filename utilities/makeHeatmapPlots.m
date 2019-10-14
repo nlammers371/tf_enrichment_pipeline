@@ -1,27 +1,25 @@
 %%%%%%% Nested function to make basic and PBoC-style heatmap plots %%%%%%%
-function makeHeatmapPlots(Data, Title, YLabel, FileName,xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
-    snippet_fig = figure;
+function heatmap_fig = makeHeatmapPlots(Image, VisibleOn, Title, CLabel,Colormap_heat,PixelSize,lb,ub)
+    if VisibleOn
+        heatmap_fig = figure;
+    else
+        heatmap_fig = figure('Visible','Off');
+    end
     colormap(Colormap_heat)
-    snippet_im = imagesc(Data);
+    snippet_im = imagesc(Image);
     title(Title)
-    snip_size = size(Data,1);
-    a = PixelSize;
-%     if contains(FileName, 'rel')
-%         caxis([relEnrich_lb relEnrich_ub])
-%     else
-%         caxis([lb ub])
-%     end
     caxis([lb ub])
-    h = colorbar;
-    ylabel('\mum','FontSize',12)
-    xlabel('\mum','FontSize',12)
-    ylabel(h,YLabel,'FontSize',12)
-    eval(xtick_string)
-    eval(ytick_string)
-    saveas(snippet_fig,[figPath write_string FileName '.png']);
+    c = colorbar;
+    c.Ticks = linspace(lb,ub,3);
+    ylabel('position (\mum)','FontSize',15)
+    xlabel('position (\mum)','FontSize',15)
+    ylabel(c,CLabel,'FontSize',15)
+    xy_lim = (size(Image,1) + 1) / 2 * PixelSize; % um, calculated with center of center pixel as 0 
+    set(gca,'xtick',([-1.0 0 1.0] + xy_lim) ./ PixelSize, ...
+            'xticklabel',[-1.0, 0, 1.0])
+    set(gca,'ytick',([-1.0 0 1.0] + xy_lim) ./ PixelSize, ...
+            'yticklabel',[-1.0, 0, 1.0])
 
     % make paper fig in PBoC style
-    snippet_ax = gca;
-    StandardFigurePBoC(snippet_im,snippet_ax);
-    saveas(snippet_fig, [paperFigPath write_string FileName '.pdf'])
+    StandardFigurePBoC(snippet_im,gca);
 end
