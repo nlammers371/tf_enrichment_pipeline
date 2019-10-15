@@ -7,7 +7,7 @@ addpath('utilities')
 project = 'Dl-Ven_snaBAC-mCh';
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\_paper_figures\input_output02\'];
+figPath = [dropboxFolder 'LocalEnrichmentFigures\_paper_figures\input_output02\'];
 mkdir(figPath)
 % load data
 load([dataPath 'hmm_input_output_results.mat'])
@@ -80,3 +80,53 @@ ylabel(h, 'sna activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
 saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.tif'])
 saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.pdf'])
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% RISE WATERFALLS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% protein waterfall
+inc = floor(128/numel(burst_range));
+pt_cm_rise = brewermap(128,'Reds');
+tr_cm_rise = brewermap(128,'Purples');
+burst_rise_dur_wt = figure;
+index_vec = 1:numel(burst_range);
+hold on
+for i = 1:numel(burst_range)
+    temp = burst_rise_dur_spot_mean;
+    temp(index_vec~=i,:) = NaN;
+    temp = temp(:,7:end-6);
+    w = waterfall(temp-nanmin(temp(:)),repmat((1:numel(burst_range))',1,window_size-12));
+    w.FaceColor = pt_cm_rise(1+(i-1)*inc,:);
+    w.FaceAlpha = .6;
+    w.EdgeColor = 'black';
+end
+xlabel('offset (min)')
+set(gca,'xtick',1:3:window_size-12,'xticklabels',-3:3)    
+zlabel('Dorsal levels (au)')    
+view(-15,20)
+set(gca,'Fontsize',14)
+% xlim([-3.5 3.5])
+grid on
+saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.tif'])
+saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.pdf'])
+
+% transcription waterfall
+hmm_rise_dur_wt = figure;
+index_vec = 1:numel(burst_range);
+hold on
+for i = 1:numel(burst_range)
+    temp = burst_rise_dur_hmm_mean;
+    temp(index_vec~=i,:) = NaN;
+    temp = temp(:,7:end-6);
+    w = waterfall(temp-nanmin(temp(:)),repmat((1:numel(burst_range))',1,window_size-12));
+    w.FaceColor = tr_cm_rise(1+(i-1)*inc,:);
+    w.FaceAlpha = .8;
+    w.EdgeColor = 'black';
+end
+xlabel('offset (min)')
+set(gca,'xtick',1:3:window_size-12,'xticklabels',-3:3)    
+zlabel('sna activity (au)')    
+view(-15,20)
+set(gca,'Fontsize',14)
+grid on
+saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
+saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.pdf'])

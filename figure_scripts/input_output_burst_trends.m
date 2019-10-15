@@ -159,7 +159,7 @@ inc = floor(128/numel(burst_range));
 pt_cm_rise = brewermap(128,'Reds');
 tr_cm_rise = brewermap(128,'Purples');
 burst_rise_dur_wt = figure;
-index_vec = 1:2:numel(burst_range);
+index_vec = 1:numel(burst_range);
 hold on
 for i = 1:numel(burst_range)
     temp = burst_rise_dur_spot_mean;
