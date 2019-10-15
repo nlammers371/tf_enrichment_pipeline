@@ -9,10 +9,10 @@ colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
 
 rawEnrichHeatmap_ub = 1.75;
 rawEnrichHeatmap_lb = 1.25;
-absDiffEnrichHeatmap_ub = 0.5;
-absDiffEnrichHeatmap_lb = 0;
-relEnrichHeatmap_ub = 1.2;
-relEnrichHeatmap_lb = 1;
+% absDiffEnrichHeatmap_ub = 0.5;
+% absDiffEnrichHeatmap_lb = 0;
+% relEnrichHeatmap_ub = 1.2;
+% relEnrichHeatmap_lb = 1;
 
 project = 'Dl-Ven_snaBAC-mCh';
 
