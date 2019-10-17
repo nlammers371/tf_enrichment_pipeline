@@ -5,7 +5,7 @@ addpath('utilities')
 % define core ID variables
 projectTarget = 'Dl-Ven_snaBAC-mCh';
 projectControl = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+dropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\'];
 figPath = [dropboxFolder 'LocalEnrichmentFigures\enrichment_events\'];
 mkdir(figPath)
@@ -38,45 +38,15 @@ overall_hist_pt = figure;
 hold on
 histogram(protein_delta_control,pt_bins,'Normalization','probability','FaceColor',cm_hist(3,:))
 histogram(protein_delta_target,pt_bins,'Normalization','probability','FaceColor',cm_hist(2,:))
-legend('enrichment (target)','enrichment (control)')
+legend('enrichment (control)','enrichment (target)')
 grid on
 box on
 set(gca,'Fontsize',14)
+xlim([-500 500])
 saveas(overall_hist_pt,[figPath 'full_enrichment_histograms.png'])
 saveas(overall_hist_pt,[figPath 'full_enrichment_histograms.pdf'])
 
-%%
-% target
-pd_target = fitdist(protein_delta_target','normal');
-target_fit_line = pdf(pd_target,pt_bins');
 
-target_hist_pt = figure;
-hold on;
-histogram(protein_delta_target,pt_bins,'Normalization','probability','FaceColor',cm_hist(2,:))
-plot(pt_bins,target_fit_line/sum(target_fit_line),'Color','black','LineWidth',1)
-grid on 
-box on
-xlabel('Dl enrichment')
-ylabel('share')
-set(gca,'Fontsize',14)
-saveas(target_hist_pt,[figPath 'target_enrichment_fit.png'])
-saveas(target_hist_pt,[figPath 'target_enrichment_fit.pdf'])
-
-% control
-pd_control = fitdist(protein_delta_control','normal');
-control_fit_line = pdf(pd_control,pt_bins');
-
-control_hist_pt = figure;
-hold on;
-histogram(protein_delta_control,pt_bins,'Normalization','probability','FaceColor',cm_hist(3,:))
-plot(pt_bins,control_fit_line/sum(control_fit_line),'Color','black','LineWidth',1)
-grid on 
-box on
-xlabel('Dl enrichment')
-ylabel('share')
-set(gca,'Fontsize',14)
-saveas(control_hist_pt,[figPath 'control_enrichment_fit.png'])
-saveas(control_hist_pt,[figPath 'control_enrichment_fit.pdf'])
 
 %% Fit distributions to enrichment data, filtered by spot fluorescence
 close all
