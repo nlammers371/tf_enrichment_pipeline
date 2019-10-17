@@ -22,7 +22,7 @@ for i = 1:(numel(varargin)-1)
             end
         end
     elseif strcmpi(varargin{i},'dropboxFolder')
-        dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
+        dataPath = [varargin{i+1} 'ProcessedEnrichmentData\' project '/'];
     end
 end
 
