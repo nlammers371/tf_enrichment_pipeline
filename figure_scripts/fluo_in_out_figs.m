@@ -55,10 +55,10 @@ spot_protein_title_dim = 'Dorsal-Venus at Active snail locus (bottom quintile)';
 spot_protein_title_bright = 'Dorsal-Venus at Active snail locus (top quintile)';
 spot_protein_Clabel = 'Venus intensity (AU)';
 
-bad_cm = flipud(brewermap([],'RdYlBu'));
+bad_cm = flipud(brewermap(256,'RdYlBu'));
 % define heatmap
-green_top = [12 118 60]/256/.65;
-green_bottom = green_top/3;
+% green_top = [12 118 60]/256/.65;
+% green_bottom = green_top/3;
 % cm_green = interp1([0,1],vertcat(green_bottom,green_top),linspace(0,1,128));
 % dim spot
 makeHeatmapPlots(protein_q1_snip, 1, spot_protein_title_dim, spot_protein_Clabel,bad_cm,PixelSize,protein_lb,protein_ub)
