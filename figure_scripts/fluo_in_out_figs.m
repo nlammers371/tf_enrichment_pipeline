@@ -21,8 +21,8 @@ fluo_q4_snip = fluo_io_struct.fluo_q4_snip;
 snip_size = size(fluo_q1_snip,1);
 
 % determine bounds
-fluo_lb = prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],1);
-fluo_ub = prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],99);
+fluo_lb = round(prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],1)*10)/10;
+fluo_ub = round(prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],99)*10)/10;
 
 % define tick strings
 xtick_string = "set(gca,'xtick',1:5:snip_size,'xticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
