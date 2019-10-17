@@ -16,16 +16,12 @@ rawEnrichHeatmap_lb = 1.25;
 
 project = 'Dl-Ven_snaBAC-mCh';
 
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Garcia Lab)\';
+dropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\'];
+figPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\PipelineOutput\' project '\'];
 
-writePath_raw = [figPath '\avg_snips_movie_frames\raw\'];
-writePath_rel = [figPath '\avg_snips_movie_frames\rel\'];
-writePath_absDiff = [figPath '\avg_snips_movie_frames\absDiff\'];
-mkdir(writePath_raw)
-mkdir(writePath_rel)
-mkdir(writePath_absDiff)
+writePath = [figPath '\avg_snips_movie_frames\'];
+mkdir(writePath)
 
 % paperFigPath = [figPath 'paperFigs/'];
 % basicFigPath = [figPath 'basicFigs/'];
@@ -74,12 +70,10 @@ null_protein_snips_mixed = null_protein_snips_reflected(:,:,rand_order_vec);   %
 spot_protein_full_mean = nanmean(spot_protein_snips_mixed,3);
 null_protein_full_mean = nanmean(null_protein_snips_mixed,3);
 
-%% Make Heatmap Movies
+%% Make Averaged Heatmap Movie
 
 % Set movie parameters
-frame_incr = 25;
-end_frame = 1000;
-n_frames = ceil(size(spot_protein_snips_mixed,3)/frame_incr);
+frame_steps = unique(round(logspace(0,2,50)*8));    %movie with 5 to 800 frames averaged
 visibleOn = false; % Don't want to display figures as they're made
 
 clabel_raw = 'Dorsal total protein (au)';
@@ -90,15 +84,15 @@ title_raw = 'Dorsal at {\itsnail} - total protein (au)';
 % title_absDiff = 'Dorsal at {\itsnail} - absolute enrichment (au)';
 
 % Create & open the video writer with 2 fps
-meanFrameWriter = VideoWriter([writePath_raw 'meanSnips_raw.avi'],'Uncompressed AVI');
+meanFrameWriter = VideoWriter([writePath 'meanSnips.avi'],'Uncompressed AVI');
 meanFrameWriter.FrameRate = 2;
 open(meanFrameWriter);
 
-for n = 1:(end_frame/frame_incr + 1)
+for n = 1:numel(frame_steps)  %(end_frame/frame_incr + 1)
     %
     % Make averaged frame version of the movie
     %
-    curr_max_frame = min([frame_incr*n,numel(index_vec)]);
+    curr_max_frame = frame_steps(n);%min([frame_incr*n,numel(index_vec)]);
     mean_frame_raw = nanmean(spot_protein_snips_mixed(:,:,1:curr_max_frame),3);
     null_mean_frame = nanmean(null_protein_snips_mixed(:,:,1:curr_max_frame),3);
     mean_frame_rel = mean_frame_raw ./ null_mean_frame; %Relative difference (fold) enrichment
@@ -106,38 +100,26 @@ for n = 1:(end_frame/frame_incr + 1)
     
     % Make averaged figures for raw enrichment (total protein)
     temp_fig_raw = makeHeatmapPlots(mean_frame_raw, visibleOn, ...
-                  title_raw, clabel_raw, colormap_heat,PixelSize,...
+                  '', clabel_raw, colormap_heat,PixelSize,...
                   rawEnrichHeatmap_lb,rawEnrichHeatmap_ub);
-    text(0.8,1.9,[num2str(n*frame_incr) ' samples'],'Color','black', ...
+    set(gca,'xcolor','black','ycolor','black')
+    set(gcf,'color','white');
+    text(0.8,1.9,[num2str(frame_steps(n)) ' samples'],'Color','black', ...
         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans')
     % Write the current frame to the movie
     writeVideo(meanFrameWriter, getframe(gcf));
     close all
     
-%     % Make averaged figures for relative enrichment
-%     temp_fig_rel = makeHeatmapPlots(mean_frame_rel, visibleOn, ...
-%                   title_rel, clabel_rel, colormap_heat,PixelSize,...
-%                   relEnrichHeatmap_lb,relEnrichHeatmap_ub);
-%     text(0.8,1.9,[num2str(n*frame_incr) ' samples'],'Color','black', ...
-%         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans') 
-%     saveas(temp_fig_rel,[writePath_rel 'mean_rel_' sprintf('%03d',n) '.tif'])            
-%     close all
-% 
-%     % Make averaged figures for absolute difference enrichment
-%     temp_fig_absDiff = makeHeatmapPlots(mean_frame_absDiff, visibleOn, ...
-%                   title_absDiff,clabel_absDiff,colormap_heat,PixelSize,...
-%                   absDiffEnrichHeatmap_lb,absDiffEnrichHeatmap_ub);
-%     text(0.8,1.9,[num2str(n*frame_incr) ' samples'],'Color','black', ...
-%         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans') 
-%     saveas(temp_fig_absDiff,[writePath_absDiff 'mean_absDiff_' sprintf('%03d',n) '.tif'])            
-%     close all
-    
 end
 close(meanFrameWriter);
 
-%%
+%% Make single-frame heatmap movie
+frame_incr = 25;
+end_frame = 1000;
+n_frames = ceil(size(spot_protein_snips_mixed,3)/frame_incr);
+
 % Create & open the video writer with 2 fps
-singleFrameWriter = VideoWriter([writePath_raw 'singleFrameSnips_raw.avi'],'Uncompressed AVI');
+singleFrameWriter = VideoWriter([writePath 'singleFrameSnips.avi'],'Uncompressed AVI');
 singleFrameWriter.FrameRate = 2;
 open(singleFrameWriter);
 for n = 1:(end_frame/frame_incr + 1)
@@ -152,27 +134,11 @@ for n = 1:(end_frame/frame_incr + 1)
     
     % Make single-frame figures for raw enrichment (total protein)
     fig_raw_single = makeHeatmapPlots(spot_single_frame_raw, visibleOn, ...
-                  title_raw,clabel_raw, colormap_heat,PixelSize,0,4);
+                  '',clabel_raw, colormap_heat,PixelSize,0,4);
+    set(gca,'xcolor','black','ycolor','black')
+    set(gcf,'color','white');
     % Write the current frame to the movie
     writeVideo(singleFrameWriter, getframe(gcf));
     close all
-    
-%     % Make single-frame figures for relative enrichment
-%     fig_rel_single = makeHeatmapPlots(single_frame_rel, visibleOn, ...
-%                   title_rel, clabel_rel, colormap_heat,PixelSize,...
-%                   relEnrichHeatmap_lb,relEnrichHeatmap_ub);
-%     text(0.8,1.9,[num2str(n*frame_incr) ' samples'],'Color','black', ...
-%         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans') 
-%     saveas(fig_rel_single,[writePath_rel 'single_frame_rel_' sprintf('%03d',n) '.tif'])            
-%     close all
-% 
-%     % Make single-frame figures for absolute difference enrichment
-%     fig_absDiff_single = makeHeatmapPlots(single_frame_absDiff, visibleOn, ...
-%                   title_absDiff,clabel_absDiff,colormap_heat,PixelSize,...
-%                   absDiffEnrichHeatmap_lb,absDiffEnrichHeatmap_ub);
-%     text(0.8,1.9,[num2str(n*frame_incr) ' samples'],'Color','black', ...
-%         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans') 
-%     saveas(fig_absDiff_single,[writePath_absDiff 'single_frame_absDiff_' sprintf('%03d',n) '.tif'])            
-%     close all
 end
 close(singleFrameWriter);
