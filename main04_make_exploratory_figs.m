@@ -3,18 +3,20 @@ function main04_make_exploratory_figs(project,protein_string,gene_string,varargi
 
 close all
 addpath('utilities')
-dataPath = ['../../dat/' project '/'];
-figPath = ['../../fig/' project '/'];
-DistLim = .8; % min distance from edge permitted (um)
+DistLim = 0.8; % min distance from edge permitted (um)
 NBoots = 20;%00; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
 Colormap_plot = jet(128); %specifies the colomap used to make plots/graphs
 Colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
 relEnrich_ub = 1.3; %upper bound of relative enrichment for consistency
 relEnrich_lb = 0.85; %lower bound of relative enrichment for consistency
+relEnrichHeatMap_ub = 1.2;
+relEnrichHeatMap_lb = 1;
+
 dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\'];
+
 for i = 1:numel(varargin)
     if strcmpi(varargin{i}, 'dropboxFolder')        
         dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
@@ -25,6 +27,7 @@ for i = 1:numel(varargin)
         end
     end
 end
+
 mkdir(figPath)
 paperFigPath = [figPath 'paperFigs/'];
 mkdir(paperFigPath);
@@ -36,15 +39,16 @@ mkdir(figPath)
 load([dataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
 
 % extract protein, gene, fluorophore info
-pt_dash = strfind(protein_string,'-');
-protein_name = protein_string(1:pt_dash-1);
-protein_fluor = protein_string(pt_dash+1:end);
+prt_dash = strfind(protein_string,'-');
+protein_name = protein_string(1:prt_dash-1);
+protein_fluor = protein_string(prt_dash+1:end);
 gene_dash = strfind(gene_string,'-');
 gene_name = gene_string(1:gene_dash-1);
 gene_fluor = gene_string(gene_dash+1:end);
 
 id_string = [protein_name '-' protein_fluor ' : ' gene_name '-' gene_fluor]; 
 write_string = [protein_name '-' protein_fluor '__' gene_name '-' gene_fluor]; 
+
 % Generate distance vector for filtering snip stacks
 PixelSize = nucleus_struct_protein(1).PixelSize;
 
@@ -54,19 +58,20 @@ null_protein_snips = cat(3,nucleus_struct_protein.edge_null_protein_snips);
 spot_mcp_snips = cat(3,nucleus_struct_protein.spot_mcp_snips);
 null_mcp_snips = cat(3,nucleus_struct_protein.edge_null_mcp_snips);
 
-% Make r reference array
+% Make r reference array where each element is its distance, in um, from 
+% the center pixel in the array
 snip_size = size(spot_protein_snips,1);
 [y_ref, x_ref] = meshgrid(1:snip_size,1:snip_size);
-r_ref = sqrt((x_ref-ceil(snip_size/2)).^2 + (y_ref-ceil(snip_size/2)).^2)*PixelSize;
+r_ref = sqrt((x_ref - ceil(snip_size/2)).^2 + (y_ref - ceil(snip_size/2)).^2)*PixelSize;
 
 spot_protein_vec = [nucleus_struct_protein.spot_protein_vec];
 null_protein_vec = [nucleus_struct_protein.edge_null_protein_vec];
 dist_vec = [nucleus_struct_protein.spot_edge_dist_vec]*PixelSize;
 
 % First look for presence of edge artifact
-dist_sigma = .1; %(um)
+dist_sigma = 0.1; %(um)
 protein_delta_vec =  spot_protein_vec - null_protein_vec;
-dist_index = 0:.1:floor(prctile(dist_vec,99)*10)/10;
+dist_index = 0:0.1:floor(prctile(dist_vec,99)*10)/10;
 
 delta_dist_mat = NaN(numel(dist_index),NBoots);
 null_dist_mat = NaN(numel(dist_index),NBoots);
@@ -164,51 +169,68 @@ null_protein_snip_mean = nanmean(null_protein_snips_mixed,3);
 lb = prctile([spot_protein_snip_mean(:)'  null_protein_snip_mean(:)'],1);
 ub = prctile([spot_protein_snip_mean(:)'  null_protein_snip_mean(:)'],99);
 
-xtick_string = "set(gca,'xtick',1:5:snip_size,'xticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
-ytick_string = "set(gca,'ytick',1:5:snip_size,'yticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
-
 % Plot heatmaps
+visibleOn = true;
 spot_protein_snip_mean_title = [protein_name '-' protein_fluor ' at ' 'Active ' gene_name ' Locus'];
 spot_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' concentration (au)'];
-makeHeatmapPlots(spot_protein_snip_mean, spot_protein_snip_mean_title, spot_protein_snip_mean_ylabel, '_mean_pt_snippet_spot',...
-    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
+spot_protein_snip_heatmap = makeHeatmapPlots(spot_protein_snip_mean, ...
+    visibleOn, spot_protein_snip_mean_title, spot_protein_snip_mean_ylabel,...
+    Colormap_heat,PixelSize,lb,ub);
+saveas(spot_protein_snip_heatmap,[figPath write_string '_mean_pt_snippet_spot' '.png']);
+saveas(spot_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_spot' '.pdf']);
+
 null_protein_snip_mean_title = [protein_name '-' protein_fluor ' at Control Locus'];
 null_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' concentration (au)'];
-makeHeatmapPlots(null_protein_snip_mean, null_protein_snip_mean_title, null_protein_snip_mean_ylabel, '_mean_pt_snippet_null',...
-    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
+null_protein_snip_heatmap = makeHeatmapPlots(null_protein_snip_mean, ...
+    visibleOn, null_protein_snip_mean_title, null_protein_snip_mean_ylabel,...
+    Colormap_heat,PixelSize,lb,ub);
+saveas(null_protein_snip_heatmap,[figPath write_string '_mean_pt_snippet_null' '.png']);
+saveas(null_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_null' '.pdf']);
 
 
 % Make fold diff image
 rel_protein_snip_mean = (spot_protein_snip_mean) ./ null_protein_snip_mean;
 % caxis([lb ub])
 rel_protein_snip_mean_title = ['Relative ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
-rel_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' fold enrichment'];
-makeHeatmapPlots(rel_protein_snip_mean, rel_protein_snip_mean_title, rel_protein_snip_mean_ylabel, '_mean_pt_snippet_rel',...
-    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,relEnrich_lb,relEnrich_ub)
+rel_protein_snip_mean_clabel = [protein_name '-' protein_fluor ' fold enrichment'];
+rel_protein_snip_heatmap = makeHeatmapPlots(rel_protein_snip_mean, ...
+    visibleOn, rel_protein_snip_mean_title, rel_protein_snip_mean_clabel, ...
+    Colormap_heat,PixelSize,relEnrichHeatMap_lb,relEnrichHeatMap_ub);
+saveas(rel_protein_snip_heatmap,[figPath write_string '_mean_pt_snippet_rel' '.png']);
+saveas(rel_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_rel' '.pdf']);
 
 % Make absolute diff image
 absDiff_protein_snip_mean = (spot_protein_snip_mean) - null_protein_snip_mean;
-sumEnrichedProtein = sum(sum(absDiff_protein_snip_mean));
-disp(['Total additional protein (au) at locus (sum of all pixels of absolute different between spot and null snips)' num2str(sumEnrichedProtein)])
+% sumEnrichedProtein = sum(sum(absDiff_protein_snip_mean));
+% disp(['Total additional protein (au) at locus (sum of all pixels of absolute different between spot and null snips)' num2str(sumEnrichedProtein)])
 % caxis([lb ub])
 absDiff_protein_snip_mean_title = ['Absolute Difference ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
-absDiff_protein_snip_mean_ylabel = [protein_name '-' protein_fluor ' fold enrichment'];
-makeHeatmapPlots(absDiff_protein_snip_mean, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_ylabel, '_mean_pt_snippet_absDiff',...
-    xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,0,inf)
+absDiff_protein_snip_mean_clabel = [protein_name '-' protein_fluor ' absolute enrichment (au)'];
+absDiff_protein_snip_heatmap = makeHeatmapPlots(absDiff_protein_snip_mean,...
+    visibleOn, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_clabel, ...
+    Colormap_heat,PixelSize,0,inf);
+saveas(absDiff_protein_snip_heatmap,[figPath write_string '_mean_pt_snippet_absDiff' '.png']);
+saveas(absDiff_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_absDiff' '.pdf']);
 
-
+% MS2 spot fluorescence
 null_mean_fluo = nanmean(null_mcp_snips_mixed,3);
 spot_mean_fluo = nanmean(spot_mcp_snips_mixed,3);
 ub = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],99);
 lb = prctile([reshape(null_mean_fluo,1,[]) reshape(spot_mean_fluo,1,[])],1);
-% Plot heatmaps
+
+% Plot MS2 spot heatmaps
 spot_mean_fluo_title = [gene_fluor ' Intensity at Active Locus (' gene_name ')'];
 null_mean_fluo_title = [gene_fluor ' Intensity at Control Locus'];
-mean_fluo_ylabel = [gene_name ' expression (au)'];
-makeHeatmapPlots(spot_mean_fluo, spot_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_spot'...
-    ,xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
-makeHeatmapPlots(null_mean_fluo, null_mean_fluo_title, mean_fluo_ylabel, '_mean_fluo_snippet_null'...
-    ,xtick_string,ytick_string,Colormap_heat,write_string,figPath,paperFigPath,PixelSize,lb,ub)
+mean_fluo_clabel = [gene_name ' expression (au)'];
+spot_mean_fluo_heatmap = makeHeatmapPlots(spot_mean_fluo, visibleOn, ...
+    spot_mean_fluo_title, mean_fluo_clabel,Colormap_heat,PixelSize,lb,ub);
+saveas(spot_mean_fluo_heatmap,[figPath write_string '_mean_fluo_snippet_spot' '.png']);
+saveas(spot_mean_fluo_heatmap, [paperFigPath write_string '_mean_fluo_snippet_spot' '.pdf']);
+
+null_mean_fluo_heatmap = makeHeatmapPlots(null_mean_fluo, visibleOn, ...
+    null_mean_fluo_title, mean_fluo_clabel, Colormap_heat,PixelSize,lb,ub);
+saveas(null_mean_fluo_heatmap,[figPath write_string '_mean_fluo_snippet_null' '.png']);
+saveas(null_mean_fluo_heatmap, [paperFigPath write_string '_mean_fluo_snippet_null' '.pdf']);
 
 
 %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
@@ -416,6 +438,7 @@ enrichment_pd2 = polyval(p,mf_index);
 enrichment_pd3 = param(1)+(param(2)-param(1))./(1+10.^((param(3)-mf_index)*param(4)));
 
 fit_fig = figure;
+fit_ax = gca;
 e = errorbar(mf_index,delta_v_mf_c_tt_mean(:,end),delta_v_mf_c_tt_ste(:,end),'Color',[.6 .6 .6],'LineWidth',2);
 hold on
 e.CapSize = 0;
@@ -429,6 +452,11 @@ grid on
 StandardFigure([p3],gca)
 xlim([50,400])
 saveas(fit_fig,[figPath 'mf_enrichment_prediction.png'])
+
+% make paper fig in PBoC style
+fit_ax = gca;
+StandardFigurePBoC(e,fit_ax);
+saveas(fit_fig, [paperFigPath write_string '_mf_enrichment_prediction.pdf'])
 
 
 pd3_delta_protein_tt = param(1)+(param(2)-param(1))./(1+10.^((param(3)-mf_protein_vec_dist)*param(4)));
@@ -508,6 +536,7 @@ title(['Radial Concentration Profile (' id_string ')'])
 r_ax.XLim = [0 1.2];
 r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [figPath write_string '_radial_enrichment.png'])
+
 
 % make paper fig in PBoC style
 r_ax = gca;
