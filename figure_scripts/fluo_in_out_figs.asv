@@ -9,7 +9,7 @@ mkdir(figPath)
 addpath('../utilities')
 % load data set
 load([dataPath 'fluo_in_out.mat'],'fluo_io_struct')
-%%
+%%%
 VoxelSize = fluo_io_struct.voxel_size;
 PixelSize = sqrt(VoxelSize/.5);
 
@@ -21,8 +21,8 @@ fluo_q4_snip = fluo_io_struct.fluo_q4_snip;
 snip_size = size(fluo_q1_snip,1);
 
 % determine bounds
-fluo_lb = prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],1);
-fluo_ub = prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],99);
+fluo_lb = round(prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],1)*10)/10;
+fluo_ub = round(prctile([fluo_q1_snip(:)'  fluo_q4_snip(:)'],99)*10)/10;
 
 % define tick strings
 xtick_string = "set(gca,'xtick',1:5:snip_size,'xticklabel',round(((1:5:snip_size)-round(snip_size/2))*PixelSize,2))";
@@ -41,44 +41,64 @@ cm_magenta = interp1([0,1],vertcat(gray,magenta),linspace(0,1,128));
 makeHeatmapPlots(fluo_q1_snip, 1, spot_mcp_title_dim, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub)
 makeHeatmapPlots(fluo_q4_snip, 1, spot_mcp_title_bright, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub)
 
-%% Now protein
+%%% Now protein
 % extract snips
 protein_q1_snip = fluo_io_struct.protein_q1_snip / VoxelSize;
 protein_q4_snip = fluo_io_struct.protein_q4_snip / VoxelSize;
 
 % determine bounds
 protein_lb = 0;%prctile([protein_q1_snip(:)'  protein_q4_snip(:)'],1);
-protein_ub = floor(max([protein_q1_snip(:)'  protein_q4_snip(:)'])/10)*10;
+protein_ub = 90;%floor(max([protein_q1_snip(:)'  protein_q4_snip(:)'])/10)*10;
 
 % Make titles
 spot_protein_title_dim = 'Dorsal-Venus at Active snail locus (bottom quintile)';
 spot_protein_title_bright = 'Dorsal-Venus at Active snail locus (top quintile)';
 spot_protein_Clabel = 'Venus intensity (AU)';
 
-bad_cm = flipud(brewermap([],'RdYlBu'));
+NL_fav_cm = flipud(brewermap(256,'RdYlBu'));
+MT_fav_cm = viridis(128);
 % define heatmap
-green_top = [12 118 60]/256/.65;
-green_bottom = green_top/3;
+% green_top = [12 118 60]/256/.65;
+% green_bottom = green_top/3;
 % cm_green = interp1([0,1],vertcat(green_bottom,green_top),linspace(0,1,128));
 % dim spot
-makeHeatmapPlots(protein_q1_snip, 1, spot_protein_title_dim, spot_protein_Clabel,bad_cm,PixelSize,protein_lb,protein_ub)
-makeHeatmapPlots(protein_q4_snip, 1, spot_protein_title_bright, spot_protein_Clabel,bad_cm,PixelSize,protein_lb,protein_ub)
+dim_fig = makeHeatmapPlots(protein_q1_snip, 1, spot_protein_title_dim, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
+bright_fig = makeHeatmapPlots(protein_q4_snip, 1, spot_protein_title_bright, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
 
+saveas(target_fig, [figPath 'bar_target.pdf'])
 
-%% Now bar plots
+%%% Now bar plots
 protein_target_mean = fluo_io_struct.protein_target_mean;
 protein_target_ste = fluo_io_struct.protein_target_ste;
+protein_control_mean = fluo_io_struct.protein_control_mean;
+protein_control_ste = fluo_io_struct.protein_control_ste;
 
 % calculate y limits
 ymax = 1.1*max(protein_target_mean);
+ymin = 1.5*min(protein_control_mean);
 
 target_fig = figure;
 hold on
 b = bar([1 3 5],protein_target_mean);
-b.FaceColor = bad_cm(210,:);
+b.FaceColor = NL_fav_cm(210,:);
 errorbar([1 3 5],protein_target_mean,protein_target_ste,'LineStyle','none','Color','black','LineWidth',1.5,'CapSize',20)
-set(gca,'xtick',
+box on
+xlabel('quintile')
+ylabel('Dorsal enrichment (AU)')
+set(gca,'xtick',[1 3 5],'FontSize',14);
+ylim([ymin ymax])
+saveas(target_fig, [figPath 'bar_target.pdf'])
 
-
+control_fig = figure;
+hold on
+b = bar([1 3 5],protein_control_mean);
+b.FaceColor = NL_fav_cm(50,:);
+errorbar([1 3 5],protein_control_mean,protein_control_ste,'LineStyle','none','Color','black','LineWidth',1.5,'CapSize',20)
+box on
+xlabel('quintile')
+ylabel('Dorsal enrichment (AU)')
+set(gca,'xtick',[1 3 5],'FontSize',14);
+ylim([ymin ymax])
+saveas(control_fig, [figPath 'bar_control.pdf'])
 
 

@@ -73,7 +73,8 @@ null_protein_full_mean = nanmean(null_protein_snips_mixed,3);
 %% Make Averaged Heatmap Movie
 
 % Set movie parameters
-frame_steps = unique(round(logspace(0,2,50)*8));    %movie with 5 to 800 frames averaged
+frame_steps = [1 5 10 20 30 40 50 75 100 150 200 250 300 400 500 600 700 800 900 1000];
+% frame_steps = unique(round(logspace(0,2,50)*8));    %movie with 5 to 800 frames averaged
 visibleOn = false; % Don't want to display figures as they're made
 
 clabel_raw = 'Dorsal total protein (au)';
@@ -84,7 +85,7 @@ title_raw = 'Dorsal at {\itsnail} - total protein (au)';
 % title_absDiff = 'Dorsal at {\itsnail} - absolute enrichment (au)';
 
 % Create & open the video writer with 2 fps
-meanFrameWriter = VideoWriter([writePath 'meanSnips.avi'],'Uncompressed AVI');
+meanFrameWriter = VideoWriter([writePath 'meanSnips_v2.avi'],'Uncompressed AVI');
 meanFrameWriter.FrameRate = 2;
 open(meanFrameWriter);
 
