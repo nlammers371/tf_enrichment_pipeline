@@ -38,10 +38,8 @@ magenta = [162 60 150]/256/.65;
 gray = magenta/3;
 cm_magenta = interp1([0,1],vertcat(gray,magenta),linspace(0,1,128));
 % dim spot
-dim_fluo_fig = makeHeatmapPlots(fluo_q1_snip, 1, spot_mcp_title_dim, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub);
-bright_fluo_fig = makeHeatmapPlots(fluo_q4_snip, 1, spot_mcp_title_bright, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub);
-saveas(dim_fluo_fig, [figPath 'dim_fluo_heatmap.pdf'])
-saveas(bright_fluo_fig, [figPath 'bright_fluo_heatmap.pdf'])
+makeHeatmapPlots(fluo_q1_snip, 1, spot_mcp_title_dim, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub)
+makeHeatmapPlots(fluo_q4_snip, 1, spot_mcp_title_bright, spot_mcp_Clabel,cm_magenta,PixelSize,fluo_lb,fluo_ub)
 
 %%% Now protein
 % extract snips
@@ -64,11 +62,10 @@ MT_fav_cm = viridis(128);
 % green_bottom = green_top/3;
 % cm_green = interp1([0,1],vertcat(green_bottom,green_top),linspace(0,1,128));
 % dim spot
-dim_protein_fig = makeHeatmapPlots(protein_q1_snip, 1, spot_protein_title_dim, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
-bright_protein_fig = makeHeatmapPlots(protein_q4_snip, 1, spot_protein_title_bright, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
+dim_fig = makeHeatmapPlots(protein_q1_snip, 1, spot_protein_title_dim, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
+bright_fig = makeHeatmapPlots(protein_q4_snip, 1, spot_protein_title_bright, spot_protein_Clabel,MT_fav_cm,PixelSize,protein_lb,protein_ub);
 
-saveas(dim_protein_fig, [figPath 'dim_protein_heatmap.pdf'])
-saveas(bright_protein_fig, [figPath 'bright_protein_heatmap.pdf'])
+saveas(target_fig, [figPath 'bar_target.pdf'])
 
 %%% Now bar plots
 protein_target_mean = fluo_io_struct.protein_target_mean;

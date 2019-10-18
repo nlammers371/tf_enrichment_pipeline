@@ -5,7 +5,8 @@ close all
 addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+% dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+dropboxFolder = 'E:\Meghan\Dropbox\';
 dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
 figPath = [dropboxFolder 'LocalEnrichmentFigures\_paper_figures\input_output02\'];
 mkdir(figPath)
@@ -43,22 +44,30 @@ for i = 1:numel(burst_range)
     burst_rise_dur_spot_mean(i,:) = nanmean(spot_array(burst_ft,:));  
 end
 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE HEATMAPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Set the x-axis (time from start of burst) limits
+time_vec = linspace(-5,5,window_size);
+time_lb = -2;   % [min], start x axis here
+xlim_lb = find(time_vec == time_lb);
+time_ub = 4;
+xlim_ub = find(time_vec == time_ub);   % [min], end x axis here
 
 % protein channel
 burst_rise_dur_hm = figure;
 burst_rise_dur_hm.Name = 'target spot burst rise hmm';
-pt_hm_cm = flipud(brewermap([],'RdYlBu'));
+pt_hm_cm = flipud(brewermap([],'RdBu'));
 colormap(pt_hm_cm)
-% colormap(jet(128)/1.1);
-pcolor(flipud(burst_rise_dur_spot_mean))
-xlabel('distance from burst start (minutes)')
-set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
-ylabel('burst duration (min)')
-set(gca,'yticklabels',fliplr(round(burst_range/3,1)))
-h = colorbar;
-caxis([-15 20])
-ylabel(h, 'Dorsal levels (au)','FontSize',14)
+pcolor(flipud(burst_rise_dur_spot_mean(:,xlim_lb:xlim_ub)))
+xlabel('time from burst start (minutes)')
+set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
+ylabel('{\itsna} transcription burst duration (min)')
+set(gca,'ytick',3:3:(burst_range(end) - burst_range(1) +1),'yticklabels',fliplr([1 2 3]))    %***HARD-CODED***
+c = colorbar;
+caxis([-20 20])
+c.Ticks = linspace(-20,20,5);
+ylabel(c, 'Dorsal enrichment (au)','FontSize',14)
 set(gca,'FontSize', 14);
 saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_protein.tif'])
 saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_protein.pdf'])
@@ -67,21 +76,21 @@ saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_protein.pdf'])
 % transcription channel
 hmm_rise_dur_hm = figure;
 hmm_rise_dur_hm.Name = 'target spot burst rise hmm';
-tr_hm_cm = flipud(flipud(brewermap([],'Purples')));
+tr_hm_cm = flipud(flipud(brewermap([],'Greys')));
 colormap(tr_hm_cm)
-pcolor(flipud(burst_rise_dur_hmm_mean))
-xlabel('distance from burst start (minutes)')
-set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
-ylabel('burst duration (min)')
-set(gca,'yticklabels',fliplr(round(burst_range/3,1)))
-h = colorbar;
+pcolor(flipud(burst_rise_dur_hmm_mean(:,xlim_lb:xlim_ub)))
+xlabel('time from burst start (minutes)')
+set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
+ylabel('{\itsna} transcription burst duration (min)')
+set(gca,'ytick',3:3:(burst_range(end) - burst_range(1) +1),'yticklabels',fliplr([1 2 3]))	%***HARD-CODED***
+c = colorbar;
 caxis([0 1.5])
-ylabel(h, 'sna activity (au)','FontSize',14)
+ylabel(c, '{\itsna} transcriptional activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
 saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.tif'])
 saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.pdf'])
 
-
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE WATERFALLS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % protein waterfall
 inc = floor(128/numel(burst_range));
@@ -130,3 +139,64 @@ set(gca,'Fontsize',14)
 grid on
 saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
 saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.pdf'])
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% AREA PLOTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+time_lb = -1;   % [min], start x axis here
+xlim_lb = find(time_vec == time_lb);
+time_ub = 4;    % [min], end x axis here
+xlim_ub = find(time_vec == time_ub);   
+
+timeFromBurst = xlim_lb:xlim_ub;
+
+% Making a square representation of the average transcription signal for
+% visualization/presentation purposes only
+zeroIndex = find(time_vec == 0);
+durationCohorts = [3 6 9];
+durationTimes = [find(time_vec == 1), find(time_vec == 2), find(time_vec == 3)];
+cohortLabels = ["short bursts (1 min)", "medium bursts (2 min)", "long bursts (3 min)"];
+burst_rise_dur_hmm_square = zeros(length(durationCohorts),window_size);
+for i = 1:numel(durationCohorts)
+    burst_rise_dur_hmm_square(durationCohorts(i),zeroIndex:durationTimes(i)) = burst_rise_dur_hmm_mean(durationCohorts(i),durationTimes(i));
+end
+
+for i = 1:numel(durationCohorts)
+    burstDur_hmmSquare = burst_rise_dur_hmm_square(durationCohorts(i),xlim_lb:xlim_ub);
+%     burstDur_hmm = burst_rise_dur_hmm_mean(durationCohorts(i),xlim_lb:xlim_ub);
+%     burstDur_hmm = burstDur_hmm - nanmin(burstDur_hmm);
+    burstDur_hmmSquare = burstDur_hmmSquare - nanmin(burstDur_hmmSquare);
+    burstDur_protein = burst_rise_dur_spot_mean(durationCohorts(i),xlim_lb:xlim_ub);
+    burstDur_protein = burstDur_protein - nanmin(burstDur_protein);
+%     burstDur_protein(durationCohorts(i),1) = 0;
+%     burstDur_protein(durationCohorts(i),end) = 0;
+
+    burstFig = figure;
+    hold on
+    yyaxis right
+    proteinAreaPlot = area(timeFromBurst, burstDur_protein);
+    ylabel('Dorsal enrichment (au)')
+    ylim([0 40])
+    yticks(linspace(0,40,3))
+    yticklabels(string(linspace(0,40,3)))
+    set(proteinAreaPlot,'FaceColor',[213,108,85]/255)
+    yyaxis left
+    StandardFigurePBoC(proteinAreaPlot, gca)
+%     hmmAreaPlot = area(timeFromBurst, burstDur_hmm);
+    hmmAreaPlot = area(timeFromBurst, burstDur_hmmSquare);
+    ylabel('{\itsna} transcription (au)')
+    ylim([0 1])
+    yticks(linspace(0,1,3))
+    yticklabels(string(linspace(0,1,3)))
+    set(hmmAreaPlot,'FaceColor',[115,142,193]/255)
+    xlabel('time from start of burst (min)')
+    xlim([xlim_lb,xlim_ub])
+    xticks(xlim_lb:3:xlim_ub)
+    xticklabels(string(time_lb:time_ub))
+    title(cohortLabels(i))
+    hold off
+    StandardFigurePBoC(hmmAreaPlot, gca)
+    
+    saveas(burstFig, [figPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.pdf'])
+    saveas(burstFig, [figPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.tif'])
+end

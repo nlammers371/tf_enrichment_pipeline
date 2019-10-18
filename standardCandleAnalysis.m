@@ -2,8 +2,10 @@ clear
 close all
 
 rawDynamicsData = 'E:\LocalEnrichment\Data\RawDynamicsData\';
-date = '2019-06-10';
-project = '60mer-eGFP_invitro_injectionSettings_375Hz70uW';
+% date = '2019-06-10';
+date = '2019-08-19';
+% project = '60mer-eGFP_invitro_invivoSettings_025umzStep7uW_01';
+project = '60mer-Ven_1-100000pos_7uW';
 rawPath = [rawDynamicsData filesep date filesep project filesep];
 segPath = [rawDynamicsData filesep date filesep project filesep 'SegmentedImages' filesep];
 resultsPath = ['E:\Nick\LivemRNA\Dropbox\LocalEnrichmentResults\' date '_' project filesep];
@@ -44,7 +46,7 @@ stackList = unique(stackNamesCell);
 
 % Compile unique z stacks into structure
 imageStruct = struct;
-for i = 1:numel(stackList)
+for i = 1:numel(stackList)%:9
     currStackName = stackList{i};
     indices = find(contains(stackNamesCell,currStackName));
     imStack = [];
@@ -66,7 +68,8 @@ spotSnips = struct;
 
 % Segment spots & fit 3D gaussians to them
 h = waitbar(0, 'Finding & fitting spots');
-for im = 1:10%numel(imageStruct)
+tic
+for im = 1:numel(imageStruct)
     waitbar(im/numel(imageStruct), h, ['Finding & fitting spots in frame ' num2str(im) ' of ' num2str(numel(imageStruct))])
     imStackRaw = imageStruct(im).imStack;
     % Remove hot pixels and large aggregates
@@ -186,11 +189,13 @@ for im = 1:10%numel(imageStruct)
             end
             
             % Fit 3D gaussians
-            gaussFitRaw = fit3DGaussianBeta(snipRaw);        
-            gaussFitSeg = fit3DGaussianBeta(snipSeg);
+            [gaussFitRaw, gaussTotalFluoRaw] = fit3DGaussianBeta(snipRaw);        
+            [gaussFitSeg, gaussTotalFluoSeg] = fit3DGaussianBeta(snipSeg);
             
             spotSnips(nSpots).GaussFitRaw = gaussFitRaw;
+            spotSnips(nSpots).GaussTotalFluoRaw = gaussTotalFluoRaw;
             spotSnips(nSpots).GaussFitSegmented = gaussFitSeg;
+            spotSnips(nSpots).GaussTotalFluoSegmented = gaussTotalFluoSeg;
         end
     end
     
@@ -199,37 +204,51 @@ for im = 1:10%numel(imageStruct)
         hold off
     end
 end
+toc
 close(h);
 
 maxZ = max(maxZStack);
 maxX = max(maxXPix);
 maxY = max(maxYPix);
 
-%% 
-gaussAmp = NaN(1,numel(spotSnips));
+%%
+gaussAmp = NaN(1,numel(spotSnips)); % amplitudes of the gaussian fits
+gaussCenter = NaN(3,numel(spotSnips));  % y,x,and z positions
+gaussSigma = NaN(3,numel(spotSnips));   % y,x,and z sigma values
+gaussSigCov = NaN(3,numel(spotSnips)); % y,x,and z sigma covariance coefficients
+gaussOffset = NaN(1,numel(spotSnips)); % inferred background offset
+gaussTotalFluo = NaN(1,numel(spotSnips));% Estimate of total fluorescence using gaussian fit parameters
+
 for i = 1:numel(spotSnips)
-    gaussFitCurr = [spotSnips(i).GaussFitRaw];
-%     if gaussFitCurr(1) >= 1 && spotSnips(i).Volume >= 5
-        gaussAmp(i) = gaussFitCurr(1);
-%     end
+    [gaussFitCurr] = [spotSnips(i).GaussFitRaw];
+    gaussAmp(1,i) = gaussFitCurr(1);
+    gaussCenter(:,i) = gaussFitCurr(2:4);
+    gaussSigma(:,i) = gaussFitCurr(5:7);
+    gaussSigCov(:,i) = gaussFitCurr(8:10);
+    gaussOffset(1,i) = gaussFitCurr(11);
+    gaussTotalFluo(1,i) = spotSnips(i).GaussTotalFluoRaw;
 end
 volume = [spotSnips.Volume];
 
-meanAmp = nanmean(gaussAmp);
-stdAmp = nanstd(gaussAmp);
-varAmp = nanvar(gaussAmp);
+% meanAmp = nanmean(gaussAmp);
+% stdAmp = nanstd(gaussAmp);
+% varAmp = nanvar(gaussAmp);
+
+meanFluo = nanmean(gaussTotalFluo);
+stdFluo = nanstd(gaussTotalFluo);
+varFluo = nanvar(gaussTotalFluo);
 
 spotSnipfile = [resultsPath project '.mat'];
 save(spotSnipfile,'spotSnips')
 
 histFig = figure(7);
-histogram(gaussAmp)
-xlabel('Amplitude of 3D Gaussian Fit (au)')
+histogram(gaussTotalFluo)
+xlabel('Total Fluorescence from 3D Gaussian Fit (au)')
 ylabel('Count')
-title(project, 'Interpreter', 'none')
-legend(['mean = ' num2str(meanAmp) '; std = ' num2str(stdAmp)])
+title([project, ' - Total Fluorescence of Gaussian Spot Fit'], 'Interpreter', 'none')
+legend(['mean = ' num2str(meanFluo) '; std = ' num2str(stdFluo)])
 % saveas(histFig,[figPath project '_hist.fig'])
-% saveas(histFig,[figPath project '_hist.png'])
+saveas(histFig,[figPath project '_hist.png'])
 
 % Plotting to see if the really bright outliers are also the largest spots
 % ampVolScatterFig = figure(8);
@@ -239,3 +258,60 @@ legend(['mean = ' num2str(meanAmp) '; std = ' num2str(stdAmp)])
 % saveas(ampVolScatterFig,[figPath project '_ampVolScatter.fig'])
 % saveas(ampVolScatterFig,[figPath project '_ampVolScatter.png'])
 
+%% Use 0.2 x 0.2 x 0.5 um disk to calculate calibration
+yxRadius = 0.2; %um
+pxSize = 0.107; %um
+zWidth = 0.5; %um
+zStep = 0.5; %um
+pxRadius = round(yxRadius / pxSize); % Calculating how many pixels are in the radius
+
+diskTotalFluo_vec = NaN(1,numel(spotSnips));
+diskMeanFluo_vec = NaN(1,numel(spotSnips));
+
+for i = 1:numel(spotSnips)
+    snipRaw = spotSnips(i).SnipRaw;
+    snipSeg = spotSnips(i).SnipSegmented;
+
+    %Find brightess z slice
+    meanZStep = mean(snipRaw, [1 2]);
+    [~, maxMeanZ] = max(meanZStep);
+%     sumZStep(1,1:9) = sum(SnipRaw, [1 2]);
+%     [~, maxSumZ] = max(sumZStep);
+    brightZSnip = double(snipRaw(:,:,maxMeanZ));
+%     imshow(brightZSnip,[])
+    
+    %Make an image where the center pixel from the gaussian fit is 1
+    gaussCenter(1,1:3) = spotSnips(i).GaussFitRaw(2:4); % y, x, z position of center
+    gaussCenter = round(gaussCenter); % round to nearest pixel
+    centerIm = zeros(size(brightZSnip));
+    centerIm(gaussCenter(1,1),gaussCenter(1,2)) = 1;
+    
+    %Create a mask with the distance from the "center" pixel
+    distIm = bwdist(centerIm);
+    % Mask to keep only the pixels within the defined disk
+    brightZDisk = brightZSnip(distIm < pxRadius);
+    
+    %Calculate total fluorescence in disk
+    diskTotalFluo = sum(brightZDisk);
+    diskMeanFluo = mean(brightZDisk);
+    diskTotalFluo_vec(i) = diskTotalFluo;
+    diskMeanFluo_vec(i) = diskMeanFluo;
+end
+
+diskMeanFig = figure(8);
+histogram(diskMeanFluo_vec)
+xlabel('Mean Fluorescence (au)')
+ylabel('Count')
+title([project, ' - Mean Fluorescence of 0.2 x 0.2 x 0.5 um disk'], 'Interpreter', 'none')
+legend(['mean = ' num2str(nanmean(diskMeanFluo_vec)) '; std = ' num2str(nanstd(diskMeanFluo_vec))])
+% saveas(histFig,[figPath project '_hist.fig'])
+saveas(diskMeanFig,[figPath project '_diskMean_hist.png'])
+
+diskTotalFig = figure(9);
+histogram(diskTotalFluo_vec)
+xlabel('Total Fluorescence (au)')
+ylabel('Count')
+title([project, ' - Total Fluorescence of 0.2 x 0.2 x 0.5 um disk'], 'Interpreter', 'none')
+legend(['mean = ' num2str(nanmean(diskTotalFluo_vec)) '; std = ' num2str(nanstd(diskTotalFluo_vec))])
+% saveas(histFig,[figPath project '_hist.fig'])
+saveas(diskTotalFig,[figPath project '_diskTotal_hist.png'])
