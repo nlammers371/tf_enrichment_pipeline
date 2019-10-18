@@ -23,10 +23,12 @@
 %
 % OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
-function output = main05_conduct_hmm_inference(project,varargin)
+function output = main05_conduct_hmm_inference(project, DropboxFolder, varargin)
 
 close all
 warning('off','all') %Shut off Warnings
+% default path to model scripts
+modelPath = './utilities';
 savio = 0;
 K = 3;
 w = 7;
@@ -36,16 +38,13 @@ nBoots = 10;
 protein_bin_flag = 1;
 n_protein_bins = 10;
 time_bin_flag = 0;
-inference_times = 30*60;
-tWindow = 60*60; % determines width of sliding window
+% inference_times = 30*60;
+% tWindow = 60*60; % determines width of sliding window
 sampleSize = 4000;
 maxWorkers = 12;
 alphaFrac = 1302 / 6000;
 % default paths
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-% default path to model scripts
-modelPath = './utilities';
+[~ , DataPath, ~] =   header_function(DropboxFolder, project); 
 
 %%%%% These options generally remain fixed 
 clipped = 1; % if 0 use "full" trace with leading and trailing 0's
@@ -57,14 +56,14 @@ min_dp_per_inf = 1000; % inference will be aborted if fewer present
 
 for i = 1:numel(varargin)    
     if strcmpi(varargin{i},'dropboxFolder')
-        dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
+        DataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
     elseif ischar(varargin{i}) && i ~= numel(varargin)        
         eval([varargin{i} '=varargin{i+1};']);        
     end
 end
 
 addpath(modelPath); % Route to utilities folder
-load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
 % check that we have proper fields
 if ~dpBootstrap
     warning('Bootstrap option not selected. Setting nBoots to 1')
@@ -92,7 +91,7 @@ out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/'];
 if savio
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
 else    
-    out_prefix = dataPath;
+    out_prefix = DataPath;
 end
 outDir = [out_prefix out_suffix];
 mkdir(outDir);

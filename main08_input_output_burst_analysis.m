@@ -6,15 +6,15 @@ addpath('utilities')
 % define core ID variables
 % project = 'Dl-Ven_snaBAC-mCh';
 project = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\burst_analyses\'];
-mkdir(figPath)
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+[~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
+FigPath = [Figure Root '\' project '\burst_analyses\'];
+mkdir(FigPath)
 % load data
-load([dataPath 'hmm_input_output_results.mat'])
+load([DataPath 'hmm_input_output_results.mat'])
 w = 7;
 K = 3;
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,7 +109,7 @@ h = colorbar;
 caxis([-15 20])
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
-saveas(burst_rise_dur_hm, [figPath 'burst_dur_rise_hm_target.tif'])
+saveas(burst_rise_dur_hm, [FigPath 'burst_dur_rise_hm_target.tif'])
 
 swap_rise_dur_hm = figure;
 swap_rise_dur_hm.Name = 'swap spot burst rise hmm';
@@ -124,7 +124,7 @@ h = colorbar;
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
 caxis([-15 20])
-saveas(swap_rise_dur_hm, [figPath 'burst_dur_rise_hm_swap.tif'])
+saveas(swap_rise_dur_hm, [FigPath 'burst_dur_rise_hm_swap.tif'])
 
 virt_rise_dur_hm = figure;
 virt_rise_dur_hm.Name = 'virtual spot burst rise hmm';
@@ -139,7 +139,7 @@ h = colorbar;
 caxis([-15 20])
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
-saveas(virt_rise_dur_hm, [figPath 'burst_dur_rise_hm_virtual.tif'])
+saveas(virt_rise_dur_hm, [FigPath 'burst_dur_rise_hm_virtual.tif'])
 
 hmm_rise_dur_hm = figure;
 hmm_rise_dur_hm.Name = 'target spot burst rise hmm';
@@ -153,7 +153,7 @@ h = colorbar;
 caxis([.3 1.2])
 ylabel(h, 'sna activity (au)')
 set(gca,'FontSize', 12);
-saveas(hmm_rise_dur_hm, [figPath 'burst_dur_rise_hm_hmm.tif'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_dur_rise_hm_hmm.tif'])
 
 swap_hmm_rise_dur_hm = figure;
 swap_hmm_rise_dur_hm.Name = 'swap spot burst rise hmm';
@@ -167,7 +167,7 @@ h = colorbar;
 caxis([.3 1.2])
 ylabel(h, 'sna activity (au)')
 set(gca,'FontSize', 12);
-saveas(swap_hmm_rise_dur_hm, [figPath 'swap_burst_dur_rise_hm_hmm.tif'])
+saveas(swap_hmm_rise_dur_hm, [FigPath 'swap_burst_dur_rise_hm_hmm.tif'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% FALL HEATMAPS %%%%%%%%%%%%%%%%%%%%%%%%%%
 window_vec = ((1:window_size) - ceil(window_size/2))/3;
@@ -187,7 +187,7 @@ h = colorbar;
 caxis([-12 12])
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
-saveas(burst_fall_dur_hm, [figPath 'burst_dur_fall_hm_target.tif'])
+saveas(burst_fall_dur_hm, [FigPath 'burst_dur_fall_hm_target.tif'])
 
 swap_fall_dur_hm = figure;
 swap_fall_dur_hm.Name = 'swap spot burst fall protein';
@@ -201,7 +201,7 @@ h = colorbar;
 caxis([-12 12])
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
-saveas(swap_fall_dur_hm, [figPath 'burst_dur_fall_hm_swap.tif'])
+saveas(swap_fall_dur_hm, [FigPath 'burst_dur_fall_hm_swap.tif'])
 
 virt_fall_dur_hm = figure;
 virt_fall_dur_hm.Name = 'virtual spot burst fall protein';
@@ -215,7 +215,7 @@ h = colorbar;
 caxis([-12 12])
 ylabel(h, 'Dorsal levels (au)')
 set(gca,'FontSize', 12);
-saveas(virt_fall_dur_hm, [figPath 'burst_dur_fall_hm_virtual.tif'])
+saveas(virt_fall_dur_hm, [FigPath 'burst_dur_fall_hm_virtual.tif'])
 
 hmm_fall_dur_hm = figure;
 hmm_fall_dur_hm.Name = 'target burst fall hmm';
@@ -229,7 +229,7 @@ h = colorbar;
 caxis([.3 1.3])
 ylabel(h, 'sna activity (au)')
 set(gca,'FontSize', 12);
-saveas(hmm_fall_dur_hm, [figPath 'burst_dur_fall_hm_hmm.tif'])
+saveas(hmm_fall_dur_hm, [FigPath 'burst_dur_fall_hm_hmm.tif'])
 
 swap_hmm_fall_dur_hm = figure;
 swap_hmm_fall_dur_hm.Name = 'swap burst fall hmm';
@@ -243,7 +243,7 @@ h = colorbar;
 caxis([.3 1.3])
 ylabel(h, 'sna activity (au)')
 set(gca,'FontSize', 12);
-saveas(swap_hmm_fall_dur_hm, [figPath 'burst_dur_fall_hm_swap_hmm.tif'])
+saveas(swap_hmm_fall_dur_hm, [FigPath 'burst_dur_fall_hm_swap_hmm.tif'])
 
 
 
@@ -265,7 +265,7 @@ set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
 zlabel('Dorsal levels (au)')    
 view(-15,20)
 grid on
-saveas(burst_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_target.tif'])
+saveas(burst_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_target.tif'])
 
 hmm_rise_dur_wt = figure;
 index_vec = 1:numel(burst_range);
@@ -283,7 +283,7 @@ set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
 zlabel('sna activity (au)')    
 view(-15,20)
 grid on
-saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
+saveas(hmm_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_hmm.tif'])
 
 
 
@@ -305,7 +305,7 @@ set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
 zlabel('Dorsal levels (au)')    
 view(15,20)
 grid on
-saveas(burst_fall_dur_wt, [figPath 'burst_dur_fall_waterfall_target.tif'])
+saveas(burst_fall_dur_wt, [FigPath 'burst_dur_fall_waterfall_target.tif'])
 
 
 hmm_fall_dur_wt = figure;
@@ -324,7 +324,7 @@ set(gca,'xtick',1:3:window_size,'xticklabels',-5:5)
 zlabel('sna activity (au)')    
 view(15,20)
 grid on
-saveas(hmm_fall_dur_wt, [figPath 'burst_dur_fall_waterfall_hmm.tif'])
+saveas(hmm_fall_dur_wt, [FigPath 'burst_dur_fall_waterfall_hmm.tif'])
 
 %%%% Burst example heatmap
 

@@ -4,8 +4,8 @@ close all
 % define core ID variables
 % project = 'Dl-Ven_snaBAC-mCh';
 project = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+[RawResultsPath, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;
 % window analysis params
@@ -14,7 +14,7 @@ window_size = 15;
 window_vec = -window_size:window_size;
 fit_array = [ones(numel(window_vec),1) window_vec'];
 % load input-output data set
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 
 % perform time averaging to get protein trends over time
 gap_vec_full = [hmm_input_output.dt_filter_gap];
@@ -103,7 +103,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).swap_spot_protein_dt = swap_spot_protein_dt;
 end
 %save update structure
-save([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
  
 %%% Now compile snips for average burst dynamics analyses
 % generate master set of vectors for feature classification
@@ -255,4 +255,4 @@ results_struct.lag_size_vec = lag_size_vec;
 results_struct.lead_size_vec = lead_size_vec;
 results_struct.feature_sign_vec = feature_sign_vec;
 % save
-save([dataPath 'hmm_input_output_results.mat'],'results_struct')
+save([DataPath 'hmm_input_output_results.mat'],'results_struct')

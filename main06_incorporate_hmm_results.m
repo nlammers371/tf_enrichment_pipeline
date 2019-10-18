@@ -25,8 +25,7 @@ close all
 addpath('./utilities')
 %%%%% These options will remain fixed for now
 alphaFrac = 1302 / 6000;
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
+[~, DataPath, ~] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;  
 %%%%%%%%%%%%%%
@@ -41,7 +40,7 @@ for i = 1:numel(varargin)
     end
 end
 % load master nucleus data set
-load([dataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
 minDP = nucleus_struct_protein(1).minDP;
 
 Tres = nucleus_struct_protein(1).TresInterp; % Time Resolution
@@ -60,18 +59,18 @@ for i = 1:w
 end
 % Set write path (inference results are now written to external directory)
 hmm_suffix =  ['hmm_inference/w' num2str(w) '_K' num2str(K) '/']; 
-file_list = dir([dataPath hmm_suffix 'hmm_results*.mat']);
+file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 if numel(file_list) > 1
     warning('multiple inference files detected. Ignoring all but first')
 end
 
-inference_results = load([dataPath hmm_suffix file_list(1).name]);
+inference_results = load([DataPath hmm_suffix file_list(1).name]);
 inference_results = inference_results.output;
 
 % check for existence of soft fit structure
 soft_fit_flag = 1;
-if exist([dataPath hmm_suffix 'soft_fit_struct.mat']) > 0
-    fit_props = dir([dataPath hmm_suffix 'soft_fit_struct.mat']);
+if exist([DataPath hmm_suffix 'soft_fit_struct.mat']) > 0
+    fit_props = dir([DataPath hmm_suffix 'soft_fit_struct.mat']);
     fit_date = datenum(fit_props(1).date);
     hmm_date = datenum(file_list(1).date);
     if fit_date > hmm_date
@@ -110,9 +109,9 @@ if soft_fit_flag
     toc
     soft_fit_struct = local_em_outputs.soft_struct;
     soft_fit_struct.particle_index = particle_index(qc_indices);
-    save([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+    save([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 else
-    load([dataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+    load([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
 end
 
 %%% now extract corresponding hmm traces
@@ -250,4 +249,4 @@ for i = 1:numel(hmm_input_output)
 end
 
 % save results
-save([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
