@@ -48,6 +48,7 @@ snipPath = [DataPath '/qc_images/'];
 refPath = [DataPath '/refFrames/'];
 mkdir(refPath)
 mkdir(snipPath)
+addpath('./utilities')
 % get MCP channel
 options = [1 2];
 mcp_channel = options(options~=proteinChannel);
@@ -97,7 +98,7 @@ set_index = unique(set_vec);
 
 px_size = nucleus_struct(1).PixelSize;
 z_size = nucleus_struct(1).zStep;
-% voxel_size = z_size * px_size^2;
+voxel_size = z_size * px_size^2;
 % determine size of neighborhood to use
 nb_size = round(10 ./ px_size);
 % size of gaussian smoothing kernel 

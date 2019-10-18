@@ -29,21 +29,20 @@
 % need to adapt a different component of the pipleine either to resolve
 % issue or to remove problematic observations
 
-function main03_check_control_selection(project,varargin)
+function main03_check_control_selection(project, DropboxFolder, varargin)
 close all
-% specify paths
-dropboxFolder =  'E:\Nick\Dropbox (Garcia Lab)\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '/'];
+addpath('./utilities')
+[~, DataPath, FigPathRoot] =   header_function(DropboxFolder, project);
+FigPath = [FigPathRoot '/' project '/'];
 for i = 1:numel(varargin)    
     if strcmpi(varargin{i}, 'dropboxFolder')        
         dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
-        figPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/control_selection/'];
+        FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/control_selection/'];
     end
 end
 
 snipPath = [dataPath 'qc_images/'];
-mkdir(figPath);
+mkdir(FigPath);
 
 % load data
 load([dataPath '/qc_ref_struct.mat']);
@@ -110,8 +109,8 @@ while ~exit_flag
             break
         elseif strcmp(cc,'s')
             disp('saving figure')
-            saveas(qc_fig,[figPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
-            saveas(qc_fig,[figPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])             
+            saveas(qc_fig,[FigPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.png'])
+            saveas(qc_fig,[FigPath 'qc_pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',frame) '.pdf'])             
         end       
     end 
 %     close all
