@@ -48,7 +48,7 @@ protein_q4_snip = fluo_io_struct.protein_q4_snip / VoxelSize;
 
 % determine bounds
 protein_lb = 0;%prctile([protein_q1_snip(:)'  protein_q4_snip(:)'],1);
-protein_ub = floor(max([protein_q1_snip(:)'  protein_q4_snip(:)'])/10)*10;
+protein_ub = 70;%floor(max([protein_q1_snip(:)'  protein_q4_snip(:)'])/10)*10;
 
 % Make titles
 spot_protein_title_dim = 'Dorsal-Venus at Active snail locus (bottom quintile)';

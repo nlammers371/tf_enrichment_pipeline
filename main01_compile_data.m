@@ -22,7 +22,7 @@
 % OUTPUT: nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_data(project,varargin)
+function nucleus_struct = main01_compile_data(project,DropboxFolder,varargin)
 addpath('./utilities')
 % set defaults
 firstNC = 14;
@@ -30,20 +30,13 @@ minDP = 15;
 pctSparsity = 1;
 two_spot_flag = contains(project, '2spot');
 min_time = 6*60; % take no fluorescence data prior to this point
-
 TresInterp = 20; 
-% expType = 'input_output';
-% dataPath = ['../dat/' project '/']; % data mat directory
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-folderPath = [dropboxFolder 'LocalEnrichmentResults\'];
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
+[RawResultsRoot, DataPath, ~] =   header_function(DropboxFolder, project);
+
 for i = 1:numel(varargin)
     if ischar(varargin{i})
         if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
            eval([varargin{i} '=varargin{i+1};']);
-        end
-        if strcmpi(varargin{i},'dropboxFolder')
-            dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
         end
     end
 end
@@ -52,7 +45,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % find sheet
-sheet_path = [folderPath 'DataStatus.xlsx'];
+sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
 sheet_index = find(ismember(sheet_names,project));
 if isempty(sheet_index)
@@ -75,9 +68,9 @@ for i = 1:numel(prefix_cell_raw)
 end
     
 %%% make filepath
-mkdir(dataPath);
+mkdir(DataPath);
 %%% assign save names
-nucleus_name = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
+nucleus_name = [DataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%%
@@ -89,16 +82,16 @@ fov_filenames = {}; % fov info
 for d = 1:numel(prefix_cell)
     thisdir = prefix_cell{d};            
     % append file paths
-    cn_filenames = [cn_filenames {[folderPath thisdir '/CompiledNuclei.mat']}];
-    cp_filenames = [cp_filenames {[folderPath thisdir '/CompiledParticles.mat']}];        
-    nc_filenames = [nc_filenames {[folderPath thisdir '/' thisdir '_lin.mat']}];           
-    fov_filenames = [fov_filenames {[folderPath thisdir '/FrameInfo.mat']}];        
+    cn_filenames = [cn_filenames {[RawResultsRoot thisdir '/CompiledNuclei.mat']}];
+    cp_filenames = [cp_filenames {[RawResultsRoot thisdir '/CompiledParticles.mat']}];        
+    nc_filenames = [nc_filenames {[RawResultsRoot thisdir '/' thisdir '_lin.mat']}];           
+    fov_filenames = [fov_filenames {[RawResultsRoot thisdir '/FrameInfo.mat']}];        
 end
 
 % generate set key data structure
 set_key = array2table((1:numel(prefix_cell))','VariableNames',{'setID'});
 set_key.prefix = prefix_cell';
-save([dataPath 'set_key.mat'],'set_key')
+save([DataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
@@ -335,6 +328,6 @@ end
 save(nucleus_name ,'nucleus_struct') 
 
 disp('calculating psf dims...')
-calculate_average_psf(project,'dropboxFolder',dropboxFolder);
+calculate_average_psf(project,DropboxFolder);
 
 disp('done.')

@@ -1,11 +1,11 @@
 % Script to calculate average spot profile from data to use for protein
 % sampling
-function psf_dims = calculate_average_psf(project,varargin)
+function psf_dims = calculate_average_psf(project,DropboxFolder, varargin)
 close all
 addpath('./utilities')
+
+[~, DataPath, ~] =   header_function(DropboxFolder, project);
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 % sampling parameters
 n_spots = 1000;
 mcp_channel = 2;
@@ -14,21 +14,17 @@ z_stack_size = 5;
 xy_sigma_checks = [1 4];
 z_sigma_checks = [1 4];
 
-for i = 1:(numel(varargin)-1)  
-    if ischar(varargin{i}) && ~strcmpi(varargin{i},'dropboxFolder')
-        if i ~= numel(varargin)
-            if ~ischar(varargin{i+1})
-                eval([varargin{i} '=varargin{i+1};']);        
-            end
+for i = 1:(numel(varargin)-1)      
+    if i ~= numel(varargin)
+        if ~ischar(varargin{i+1})
+            eval([varargin{i} '=varargin{i+1};']);        
         end
-    elseif strcmpi(varargin{i},'dropboxFolder')
-        dataPath = [varargin{i+1} '\ProcessedEnrichmentData\' project '/'];
     end
 end
 
 % load nucleus structure
-load([dataPath 'nucleus_struct.mat'])
-load([dataPath '/set_key.mat'],'set_key')
+load([DataPath 'nucleus_struct.mat'])
+load([DataPath '/set_key.mat'],'set_key')
 % remove all frames that do not contain a segmented particle or that
 % contain a particle that fails QC standards
 % nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
@@ -156,4 +152,4 @@ if psf_dims.xy_sigma < xy_sigma_checks(1) || psf_dims.xy_sigma > xy_sigma_checks
 elseif psf_dims.z_sigma < z_sigma_checks(1) || psf_dims.z_sigma > z_sigma_checks(2)
     warning('z sigma value returned by inference falls outside normal bounds')
 end
-save([dataPath 'psf_dims.mat'],'psf_dims')
+save([DataPath 'psf_dims.mat'],'psf_dims')
