@@ -4,10 +4,11 @@ clear
 close all
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\simulation_checks\'];
-mkdir(figPath)
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+[~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
+FigPath = [FigureRoot '\' project '\simulation_checks\'];
+mkdir(FigPath)
+
 % HMM params
 w = 7;
 K = 3;  
@@ -21,12 +22,12 @@ protein_burst_dur = 60*2; % in seconds
 window_size = 15;
 % Set write path (inference results are now written to external directory)
 hmm_suffix =  ['hmm_inference/w' num2str(w) '_K' num2str(K) '/']; 
-file_list = dir([dataPath hmm_suffix 'hmm_results*.mat']);
+file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 if numel(file_list) > 1
     warning('multiple inference files detected. Ignoring all but first')
 end
 
-inference_results = load([dataPath hmm_suffix file_list(1).name]);
+inference_results = load([DataPath hmm_suffix file_list(1).name]);
 inference_results = inference_results.output;
 
 % extract parameters
@@ -232,8 +233,8 @@ xlabel('distance from start of burst (min)')
 ylabel('protein level (au)')
 set(gca,'Fontsize',12);
 legend('lag-filtered','all bursts')
-saveas(profile_fig, [figPath 'sim_protein_profiles.tif'])
-saveas(profile_fig, [figPath 'sim_protein_profiles.pdf'])
+saveas(profile_fig, [FigPath 'sim_protein_profiles.tif'])
+saveas(profile_fig, [FigPath 'sim_protein_profiles.pdf'])
 
 % duration correlation
 dur_fig = figure;
@@ -245,5 +246,5 @@ grid on
 xlabel('transcription burst duration (min)')
 ylabel('protein level (au)')
 set(gca,'Fontsize',12);
-saveas(profile_fig, [figPath 'sim_dur_trend.tif'])
-saveas(profile_fig, [figPath 'sim_dur_trend.pdf'])
+saveas(profile_fig, [FigPath 'sim_dur_trend.tif'])
+saveas(profile_fig, [FigPath 'sim_dur_trend.pdf'])

@@ -4,17 +4,17 @@ close all
 addpath('utilities')
 % set folder paths
 project = 'Dl-Ven_snaBAC-mCh';
-DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
-
+dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '/'];
 % specify inference parameters
 K = 3;
 w = 7;
-load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
-resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K) '\'];
+load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+resultsPath = [dataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K) '\'];
 % specify figure path
-FigPath = [FigRoot '\' project '\hmm_figs\'];
-mkdir(FigPath);
+figPath = [dropboxFolder '\LocalEnrichmentFigures\' project '\_paper_figures\hmm_figs\'];
+mkdir(figPath);
 % read in inference results
 inf_files = dir([resultsPath '*.mat']);
 inference_results = struct;
@@ -161,8 +161,8 @@ xlabel('Dl concentration (au)')
 ylabel('burst amplitude (au)')
 set(gca,'Fontsize',14)
 box on
-saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
-saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
+saveas(r_trend,[figPath,'burst_amp_mf_pt.tif'])
+saveas(r_trend,[figPath,'burst_amp_mf_pt.pdf'])
 
 dur_trend = figure;
 hold on
@@ -176,8 +176,8 @@ xlabel('Dl concentration (au)')
 ylabel('burst duration (min)')
 set(gca,'Fontsize',14)
 box on
-saveas(dur_trend,[FigPath,'burst_dur_mf_pt.tif'])
-saveas(dur_trend,[FigPath,'burst_dur_mf_pt.pdf'])
+saveas(dur_trend,[figPath,'burst_dur_mf_pt.tif'])
+saveas(dur_trend,[figPath,'burst_dur_mf_pt.pdf'])
 
 freq_trend = figure;
 hold on
@@ -191,5 +191,5 @@ xlabel('Dl concentration (au)')
 ylabel('burst frequency (min^{-1})')
 set(gca,'Fontsize',14)
 box on
-saveas(freq_trend,[FigPath,'burst_freq_mf_pt.tif'])
-saveas(freq_trend,[FigPath,'burst_freq_mf_pt.pdf'])
+saveas(freq_trend,[figPath,'burst_freq_mf_pt.tif'])
+saveas(freq_trend,[figPath,'burst_freq_mf_pt.pdf'])

@@ -6,15 +6,15 @@ addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\burst_analyses\'];
-mkdir(figPath)
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+[~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
+FigPath = [FigRoot '\' project '\burst_analyses\'];
+mkdir(FigPath)
 % load data
-load([dataPath 'hmm_input_output_results.mat'])
+load([DataPath 'hmm_input_output_results.mat'])
 w = 7;
 K = 3;
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output');
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output');
 
 % define size of window of interest
 roi_window = 6; 
@@ -69,5 +69,5 @@ ylim([40 140])
 xlabel('burst duration (minutes)')
 ylabel('Dorsal enrichment (au)')
 set(gca,'FontSize',14)
-saveas(dur_sz_fig,[figPath 'burst_dur_surge_sz_fig.pdf'])
-saveas(dur_sz_fig,[figPath 'burst_dur_surge_sz_fig.png'])
+saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.pdf'])
+saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.png'])

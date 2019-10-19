@@ -6,16 +6,16 @@ addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
 % dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
-dropboxFolder = 'E:\Meghan\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\_paper_figures\input_output02\'];
-mkdir(figPath)
+DropboxFolder = 'E:\Meghan\Dropbox\';
+[~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
+FigPath = [FigRoot '\_paper_figures\input_output02\'];
+mkdir(FigPath)
+
 % load data
-load([dataPath 'hmm_input_output_results.mat'])
+load([DataPath 'hmm_input_output_results.mat'])
 w = 7;
 K = 3;
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
-
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 
 % burst rise range
 burst_range = 2:12;
@@ -69,8 +69,8 @@ caxis([-20 20])
 c.Ticks = linspace(-20,20,5);
 ylabel(c, 'Dorsal enrichment (au)','FontSize',14)
 set(gca,'FontSize', 14);
-saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_protein.tif'])
-saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_protein.pdf'])
+saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_protein.tif'])
+saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_protein.pdf'])
 
 
 % transcription channel
@@ -87,8 +87,8 @@ c = colorbar;
 caxis([0 1.5])
 ylabel(c, '{\itsna} transcriptional activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
-saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.tif'])
-saveas(hmm_rise_dur_hm, [figPath 'burst_rise_hm_hmm.pdf'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.tif'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.pdf'])
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE WATERFALLS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,8 +115,8 @@ view(-15,20)
 set(gca,'Fontsize',14)
 % xlim([-3.5 3.5])
 grid on
-saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.tif'])
-saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.pdf'])
+saveas(burst_rise_dur_wt, [FigPath 'burst_waterfall_target.tif'])
+saveas(burst_rise_dur_wt, [FigPath 'burst_waterfall_target.pdf'])
 
 % transcription waterfall
 hmm_rise_dur_wt = figure;
@@ -137,8 +137,8 @@ zlabel('sna activity (au)')
 view(-15,20)
 set(gca,'Fontsize',14)
 grid on
-saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
-saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.pdf'])
+saveas(hmm_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_hmm.tif'])
+saveas(hmm_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_hmm.pdf'])
 
 
 %%
@@ -197,6 +197,6 @@ for i = 1:numel(durationCohorts)
     hold off
     StandardFigurePBoC(hmmAreaPlot, gca)
     
-    saveas(burstFig, [figPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.pdf'])
-    saveas(burstFig, [figPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.tif'])
+    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.pdf'])
+    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.tif'])
 end

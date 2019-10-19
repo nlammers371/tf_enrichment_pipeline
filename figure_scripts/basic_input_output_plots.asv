@@ -6,19 +6,17 @@ addpath('utilities')
 % set ID variables
 targetProject = 'Dl-Ven_snaBAC-mCh';
 controlProject = 'Dl-Ven_hbP2P-mCh';
-DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
-[~, DataPathControl, ~] =   header_function(DropboxFolder, targetProject); 
-
-FigPath = [FigureRoot '\' targetProject '\input_output01\'];
-mkdir(FigPath)
+[~, DataPathControl, FigureRoot] =   header_function(DropboxFolder, targetProject); 
+figPath = [DropboxFolder 'LocalEnrichmentFigures\' targetProject '\input_output01\'];
+mkdir(figPath)
 
 % load data
 load([DataPathTarget 'hmm_input_output_results.mat'])
 target_results_struct = results_struct;
 load([DataPathControl 'hmm_input_output_results.mat'])
 control_results_struct = results_struct;
-
 Tres = 20; % seconds
 % extract relevant arrays from target project 
 lag_dur_vec_target = target_results_struct.lag_dur_vec;
@@ -98,8 +96,8 @@ set(gca,'Fontsize',12,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
 % save
-saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.tif'])
-saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.pdf'])
+saveas(burst_trend_fig,[figPath 'de-meaned_locus_trend.tif'])
+saveas(burst_trend_fig,[figPath 'de-meaned_locus_trend.pdf'])
 
 % (2) make de-trended input-output figure with controls
 
@@ -179,8 +177,8 @@ set(gca,'Fontsize',12,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
 % save
-saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.tif'])
-saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.pdf'])
+saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.tif'])
+saveas(burst_dt_fig,[figPath 'locus_trend_w_controls.pdf'])
 
 % make figure
 burst_dt_fig_swap = figure;
@@ -214,8 +212,8 @@ set(gca,'Fontsize',12,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
 % save
-saveas(burst_dt_fig_swap,[FigPath 'locus_trend_w_swap_control.tif'])
-saveas(burst_dt_fig_swap,[FigPath 'locus_trend_w_swap_control.pdf'])
+saveas(burst_dt_fig_swap,[figPath 'locus_trend_w_swap_control.tif'])
+saveas(burst_dt_fig_swap,[figPath 'locus_trend_w_swap_control.pdf'])
 %%
 %%% (3) Make bar plots of preceding and succeeding 2 minutes
 before_ids = time_axis < 0 & time_axis >=-2;
@@ -257,5 +255,5 @@ xtickangle(30)
 ylabel('Dorsal enrichment (au)')
 ylim([-8 14])
 grid on
-saveas(bar_fig,[FigPath 'bar_plots.tif'])
-saveas(bar_fig,[FigPath 'bar_plots.pdf'])
+saveas(bar_fig,[figPath 'bar_plots.tif'])
+saveas(bar_fig,[figPath 'bar_plots.pdf'])

@@ -6,15 +6,15 @@ addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\' project '\_paper_figures\input_output02\'];
-mkdir(figPath)
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+[~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
+FigPath = [FigRoot '\' project '\_paper_figures\input_output02\'];
+mkdir(FigPath)
 % load data
-load([dataPath 'hmm_input_output_results.mat'])
+load([DataPath 'hmm_input_output_results.mat'])
 w = 7;
 K = 3;
-load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 
 
 % burst rise range
@@ -88,8 +88,8 @@ h = colorbar;
 caxis([-15 20])
 ylabel(h, 'Dorsal levels (au)','FontSize',14)
 set(gca,'FontSize', 14);
-saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_target.tif'])
-saveas(burst_rise_dur_hm, [figPath 'burst_rise_hm_target.pdf'])
+saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_target.tif'])
+saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_target.pdf'])
 
 swap_rise_dur_hm = figure;
 swap_rise_dur_hm.Name = 'swap spot burst rise hmm';
@@ -103,8 +103,8 @@ h = colorbar;
 ylabel(h, 'Dorsal levels (au)','FontSize',14)
 set(gca,'FontSize', 12);
 caxis([-15 20])
-saveas(swap_rise_dur_hm, [figPath 'burst_rise_hm_swap.tif'])
-saveas(swap_rise_dur_hm, [figPath 'burst_rise_hm_swap.pdf'])
+saveas(swap_rise_dur_hm, [FigPath 'burst_rise_hm_swap.tif'])
+saveas(swap_rise_dur_hm, [FigPath 'burst_rise_hm_swap.pdf'])
 
 virt_rise_dur_hm = figure;
 virt_rise_dur_hm.Name = 'virtual spot burst rise hmm';
@@ -119,8 +119,8 @@ h = colorbar;
 caxis([-15 20])
 ylabel(h, 'Dorsal levels (au)','FontSize',14)
 set(gca,'FontSize', 12);
-saveas(virt_rise_dur_hm, [figPath 'burst_rise_hm_virtual.tif'])
-saveas(virt_rise_dur_hm, [figPath 'burst_rise_hm_virtual.pdf'])
+saveas(virt_rise_dur_hm, [FigPath 'burst_rise_hm_virtual.tif'])
+saveas(virt_rise_dur_hm, [FigPath 'burst_rise_hm_virtual.pdf'])
 %%
 hmm_rise_dur_hm = figure;
 hmm_rise_dur_hm.Name = 'target spot burst rise hmm';
@@ -135,8 +135,8 @@ h = colorbar;
 caxis([0 1.5])
 ylabel(h, 'sna activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
-saveas(hmm_rise_dur_hm, [figPath 'burst_dur_rise_hm_hmm.tif'])
-saveas(hmm_rise_dur_hm, [figPath 'burst_dur_rise_hm_hmm.pdf'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_dur_rise_hm_hmm.tif'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_dur_rise_hm_hmm.pdf'])
 
 swap_hmm_rise_dur_hm = figure;
 swap_hmm_rise_dur_hm.Name = 'swap spot burst rise hmm';
@@ -150,8 +150,8 @@ h = colorbar;
 caxis([.3 1.5])
 ylabel(h, 'sna activity (au)','FontSize',14)
 set(gca,'FontSize', 12);
-saveas(swap_hmm_rise_dur_hm, [figPath 'swap_burst_dur_rise_hm_hmm.tif'])
-saveas(swap_hmm_rise_dur_hm, [figPath 'swap_burst_dur_rise_hm_hmm.pdf'])
+saveas(swap_hmm_rise_dur_hm, [FigPath 'swap_burst_dur_rise_hm_hmm.tif'])
+saveas(swap_hmm_rise_dur_hm, [FigPath 'swap_burst_dur_rise_hm_hmm.pdf'])
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE WATERFALLS %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,8 +177,8 @@ view(-15,20)
 set(gca,'Fontsize',14)
 % xlim([-3.5 3.5])
 grid on
-saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.tif'])
-saveas(burst_rise_dur_wt, [figPath 'burst_waterfall_target.pdf'])
+saveas(burst_rise_dur_wt, [FigPath 'burst_waterfall_target.tif'])
+saveas(burst_rise_dur_wt, [FigPath 'burst_waterfall_target.pdf'])
 
 
 
@@ -200,6 +200,6 @@ zlabel('sna activity (au)')
 view(-15,20)
 set(gca,'Fontsize',14)
 grid on
-saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.tif'])
-saveas(hmm_rise_dur_wt, [figPath 'burst_dur_rise_waterfall_hmm.pdf'])
+saveas(hmm_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_hmm.tif'])
+saveas(hmm_rise_dur_wt, [FigPath 'burst_dur_rise_waterfall_hmm.pdf'])
 

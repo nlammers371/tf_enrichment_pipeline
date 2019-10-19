@@ -40,14 +40,13 @@ yDim = FrameInfo(1).LinesPerFrame;
 MaxRadius = round(5/FrameInfo(1).PixelSize);
 se = strel('disk',1);
 % generate ref frame
-[px, py] = meshgrid(1:xDim,1:yDim);
 if iscell(MeanVectorAP)
     MeanVectorAP = MeanVectorAP{1};
 end
 FrameRange = nc14:length(MeanVectorAP);
 TimeVec = (ElapsedTime - ElapsedTime(nc14))*60;
 % set write path 
-writePath = [PrefixDropboxRoot 'LocalEnrichmentFigures/hmm_movies/' Prefix '/'];
+writePath = [PrefixDropboxRoot 'LocalEnrichmentFigures/PipelineOutput/hmm_movies/' Prefix '/'];
 mkdir(writePath);
 
 % Set write directory

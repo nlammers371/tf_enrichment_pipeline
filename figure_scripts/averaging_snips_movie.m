@@ -15,19 +15,19 @@ rawEnrichHeatmap_lb = 1.25;
 % relEnrichHeatmap_lb = 1;
 
 project = 'Dl-Ven_snaBAC-mCh';
+DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 
-dropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
-dataPath = [dropboxFolder '\ProcessedEnrichmentData\' project '\'];
-figPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\PipelineOutput\' project '\'];
+[~, DataPath, ~] =   header_function(DropboxFolder, project);
+FigPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\PipelineOutput\' project '\'];
 
-writePath = [figPath '\avg_snips_movie_frames\'];
+writePath = [FigPath '\avg_snips_movie_frames\'];
 mkdir(writePath)
 
 % paperFigPath = [figPath 'paperFigs/'];
 % basicFigPath = [figPath 'basicFigs/'];
 
 % Load analysis data
-load([dataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
+load([DataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
 
 %% Extract and Process Snip Stacks
 
