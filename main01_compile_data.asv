@@ -118,7 +118,7 @@ for i = 1:length(cp_filenames)
     if iscell(cp_particles)
         cp_particles = cp_particles{1};
     end   
-    threeD_flag = isfield(cp_particles,'Fluo3DRaw');
+    threeD_flag = isfield(cp_particles,'zPosGauss3D');
     % check for 3D fit data
     % set identifier
     setID = i;            
@@ -287,13 +287,13 @@ for i = 1:length(cp_filenames)
             cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
         if threeD_flag
             s_cells(nc_ind).xPosParticle3D(ismember(nc_frames,raw_pt_frames)) = ...
-                cp_particles(j).xPosGauss3D(ismember(raw_pt_frames,nc_frames));
+            cp_particles(j).xPosGauss3D(ismember(raw_pt_frames,nc_frames));
             s_cells(nc_ind).yPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
                 cp_particles(j).yPosGauss3D(ismember(raw_pt_frames,nc_frames));   
             s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
                 cp_particles(j).zPosGauss3D(ismember(raw_pt_frames,nc_frames));
             s_cells(nc_ind).Fluo3DRaw(ismember(nc_frames,raw_pt_frames)) = ...
-                cp_particles(j).Fluo3DRaw(ismember(raw_pt_frames,nc_frames));
+                zPosGauss3D(ismember(raw_pt_frames,nc_frames));
         end
         % add qc info
         s_cells(nc_ind).N = nDP;
@@ -311,11 +311,7 @@ end
 
 disp('interpolating data...')
 % generate interpolation fields
-if threeD_flag
-    interp_fields = {'fluo','fluo3D'};
-else
-    interp_fields = {'fluo'};
-end
+interp_fields = {'fluo','fluo3D'};
 interpGrid = 0:TresInterp:60*60;
 for i = 1:numel(nucleus_struct)
     time_vec = nucleus_struct(i).time;
