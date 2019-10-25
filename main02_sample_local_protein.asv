@@ -406,9 +406,9 @@ for i = 1:size(set_frame_array,1)
             ismember(z_range3_full,z_range3)) = z_ref(y_range3,x_range3,z_range3);
         % generate weight box
         wt_box = exp(-.5*(((y_spot-y_ref_box)./xy_sigma).^2+((x_spot-x_ref_box)./xy_sigma).^2 + ...
-            ((z_spot-z_ref_box)./z_sigma).^2));
+            ((z_spot-z_ref_box)./z_sigma).^2);
                 
-        spot_protein_vec_3d(j) = nansum(pt_samp_box(:).*wt_box) / nansum(~isnan(pt_samp_box(:)).*wt_box);
+        spot_protein_vec_3d(j) = nansum(pt_samp_box./nanmean(vol_pt_spot(:));% / sum(vol_denominator(:)) / voxel_size; 
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            

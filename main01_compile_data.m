@@ -305,6 +305,7 @@ end
 % add fields related to 2 spot analyses
 for i = 1:numel(nucleus_struct)
     nucleus_struct(i).two_spot_flag = two_spot_flag;
+    nucleus_struct(i).threeD_flag = threeD_flag;
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
 end
