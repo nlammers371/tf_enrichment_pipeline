@@ -340,7 +340,7 @@ for i = 1:size(set_frame_array,1)
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
-    r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);        
+    r_dist_mat = sqrt(double(x_dist_mat.^2 + y_dist_mat.^2));        
         
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
