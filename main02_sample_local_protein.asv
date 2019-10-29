@@ -539,7 +539,7 @@ for i = 1:size(set_frame_array,1)
                 yc = y_pos_vec(new_index);
                 ec = nc_edge_dist_vec(new_index);             
             else
-                warning('Unable to select serialized control sample')
+                error('This should not happen')
             end
         end       
         % draw samples
