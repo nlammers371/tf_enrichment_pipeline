@@ -34,18 +34,18 @@ close all
 addpath('./utilities')
 [~, DataPath, FigPathRoot] =   header_function(DropboxFolder, project);
 FigPath = [FigPathRoot '/' project '/'];
-for i = 1:numel(varargin)    
-    if strcmpi(varargin{i}, 'dropboxFolder')        
-        dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
-        FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/control_selection/'];
-    end
-end
+% for i = 1:numel(varargin)    
+%     if strcmpi(varargin{i}, 'dropboxFolder')        
+%         dataPath = [varargin{i+1} '/ProcessedEnrichmentData/' project '/'];
+%         FigPath = [varargin{i+1} '/LocalEnrichmentFigures/' project '/control_selection/'];
+%     end
+% end
 
-snipPath = [dataPath 'qc_images/'];
+snipPath = [DataPath 'qc_images/'];
 mkdir(FigPath);
 
 % load data
-load([dataPath '/qc_ref_struct.mat']);
+load([DataPath '/qc_ref_struct.mat']);
 particle_index_full = qc_ref_struct.particle_index_full;
 particle_frames_full = qc_ref_struct.particle_frames_full;
 % iterate through snip files

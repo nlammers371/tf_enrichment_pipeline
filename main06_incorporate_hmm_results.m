@@ -58,7 +58,7 @@ for i = 1:w
     end
 end
 % Set write path (inference results are now written to external directory)
-hmm_suffix =  ['hmm_inference/w' num2str(w) '_K' num2str(K) '/']; 
+hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
 file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 if numel(file_list) > 1
     warning('multiple inference files detected. Ignoring all but first')
