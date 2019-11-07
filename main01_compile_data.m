@@ -1,4 +1,4 @@
-% main01_compile_data(project, FolderPath, keyword, include_vec)
+% main01_compile_data(project,DropboxFolder,varargin)
 %
 % DESCRIPTION
 % Funcion to compile relevant outputs from image analysis pipeline across
@@ -8,6 +8,8 @@
 % ARGUMENTS
 % project: master ID variable (should match a tab name in the Data Status
 % sheet)
+% DropboxFolder: full file path to folder containing compiled imaging
+% results
 
 % OPTIONS
 % dropboxFolder: Pass this option, followed by the path to data folder 
@@ -67,9 +69,9 @@ for i = 1:numel(prefix_cell_raw)
     end
 end
     
-%%% make filepath
+% make filepath
 mkdir(DataPath);
-%%% assign save names
+% assign save names
 nucleus_name = [DataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,10 +97,11 @@ save([DataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
+
 disp('compiling data...')
 nucleus_struct = [];
 % Loop through filenames    
-for i = 1:length(cp_filenames) 
+for i = 1%:length(cp_filenames) 
     % read in raw files
     try
         load(nc_filenames{i}) % Ellipse Info
@@ -115,10 +118,12 @@ for i = 1:length(cp_filenames)
     if iscell(cp_particles)
         cp_particles = cp_particles{1};
     end   
-
+%     threeD_flag = isfield(cp_particles,'Fluo3DRaw');
+    threeD_flag = isfield(cp_particles,'FluoGauss3D');
+    % check for 3D fit data
     % set identifier
     setID = i;            
-    % pull trace and nucleus variables
+    % pull trace, time, and frame variables
     time_raw = processed_data.ElapsedTime*60; % time vector   
     traces_raw = processed_data.AllTracesVector; % array with a column for each trace 
     % check to see if traces are stored in cell array
@@ -126,12 +131,12 @@ for i = 1:length(cp_filenames)
         traces_raw = traces_raw{1};
     end
     frames_raw = 1:length(time_raw); % Frame list   
-    
+    % find index for first frame
     first_frame = max([1, processed_data.(['nc' num2str(firstNC)])]); % Default to start of nc14 for the moment    
     % filter trace mat and time
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
-    time_clean = time_clean - min(time_clean); % Normalize to start of nc14    
+    time_clean = time_clean - min(time_clean); % Normalize to start of nc    
     frames_clean = frames_raw(first_frame:end);        
     % get basic frame info
     yDim = FrameInfo(1).LinesPerFrame;
@@ -150,18 +155,27 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yDim = yDim;
             s_cells(e_pass).zDim = zDim;
             s_cells(e_pass).zStep = zStep;
-            s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;      
-            %Will be set to particle real values for nuclei with matching
-            %particle
+            s_cells(e_pass).PixelSize = FrameInfo(1).PixelSize;    
+            
+            % Initialize particle fields...will be set to particle values 
+            % for nuclei with matching particle
             s_cells(e_pass).ParticleID = NaN;
             s_cells(e_pass).xPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
-            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));  
+            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter)); 
+            if threeD_flag
+                s_cells(e_pass).xPosParticle3D = NaN(1,sum(nc_filter));
+                s_cells(e_pass).yPosParticle3D = NaN(1,sum(nc_filter));
+                s_cells(e_pass).zPosParticle3D = NaN(1,sum(nc_filter)); 
+                s_cells(e_pass).fluo3D = NaN(1,sum(nc_filter));
+            end
+            s_cells(e_pass).fluo = NaN(1,sum(nc_filter)); 
             s_cells(e_pass).fluoOffset = NaN(1,sum(nc_filter));  
-            s_cells(e_pass).fluo = NaN(1,sum(nc_filter));
+
             s_cells(e_pass).qc_flag = NaN;
             s_cells(e_pass).N = NaN;
             s_cells(e_pass).sparsity = NaN;
+            
             % add core nucleus info
             x = schnitzcells(e).cenx;            
             y = schnitzcells(e).ceny;                           
@@ -176,6 +190,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).minDP = minDP;
             s_cells(e_pass).min_time = min_time;
             s_cells(e_pass).pctSparsity = pctSparsity;
+            
             % time and set info
             s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));
             if numel(s_cells(e_pass).time) > 1
@@ -188,6 +203,7 @@ for i = 1:length(cp_filenames)
             fn = fn(1:strfind(fn,'/')-1);
             s_cells(e_pass).source_path = fn;                                     
             s_cells(e_pass).ap_flag = 0;
+            
             % sister fields
             s_cells(e_pass).sister_Index = NaN;
             s_cells(e_pass).sister_ParticleID = NaN; 
@@ -215,7 +231,6 @@ for i = 1:length(cp_filenames)
         end                              
         % Find intersection btw full frame range and CP frames        
         raw_pt_frames = cp_particles(j).Frame;
-%         cp_frames = raw_pt_frames(ismember(raw_pt_frames,frames_full));        
         % perform qc tests    
         nDP = sum(~isnan(trace_full));
         sparsity = prctile(diff(find(~isnan(trace_full))),pctSparsity);
@@ -228,7 +243,8 @@ for i = 1:length(cp_filenames)
         end 
         % Identifier variable                        
         particle = cp_particles(j).OriginalParticle;                        
-        ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]); 
+        ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);
+        
         % check to see if a different particle has already been assigned
         % if so, create a new entry
         if ~isnan(s_cells(nc_ind).ParticleID)
@@ -246,8 +262,15 @@ for i = 1:length(cp_filenames)
             s_cells(nc_ind).ParticleID = NaN;
             s_cells(nc_ind).xPosParticle = NaN(1,n_entries);
             s_cells(nc_ind).yPosParticle = NaN(1,n_entries);
-            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);             
-            s_cells(nc_ind).fluo = NaN(1,n_entries);
+            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);
+            if threeD_flag
+                s_cells(nc_ind).xPosParticle3D = NaN(1,sum(nc_filter));
+                s_cells(nc_ind).yPosParticle3D = NaN(1,sum(nc_filter));
+                s_cells(nc_ind).zPosParticle3D = NaN(1,sum(nc_filter));
+                s_cells(nc_ind).fluo3D = NaN(1,n_entries);
+            end
+            s_cells(nc_ind).fluo = NaN(1,n_entries);    
+            s_cells(e_pass).fluoOffset = NaN(1,sum(nc_filter));  
         end
         s_cells(nc_ind).ParticleID = ParticleID;
         % find overlap between nucleus and trace
@@ -259,17 +282,27 @@ for i = 1:length(cp_filenames)
         end
         % record fluorescence info             
         s_cells(nc_ind).fluo(spot_filter) = trace_full;               
-        % x and y info                                
+        % x, y, and z info                                
         s_cells(nc_ind).xPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
             cp_particles(j).xPos(ismember(raw_pt_frames,nc_frames));
         s_cells(nc_ind).yPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
-            cp_particles(j).yPos(ismember(raw_pt_frames,nc_frames));
-        % add z info       
+            cp_particles(j).yPos(ismember(raw_pt_frames,nc_frames));   
         s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
             cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
         % add offset info
         s_cells(nc_ind).fluoOffset(ismember(nc_frames,raw_pt_frames)) = ...
             cp_particles(j).Off(ismember(raw_pt_frames,nc_frames));
+        % 3D info
+        if threeD_flag
+            s_cells(nc_ind).xPosParticle3D(ismember(nc_frames,raw_pt_frames)) = ...
+                cp_particles(j).xPosGauss3D(ismember(raw_pt_frames,nc_frames));
+            s_cells(nc_ind).yPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
+                cp_particles(j).yPosGauss3D(ismember(raw_pt_frames,nc_frames));   
+            s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
+                cp_particles(j).zPosGauss3D(ismember(raw_pt_frames,nc_frames));
+            s_cells(nc_ind).Fluo3DRaw(ismember(nc_frames,raw_pt_frames)) = ...
+                cp_particles(j).Fluo3DRaw(ismember(raw_pt_frames,nc_frames));
+        end
         % add qc info
         s_cells(nc_ind).N = nDP;
         s_cells(nc_ind).sparsity = sparsity;        
@@ -280,12 +313,18 @@ end
 % add fields related to 2 spot analyses
 for i = 1:numel(nucleus_struct)
     nucleus_struct(i).two_spot_flag = two_spot_flag;
+    nucleus_struct(i).threeD_flag = threeD_flag;
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
 end
+
 disp('interpolating data...')
 % generate interpolation fields
-interp_fields = {'fluo'};
+if threeD_flag
+    interp_fields = {'fluo','fluo3D'};
+else
+    interp_fields = {'fluo'};
+end
 interpGrid = 0:TresInterp:60*60;
 for i = 1:numel(nucleus_struct)
     time_vec = nucleus_struct(i).time;
