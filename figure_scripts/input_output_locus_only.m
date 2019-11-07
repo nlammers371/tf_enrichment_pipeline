@@ -5,10 +5,10 @@ close all
 addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
-% dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
-DropboxFolder = 'E:\Meghan\Dropbox\';
+% DropboxFolder =  'E:\Meghan\Dropbox\';
+DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
-FigPath = [FigRoot '\_paper_figures\input_output02\'];
+FigPath = [FigRoot '\_paper_figures\input_output04\'];
 mkdir(FigPath)
 
 % load data
@@ -162,28 +162,28 @@ for i = 1:numel(durationCohorts)
 end
 
 for i = 1:numel(durationCohorts)
-    burstDur_hmmSquare = burst_rise_dur_hmm_square(durationCohorts(i),xlim_lb:xlim_ub);
-%     burstDur_hmm = burst_rise_dur_hmm_mean(durationCohorts(i),xlim_lb:xlim_ub);
-%     burstDur_hmm = burstDur_hmm - nanmin(burstDur_hmm);
-    burstDur_hmmSquare = burstDur_hmmSquare - nanmin(burstDur_hmmSquare);
+%     burstDur_hmmSquare = burst_rise_dur_hmm_square(durationCohorts(i),xlim_lb:xlim_ub);
+    burstDur_hmm = burst_rise_dur_hmm_mean(durationCohorts(i),xlim_lb:xlim_ub);
+    burstDur_hmm = burstDur_hmm - nanmin(burstDur_hmm);
+%     burstDur_hmmSquare = burstDur_hmmSquare - nanmin(burstDur_hmmSquare);
     burstDur_protein = burst_rise_dur_spot_mean(durationCohorts(i),xlim_lb:xlim_ub);
-    burstDur_protein = burstDur_protein - nanmin(burstDur_protein);
+    burstDur_protein_min = burstDur_protein - nanmin(nanmin(burst_rise_dur_spot_mean));
 %     burstDur_protein(durationCohorts(i),1) = 0;
 %     burstDur_protein(durationCohorts(i),end) = 0;
 
     burstFig = figure;
     hold on
     yyaxis right
-    proteinAreaPlot = area(timeFromBurst, burstDur_protein);
+    proteinAreaPlot = area(timeFromBurst, burstDur_protein_min);
     ylabel('Dorsal enrichment (au)')
     ylim([0 40])
-    yticks(linspace(0,40,3))
-    yticklabels(string(linspace(0,40,3)))
-    set(proteinAreaPlot,'FaceColor',[213,108,85]/255)
+    yticks(linspace(0,40,8))
+    yticklabels(string(linspace(-15,20,8)))
+    set(proteinAreaPlot,'FaceColor',[213,108,85]/255,'FaceAlpha',0.4)
     yyaxis left
     StandardFigurePBoC(proteinAreaPlot, gca)
-%     hmmAreaPlot = area(timeFromBurst, burstDur_hmm);
-    hmmAreaPlot = area(timeFromBurst, burstDur_hmmSquare);
+    hmmAreaPlot = area(timeFromBurst, burstDur_hmm);
+%     hmmAreaPlot = area(timeFromBurst, burstDur_hmmSquare);
     ylabel('{\itsna} transcription (au)')
     ylim([0 1])
     yticks(linspace(0,1,3))
@@ -197,6 +197,40 @@ for i = 1:numel(durationCohorts)
     hold off
     StandardFigurePBoC(hmmAreaPlot, gca)
     
-    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.pdf'])
-    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_' num2str(i) '.tif'])
+    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_FromMin' num2str(i) '.pdf'])
+    saveas(burstFig, [FigPath 'burstDurRise_hmmSquareProtein_FromMin' num2str(i) '.tif'])
+    
+    
+    % Alternatively, Using the actual zero value as the "zero" point
+    burstDur_protein_zero = burstDur_protein.*(burstDur_protein >= 0);
+    
+    burstFigFromZero = figure;
+    hold on
+    yyaxis right
+    proteinAreaPlot = area(timeFromBurst, burstDur_protein_zero);
+    ylabel('Dorsal enrichment (au)')
+    ylim([0 20])
+    yticks(linspace(0,20,3))
+    yticklabels(string(linspace(0,20,3)))
+    set(proteinAreaPlot,'FaceColor',[213,108,85]/255,'FaceAlpha',0.4)
+    yyaxis left
+    StandardFigurePBoC(proteinAreaPlot, gca)
+    hmmAreaPlot = area(timeFromBurst, burstDur_hmm);
+%     hmmAreaPlot = area(timeFromBurst, burstDur_hmmSquare);
+    ylabel('{\itsna} transcription (au)')
+    ylim([0 1])
+    yticks(linspace(0,1,3))
+    yticklabels(string(linspace(0,1,3)))
+    set(hmmAreaPlot,'FaceColor',[115,142,193]/255)
+    xlabel('time from start of burst (min)')
+    xlim([xlim_lb,xlim_ub])
+    xticks(xlim_lb:3:xlim_ub)
+    xticklabels(string(time_lb:time_ub))
+    title(cohortLabels(i))
+    hold off
+    StandardFigurePBoC(hmmAreaPlot, gca)
+    
+    saveas(burstFigFromZero, [FigPath 'burstDurRise_hmmSquareProtein_FromZero' num2str(i) '.pdf'])
+    saveas(burstFigFromZero, [FigPath 'burstDurRise_hmmSquareProtein_FromeZero' num2str(i) '.tif'])
 end
+
