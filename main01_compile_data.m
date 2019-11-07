@@ -101,7 +101,7 @@ save([DataPath 'set_key.mat'],'set_key')
 disp('compiling data...')
 nucleus_struct = [];
 % Loop through filenames    
-for i = 1:length(cp_filenames) 
+for i = 1%:length(cp_filenames) 
     % read in raw files
     try
         load(nc_filenames{i}) % Ellipse Info
@@ -118,7 +118,8 @@ for i = 1:length(cp_filenames)
     if iscell(cp_particles)
         cp_particles = cp_particles{1};
     end   
-    threeD_flag = isfield(cp_particles,'Fluo3DRaw');
+%     threeD_flag = isfield(cp_particles,'Fluo3DRaw');
+    threeD_flag = isfield(cp_particles,'FluoGauss3D');
     % check for 3D fit data
     % set identifier
     setID = i;            

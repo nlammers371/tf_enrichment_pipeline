@@ -129,7 +129,7 @@ driftTol = nanmedian(dr_vec)*px_size;
 %%%%%%%%%%%%%%%%%%%%%%%
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein_vec',...
-    'serial_null_protein_vec_3d','edge_null_protein_vec','mf_null_protein_vec',...
+    'serial_null_protein_vec_3d','edge_null_protein_vec','edge_null_protein_vec_3d','mf_null_protein_vec',...
     'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','mf_null_mcp_vec',...
     'serial_qc_flag_vec','edge_qc_flag_vec','spot_fov_edge_flag_vec','edge_fov_edge_flag_vec', ...
     'edge_null_x_vec', 'serial_null_x_vec','serial_null_y_vec','edge_null_y_vec', 'edge_null_nc_vec',...
@@ -302,8 +302,8 @@ disp('taking protein samples...')
 % define volumetric distance box for subsequent use
 xy_sigma = psf_dims.xy_sigma;
 z_sigma = psf_dims.z_sigma;
-xy_vol_dim = ceil(xy_sigma)*2;
-z_vol_dim = ceil(z_sigma)*2;
+xy_vol_dim = ceil(xy_sigma*2);
+z_vol_dim = ceil(z_sigma*2);
 % [x_ref_vol, y_ref_vol, z_ref_vol] = meshgrid(1:2*xy_vol_dim+1,1:2*xy_vol_dim+1,1:2*z_vol_dim+1);
 % x_ref_vol = x_ref_vol - xy_vol_dim - 1;
 % z_ref_vol = z_ref_vol - z_vol_dim - 1;
@@ -347,7 +347,7 @@ for i = 1:size(set_frame_array,1)
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
-    r_dist_mat = sqrt(x_dist_mat.^2 + y_dist_mat.^2);        
+    r_dist_mat = sqrt(double(x_dist_mat).^2 + double(y_dist_mat).^2);        
         
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
@@ -383,32 +383,7 @@ for i = 1:size(set_frame_array,1)
         spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));      
         
         % volume protein sampling 
-        x_range3 = max(1,x_spot-xy_vol_dim):min(xDim,x_spot+xy_vol_dim);
-        y_range3 = max(1,y_spot-xy_vol_dim):min(yDim,y_spot+xy_vol_dim);
-        z_range3 = max(1,z_spot-z_vol_dim):min(zDim,z_spot+z_vol_dim);
-        x_range3_full = x_spot-xy_vol_dim:x_spot+xy_vol_dim;
-        y_range3_full = y_spot-xy_vol_dim:y_spot+xy_vol_dim;
-        z_range3_full = z_spot-z_vol_dim:z_spot+z_vol_dim;
-        
-        % generate protein sample and ref boxes
-        pt_samp_box = NaN(numel(y_range3_full),numel(x_range3_full),numel(z_range3_full));
-        pt_snip_box (ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
-            ismember(z_range3_full,z_range3)) = protein_frame(y_range3,x_range3,z_range3);
-        % xyz ref
-        y_ref_box = NaN(size(pt_snip_box));
-        y_ref_box (ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
-            ismember(z_range3_full,z_range3)) = y_ref(y_range3,x_range3,z_range3);
-        x_ref_box = NaN(size(pt_snip_box));
-        x_ref_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
-            ismember(z_range3_full,z_range3)) = x_ref(y_range3,x_range3,z_range3);
-        z_ref_box = NaN(size(pt_snip_box));
-        z_ref_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
-            ismember(z_range3_full,z_range3)) = z_ref(y_range3,x_range3,z_range3);
-        % generate weight box
-        wt_box = exp(-.5*(((y_spot-y_ref_box)./xy_sigma).^2+((x_spot-x_ref_box)./xy_sigma).^2 + ...
-            ((z_spot-z_ref_box)./z_sigma).^2));
-                
-        spot_protein_vec_3d(j) = nansum(pt_samp_box(:).*wt_box) / nansum(~isnan(pt_samp_box(:)).*wt_box);
+        spot_protein_vec_3d(j) = sample_protein_3D(x_spot,y_spot,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            
@@ -491,6 +466,8 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame = bwdist(null_dist_frame);
             edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
             edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
+            % take 3D protein sample
+            edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
             % draw snips      
             x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
             y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
@@ -506,7 +483,7 @@ for i = 1:size(set_frame_array,1)
             % apply filtering
             pt_snip(~(bound_snip>0)) = NaN;
             mcp_snip(~(bound_snip>0)) = NaN;
-            
+            % store
             edge_null_protein_snips(:,:,j) =  pt_snip;
             edge_null_mcp_snips(:,:,j) =  mcp_snip;                 
         end                  
@@ -578,20 +555,8 @@ for i = 1:size(set_frame_array,1)
         serial_null_x_vec(j) = xc;
         serial_null_y_vec(j) = yc;
         serial_null_edge_dist_vec(j) = ec;
-        % 3D version        
-        sample_box = NaN(2*xy_vol_dim+1,2*xy_vol_dim+1,2*z_vol_dim+1);
-        xv_range_full = xc - xy_vol_dim:xc + xy_vol_dim;
-        xv_range = xv_range_full(xv_range_full>=1&xv_range_full<=xDim);
-        yv_range_full = yc - xy_vol_dim:yc + xy_vol_dim;
-        yv_range = yv_range_full(yv_range_full>=1&yv_range_full<=yDim);
-        zv_range_full = z_spot - z_vol_dim:z_spot + z_vol_dim;
-        zv_range = zv_range_full(zv_range_full>=1&zv_range_full<=zDim);
-        
-        sample_box(ismember(yv_range_full,yv_range),ismember(xv_range_full,xv_range),...
-            ismember(zv_range_full,zv_range)) = protein_stack(yv_range,xv_range,zv_range);
-        vol_pt_null = sample_box.*vol_box_bin;
-        vol_denominator = ~isnan(sample_box).*vol_box_bin;
-        serial_null_protein_vec_3d(j) = nanmean(vol_pt_null(:));% / sum(vol_denominator(:)) / voxel_size;                 
+        % 3D version                
+        serial_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);% / sum(vol_denominator(:)) / voxel_size;                 
         % check for presence of sister spot
         x_spot_sister = NaN;
         y_spot_sister = NaN;

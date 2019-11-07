@@ -32,17 +32,24 @@ spot_array = results_struct.spot_array_dt; % protein snips at target locus
 window_size = size(spot_array,2);
 
 % initialize data arrays
-burst_rise_dur_hmm_mean = NaN(numel(burst_range),window_size);
-burst_rise_dur_spot_mean = NaN(numel(burst_range),window_size);
+n_boots = 100;
+burst_rise_dur_hmm_mean = NaN(numel(burst_range),window_size,n_boots);
+burst_rise_dur_spot_mean = NaN(numel(burst_range),window_size,n_boots);
 
 for i = 1:numel(burst_range)
     burst_vec = burst_range(i)-burst_sigma:burst_range(i)+burst_sigma;
     burst_ft = feature_sign_vec == 1 & ismember(lag_dur_vec,burst_vec) & ...
         lead_dur_vec>= min_buffer_len & lead_dur_vec < max_buffer_len;
-    % calculate averages
-    burst_rise_dur_hmm_mean(i,:) = nanmean(hmm_array(burst_ft,:));  
-    burst_rise_dur_spot_mean(i,:) = nanmean(spot_array(burst_ft,:));  
+    burst_indices = find(burst_ft);
+    for n = 1:n_boots
+        boot_burst_indices = randsample(burst_indices,numel(burst_indices),true);        
+        % calculate averages
+        burst_rise_dur_hmm_mean(i,:,n) = nanmean(hmm_array(boot_burst_indices,:));  
+        burst_rise_dur_spot_mean(i,:,n) = nanmean(spot_array(boot_burst_indices,:));  
+    end
 end
+
+burst_hmm_se = nanste(burst_rise_dur_hmm_mean,3);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE HEATMAPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
