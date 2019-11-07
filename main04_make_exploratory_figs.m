@@ -204,8 +204,8 @@ lb = prctile(absDiff_protein_snip_mean(:),1);
 absDiff_protein_snip_mean_title = ['Absolute Difference ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
 absDiff_protein_snip_mean_clabel = [protein_name '-' protein_fluor ' absolute enrichment (au)'];
 absDiff_protein_snip_heatmap = makeHeatmapPlots(absDiff_protein_snip_mean,...
-    visibleOn, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_clabel, ...
-    Colormap_heat,PixelSize,lb,ub);
+    visibleOn, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_clabel,Colormap_heat,PixelSize,0,0.06);
+
 saveas(absDiff_protein_snip_heatmap,[FigPath write_string '_mean_pt_snippet_absDiff' '.png']);
 saveas(absDiff_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_absDiff' '.pdf']);
 
