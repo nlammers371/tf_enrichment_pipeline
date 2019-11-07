@@ -34,14 +34,14 @@ K = 3;
 w = 7;
 minDp = 10;
 dpBootstrap = 1;
-nBoots = 10;
+nBoots = 5;
 protein_bin_flag = 0;
 n_protein_bins = 10;
 time_bin_flag = 0;
 % inference_times = 30*60;
 % tWindow = 60*60; % determines width of sliding window
-sampleSize = 8000;
-maxWorkers = 12;
+sampleSize = 4000;
+maxWorkers = 28;
 alphaFrac = 1302 / 6000;
 % default paths
 [~ , DataPath, ~] =   header_function(DropboxFolder, project); 

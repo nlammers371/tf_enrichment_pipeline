@@ -32,7 +32,7 @@ two_spot_flag = contains(project, '2spot');
 min_time = 6*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 [RawResultsRoot, DataPath, ~] =   header_function(DropboxFolder, project);
-
+DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_orig_test\';
 for i = 1:numel(varargin)
     if ischar(varargin{i})
         if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
@@ -156,7 +156,8 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).ParticleID = NaN;
             s_cells(e_pass).xPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
-            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));            
+            s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter));  
+            s_cells(e_pass).fluoOffset = NaN(1,sum(nc_filter));  
             s_cells(e_pass).fluo = NaN(1,sum(nc_filter));
             s_cells(e_pass).qc_flag = NaN;
             s_cells(e_pass).N = NaN;
@@ -245,7 +246,7 @@ for i = 1:length(cp_filenames)
             s_cells(nc_ind).ParticleID = NaN;
             s_cells(nc_ind).xPosParticle = NaN(1,n_entries);
             s_cells(nc_ind).yPosParticle = NaN(1,n_entries);
-            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);            
+            s_cells(nc_ind).zPosParticle = NaN(1,n_entries);             
             s_cells(nc_ind).fluo = NaN(1,n_entries);
         end
         s_cells(nc_ind).ParticleID = ParticleID;
@@ -265,7 +266,10 @@ for i = 1:length(cp_filenames)
             cp_particles(j).yPos(ismember(raw_pt_frames,nc_frames));
         % add z info       
         s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
-        cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
+            cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
+        % add offset info
+        s_cells(nc_ind).fluoOffset(ismember(nc_frames,raw_pt_frames)) = ...
+            cp_particles(j).Off(ismember(raw_pt_frames,nc_frames));
         % add qc info
         s_cells(nc_ind).N = nDP;
         s_cells(nc_ind).sparsity = sparsity;        

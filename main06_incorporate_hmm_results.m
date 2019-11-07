@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results(project,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(project,DropboxFolder,varargin)
 
 close all
 addpath('./utilities')
@@ -105,7 +105,7 @@ if soft_fit_flag
     qc_indices = qc_indices(~ismember(qc_indices,rm_indices));
     tic 
     local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                  v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+                            v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
     toc
     soft_fit_struct = local_em_outputs.soft_struct;
     soft_fit_struct.particle_index = particle_index(qc_indices);
@@ -134,13 +134,14 @@ for i = qc_indices
     % basic ID variables
     master_time = nucleus_struct_protein(i).time_interp;
     master_fluo = nucleus_struct_protein(i).fluo_interp;
-    x_nc = nucleus_struct_protein(i).xPos;
-    y_nc = nucleus_struct_protein(i).yPos;
+    x_nc = double(nucleus_struct_protein(i).xPos);
+    y_nc = double(nucleus_struct_protein(i).yPos);
     % record time, space, and fluo vars
     start_i = find(~isnan(master_fluo),1);
     stop_i = find(~isnan(master_fluo),1,'last');
     temp.time = master_time(start_i:stop_i);
     temp.fluo = master_fluo(start_i:stop_i);   
+    temp.fluo_raw = ff_pt;   
     temp.xPosMean = nanmean(x_nc(~isnan(ff_pt)));
     temp.yPosMean = nanmean(y_nc(~isnan(ff_pt)));
     % extract useful HMM inference parameters
@@ -221,6 +222,7 @@ for i = 1:numel(hmm_input_output)
         ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;        
     
     %%% Spatial Nearest Neighbor   
+    time_i = hmm_input_output(i).time;
     dist_vec = dist_mat_r(i,:);               
     dist_vec(~option_filter) = NaN;
     dist_vec(i) = NaN;

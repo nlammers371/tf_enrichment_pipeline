@@ -199,11 +199,13 @@ absDiff_protein_snip_mean = (spot_protein_snip_mean) - null_protein_snip_mean;
 % sumEnrichedProtein = sum(sum(absDiff_protein_snip_mean));
 % disp(['Total additional protein (au) at locus (sum of all pixels of absolute different between spot and null snips)' num2str(sumEnrichedProtein)])
 % caxis([lb ub])
+ub = prctile(absDiff_protein_snip_mean(:),99);
+lb = prctile(absDiff_protein_snip_mean(:),1);
 absDiff_protein_snip_mean_title = ['Absolute Difference ' protein_name '-' protein_fluor ' Enrichment at Active ' gene_name ' Locus'];
 absDiff_protein_snip_mean_clabel = [protein_name '-' protein_fluor ' absolute enrichment (au)'];
 absDiff_protein_snip_heatmap = makeHeatmapPlots(absDiff_protein_snip_mean,...
     visibleOn, absDiff_protein_snip_mean_title, absDiff_protein_snip_mean_clabel, ...
-    Colormap_heat,PixelSize,0,inf);
+    Colormap_heat,PixelSize,lb,ub);
 saveas(absDiff_protein_snip_heatmap,[FigPath write_string '_mean_pt_snippet_absDiff' '.png']);
 saveas(absDiff_protein_snip_heatmap, [paperFigPath write_string '_mean_pt_snippet_absDiff' '.pdf']);
 
@@ -445,7 +447,7 @@ xlabel(['average ' protein_name ' concentration (au)'])
 ylabel(['absolute ' protein_name ' enrichment (au)'])
 grid on
 StandardFigure([p3],gca)
-xlim([50,400])
+xlim([min(mf_index),max(mf_index)])
 saveas(fit_fig,[FigPath 'mf_enrichment_prediction.png'])
 
 % make paper fig in PBoC style

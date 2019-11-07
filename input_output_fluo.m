@@ -40,13 +40,13 @@ for ti = 1:numel(time_class_cell)
     fluo_diff_quantile_vec = [nanmin(fluo_sm_vec(iter_filter)) quantile(fluo_sm_vec(iter_filter),fluo_feature_quantiles-2) nanmax(fluo_sm_vec(iter_filter))];
     % calculate median and quartiles of protein trends for each decile range
     % fluorescence
-    fluo_activity_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1,out_quantiles);
+    fluo_activity_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1);
     % target locus
-    spot_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1,out_quantiles);
+    spot_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1);
     % swap locus
-    swap_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1,out_quantiles);
+    swap_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1);
     % virtual spot
-    virtual_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1,out_quantiles);
+    virtual_protein_array = NaN(numel(fluo_diff_quantile_vec)-1,2*window_size+1);
     window_vec = -window_size:window_size;
     fit_array = [ones(numel(window_vec),1) window_vec'];
     for i = 1:numel(fluo_diff_quantile_vec)-1
@@ -102,10 +102,10 @@ for ti = 1:numel(time_class_cell)
             end    
         end
         % record
-        fluo_activity_array(i,:,:) = quantile(fluo_array,out_quantiles)';    
-        spot_protein_array(i,:,:) = quantile(spot_array,out_quantiles)';                   
-        swap_protein_array(i,:,:) = quantile(swap_array,out_quantiles)';               
-        virtual_protein_array(i,:,:) = quantile(virtual_array,out_quantiles)';    
+        fluo_activity_array(i,:) = nanmean(fluo_array)';    
+        spot_protein_array(i,:) = nanmean(spot_array)';                   
+        swap_protein_array(i,:) = nanmean(swap_array)';               
+        virtual_protein_array(i,:) = nanmean(virtual_array)';    
     end
     results_struct(ti).fluo_activity_array = fluo_activity_array;
     results_struct(ti).spot_protein_array = spot_protein_array;

@@ -1,10 +1,11 @@
 clear
 close all
-
+addpath('utilities')
 % define core ID variables
 % project = 'Dl-Ven_snaBAC-mCh';
+% project = 'Dl-Ven_New_snaBAC-mCh';
 project = 'Dl-Ven_hbP2P-mCh';
-DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [RawResultsPath, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;
@@ -143,7 +144,9 @@ lag_size_vec = NaN(1,n_entries);
 lead_size_vec = NaN(1,n_entries);
 feature_sign_vec = NaN(1,n_entries);
 % iterate through structure
-iter = 1;                    
+iter = 1;       
+test1 = 0;
+test2 = 0;
 for j = 1:numel(hmm_input_output)
     % core ID vectors
     ParticleID = hmm_input_output(j).ParticleID;
@@ -180,6 +183,7 @@ for j = 1:numel(hmm_input_output)
     % find features
     id_list = find(z_diff_vec~=0&~gap_filter);
     for id = id_list
+        test1 = test1 + 1;
         full_range = id - window_size:id+window_size;
         true_range = full_range(full_range>0&full_range<=numel(virtual_protein_dt));
         % record
@@ -188,6 +192,7 @@ for j = 1:numel(hmm_input_output)
             &~isnan(virtual_protein_dt(true_range));
         % qc check
         if sum(ft2) >= window_size
+            test2 = test2 + 1;
             % extract rde-trended fragments 
             spot_fragment_dt = spot_protein_dt(true_range);
             swap_fragment_dt = swap_spot_protein_dt(true_range);

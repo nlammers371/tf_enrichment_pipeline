@@ -1,14 +1,14 @@
 % Script to generate figures establishing presence of enrichment bursts at
 % start of transcription bursts
 clear 
-close all
+% close all
 addpath('utilities')
 % set ID variables
 targetProject = 'Dl-Ven_snaBAC-mCh';
 controlProject = 'Dl-Ven_hbP2P-mCh';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
-[~, DataPathControl, ~] =   header_function(DropboxFolder, targetProject); 
+[~, DataPathControl, ~] =   header_function(DropboxFolder, controlProject); 
 
 FigPath = [FigureRoot '\' targetProject '\input_output01\'];
 mkdir(FigPath)
@@ -42,7 +42,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 
 % set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 3; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
 
 %%% (1) make basic input-output figure
@@ -84,10 +84,10 @@ ax.YColor = 'black';
 % Dorsal activity
 yyaxis left
 hold on
-fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+% fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p2 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
-set(gca,'ytick',-20:4:20)
+% set(gca,'ytick',-20:4:20)
 ax = gca;
 ax.YColor = 'black';
 
@@ -160,14 +160,14 @@ p2 = plot(time_axis,burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',1.5)
 fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.15,'EdgeAlpha',0)
 p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',1.5);
 % biological control
-fill([time_axis fliplr(time_axis)],[br_bio_ub fliplr(br_bio_lb)],cmap1(6,:),'FaceAlpha',.15,'EdgeAlpha',0)
-p4 = plot(time_axis,burst_rise_bio_mean,'-','Color',cmap1(6,:),'LineWidth',1.5);
-% locus
+% fill([time_axis fliplr(time_axis)],[br_bio_ub fliplr(br_bio_lb)],cmap1(6,:),'FaceAlpha',.15,'EdgeAlpha',0)
+% p4 = plot(time_axis,burst_rise_bio_mean,'-','Color',cmap1(6,:),'LineWidth',1.5);
+%locus
 fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
-set(gca,'ytick',-12:3:24)
-ylim([-12 18])
+% set(gca,'ytick',-12:3:24)
+% ylim([-12 18])
 ax = gca;
 ax.YColor = 'black';
 grid on
@@ -195,15 +195,15 @@ ax.YColor = 'black';
 % Dorsal activity
 yyaxis left
 hold on
-% swap control
-fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',2);
+% % swap control
+% fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
+% p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',2);
 % locus
 fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
-set(gca,'ytick',-12:3:24)
-ylim([-12 18])
+% set(gca,'ytick',-12:3:24)
+% ylim([-12 18])
 ax = gca;
 ax.YColor = 'black';
 grid on
