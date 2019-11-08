@@ -2,7 +2,7 @@
 % proteinxtranscription burst coincidence
 clear
 close all
-addpath('utilities')
+addpath('../utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_hbP2P-mCh';
@@ -36,10 +36,10 @@ tr_burst_size_vec = lag_dur_vec.*lag_size_vec;
 rise_ft = feature_sign_vec == 1;
 analysis_ft = rise_ft & lead_dur_vec>5 & ~isnan(locus_protein_vec);
 
-hm_cm = flipud(brewermap([],'RdYlBu'));
 
-burst_vec = .5:.5:4;
-burst_sigma = .5;
+
+burst_vec = (2:1:12)/3;
+burst_sigma = 1;
 n_boots = 100;
 locus_pt_array = NaN(n_boots,numel(burst_vec));
 index_vec = find(analysis_ft);
@@ -58,16 +58,21 @@ pt_mean = nanmean(locus_pt_array);
 pt_ste = nanstd(locus_pt_array);
 %%
 dur_sz_fig = figure;
+hm_cm = flipud(brewermap([],'RdYlBu'));
 hold on
 e = errorbar(burst_vec,pt_mean,pt_ste,'Color','black','LineWidth',1.5);
 e.CapSize = 0;
 scatter(burst_vec,pt_mean,75,'MarkerFaceColor',[213,108,85]/256,'MarkerEdgeColor','black')
 % grid on
+p = plot(0,0);
 box on
-xlim([.5 3.5]);
-ylim([40 140])
+xlim([.66 4]);
+ylim([40 130])
 xlabel('burst duration (minutes)')
 ylabel('Dorsal enrichment (au)')
 set(gca,'FontSize',14)
+set(gca,'Xtick',(3:3:12)/3)
+set(gca,'Ytick',(40:20:140))
+StandardFigurePBoC(p,gca)
 saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.pdf'])
 saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.png'])
