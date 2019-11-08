@@ -52,7 +52,7 @@ for i = 1:length(prefix_cell)
             load(token_path)
             valid_fits = Spots3DToken > minDT;
         end   
-        if valid_fits
+        if valid_token
             disp(['found recent fits for ' Prefix ' skipping...']);
         else
             disp(['loading spots mat for  ' Prefix '...']);
@@ -67,14 +67,8 @@ for i = 1:length(prefix_cell)
             disp(['finished fits for  ' Prefix ' (' num2str(i) ' of ' num2str(numel(prefix_cell))' '...']);    
         end
         % now re-run CompileParticles 
-        if exist(cp_path)
-            disp('re-running CompileParticles...')
-            tic
-            CompileParticles(Prefix,'ApproveAll','SkipAll')
-            toc
-        else
-            disp('no CompiledParticles set found. Please run necessary pipeline scripts')
-        end
+        disp('running
+        CompileParticles(Prefix,'ApproveAll','SkipAll')
     else
         warning(['Spots structure not found for ' Prefix '. Skipping...']);        
     end    
