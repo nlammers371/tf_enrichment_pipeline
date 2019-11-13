@@ -43,13 +43,14 @@ for i = 1:length(prefix_cell)
     Prefix = prefix_cell{i};
     spot_path = [RawResultsRoot Prefix '/Spots.mat'];
     cp_path = [RawResultsRoot Prefix '/CompiledParticles.mat'];
-    token_path = [RawResultsRoot Prefix '/Spots3DToken.mat'];
+    sp_token_path = [RawResultsRoot Prefix '/Spots3DToken.mat'];
+    cp_token_path = [RawResultsRoot Prefix '/CompiledParticlesToken.mat.mat'];
     % check that Spots file exists
     if exist(spot_path)
         % first check to see if 3D fits have been performed recently
         valid_fits = false;
-        if exist(token_path)
-            load(token_path)
+        if exist(sp_token_path)
+            load(sp_token_path)
             valid_fits = Spots3DToken > minDT;
         end   
         if valid_fits
@@ -65,13 +66,23 @@ for i = 1:length(prefix_cell)
             fit3DGaussiansToAllSpots(Prefix, 1, 'segmentSpots',Spots);    
             toc
             disp(['finished fits for  ' Prefix ' (' num2str(i) ' of ' num2str(numel(prefix_cell))' '...']);    
-        end
+        end              
         % now re-run CompileParticles 
         if exist(cp_path)
-            disp('re-running CompileParticles...')
-            tic
-            CompileParticles(Prefix,'ApproveAll','SkipAll')
-            toc
+            % check for cp token
+            valid_cp_token = false;
+            if exist(cp_token_path)
+                load(cp_token_path)
+                valid_cp_token = (CompiledParticlesToken > Spots3DToken) & valid_fits;
+            end
+            if valid_cp_token
+                disp('recently compiled particles set found. Skipping...')
+            else
+                disp('re-running CompileParticles...')
+                tic
+                CompileParticles(Prefix,'ApproveAll','SkipAll')
+                toc
+            end
         else
             disp('no CompiledParticles set found. Please run necessary pipeline scripts')
         end

@@ -12,6 +12,116 @@ K = 3;
 window_size = 15; 
 % load input-output data set
 load([dataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+
+
+% set scales for feature identification
+fluo_scale = prctile([hmm_input_output.fluo],40);
+% pull time series samples from vicinity of protein events
+feature_struct = struct;
+ref_vec = -window_size:window_size;%1:(2*window_size+1);
+iter = 1;
+for i = 1:numel(hmm_input_output)
+    %%% core data vectors
+    time_vec = hmm_input_output(i).time/60;   
+    frame_vec = 1:numel(time_vec);
+    fluo_vec = hmm_input_output(i).fluo;
+    pt_spot = hmm_input_output(i).spot_protein-hmm_input_output(i).mf_protein;      
+    pt_serial = hmm_input_output(i).serial_protein-hmm_input_output(i).mf_protein; 
+    qc_filter = hmm_input_output(i).dt_filter_gap;
+    
+    %%% find features
+    % find fluo peaks and troughs
+    [~,fluo_high_ids] = findpeaks(fluo_vec,frame_vec,'MinPeakProminence',fluo_scale); % NL: eye-balled atm
+    [~,fluo_low_ids] = findpeaks(-fluo_vec,frame_vec,'MinPeakProminence',fluo_scale); % NL: eye-balled atm
+
+    % identify changepoints     
+    fluo_d_vec = sign([0 diff(fluo_vec)]);    
+    ipt_fluo = findchangepts(fluo_vec,'MinThreshold',fluo_scale);
+
+    fluo_rise_ids = ipt_fluo(fluo_d_vec(ipt_fluo)==1);
+    fluo_fall_ids = ipt_fluo(fluo_d_vec(ipt_fluo)==-1);
+    
+    % apply filters 
+    pt_spot(qc_filter) = NaN;
+    pt_serial(qc_filter) = NaN;
+    fluo_vec(qc_filter) = NaN;
+    
+    % sample proiten and activity traces
+    for j = 1:numel(feature_cell)
+        feature_str = feature_cell{j};
+        for k = 1:numel(data_type_cell)
+            data_str = data_type_cell{k};
+            % get variables
+            eval(['ids =' data_str '_' feature_str '_ids;'])
+            eval(['data_vec = ' data_str '_vec;'])
+            % initialize arrays
+            response_temp = NaN(numel(ids),2*window_size+1);            
+            spot_protein_temp = NaN(numel(ids),2*window_size+1);
+            serial_protein_temp = NaN(numel(ids),2*window_size+1);       
+            time_temp = NaN(1,numel(ids));
+            for m = 1:numel(ids)                
+                raw_ind = ref_vec+ids(m); 
+                ft_vec1 = raw_ind > 0 & raw_ind <= numel(data_vec);
+                ft_vec2 = raw_ind(ft_vec1);
+                % record
+                response_temp(m,ft_vec1) = data_vec(ft_vec2);          
+                spot_protein_temp(m,ft_vec1) = pt_spot(ft_vec2);
+                serial_protein_temp(m,ft_vec1) = pt_serial(ft_vec2);  
+                time_temp(m) = time_vec(ids(m));               
+            end
+            % add to main cell structures
+            feature_struct(iter).([data_str '_' feature_str '_response']) = response_temp;
+            feature_struct(iter).([data_str '_' feature_str '_spot_protein']) = spot_protein_temp;
+            feature_struct(iter).([data_str '_' feature_str '_serial_protein']) = serial_protein_temp;
+            feature_struct(iter).([data_str '_' feature_str '_time']) = time_temp;            
+        end
+    end
+    iter = iter + 1;
+end
+tic
+
+%%% Calculate bootstrap estimates of Mean and SE
+results_struct = struct;
+iter = 1;
+for j = 1:numel(feature_cell)
+    feature_str = feature_cell{j};
+    for k = 1:numel(data_type_cell)
+        data_str = data_type_cell{k};
+        % get variables
+        response_mat = vertcat(feature_struct.([data_str '_' feature_str '_response']));
+        spot_protein_mat = vertcat(feature_struct.([data_str '_' feature_str '_spot_protein']));
+        serial_protein_mat = vertcat(feature_struct.([data_str '_' feature_str '_serial_protein']));
+        % bootstrap variables
+        boot_index_vec = 1:size(response_mat,1);
+        response_boot_mat = NaN(nBoots,size(response_mat,2));
+        spot_protein_boot_mat = NaN(nBoots,size(response_mat,2));
+        serial_protein_boot_mat = NaN(nBoots,size(response_mat,2));
+        for n = 1:nBoots
+            boot_ids = randsample(boot_index_vec,numel(boot_index_vec),true);
+            response_boot_mat(n,:) = nanmean(response_mat(boot_ids,:));
+            spot_protein_boot_mat(n,:) = nanmean(spot_protein_mat(boot_ids,:));
+            serial_protein_boot_mat(n,:) = nanmean(serial_protein_mat(boot_ids,:));
+        end
+        results_struct(iter).ID = [data_titles{k} ' ' feature_titles{j}];
+        results_struct(iter).fn = [data_titles{k} '_' feature_titles{j}];
+        results_struct(iter).data_name = data_titles{k};
+        % response
+        results_struct(iter).response_mean = nanmean(response_boot_mat);
+        results_struct(iter).response_ste = nanstd(response_boot_mat);
+        % spot protein
+        results_struct(iter).spot_protein_mean = nanmean(spot_protein_boot_mat);
+        results_struct(iter).spot_protein_ste = nanstd(spot_protein_boot_mat);
+        % serial protein
+        results_struct(iter).serial_protein_mean = nanmean(serial_protein_boot_mat);
+        results_struct(iter).serial_protein_ste = nanstd(serial_protein_boot_mat);
+        % difference
+        results_struct(iter).diff_protein_mean = nanmean(spot_protein_boot_mat - serial_protein_boot_mat);
+        results_struct(iter).diff_protein_ste = nanstd(spot_protein_boot_mat - serial_protein_boot_mat);
+        
+        iter = iter + 1;
+    end
+end
+
 for i = 1:numel(hmm_input_output)    
     z_vec = hmm_input_output(i).z_vec' > 1;
     r_vec = hmm_input_output(i).r_vec';

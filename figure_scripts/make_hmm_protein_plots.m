@@ -4,17 +4,19 @@ close all
 addpath('utilities')
 % set folder paths
 project = 'Dl-Ven_snaBAC-mCh';
-DropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
 
 % specify inference parameters
 K = 3;
 w = 7;
+load([DataPath 'nucleus_struct.mat'])
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K) '\'];
 % specify figure path
 FigPath = [FigRoot '\' project '\hmm_figs\'];
 mkdir(FigPath);
+tic
 % read in inference results
 inf_files = dir([resultsPath '*.mat']);
 inference_results = struct;
@@ -146,20 +148,34 @@ burst_freq_ste = nanstd(burst_freq_array);
 
 burst_amp_mean = nanmean(burst_amp_array);
 burst_amp_ste = nanstd(burst_amp_array);
+toc
 
+% calculate Voxel Size
+PixelSize = nucleus_struct(1).PixelSize;
+zStep = nucleus_struct(1).zStep;
+VoxelSize = PixelSize^2 * zStep;
+mf_axis_vec = mf_axis_vec * VoxelSize;
+
+MarkerSize = 75;
+blue = [115 143 193]/256;
+purple = [171 133 172]/256;
+red = [213 108 85]/256;
+close all
 r_trend = figure;
 hm_cm = flipud(brewermap([],'Spectral'));
 colormap(hm_cm);
 hold on
 e = errorbar(mf_axis_vec,burst_amp_mean,burst_amp_ste,'Color','black','LineWidth',1.5);
 e.CapSize = 0;
-scatter(mf_axis_vec,burst_amp_mean,60,'o','MarkerFaceColor',hm_cm(end-10,:),'MarkerEdgeColor','black');
+scatter(mf_axis_vec,burst_amp_mean,MarkerSize,'o','MarkerFaceColor',red,'MarkerEdgeAlpha',0);
+p = plot(0,0);
 grid on
-xlim([100 300])
+xlim([0.54 1.8])
 ylim([0 1.7])
 xlabel('Dl concentration (au)')
 ylabel('burst amplitude (au)')
-set(gca,'Fontsize',14)
+% set(gca,'Fontsize',14)
+StandardFigure(p,gca)
 box on
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
@@ -168,28 +184,34 @@ dur_trend = figure;
 hold on
 e = errorbar(mf_axis_vec,burst_dur_mean,burst_dur_ste,'Color','black','LineWidth',1.5);
 e.CapSize = 0;
-scatter(mf_axis_vec,burst_dur_mean,60,'o','MarkerFaceColor',hm_cm(20,:),'MarkerEdgeColor','black');
+scatter(mf_axis_vec,burst_dur_mean,MarkerSize,'o','MarkerFaceColor',blue,'MarkerEdgeAlpha',0);
 grid on
 xlim([100 300])
+p = plot(0,0);
+grid on
+xlim([0.54 1.8])
 ylim([0 2])
 xlabel('Dl concentration (au)')
 ylabel('burst duration (min)')
-set(gca,'Fontsize',14)
+% set(gca,'Fontsize',14)
+StandardFigure(p,gca)
 box on
 saveas(dur_trend,[FigPath,'burst_dur_mf_pt.tif'])
 saveas(dur_trend,[FigPath,'burst_dur_mf_pt.pdf'])
 
+
 freq_trend = figure;
 hold on
-e = errorbar(mf_axis_vec,burst_freq_mean,burst_freq_ste,'Color','black','LineWidth',1.5);
+e = errorbar(mf_axis_vec,1./burst_freq_mean,burst_freq_ste./(burst_freq_mean.^2),'Color','black','LineWidth',1.5);
 e.CapSize = 0;
-scatter(mf_axis_vec,burst_freq_mean,60,'o','MarkerFaceColor',hm_cm(5,:),'MarkerEdgeColor','black');
+scatter(mf_axis_vec,1./burst_freq_mean,MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeAlpha',0);
 grid on
-xlim([100 300])
-ylim([0 2])
+xlim([0.54 1.8])
+ylim([0 1.2])
 xlabel('Dl concentration (au)')
-ylabel('burst frequency (min^{-1})')
-set(gca,'Fontsize',14)
+ylabel('burst separation (min)')
+p = plot(0,0);
+StandardFigure(p,gca)
 box on
-saveas(freq_trend,[FigPath,'burst_freq_mf_pt.tif'])
-saveas(freq_trend,[FigPath,'burst_freq_mf_pt.pdf'])
+saveas(freq_trend,[FigPath,'burst_sep_mf_pt.tif'])
+saveas(freq_trend,[FigPath,'burst_sep_mf_pt.pdf'])

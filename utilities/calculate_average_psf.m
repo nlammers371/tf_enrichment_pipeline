@@ -88,9 +88,9 @@ for i = sampling_order
         continue
     end
     for j = 1:numel(spot_x_vec)
-        x_spot = spot_x_vec(j);
-        y_spot = spot_y_vec(j);
-        z_spot = spot_z_vec(j);
+        x_spot = round(spot_x_vec(j));
+        y_spot = round(spot_y_vec(j));
+        z_spot = round(spot_z_vec(j));
         spot_stack = NaN(2*xy_snip_size + 1,2*xy_snip_size + 1,2*z_stack_size+1);
         % pull sample
         x_range = max(1,x_spot-xy_snip_size):min(xDim,x_spot+xy_snip_size);

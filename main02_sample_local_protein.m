@@ -24,7 +24,6 @@
 
 function nucleus_struct_protein = main02_sample_local_protein(project,DropboxFolder,varargin)
 addpath('./utilities')
-zeissFlag = 0;
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
 minEdgeSepUm = .2; %um
@@ -60,7 +59,6 @@ mcp_channel = options(options~=proteinChannel);
 % nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
 threeD_flag = nucleus_struct(1).threeD_flag;
 
-
 clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
 for i = 1:numel(nucleus_struct)
     fluo = nucleus_struct(i).fluo;
@@ -70,13 +68,14 @@ for i = 1:numel(nucleus_struct)
         nucleus_struct(i).(clean_fields{j}) = vec(nan_ft);
     end
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % generate indexing vectors
 frame_ref = [nucleus_struct.frames];
 nc_x_ref = [nucleus_struct.xPos];
 nc_y_ref = [nucleus_struct.yPos];
-spot_x_ref = [nucleus_struct.xPosParticle]-zeissFlag;
-spot_y_ref = [nucleus_struct.yPosParticle]-zeissFlag;
+spot_x_ref = [nucleus_struct.xPosParticle];
+spot_y_ref = [nucleus_struct.yPosParticle];
 spot_z_ref = [nucleus_struct.zPosParticle];
 
 set_ref = [];
@@ -101,22 +100,26 @@ set_vec = [nucleus_struct.setID];
 set_index = unique(set_vec);
 
 px_size = nucleus_struct(1).PixelSize;
-z_size = nucleus_struct(1).zStep;
-% voxel_size = z_size * px_size^2;
 % determine size of neighborhood to use
 nb_size = round(10 ./ px_size);
+
 % size of gaussian smoothing kernel 
 sm_kernel = round(1 ./ px_size);
-% set min and max acceptable area
+
+% set min and max acceptable area for nucleus segmentation
 min_area = round(pi*(2 ./ px_size).^2);
 max_area = round(pi*(4 ./ px_size).^2);
+
 % set snippet to be 3um in size
 pt_snippet_size = round(1.5 ./ px_size);
+
 % set min separation between control and locus to 2um
 minSampleSep = round(minSampleSepUm ./ px_size);
 minEdgeSep = round(minEdgeSepUm ./ px_size);
+
 % calculate ROI size in pixels for spot and control
 roi_rad_spot_pix = round(ROIRadiusSpot ./ px_size);
+
 % calculate average frame-over-frame particle drift from data
 lin_diff_vec = diff(lin_ind_ref);
 x_diff_vec = diff(spot_x_ref);
@@ -171,6 +174,9 @@ qc_structure = struct;
 %     delete(gcp('nocreate'))
 %     parpool(numWorkers);
 % end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Nucleus segmentation
 %%%%%%%%%%%%%%%%%%%%%%%%%
 xDim = nucleus_struct(1).xDim;
 yDim = nucleus_struct(1).yDim;
@@ -213,18 +219,18 @@ if segmentNuclei
         frame_temp = set_frame_array(i,2);  
         % get nucleus
         frame_set_filter = set_ref==setID_temp&frame_ref==frame_temp;
-        nc_x_vec_temp = nc_x_ref(frame_set_filter);
-        nc_y_vec_temp = nc_y_ref(frame_set_filter); 
+        nc_x_vec_temp = round(nc_x_ref(frame_set_filter));
+        nc_y_vec_temp = round(nc_y_ref(frame_set_filter)); 
         % indexing vectors    
         nc_master_vec = master_ind_ref(frame_set_filter);  
         % get list of unique indices 
         [nc_master_vec_u,ia,~] = unique(nc_master_vec,'stable');
         % unique nucleus vectors
-        nc_x_vec_u = nc_x_vec_temp(ia);
-        nc_y_vec_u = nc_y_vec_temp(ia);    
+        nc_x_vec_u = round(nc_x_vec_temp(ia));
+        nc_y_vec_u = round(nc_y_vec_temp(ia));    
         % particle positions        
-        spot_x_vec = spot_x_ref(frame_set_filter);
-        spot_y_vec = spot_y_ref(frame_set_filter);            
+        spot_x_vec = round(spot_x_ref(frame_set_filter));
+        spot_y_vec = round(spot_y_ref(frame_set_filter));            
 
         src = set_key(set_key.setID==setID_temp,:).prefix{1};   
         protein_stack = load_stacks(rawPath, src, frame_temp, proteinChannel);
@@ -304,12 +310,6 @@ xy_sigma = psf_dims.xy_sigma;
 z_sigma = psf_dims.z_sigma;
 xy_vol_dim = ceil(xy_sigma*2);
 z_vol_dim = ceil(z_sigma*2);
-% [x_ref_vol, y_ref_vol, z_ref_vol] = meshgrid(1:2*xy_vol_dim+1,1:2*xy_vol_dim+1,1:2*z_vol_dim+1);
-% x_ref_vol = x_ref_vol - xy_vol_dim - 1;
-% z_ref_vol = z_ref_vol - z_vol_dim - 1;
-% y_ref_vol = y_ref_vol - xy_vol_dim - 1;
-% vol_box = (x_ref_vol/xy_sigma).^2 + (y_ref_vol/xy_sigma).^2 + (z_ref_vol/z_sigma).^2;
-% vol_box_bin = vol_box <= 1;
 
 for i = 1:size(set_frame_array,1)    
     tic
@@ -356,6 +356,7 @@ for i = 1:size(set_frame_array,1)
     for j = 1:numel(new_snip_fields)
         eval([new_snip_fields{j} ' = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(spot_x_vec));']);
     end    
+    
     % iterate through spots
     qc_mat = struct;
     for j = 1:numel(nc_x_vec)        
@@ -400,7 +401,7 @@ for i = 1:size(set_frame_array,1)
         pt_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = protein_frame(y_range,x_range);
         mcp_snip = NaN(numel(y_range_full),numel(x_range_full));
         mcp_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = mcp_frame(y_range,x_range); 
-        bound_snip = NaN(numel(y_range_full),numel(x_range_full));
+        bound_snip = false(numel(y_range_full),numel(x_range_full));
         bound_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = spot_nc_mask(y_range,x_range);  
         % NAN-ify shit
         pt_snip(~bound_snip) = NaN;
@@ -408,7 +409,7 @@ for i = 1:size(set_frame_array,1)
         % save
         spot_protein_snips(:,:,j) = pt_snip;
         spot_mcp_snips(:,:,j) = mcp_snip;                 
-       
+%        
         % Take average across all pixels in nucleus mask
 %         mf_filter = spot_sep_vec >= minSampleSep & abs(nc_edge_dist_vec-spot_edge_dist) <= mfTolerance;                    
         mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask));% / voxel_size;
@@ -478,11 +479,12 @@ for i = 1:size(set_frame_array,1)
             pt_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = protein_frame(y_range,x_range);
             mcp_snip = NaN(numel(y_range_full),numel(x_range_full));
             mcp_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = mcp_frame(y_range,x_range); 
-            bound_snip = NaN(numel(y_range_full),numel(x_range_full));
+            % enforce nucleus boundaries
+            bound_snip = false(numel(y_range_full),numel(x_range_full));
             bound_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = nc_ref_frame(y_range,x_range);  
             % apply filtering
-            pt_snip(~(bound_snip>0)) = NaN;
-            mcp_snip(~(bound_snip>0)) = NaN;
+            pt_snip(~bound_snip) = NaN;
+            mcp_snip(~bound_snip) = NaN;
             % store
             edge_null_protein_snips(:,:,j) =  pt_snip;
             edge_null_mcp_snips(:,:,j) =  mcp_snip;                 

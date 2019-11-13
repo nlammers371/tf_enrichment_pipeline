@@ -2,9 +2,9 @@ clear
 close all
 addpath('utilities')
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-mCh';
+project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_New_snaBAC-mCh';
-project = 'Dl-Ven_hbP2P-mCh';
+% project = 'Dl-Ven_hbP2P-mCh';
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [RawResultsPath, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 w = 7;
@@ -103,7 +103,7 @@ for i = 1:numel(hmm_input_output)
     swap_spot_protein_dt(nan_ft_swap) = swap_spot_protein_fit;
     hmm_input_output(i).swap_spot_protein_dt = swap_spot_protein_dt;
 end
-%save update structure
+%save updated structure
 save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
  
 %%% Now compile snips for average burst dynamics analyses

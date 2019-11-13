@@ -24,7 +24,7 @@
 % OUTPUT: nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_data(project,DropboxFolder,varargin)
+function nucleus_struct = main01_compile_traces(project,DropboxFolder,varargin)
 addpath('./utilities')
 % set defaults
 firstNC = 14;
@@ -34,7 +34,6 @@ two_spot_flag = contains(project, '2spot');
 min_time = 6*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 [RawResultsRoot, DataPath, ~] =   header_function(DropboxFolder, project);
-DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_orig_test\';
 for i = 1:numel(varargin)
     if ischar(varargin{i})
         if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
@@ -101,7 +100,7 @@ save([DataPath 'set_key.mat'],'set_key')
 disp('compiling data...')
 nucleus_struct = [];
 % Loop through filenames    
-for i = 1%:length(cp_filenames) 
+for i = 1:length(cp_filenames) 
     % read in raw files
     try
         load(nc_filenames{i}) % Ellipse Info
