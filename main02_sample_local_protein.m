@@ -52,7 +52,7 @@ mkdir(snipPath)
 % get MCP channel
 options = [1 2];
 mcp_channel = options(options~=proteinChannel);
-
+write_snip_flag = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % remove all frames that do not contain a segmented particle or that
 % contain a particle that fails QC standards
@@ -141,17 +141,27 @@ new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein
 new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
     'spot_mcp_snips','edge_null_mcp_snips'};
 
+% Initialize snip structure
+% snip_data = struct('ParticleID',[],'Frame',[],'spot_protein_snips',[],'edge_null_protein_snips',[],...
+%     'spot_mcp_snips',[],'edge_null_mcp_snips', []);
+
 % Initialize fields
 for i = 1:numel(nucleus_struct)
     ref = nucleus_struct(i).xPos;
     for j = 1:numel(new_vec_fields)
         nucleus_struct(i).(new_vec_fields{j}) = NaN(size(ref));
     end
-    for j = 1:numel(new_snip_fields)
-        nucleus_struct(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
-    end
-    nucleus_struct(i).snip_frame_vec = [];
+%     for j = 1:numel(new_snip_fields)
+%         snip_data(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
+%     end
+%     snip_data(i).ParticleID = nucleus_struct(i).ParticleID;
+%     snip_data(i).time = nucleus_struct(i).time;
+%     snip_data(i).frames = nucleus_struct(i).frames;
+%     nucleus_struct(i).snip_frame_vec = [];
 end
+% write to file (will read and write-to as we go)
+% save([DataPath 'snip_data.mat'],'snip_data','-v7.3')
+% clear snip_data;
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% make source key
@@ -567,8 +577,9 @@ for i = 1:size(set_frame_array,1)
             si = indices(indices~=j);
             x_spot_sister = spot_x_vec(si);
             y_spot_sister = spot_y_vec(si);
-        end
-            
+        end            
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
         % save qc data                 
         qc_mat(numel(nc_x_vec)-j+1).setID = setID; 
         qc_mat(numel(nc_x_vec)-j+1).frame = frame;
@@ -601,7 +612,11 @@ for i = 1:size(set_frame_array,1)
         qc_mat(numel(nc_x_vec)-j+1).protein_snip = protein_frame(y_range,x_range);
         qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);                
     end 
-    qc_structure(i).qc_mat = fliplr(qc_mat);    
+    qc_structure(i).qc_mat = fliplr(qc_mat);  
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % save snip data   
+    % initialize struct to store snip data
+    snip_data = struct;    
     % map data back to nucleus_struct    
     for j = 1:numel(nc_master_vec)
         nc_index = nc_lin_index_vec(j);
@@ -610,14 +625,35 @@ for i = 1:size(set_frame_array,1)
         for k = 1:numel(new_vec_fields)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
-        end        
-        for k = 1:numel(new_snip_fields)
-            snip = eval([new_snip_fields{k} '(:,:,j)']);            
-            nucleus_struct(nc_index).(new_snip_fields{k})(:,:,nc_sub_index) = snip;
-        end                
+        end                              
     end
+    % store snips
+    for k = 1:numel(new_snip_fields)
+        snip = eval([new_snip_fields{k} '(:,:,j)']);                  
+        snip_data.(new_snip_fields{k})(:,:,nc_sub_index) = snip;
+    end  
+    % store key ID variables
+    snip_data.frame = frame;
+    snip_data.setID = setID;
+    snip_data.particle_id_vec = particle_id_vec;
+    % indexing vectors    
+    snip_data.nc_sub_index_vec = nc_sub_index_vec; 
+    snip_data.nc_lin_index_vec = nc_lin_index_vec; 
+    snip_data.nc_master_vec = nc_master_vec;
+    % specify name
+     % read snip file    
+    snip_name = ['snip_data_F' sprintf('%03d',frame) '_S' sprintf('%02d',setID)]; 
+    if write_snip_flag            
+        blank = struct;
+        save([DataPath 'snip_data.mat'],'blank','-v7.3')    
+        write_snip_flag = true;
+    end
+    snip_file = matfile([DataPath 'snip_data.mat'],'Writable',true);    
+    snip_file.(snip_name)= snip_data;        
+    clear snip_file;    
+    % report time
     t = round(toc);
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])     
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])         
 end
 disp('saving qc frames...')
 % save qc data

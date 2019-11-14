@@ -52,7 +52,7 @@ mkdir(snipPath)
 % get MCP channel
 options = [1 2];
 mcp_channel = options(options~=proteinChannel);
-
+write_snip_flag = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % remove all frames that do not contain a segmented particle or that
 % contain a particle that fails QC standards
@@ -141,17 +141,27 @@ new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein
 new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
     'spot_mcp_snips','edge_null_mcp_snips'};
 
+% Initialize snip structure
+% snip_data = struct('ParticleID',[],'Frame',[],'spot_protein_snips',[],'edge_null_protein_snips',[],...
+%     'spot_mcp_snips',[],'edge_null_mcp_snips', []);
+
 % Initialize fields
 for i = 1:numel(nucleus_struct)
     ref = nucleus_struct(i).xPos;
     for j = 1:numel(new_vec_fields)
         nucleus_struct(i).(new_vec_fields{j}) = NaN(size(ref));
     end
-    for j = 1:numel(new_snip_fields)
-        nucleus_struct(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
-    end
-    nucleus_struct(i).snip_frame_vec = [];
+%     for j = 1:numel(new_snip_fields)
+%         snip_data(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
+%     end
+%     snip_data(i).ParticleID = nucleus_struct(i).ParticleID;
+%     snip_data(i).time = nucleus_struct(i).time;
+%     snip_data(i).frames = nucleus_struct(i).frames;
+%     nucleus_struct(i).snip_frame_vec = [];
 end
+% write to file (will read and write-to as we go)
+% save([DataPath 'snip_data.mat'],'snip_data','-v7.3')
+% clear snip_data;
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% make source key
@@ -174,6 +184,9 @@ qc_structure = struct;
 %     delete(gcp('nocreate'))
 %     parpool(numWorkers);
 % end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Nucleus segmentation
 %%%%%%%%%%%%%%%%%%%%%%%%%
 xDim = nucleus_struct(1).xDim;
 yDim = nucleus_struct(1).yDim;
@@ -307,12 +320,6 @@ xy_sigma = psf_dims.xy_sigma;
 z_sigma = psf_dims.z_sigma;
 xy_vol_dim = ceil(xy_sigma*2);
 z_vol_dim = ceil(z_sigma*2);
-% [x_ref_vol, y_ref_vol, z_ref_vol] = meshgrid(1:2*xy_vol_dim+1,1:2*xy_vol_dim+1,1:2*z_vol_dim+1);
-% x_ref_vol = x_ref_vol - xy_vol_dim - 1;
-% z_ref_vol = z_ref_vol - z_vol_dim - 1;
-% y_ref_vol = y_ref_vol - xy_vol_dim - 1;
-% vol_box = (x_ref_vol/xy_sigma).^2 + (y_ref_vol/xy_sigma).^2 + (z_ref_vol/z_sigma).^2;
-% vol_box_bin = vol_box <= 1;
 
 for i = 1:size(set_frame_array,1)    
     tic
@@ -359,6 +366,7 @@ for i = 1:size(set_frame_array,1)
     for j = 1:numel(new_snip_fields)
         eval([new_snip_fields{j} ' = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(spot_x_vec));']);
     end    
+    
     % iterate through spots
     qc_mat = struct;
     for j = 1:numel(nc_x_vec)        
@@ -569,8 +577,9 @@ for i = 1:size(set_frame_array,1)
             si = indices(indices~=j);
             x_spot_sister = spot_x_vec(si);
             y_spot_sister = spot_y_vec(si);
-        end
-            
+        end            
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
         % save qc data                 
         qc_mat(numel(nc_x_vec)-j+1).setID = setID; 
         qc_mat(numel(nc_x_vec)-j+1).frame = frame;
@@ -603,7 +612,11 @@ for i = 1:size(set_frame_array,1)
         qc_mat(numel(nc_x_vec)-j+1).protein_snip = protein_frame(y_range,x_range);
         qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);                
     end 
-    qc_structure(i).qc_mat = fliplr(qc_mat);    
+    qc_structure(i).qc_mat = fliplr(qc_mat);  
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % save snip data   
+    % initialize struct to store snip data
+    snip_data = struct;    
     % map data back to nucleus_struct    
     for j = 1:numel(nc_master_vec)
         nc_index = nc_lin_index_vec(j);
@@ -612,14 +625,33 @@ for i = 1:size(set_frame_array,1)
         for k = 1:numel(new_vec_fields)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
-        end        
-        for k = 1:numel(new_snip_fields)
-            snip = eval([new_snip_fields{k} '(:,:,j)']);            
-            nucleus_struct(nc_index).(new_snip_fields{k})(:,:,nc_sub_index) = snip;
-        end                
+        end                              
     end
+    % store snips
+    for k = 1:numel(new_snip_fields)
+        snip = eval([new_snip_fields{k} '(:,:,j)']);                  
+        snip_data.(new_snip_fields{k})(:,:,nc_sub_index) = snip;
+    end  
+    % store key ID variables
+    snip_data.frame = frame;
+    snip_data.setID = setID;
+    snip_data.particle_id_vec = particle_id_vec;
+    % indexing vectors    
+    snip_data.nc_sub_index_vec = nc_sub_index_vec; 
+    snip_data.nc_lin_index_vec = nc_lin_index_vec; 
+    snip_data.nc_master_vec = nc_master_vec;
+    % specify name
+    snip_name = ['snip_data_F' sprintf('%03d',frame) '_S' sprintf('%02d',setID)]; 
+    if write_snip_flag    
+        save([DataPath 'snip_data.mat'],'snip_data','-v7.3')    
+        write_snip_flag = true;
+    else
+        snip_file.(snip_name)= snip_data;        
+        clear snip_file;
+    end
+    % report time
     t = round(toc);
-    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])     
+    disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])         
 end
 disp('saving qc frames...')
 % save qc data
