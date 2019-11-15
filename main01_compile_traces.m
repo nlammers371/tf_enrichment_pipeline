@@ -269,7 +269,7 @@ for i = 1:length(cp_filenames)
                 s_cells(nc_ind).fluo3D = NaN(1,n_entries);
             end
             s_cells(nc_ind).fluo = NaN(1,n_entries);    
-            s_cells(e_pass).fluoOffset = NaN(1,sum(nc_filter));  
+            s_cells(nc_ind).fluoOffset = NaN(1,n_entries);  
         end
         s_cells(nc_ind).ParticleID = ParticleID;
         % find overlap between nucleus and trace
@@ -280,7 +280,10 @@ for i = 1:length(cp_filenames)
             error('Inconsistent particle and nucleus frames')
         end
         % record fluorescence info             
-        s_cells(nc_ind).fluo(spot_filter) = trace_full;               
+        s_cells(nc_ind).fluo(spot_filter) = trace_full;  
+        % add offset info
+        s_cells(nc_ind).fluoOffset(ismember(nc_frames,raw_pt_frames)) = ...
+            cp_particles(j).Off(ismember(raw_pt_frames,nc_frames));
         % x, y, and z info                                
         s_cells(nc_ind).xPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
             cp_particles(j).xPos(ismember(raw_pt_frames,nc_frames));
@@ -288,9 +291,7 @@ for i = 1:length(cp_filenames)
             cp_particles(j).yPos(ismember(raw_pt_frames,nc_frames));   
         s_cells(nc_ind).zPosParticle(ismember(nc_frames,raw_pt_frames)) = ...
             cp_particles(j).zPos(ismember(raw_pt_frames,nc_frames));
-        % add offset info
-        s_cells(nc_ind).fluoOffset(ismember(nc_frames,raw_pt_frames)) = ...
-            cp_particles(j).Off(ismember(raw_pt_frames,nc_frames));
+        
         % 3D info
         if threeD_flag
             s_cells(nc_ind).xPosParticle3D(ismember(nc_frames,raw_pt_frames)) = ...

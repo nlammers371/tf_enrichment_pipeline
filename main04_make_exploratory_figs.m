@@ -4,7 +4,7 @@ function main04_make_exploratory_figs(project,DropboxFolder, protein_string, gen
 close all
 addpath('utilities')
 DistLim = 0.8; % min distance from edge permitted (um)
-NBoots = 20;%00; % number of bootstrap samples to use for estimating SE
+NBoots = 100;%00; % number of bootstrap samples to use for estimating SE
 ManualDistThreshold = 0;
 Colormap_plot = jet(128); %specifies the colomap used to make plots/graphs
 Colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
