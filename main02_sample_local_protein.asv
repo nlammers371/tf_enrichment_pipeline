@@ -26,6 +26,7 @@ function nucleus_struct_protein = main02_sample_local_protein(project,DropboxFol
 addpath('./utilities')
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
+mf_samp_rad = 1.5; % distance (um) from nucleus center to include in sample 
 minEdgeSepUm = .2; %um
 segmentNuclei = 0;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
@@ -99,26 +100,26 @@ end
 set_vec = [nucleus_struct.setID];
 set_index = unique(set_vec);
 
-px_size = nucleus_struct(1).PixelSize;
+PixelSize = nucleus_struct(1).PixelSize;
 % determine size of neighborhood to use
-nb_size = round(10 ./ px_size);
+nb_size = round(10 ./ PixelSize);
 
 % size of gaussian smoothing kernel 
-sm_kernel = round(1 ./ px_size);
+sm_kernel = round(1 ./ PixelSize);
 
 % set min and max acceptable area for nucleus segmentation
-min_area = round(pi*(2 ./ px_size).^2);
-max_area = round(pi*(4 ./ px_size).^2);
+min_area = round(pi*(2 ./ PixelSize).^2);
+max_area = round(pi*(4 ./ PixelSize).^2);
 
 % set snippet to be 3um in size
-pt_snippet_size = round(1.5 ./ px_size);
+pt_snippet_size = round(1.5 ./ PixelSize);
 
 % set min separation between control and locus to 2um
-minSampleSep = round(minSampleSepUm ./ px_size);
-minEdgeSep = round(minEdgeSepUm ./ px_size);
+minSampleSep = round(minSampleSepUm ./ PixelSize);
+minEdgeSep = round(minEdgeSepUm ./ PixelSize);
 
 % calculate ROI size in pixels for spot and control
-roi_rad_spot_pix = round(ROIRadiusSpot ./ px_size);
+roi_rad_spot_pix = round(ROIRadiusSpot ./ PixelSize);
 
 % calculate average frame-over-frame particle drift from data
 lin_diff_vec = diff(lin_ind_ref);
@@ -127,23 +128,19 @@ y_diff_vec = diff(spot_y_ref);
 dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
 dr_vec = dr_vec(lin_diff_vec==0);
 % sets sigma of movement for virtual spot
-driftTol = nanmedian(dr_vec)*px_size;
+driftTol = nanmedian(dr_vec)*PixelSize;
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein_vec',...
     'serial_null_protein_vec_3d','edge_null_protein_vec','edge_null_protein_vec_3d','mf_null_protein_vec',...
-    'spot_mcp_vec','serial_null_mcp_vec','edge_null_mcp_vec','mf_null_mcp_vec',...
-    'serial_qc_flag_vec','edge_qc_flag_vec','spot_fov_edge_flag_vec','edge_fov_edge_flag_vec', ...
+    'spot_mcp_vec','serial_qc_flag_vec','edge_qc_flag_vec', ...
     'edge_null_x_vec', 'serial_null_x_vec','serial_null_y_vec','edge_null_y_vec', 'edge_null_nc_vec',...
     'spot_edge_dist_vec','serial_null_edge_dist_vec'};
 
+
 new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
     'spot_mcp_snips','edge_null_mcp_snips'};
-
-% Initialize snip structure
-% snip_data = struct('ParticleID',[],'Frame',[],'spot_protein_snips',[],'edge_null_protein_snips',[],...
-%     'spot_mcp_snips',[],'edge_null_mcp_snips', []);
 
 % Initialize fields
 for i = 1:numel(nucleus_struct)
@@ -151,17 +148,7 @@ for i = 1:numel(nucleus_struct)
     for j = 1:numel(new_vec_fields)
         nucleus_struct(i).(new_vec_fields{j}) = NaN(size(ref));
     end
-%     for j = 1:numel(new_snip_fields)
-%         snip_data(i).(new_snip_fields{j}) = NaN(2*pt_snippet_size+1,2*pt_snippet_size+1,numel(ref));
-%     end
-%     snip_data(i).ParticleID = nucleus_struct(i).ParticleID;
-%     snip_data(i).time = nucleus_struct(i).time;
-%     snip_data(i).frames = nucleus_struct(i).frames;
-%     nucleus_struct(i).snip_frame_vec = [];
 end
-% write to file (will read and write-to as we go)
-% save([DataPath 'snip_data.mat'],'snip_data','-v7.3')
-% clear snip_data;
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% make source key
@@ -318,14 +305,12 @@ disp('taking protein samples...')
 % define volumetric distance box for subsequent use
 xy_sigma = psf_dims.xy_sigma;
 z_sigma = psf_dims.z_sigma;
-xy_vol_dim = ceil(xy_sigma*2);
-z_vol_dim = ceil(z_sigma*2);
 
 for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);  
-    
+        
     % load spot and nucleus reference frames
     nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
     load(nc_ref_name,'nc_ref_frame');
@@ -351,14 +336,15 @@ for i = 1:size(set_frame_array,1)
     src = set_key(set_key.setID==setID,:).prefix{1};
 
     % load stacks
+    tic
     mcp_stack = load_stacks(rawPath, src, frame, mcp_channel);
     protein_stack = load_stacks(rawPath, src, frame, proteinChannel);
-    
+    toc
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
-    r_dist_mat = sqrt(double(x_dist_mat).^2 + double(y_dist_mat).^2);        
-        
+    r_dist_mat = sqrt(double(x_dist_mat).^2 + double(y_dist_mat).^2);            
+    
     % initialize arrays to store relevant info 
     for j = 1:numel(new_vec_fields)
         eval([new_vec_fields{j} ' = NaN(size(spot_x_vec));']);
@@ -369,26 +355,27 @@ for i = 1:size(set_frame_array,1)
     
     % iterate through spots
     qc_mat = struct;
-    for j = 1:numel(nc_x_vec)        
+    for j = 1:numel(nc_x_vec)    
+        tic
         % get location info
         x_nucleus = round(nc_x_vec(j));
         y_nucleus = round(nc_y_vec(j));   
         x_spot = round(spot_x_vec(j));
         y_spot = round(spot_y_vec(j)); 
         % check for sister spot        
-        z_spot = round(spot_z_vec(j))-1; 
+        z_spot = round(spot_z_vec(j))-1; % NL: why?
         if isnan(x_spot) || ~pt_qc_vec(j)
             continue
         end
         % extract mask 
-        spot_nc_mask = nc_ref_frame == nc_master_vec(j);        
-                
+        spot_nc_mask = nc_ref_frame == nc_master_vec(j);                       
         %%%%%%%%%%%%%%%%%%%%%% Sample protein levels %%%%%%%%%%%%%%%%%%%%%%
         % get frames
         protein_frame = protein_stack(:,:,z_spot);
         mcp_frame = mcp_stack(:,:,z_spot);
         int_id = spot_roi_frame(y_spot,x_spot);        
-        % regardless of qc issues filtered fpor later on, take pt samples
+        
+        % regardless of qc issues filtered for later on, take pt samples
         % in vicinity of spot       
         spot_protein_vec(j) = nanmean(protein_frame(int_id==spot_roi_frame));
         spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));      
@@ -401,29 +388,16 @@ for i = 1:size(set_frame_array,1)
             serial_qc_flag_vec(j) = -1;
             continue
         end 
-                
-        x_range = max(1,x_spot-pt_snippet_size):min(xDim,x_spot+pt_snippet_size);
-        y_range = max(1,y_spot-pt_snippet_size):min(yDim,y_spot+pt_snippet_size);
-        x_range_full = x_spot-pt_snippet_size:x_spot+pt_snippet_size;
-        y_range_full = y_spot-pt_snippet_size:y_spot+pt_snippet_size; 
-        % generate snips
-        pt_snip = NaN(numel(y_range_full),numel(x_range_full));
-        pt_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = protein_frame(y_range,x_range);
-        mcp_snip = NaN(numel(y_range_full),numel(x_range_full));
-        mcp_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = mcp_frame(y_range,x_range); 
-        bound_snip = false(numel(y_range_full),numel(x_range_full));
-        bound_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = spot_nc_mask(y_range,x_range);  
-        % NAN-ify shit
-        pt_snip(~bound_snip) = NaN;
-        mcp_snip(~bound_snip) = NaN;
-        % save
-        spot_protein_snips(:,:,j) = pt_snip;
-        spot_mcp_snips(:,:,j) = mcp_snip;                 
-%        
-        % Take average across all pixels in nucleus mask
-%         mf_filter = spot_sep_vec >= minSampleSep & abs(nc_edge_dist_vec-spot_edge_dist) <= mfTolerance;                    
-        mf_null_protein_vec(j) = nanmean(protein_frame(spot_nc_mask));% / voxel_size;
-        mf_null_mcp_vec(j) = nanmean(mcp_frame(spot_nc_mask));% / voxel_size;
+                      
+        % sample snippets
+        spot_protein_snips(:,:,j) = sample_snip(x_spot,y_spot,pt_snippet_size,protein_frame,spot_nc_mask);
+        spot_mcp_snips(:,:,j) = sample_snip(x_spot,y_spot,pt_snippet_size,mcp_frame,spot_nc_mask);                 
+
+        % Take average across all pixels within 1.5um of nuclues center 
+        dist_mat = zeros(size(protein_frame));
+        dist_mat(y_nucleus, x_nucleus) = 1;
+        mf_samp_mask = bwdist(dist_mat)*PixelSize <= mf_samp_rad;              
+        mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;        
         
         % Edge sampling 
         spot_edge_dist = nc_dist_frame(y_spot,x_spot);        
@@ -475,29 +449,12 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame = zeros(size(protein_frame));
             null_dist_frame(yc,xc) = 1;
             null_dist_frame = bwdist(null_dist_frame);
-            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
-            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
+            edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;            
             % take 3D protein sample
             edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
-            % draw snips      
-            x_range_full = xc-pt_snippet_size:xc+pt_snippet_size;
-            y_range_full = yc-pt_snippet_size:yc+pt_snippet_size;            
-            x_range = max(1,xc-pt_snippet_size):min(xDim,xc+pt_snippet_size);
-            y_range = max(1,yc-pt_snippet_size):min(yDim,yc+pt_snippet_size);
-            % generate snips
-            pt_snip = NaN(numel(y_range_full),numel(x_range_full));
-            pt_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = protein_frame(y_range,x_range);
-            mcp_snip = NaN(numel(y_range_full),numel(x_range_full));
-            mcp_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = mcp_frame(y_range,x_range); 
-            % enforce nucleus boundaries
-            bound_snip = false(numel(y_range_full),numel(x_range_full));
-            bound_snip(ismember(y_range_full,y_range),ismember(x_range_full,x_range)) = nc_ref_frame(y_range,x_range);  
-            % apply filtering
-            pt_snip(~bound_snip) = NaN;
-            mcp_snip(~bound_snip) = NaN;
-            % store
-            edge_null_protein_snips(:,:,j) =  pt_snip;
-            edge_null_mcp_snips(:,:,j) =  mcp_snip;                 
+            % draw snips    
+            edge_null_protein_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,protein_frame,spot_nc_mask);
+            edge_null_mcp_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,mcp_frame,spot_nc_mask);                                        
         end                  
         
         % Draw serialized control
@@ -536,7 +493,7 @@ for i = 1:size(set_frame_array,1)
             drControl = double(sqrt((old_x-x_pos_vec).^2+(old_y-y_pos_vec).^2));   
 %             edge_dev_vec = spot_edge_dist-nc_edge_dist_vec;
             % calculate weights
-            wt_vec = exp(-.5*((drControl/(driftTol/px_size)).^2));%+((edge_dev_vec)/roi_spot).^2));
+            wt_vec = exp(-.5*((drControl/(driftTol/PixelSize)).^2));%+((edge_dev_vec)/roi_spot).^2));
             % anything too close to locus or with an edge distance too different from locus is excluded
             wt_vec(spot_sep_vec<minSampleSep|nc_edge_dist_vec < minEdgeSep) = 0;
             % draw sample
@@ -561,8 +518,7 @@ for i = 1:size(set_frame_array,1)
         % samples below default to NaN if no sample taken
         % sample protein
         serial_qc_flag_vec(j) = ~isnan(xc);
-        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
-        serial_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;
+        serial_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;        
         % record
         serial_null_x_vec(j) = xc;
         serial_null_y_vec(j) = yc;
@@ -610,7 +566,8 @@ for i = 1:size(set_frame_array,1)
         qc_mat(numel(nc_x_vec)-j+1).y_origin = y_range(1);
         qc_mat(numel(nc_x_vec)-j+1).mcp_snip = mcp_frame(y_range,x_range);
         qc_mat(numel(nc_x_vec)-j+1).protein_snip = protein_frame(y_range,x_range);
-        qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);                
+        qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);     
+        toc
     end 
     qc_structure(i).qc_mat = fliplr(qc_mat);  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -641,14 +598,16 @@ for i = 1:size(set_frame_array,1)
     snip_data.nc_lin_index_vec = nc_lin_index_vec; 
     snip_data.nc_master_vec = nc_master_vec;
     % specify name
+     % read snip file    
     snip_name = ['snip_data_F' sprintf('%03d',frame) '_S' sprintf('%02d',setID)]; 
-    if write_snip_flag    
-        save([DataPath 'snip_data.mat'],'snip_data','-v7.3')    
+    if write_snip_flag            
+        blank = struct;
+        save([DataPath 'snip_data.mat'],'blank','-v7.3')    
         write_snip_flag = true;
-    else
-        snip_file.(snip_name)= snip_data;        
-        clear snip_file;
     end
+    snip_file = matfile([DataPath 'snip_data.mat'],'Writable',true);    
+    snip_file.(snip_name)= snip_data;        
+    clear snip_file;    
     % report time
     t = round(toc);
     disp([num2str(i) ' of ' num2str(size(set_frame_array,1)) ' frames completed (' num2str(t) ' sec)'])         
