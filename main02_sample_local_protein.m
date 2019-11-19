@@ -207,8 +207,7 @@ elseif ~all(nc_frame_vec) && ~segmentNuclei
 end
 if segmentNuclei
     disp('segmenting nuclei...')
-    tic
-    
+    tic    
     %%% Segment nuclei     
     % initialize arrays to store segmentation info
     nucleus_frame_array = NaN(yDim,xDim,numel(segment_indices));
