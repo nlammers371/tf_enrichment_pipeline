@@ -28,25 +28,37 @@ load([DataPath '/set_key.mat'],'set_key')
 % remove all frames that do not contain a segmented particle or that
 % contain a particle that fails QC standards
 % nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
-clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
+nucleus_struct = nucleus_struct(~isnan([nucleus_struct.ParticleID]));
+
+fnames = fieldnames(nucleus_struct);
 for i = 1:numel(nucleus_struct)
+    nucleus_struct(i).time_orig = nucleus_struct(i).time;
     fluo = nucleus_struct(i).fluo;
     nan_ft = ~isnan(fluo);
-    for j = 1:numel(clean_fields)
-        vec = nucleus_struct(i).(clean_fields{j});
-        nucleus_struct(i).(clean_fields{j}) = vec(nan_ft);
+    for j = 1:numel(fnames)
+        vec = nucleus_struct(i).(fnames{j});
+        if numel(vec) == numel(fluo)        
+            nucleus_struct(i).(fnames{j}) = vec(nan_ft);
+        end
     end
 end
-
+% check for 3D fits
+threeD_flag = nucleus_struct(1).threeD_flag;
 set_ref = [];
 frame_ref = [];
 for i = 1:numel(nucleus_struct)
     frame_ref = [frame_ref nucleus_struct(i).frames];
     set_ref = [set_ref repelem(nucleus_struct(i).setID,numel(nucleus_struct(i).frames))];
 end
-spot_x_ref = [nucleus_struct.xPosParticle];
-spot_y_ref = [nucleus_struct.yPosParticle];
-spot_z_ref = [nucleus_struct.zPosParticle];
+if threeD_flag
+    spot_x_ref = [nucleus_struct.xPosParticle3D];
+    spot_y_ref = [nucleus_struct.yPosParticle3D];
+    spot_z_ref = [nucleus_struct.zPosParticle3D];
+else    
+    spot_x_ref = [nucleus_struct.xPosParticle];
+    spot_y_ref = [nucleus_struct.yPosParticle];
+    spot_z_ref = [nucleus_struct.zPosParticle];
+end
 
 set_frame_array = unique([set_ref' frame_ref'],'row');
 set_index = unique(set_ref);

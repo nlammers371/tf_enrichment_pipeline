@@ -29,6 +29,11 @@ minSampleSepUm = 1.5; %um
 mf_samp_rad = 1.5; % distance (um) from nucleus center to include in sample 
 minEdgeSepUm = .2; %um
 segmentNuclei = 0;
+% PSF info for 3D sampling
+use_psf_fit_dims = false; % if true, use fits from PSF fitting
+xy_sigma_um = 0.25;% um 
+z_sigma_um = 0.9; % um
+
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
@@ -56,17 +61,21 @@ mcp_channel = options(options~=proteinChannel);
 write_snip_flag = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % remove all frames that do not contain a segmented particle or that
-% nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
+
 threeD_flag = nucleus_struct(1).threeD_flag;
-if threeD_flag
-    clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
- 
+% remove entries with no particle
+nucleus_struct = nucleus_struct(~isnan([nucleus_struct.ParticleID]));
+
+fnames = fieldnames(nucleus_struct);
 for i = 1:numel(nucleus_struct)
+    nucleus_struct(i).time_orig = nucleus_struct(i).time;
     fluo = nucleus_struct(i).fluo;
     nan_ft = ~isnan(fluo);
-    for j = 1:numel(clean_fields)
-        vec = nucleus_struct(i).(clean_fields{j});
-        nucleus_struct(i).(clean_fields{j}) = vec(nan_ft);
+    for j = 1:numel(fnames)
+        vec = nucleus_struct(i).(fnames{j});
+        if numel(vec) == numel(fluo)        
+            nucleus_struct(i).(fnames{j}) = vec(nan_ft);
+        end
     end
 end
 
@@ -101,6 +110,7 @@ set_vec = [nucleus_struct.setID];
 set_index = unique(set_vec);
 
 PixelSize = nucleus_struct(1).PixelSize;
+zStep = nucleus_struct(1).zStep;
 % determine size of neighborhood to use
 nb_size = round(10 ./ PixelSize);
 
@@ -130,6 +140,15 @@ dr_vec = dr_vec(lin_diff_vec==0);
 % sets sigma of movement for virtual spot
 driftTol = nanmedian(dr_vec)*PixelSize;
 
+% set dims for 3D protein sampling
+if use_psf_fit_dims
+    xy_sigma = psf_dims.xy_sigma;
+    z_sigma = psf_dims.z_sigma;
+else
+    xy_sigma = round(xy_sigma_um/PixelSize,1);% pixels
+    z_sigma = round(z_sigma_um/zStep,1); % pixels
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein_vec',...
@@ -153,7 +172,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%
 %%% make source key
 src_cell = {1,numel(set_index)};
-pt_id_vec = [nucleus_struct.ParticleID];
+% pt_id_vec = [nucleus_struct.ParticleID];
 for s = 1:numel(set_index)
     ind = find([nucleus_struct.setID]==set_index(s),1);   
     src = nucleus_struct(ind).source_path;    
@@ -163,14 +182,6 @@ end
 %%% Generate reference array for set-frame combos
 set_frame_array = unique([set_ref' frame_ref'],'row');
 qc_structure = struct;
-%%% iterate
-% p = gcp('nocreate');
-% if isempty(p)
-%     parpool(numWorkers);
-% elseif p.NumWorkers ~= numWorkers
-%     delete(gcp('nocreate'))
-%     parpool(numWorkers);
-% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % Nucleus segmentation
@@ -204,8 +215,7 @@ elseif ~all(nc_frame_vec) && ~segmentNuclei
 end
 if segmentNuclei
     disp('segmenting nuclei...')
-    tic
-    
+    tic    
     %%% Segment nuclei     
     % initialize arrays to store segmentation info
     nucleus_frame_array = NaN(yDim,xDim,numel(segment_indices));
@@ -300,12 +310,11 @@ if segmentNuclei
     disp('done.')
     toc
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Protein sampling
+%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('taking protein samples...')
-
-% define volumetric distance box for subsequent use
-xy_sigma = psf_dims.xy_sigma;
-z_sigma = psf_dims.z_sigma;
-
 for i = 1:size(set_frame_array,1)    
     tic
     setID = set_frame_array(i,1);
