@@ -108,18 +108,20 @@ for i = 1:length(cp_filenames)
     catch
         warning(['failed to load one or more files for prefix: ' prefix_cell{i} '. Skipping...' ])
         continue
-    end     
-    
+    end         
     % extract data structures
-    processed_data = load(cp_filenames{i}); % processed particles    
+    processed_data = load(cp_filenames{i}); % processed particles   
+    
     % Extract compiled particles structure         
     cp_particles = processed_data.CompiledParticles;    
     if iscell(cp_particles)
         cp_particles = cp_particles{1};
     end   
+    
+    % check for 3D fit data
 %     threeD_flag = isfield(cp_particles,'Fluo3DRaw');
     threeD_flag = isfield(cp_particles,'FluoGauss3D');
-    % check for 3D fit data
+    
     % set identifier
     setID = i;            
     % pull trace, time, and frame variables
@@ -130,8 +132,9 @@ for i = 1:length(cp_filenames)
         traces_raw = traces_raw{1};
     end
     frames_raw = 1:length(time_raw); % Frame list   
+    
     % find index for first frame
-    first_frame = max([1, processed_data.(['nc' num2str(firstNC)])]); % Default to start of nc14 for the moment    
+    first_frame = max([1, processed_data.(['nc' num2str(firstNC)])]); 
     % filter trace mat and time
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
