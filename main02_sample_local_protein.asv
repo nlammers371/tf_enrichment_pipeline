@@ -56,11 +56,11 @@ mcp_channel = options(options~=proteinChannel);
 write_snip_flag = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % remove all frames that do not contain a segmented particle or that
-% contain a particle that fails QC standards
 % nucleus_struct = nucleus_struct([nucleus_struct.qc_flag]==1);
 threeD_flag = nucleus_struct(1).threeD_flag;
-
-clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
+if threeD_flag
+    clean_fields = {'xPos','yPos','xPosParticle','yPosParticle','zPosParticle','fluo','time','frames'};
+ 
 for i = 1:numel(nucleus_struct)
     fluo = nucleus_struct(i).fluo;
     nan_ft = ~isnan(fluo);
@@ -335,11 +335,9 @@ for i = 1:size(set_frame_array,1)
     particle_id_vec = pt_ref(frame_set_filter);
     src = set_key(set_key.setID==setID,:).prefix{1};
 
-    % load stacks
-    tic
+    % load stacks    
     mcp_stack = load_stacks(rawPath, src, frame, mcp_channel);
-    protein_stack = load_stacks(rawPath, src, frame, proteinChannel);
-    toc
+    protein_stack = load_stacks(rawPath, src, frame, proteinChannel);    
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
@@ -355,8 +353,7 @@ for i = 1:size(set_frame_array,1)
     
     % iterate through spots
     qc_mat = struct;
-    for j = 1:numel(nc_x_vec)    
-        tic
+    for j = 1:numel(nc_x_vec)            
         % get location info
         x_nucleus = round(nc_x_vec(j));
         y_nucleus = round(nc_y_vec(j));   
@@ -453,8 +450,8 @@ for i = 1:size(set_frame_array,1)
             % take 3D protein sample
             edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
             % draw snips    
-            edge_null_protein_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,protein_frame,spot_nc_mask);
-            edge_null_mcp_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,mcp_frame,spot_nc_mask);                                        
+            edge_null_protein_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,protein_frame,nc_ref_frame>0);
+            edge_null_mcp_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,mcp_frame,nc_ref_frame>0);                                        
         end                  
         
         % Draw serialized control
@@ -566,8 +563,7 @@ for i = 1:size(set_frame_array,1)
         qc_mat(numel(nc_x_vec)-j+1).y_origin = y_range(1);
         qc_mat(numel(nc_x_vec)-j+1).mcp_snip = mcp_frame(y_range,x_range);
         qc_mat(numel(nc_x_vec)-j+1).protein_snip = protein_frame(y_range,x_range);
-        qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);     
-        toc
+        qc_mat(numel(nc_x_vec)-j+1).edge_dist_snip = edge_dist_mat(y_range,x_range);             
     end 
     qc_structure(i).qc_mat = fliplr(qc_mat);  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
