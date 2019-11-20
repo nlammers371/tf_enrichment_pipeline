@@ -51,13 +51,6 @@ fluo1x_vec = [nc_data_1x.fluo];
 fluo1x_vec = fluo1x_vec(dist1x_ft_vec);
 fluo2x_vec = [nc_data_2x.fluo];
 fluo2x_vec = fluo2x_vec(dist2x_ft_vec);
-
-% time
-time1x_vec = [nc_data_1x.time];
-time1x_vec = time1x_vec(dist1x_ft_vec);
-time2x_vec = [nc_data_2x.time];
-time2x_vec = time2x_vec(dist2x_ft_vec);
-
 %% Simple histograms to compare nucleus concentrations for 1 and 2x
 close all
 n_bins = 100;
@@ -70,6 +63,7 @@ dt_ub = prctile([delta_protein1x_vec mf_protein2x_vec],99);
 delta_bins = linspace(dt_lb,dt_ub,n_bins);
 mf_bins = linspace(mf_lb,mf_ub,n_bins);
 
+close all
 % make figure2
 mf_hist = figure;
 cmap1 = brewermap([],'Set2');
@@ -86,46 +80,76 @@ set(gca,'Fontsize',14)
 saveas(mf_hist,[FigPath 'nuclear_dorsal_1x_vs_2x.png'])
 saveas(mf_hist,[FigPath 'nuclear_dorsal_1x_vs_2x.pdf'])
 
+% 
+% delta_hist = figure;
+% hold on
+% histogram(delta_protein1x_dist_vec,mf_bins,'Normalization','probability')
+% histogram(delta_protein2x_dist_vec,mf_bins,'Normalization','probability')
+% xlabel('Dl enrichment at locus (au)')
+% ylabel('share')
+% legend('1x','2x')
+% grid on 
+% box on
+% set(gca,'Fontsize',14)
+% saveas(mf_hist,[FigPath 'enrichment_1x_vs2x.png'])
+% saveas(mf_hist,[FigPath 'enrichment_1x_vs2x.pdf'])
+
 
 %% Look at enrichment as a function of nucleus concentration
 
 % calculate average enrichment as a function of nuclear concentration
 % combine sets for now
-n_points = 25; % number of protein bins
+n_points = 25;
 mf_lb = prctile([mf_protein1x_vec mf_protein2x_vec],.5);
 mf_ub = prctile([mf_protein1x_vec mf_protein2x_vec],99.5);
 mf_plot_index = linspace(mf_lb,mf_ub,n_points);
+% % 1x version
+% mf_lb1x = prctile(mf_protein1x_vec,.5);
+% mf_ub1x = prctile(mf_protein1x_vec,99.5);
+% mf1x_plot_index = linspace(mf_lb2x,mf_ub1x,n_points);
 
 % concatenate 1x and 2x sets
 mf_vec_full = [mf_protein1x_vec mf_protein2x_vec];
-time_vec_full = [time1x_vec time2x_vec];
 delta_vec_full = [delta_protein1x_vec delta_protein2x_vec];
 fluo_vec_full = [fluo1x_vec fluo2x_vec];
 id_vec_full = [repelem(1,numel(mf_protein1x_vec)) repelem(2,numel(mf_protein2x_vec))];
 
-% create filters to split data by early and late
-split_time = 25*60;
-early_ft = time_vec_full <= split_time;
-late_ft = time_vec_full > split_time;
-
 % initialize boot arrays
 mf_sigma = median(diff(mf_plot_index))/2;
 delta_boot_array = NaN(nBoots,n_points);
+delta_boot_array1x = NaN(nBoots,n_points);
 fluo_boot_array = NaN(nBoots,n_points);
 index_vec = 1:numel(mf_vec_full);
 index_vec1x = 1:numel(delta_protein1x_vec);
 for n = 1:n_points
     mf_pt = mf_plot_index(n);
-    mf_weights = exp(-.5*((mf_pt-mf_vec_full)/mf_sigma).^2); % gaussian weights   
+    mf_weights = exp(-.5*((mf_pt-mf_vec_full)/mf_sigma).^2); % gaussian weights
+    mf_weights1x = exp(-.5*((mf_pt-mf_protein1x_vec )/mf_sigma).^2); % gaussian weights
     for b = 1:nBoots
-        boot_indices = randsample(index_vec,numel(index_vec),true);        
-        boot_weights = mf_weights(boot_indices);        
-        delta_boot_array(b,n) = nansum(delta_vec_full(boot_indices).*boot_weights) / nansum(boot_weights);      
+        boot_indices = randsample(index_vec,numel(index_vec),true);
+        boot_indices1x = randsample(index_vec1x,numel(index_vec1x),true);
+        boot_weights = mf_weights(boot_indices);
+        boot_weights1x = mf_weights1x(boot_indices1x);
+        delta_boot_array(b,n) = nansum(delta_vec_full(boot_indices).*boot_weights) / nansum(boot_weights);
+        delta_boot_array1x(b,n) = nansum(delta_protein1x_vec(boot_indices1x).*boot_weights1x) / nansum(boot_weights1x);
         fluo_boot_array(b,n) = nansum(fluo_vec_full(boot_indices).*boot_weights) / nansum(boot_weights);
     end
 end
 
-
+% %%
+% df_boot_array = NaN(nBoots,n_points);
+% fluo_index = linspace(20,260,30);
+% fluo_sigma = median(diff(fluo_index));
+% index_vec = 1:numel(mf_vec_full);
+% for n = 1:n_points
+%     fl_pt = fluo_index(n);
+%     fl_weights = exp(-.5*((fl_pt-fluo_vec_full)/fluo_sigma).^2); % gaussian weights
+%     for b = 1:nBoots
+%         boot_indices = randsample(index_vec,numel(index_vec),true);
+%         boot_weights = fl_weights(boot_indices);
+%         df_boot_array(b,n) = nansum(delta_vec_full(boot_indices).*boot_weights) / nansum(boot_weights);        
+%     end
+% end
 %% plot
 % calculate mean and se
 mean_enrichment_mean = nanmean(delta_boot_array);
@@ -149,7 +173,7 @@ saveas(mean_titration,[FigPath 'avg_titration_trend.png'])
 saveas(mean_titration,[FigPath 'avg_titration_trend.pdf'])
 
 
-%% Fit polynomial
+%% Fit 3rd order polynomial
 close all
 nan_filter = ~isnan(delta_vec_full) & ~isnan(mf_vec_full);
 p3 = polyfit(mf_vec_full(nan_filter), delta_vec_full(nan_filter), 3);
@@ -214,7 +238,7 @@ e.CapSize = 0;
 scatter(mf_plot_index,mean_fluo_mean,'MarkerFaceColor',fluo_color,'MarkerEdgeAlpha',1,'MarkerEdgeColor','black');
 ylabel('{\it snail} fluorescence (au)')
 ax = gca;
-ax.YColor = 'black';%'black';
+ax.YColor = fluo_color;%'black';
 xlabel('nuclear Dl concentration (au)')
 grid on 
 box on
