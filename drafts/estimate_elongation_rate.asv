@@ -5,10 +5,10 @@ close all
 addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh';
+dropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+[~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 % project = 'Dl-Ven_hbP2P-mCh';
-dropboxFolder =  'E:\Nick\LivemRNA\Dropbox\';
-dataPath = [dropboxFolder 'ProcessedEnrichmentData\' project '\'];
-figPath = [dropboxFolder 'LocalEnrichmentFigures\elongation_rate\' project '\'];
+FigPath = [FigureRoot '\elongation_rate\' project '\'];
 mkdir(figPath)
 w = 7;
 K = 3;

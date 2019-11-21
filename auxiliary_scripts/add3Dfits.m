@@ -44,7 +44,7 @@ for i = 1:length(prefix_cell)
     spot_path = [RawResultsRoot Prefix '/Spots.mat'];
     cp_path = [RawResultsRoot Prefix '/CompiledParticles.mat'];
     sp_token_path = [RawResultsRoot Prefix '/Spots3DToken.mat'];
-    cp_token_path = [RawResultsRoot Prefix '/CompiledParticlesToken.mat.mat'];
+    cp_token_path = [RawResultsRoot Prefix '/CompiledParticlesToken.mat'];
     % check that Spots file exists
     if exist(spot_path)
         % first check to see if 3D fits have been performed recently

@@ -26,13 +26,13 @@ function nucleus_struct_protein = main02_sample_local_protein(project,DropboxFol
 addpath('./utilities')
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
-mf_samp_rad = 1.5; % distance (um) from nucleus center to include in sample 
-minEdgeSepUm = .2; %um
+mf_samp_rad = 0.8; % distance (um) from nucleus center to include in sample 
+minEdgeSepUm = .5; %um
 segmentNuclei = 0;
 % PSF info for 3D sampling
 use_psf_fit_dims = false; % if true, use fits from PSF fitting
 xy_sigma_um = 0.25;% um 
-z_sigma_um = 0.9; % um
+z_sigma_um = 0.6; % um
 
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
@@ -63,6 +63,7 @@ write_snip_flag = false;
 % remove all frames that do not contain a segmented particle or that
 
 threeD_flag = nucleus_struct(1).threeD_flag;
+% threeD_flag = false;
 % remove entries with no particle
 nucleus_struct = nucleus_struct(~isnan([nucleus_struct.ParticleID]));
 
@@ -84,9 +85,19 @@ end
 frame_ref = [nucleus_struct.frames];
 nc_x_ref = [nucleus_struct.xPos];
 nc_y_ref = [nucleus_struct.yPos];
+
 spot_x_ref = [nucleus_struct.xPosParticle];
 spot_y_ref = [nucleus_struct.yPosParticle];
 spot_z_ref = [nucleus_struct.zPosParticle];
+if threeD_flag
+    spot_x_ref3D = [nucleus_struct.xPosParticle3D];
+    spot_y_ref3D = [nucleus_struct.yPosParticle3D];
+    spot_z_ref3D = [nucleus_struct.zPosParticle3D];
+else
+    spot_x_ref3D = [nucleus_struct.xPosParticle];
+    spot_y_ref3D = [nucleus_struct.yPosParticle];
+    spot_z_ref3D = [nucleus_struct.zPosParticle];
+end
 
 set_ref = [];
 master_ind_ref = [];
@@ -331,6 +342,7 @@ for i = 1:size(set_frame_array,1)
     frame_set_filter = set_ref==setID&frame_ref==frame;
     nc_x_vec = nc_x_ref(frame_set_filter);
     nc_y_vec = nc_y_ref(frame_set_filter); 
+    
     % indexing vectors    
     nc_sub_index_vec = sub_ind_ref(frame_set_filter); 
     nc_lin_index_vec = lin_ind_ref(frame_set_filter); 
@@ -340,7 +352,10 @@ for i = 1:size(set_frame_array,1)
     pt_qc_vec = pt_qc_ref(frame_set_filter);
     spot_x_vec = spot_x_ref(frame_set_filter);
     spot_y_vec = spot_y_ref(frame_set_filter);        
-    spot_z_vec = spot_z_ref(frame_set_filter);  
+    spot_z_vec = spot_z_ref(frame_set_filter); 
+    spot_x_vec3D = spot_x_ref3D(frame_set_filter);
+    spot_y_vec3D = spot_y_ref3D(frame_set_filter);        
+    spot_z_vec3D = spot_z_ref3D(frame_set_filter); 
     particle_id_vec = pt_ref(frame_set_filter);
     src = set_key(set_key.setID==setID,:).prefix{1};
 
@@ -367,9 +382,13 @@ for i = 1:size(set_frame_array,1)
         x_nucleus = round(nc_x_vec(j));
         y_nucleus = round(nc_y_vec(j));   
         x_spot = round(spot_x_vec(j));
-        y_spot = round(spot_y_vec(j)); 
-        % check for sister spot        
+        y_spot = round(spot_y_vec(j));       
         z_spot = round(spot_z_vec(j))-1; % NL: why?
+        % get position info from 3D fit
+        x_spot3D = spot_x_vec3D(j);
+        y_spot3D = spot_y_vec3D(j);
+        z_spot3D = spot_z_vec3D(j)-1;
+        
         if isnan(x_spot) || ~pt_qc_vec(j)
             continue
         end
@@ -387,7 +406,7 @@ for i = 1:size(set_frame_array,1)
         spot_mcp_vec(j) = nanmean(mcp_frame(int_id==spot_roi_frame));      
         
         % volume protein sampling 
-        spot_protein_vec_3d(j) = sample_protein_3D(x_spot,y_spot,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
+        spot_protein_vec_3d(j) = sample_protein_3D(x_spot3D,y_spot3D,z_spot3D,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
         % make sure size is reasonable and that spot is inside nucleus
         if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            
@@ -400,9 +419,8 @@ for i = 1:size(set_frame_array,1)
         spot_mcp_snips(:,:,j) = sample_snip(x_spot,y_spot,pt_snippet_size,mcp_frame,spot_nc_mask);                 
 
         % Take average across all pixels within 1.5um of nuclues center 
-        dist_mat = zeros(size(protein_frame));
-        dist_mat(y_nucleus, x_nucleus) = 1;
-        mf_samp_mask = bwdist(dist_mat)*PixelSize <= mf_samp_rad;              
+        dist_mat = bwdist(~spot_nc_mask);        
+        mf_samp_mask = dist_mat*PixelSize >= mf_samp_rad;              
         mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;        
         
         % Edge sampling 
@@ -457,7 +475,7 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame = bwdist(null_dist_frame);
             edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;            
             % take 3D protein sample
-            edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
+            edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot3D,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
             % draw snips    
             edge_null_protein_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,protein_frame,nc_ref_frame>0);
             edge_null_mcp_snips(:,:,j) = sample_snip(xc,yc,pt_snippet_size,mcp_frame,nc_ref_frame>0);                                        
@@ -530,7 +548,7 @@ for i = 1:size(set_frame_array,1)
         serial_null_y_vec(j) = yc;
         serial_null_edge_dist_vec(j) = ec;
         % 3D version                
-        serial_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);% / sum(vol_denominator(:)) / voxel_size;                 
+        serial_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot3D,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);% / sum(vol_denominator(:)) / voxel_size;                 
         % check for presence of sister spot
         x_spot_sister = NaN;
         y_spot_sister = NaN;
@@ -587,21 +605,23 @@ for i = 1:size(set_frame_array,1)
         for k = 1:numel(new_vec_fields)
             vec = eval(new_vec_fields{k});
             nucleus_struct(nc_index).(new_vec_fields{k})(nc_sub_index) = vec(j);
-        end                              
+        end                             
+        % store snips
+        for k = 1:numel(new_snip_fields)
+            snip = eval([new_snip_fields{k} '(:,:,j)']);                  
+            snip_data.(new_snip_fields{k})(:,:,j) = snip;
+        end  
     end
-    % store snips
-    for k = 1:numel(new_snip_fields)
-        snip = eval([new_snip_fields{k} '(:,:,j)']);                  
-        snip_data.(new_snip_fields{k})(:,:,nc_sub_index) = snip;
-    end  
+    
     % store key ID variables
     snip_data.frame = frame;
     snip_data.setID = setID;
     snip_data.particle_id_vec = particle_id_vec;
+    snip_data.spot_edge_dist_vec = spot_edge_dist_vec;
     % indexing vectors    
     snip_data.nc_sub_index_vec = nc_sub_index_vec; 
     snip_data.nc_lin_index_vec = nc_lin_index_vec; 
-    snip_data.nc_master_vec = nc_master_vec;
+    snip_data.nc_master_vec = nc_master_vec;    
     % specify name
      % read snip file    
     snip_name = ['snip_data_F' sprintf('%03d',frame) '_S' sprintf('%02d',setID)]; 

@@ -1,5 +1,9 @@
 function pt_avg = sample_protein_3D(x_spot,y_spot,z_spot,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack)
-
+    
+    % generate rounded pos indices
+    x_round = round(x_spot);
+    y_round = round(y_spot);
+    z_round = round(z_spot);
     % calculate vol dimensions
     xy_vol_dim = ceil(2*xy_sigma);
     z_vol_dim = ceil(2*z_sigma);
@@ -8,12 +12,12 @@ function pt_avg = sample_protein_3D(x_spot,y_spot,z_spot,x_ref,y_ref,z_ref,xy_si
     yDim = size(x_ref,1);
     zDim = size(x_ref,3);
     % volume protein sampling 
-    x_range3 = max(1,x_spot-xy_vol_dim):min(xDim,x_spot+xy_vol_dim);
-    y_range3 = max(1,y_spot-xy_vol_dim):min(yDim,y_spot+xy_vol_dim);
-    z_range3 = max(1,z_spot-z_vol_dim):min(zDim,z_spot+z_vol_dim);
-    x_range3_full = x_spot-xy_vol_dim:x_spot+xy_vol_dim;
-    y_range3_full = y_spot-xy_vol_dim:y_spot+xy_vol_dim;
-    z_range3_full = z_spot-z_vol_dim:z_spot+z_vol_dim;
+    x_range3 = max(1,x_round-xy_vol_dim):min(xDim,x_round+xy_vol_dim);
+    y_range3 = max(1,y_round-xy_vol_dim):min(yDim,y_round+xy_vol_dim);
+    z_range3 = max(1,z_round-z_vol_dim):min(zDim,z_round+z_vol_dim);
+    x_range3_full = x_round-xy_vol_dim:x_round+xy_vol_dim;
+    y_range3_full = y_round-xy_vol_dim:y_round+xy_vol_dim;
+    z_range3_full = z_round-z_vol_dim:z_round+z_vol_dim;
 
     % generate protein sample and ref boxes
     pt_samp_box = NaN(numel(y_range3_full),numel(x_range3_full),numel(z_range3_full));
