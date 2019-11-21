@@ -53,11 +53,11 @@ end
 if threeD_flag
     spot_x_ref = [nucleus_struct.xPosParticle3D];
     spot_y_ref = [nucleus_struct.yPosParticle3D];
-    spot_z_ref = [nucleus_struct.zPosParticle3D];
+    spot_z_ref = [nucleus_struct.zPosParticle3D]-1;
 else    
     spot_x_ref = [nucleus_struct.xPosParticle];
     spot_y_ref = [nucleus_struct.yPosParticle];
-    spot_z_ref = [nucleus_struct.zPosParticle];
+    spot_z_ref = [nucleus_struct.zPosParticle]-1;
 end
 
 set_frame_array = unique([set_ref' frame_ref'],'row');

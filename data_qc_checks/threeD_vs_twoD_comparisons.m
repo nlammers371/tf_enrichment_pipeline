@@ -21,13 +21,6 @@ DistLim = 0.8; % min distance from edge permitted (um)
 dist_vec = [nucleus_struct_protein.spot_edge_dist_vec];
 dist_ft_vec = dist_vec >= DistLim;
 
-% absolute spot enrichment
-delta_protein_vec = ([nucleus_struct_protein.spot_protein_vec] - [nucleus_struct_protein.edge_null_protein_vec]);
-delta_protein_dist_vec = delta_protein_vec(dist_ft_vec);
-delta_protein3D_vec = ([nucleus_struct_protein.spot_protein_vec_3d] - [nucleus_struct_protein.edge_null_protein_vec_3d]);
-delta_protein3D_dist_vec = delta_protein3D_vec(dist_ft_vec);
-
-%% 
 close all
 xPos2D = [nucleus_struct.xPosParticle];
 % fluo_vec = [nucleus_struct_protein.fluo];
@@ -62,4 +55,26 @@ scatter(fluo,fluo3D)
 grid on
 xlabel('fluo (2D fit)')
 ylabel('fluo (3D fit)')
+
+%% Examine protein fields
+close all
+% absolute spot enrichment
+delta_protein_vec = ([nucleus_struct_protein.spot_protein_vec] - [nucleus_struct_protein.edge_null_protein_vec]);
+delta_protein_dist_vec = delta_protein_vec(dist_ft_vec);
+delta_protein3D_vec = ([nucleus_struct_protein.spot_protein_vec_3d] - [nucleus_struct_protein.edge_null_protein_vec_3d]);
+delta_protein3D_dist_vec = delta_protein3D_vec(dist_ft_vec);
+
+lb = prctile([delta_protein_dist_vec delta_protein3D_dist_vec],.1);
+ub = prctile([delta_protein_dist_vec delta_protein3D_dist_vec],99.9);
+pt_bins = linspace(lb,ub);
+
+hist_fig = figure;
+hold on
+histogram(delta_protein_dist_vec,pt_bins,'Normalization','probability')
+histogram(delta_protein3D_dist_vec,pt_bins,'Normalization','probability')
+legend('2D','3D')
+xlabel('Dorsal enrichment')
+ylabel('share')
+grid on
+box on
 
