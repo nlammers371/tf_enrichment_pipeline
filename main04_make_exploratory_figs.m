@@ -47,11 +47,25 @@ write_string = [protein_name '-' protein_fluor '__' gene_name '-' gene_fluor];
 % Generate distance vector for filtering snip stacks
 PixelSize = nucleus_struct_protein(1).PixelSize;
 
-% Snip stacks
-spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
-null_protein_snips = cat(3,nucleus_struct_protein.edge_null_protein_snips);
-spot_mcp_snips = cat(3,nucleus_struct_protein.spot_mcp_snips);
-null_mcp_snips = cat(3,nucleus_struct_protein.edge_null_mcp_snips);
+% Load snip stacks
+snip_files = matfile("E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\2xDl-Ven_snaBAC-mCh\snip_data.mat");
+load("E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\2xDl-Ven_snaBAC-mCh\snip_data.mat");
+snip_list = fieldnames(snip_files);
+spot_protein_snips = [];
+null_protein_snips = [];
+spot_mcp_snips = [];
+null_mcp_snips = [];
+for s = 2:numel(snip_list)
+    eval(['snip_data = ' snip_list{s} ';'])
+    spot_protein_snips = cat(3,spot_protein_snips,snip_data.spot_protein_snips);
+    spot_mcp_snips = cat(3,spot_mcp_snips,snip_data.spot_mcp_snips);
+    null_protein_snips = cat(3,null_protein_snips,snip_data.edge_null_protein_snips);
+    null_mcp_snips = cat(3,null_mcp_snips,snip_data.edge_null_mcp_snips);
+end
+% spot_protein_snips = cat(3,nucleus_struct_protein.spot_protein_snips);
+% null_protein_snips = cat(3,nucleus_struct_protein.edge_null_protein_snips);
+% spot_mcp_snips = cat(3,nucleus_struct_protein.spot_mcp_snips);
+% null_mcp_snips = cat(3,nucleus_struct_protein.edge_null_mcp_snips);
 
 % Make r reference array where each element is its distance, in um, from 
 % the center pixel in the array
