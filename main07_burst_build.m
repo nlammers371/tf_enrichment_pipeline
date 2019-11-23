@@ -2,9 +2,9 @@ clear
 close all
 addpath('utilities')
 % define core ID variables
-project = 'Dl-Ven_snaBAC-mCh';
+% project = 'Dl-Ven_snaBAC-mCh';
 % project = 'Dl-Ven_New_snaBAC-mCh';
-% project = 'Dl-Ven_hbP2P-mCh';
+project = 'Dl-Ven_hbP2P-mCh';
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [RawResultsPath, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 w = 7;
@@ -17,14 +17,6 @@ fit_array = [ones(numel(window_vec),1) window_vec'];
 % load input-output data set
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 
-% perform time averaging to get protein trends over time
-gap_vec_full = [hmm_input_output.dt_filter_gap];
-pt_vec_full = [hmm_input_output.spot_protein];
-pt_vec_full = pt_vec_full(~gap_vec_full);
-virtual_vec_full = [hmm_input_output.serial_protein];
-virtual_vec_full = virtual_vec_full(~gap_vec_full);
-time_vec_full_raw = [hmm_input_output.time];
-time_vec_full = time_vec_full_raw(~gap_vec_full);
 
 
 % turn off display for fits
@@ -67,7 +59,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).sz_lead_vec = sz_lead_vec_full;
     hmm_input_output(i).change_points = change_points;
     hmm_input_output(i).z_diff_vec = zd_full;
-    hmm_input_output(i).z_prob_vec = z_prob_vec';
+    hmm_input_output(i).z_prob_vec = z_prob_vec';   
     % increment
     if ~isempty(change_points)
         n_features = n_features + numel(change_points)-1;
@@ -115,6 +107,7 @@ z_dur_lead_list = [hmm_input_output.z_dur_lead_vec];
 sz_lag_list = [hmm_input_output.sz_lag_vec];
 sz_lead_list = [hmm_input_output.sz_lead_vec];
 z_diff_list = [hmm_input_output.z_diff_vec];
+
 
 % initialize results structure
 results_struct = struct;   
@@ -251,7 +244,7 @@ results_struct.fluo_array = fluo_array;
 results_struct.hmm_array = hmm_array;  
 results_struct.swap_hmm_array = swap_hmm_array_dt;  
 % ID variables
-particle_id_vec(iter) = ParticleID;
+results_struct.particle_id_vec = particle_id_vec;
 results_struct.mf_protein_vec = mf_protein_vec;
 results_struct.center_time_vec = center_time_vec;
 results_struct.lag_dur_vec = lag_dur_vec;

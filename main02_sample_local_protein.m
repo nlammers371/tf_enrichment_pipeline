@@ -164,7 +164,7 @@ end
 % Designate fields ot be added to nucleus structure
 new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein_vec',...
     'serial_null_protein_vec_3d','edge_null_protein_vec','edge_null_protein_vec_3d','mf_null_protein_vec',...
-    'spot_mcp_vec','serial_qc_flag_vec','edge_qc_flag_vec', ...
+    'spot_mcp_vec','edge_mcp_protein_vec','serial_qc_flag_vec','edge_qc_flag_vec', ...
     'edge_null_x_vec', 'serial_null_x_vec','serial_null_y_vec','edge_null_y_vec', 'edge_null_nc_vec',...
     'spot_edge_dist_vec','serial_null_edge_dist_vec'};
 
@@ -474,6 +474,7 @@ for i = 1:size(set_frame_array,1)
             null_dist_frame(yc,xc) = 1;
             null_dist_frame = bwdist(null_dist_frame);
             edge_null_protein_vec(j) = nanmean(protein_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;            
+            edge_null_mcp_vec(j) = nanmean(mcp_frame(nc_ref_frame>0&null_dist_frame<roi_rad_spot_pix));% / voxel_size;            
             % take 3D protein sample
             edge_null_protein_vec_3d(j) = sample_protein_3D(xc,yc,z_spot3D,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
             % draw snips    

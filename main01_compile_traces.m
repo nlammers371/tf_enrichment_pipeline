@@ -122,8 +122,10 @@ for i = 1:length(cp_filenames)
     
     % check for 3D fit data
 %     threeD_flag = isfield(cp_particles,'Fluo3DRaw');
-    threeD_flag = isfield(cp_particles,'FluoGauss3D');
-    
+    threeD_flag = isfield(cp_particles,'FluoGauss3D') && any(~isnan(vertcat(cp_particles.FluoGauss3D)));
+    % determine whether there is AP info
+    ap_flag = isfield(cp_particles, 'APpos');
+        
     % set identifier
     setID = i;            
     % pull trace, time, and frame variables
@@ -168,6 +170,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).xPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter)); 
+            s_cells(e_pass).APPosParticle = NaN(1,sum(nc_filter)); 
             if threeD_flag
                 s_cells(e_pass).xPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(e_pass).yPosParticle3D = NaN(1,sum(nc_filter));
@@ -301,7 +304,9 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).xPosParticle(nc_sp_ft1) = cp_particles(j).xPos(nc_sp_ft2);
         s_cells(nc_ind).yPosParticle(nc_sp_ft1) = cp_particles(j).yPos(nc_sp_ft2);   
         s_cells(nc_ind).zPosParticle(nc_sp_ft1) = cp_particles(j).zPos(nc_sp_ft2);
-        
+        if ap_flag
+            s_cells(nc_ind).APPosParticle(nc_sp_ft1) = cp_particles(j).APpos(nc_sp_ft2)*100;
+        end
         % 3D info
         if threeD_flag
             s_cells(nc_ind).xPosParticle3D(nc_sp_ft1) = cp_particles(j).xPosGauss3D(nc_sp_ft2);            

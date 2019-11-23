@@ -27,8 +27,8 @@ for i = 1:numel(nucleus_struct)
     iter = iter + N;
 end
 % set limits for [Dl] and time
-mcp_time_bounds = [10 50]*60;
-mf_bounds = [prctile(dorsal_vec,45),prctile(dorsal_vec,55)];
+mcp_time_bounds = [5 20]*60;
+mf_bounds = [prctile(dorsal_vec,55),prctile(dorsal_vec,65)];
 
 
 % look at time averages for offset in each dataset
@@ -46,7 +46,7 @@ end
 close all
 %%% take bootstrap estimates of 95th percentile fluo and mean offset
 nBoots = 100;
-
+pct = 98;
 offset_array = NaN(nBoots,numel(set_index));
 fluo_array = NaN(nBoots,numel(set_index));
 
@@ -57,10 +57,16 @@ time_ft = time_vec >= mcp_time_bounds(1) & time_vec <= mcp_time_bounds(2);
 for s = 1:numel(set_index)    
     set_ft = set_vec == set_index(s) & mf_ft & time_ft;    
     index_vec = find(set_ft);
+    N = numel(index_vec);
+    n8_ids = floor((1:N)/N *100) == pct;
     for n = 1:nBoots
         boot_ids = randsample(index_vec,numel(index_vec),true);        
-        offset_array(n,s) = prctile(offset_vec(boot_ids),99);
-        fluo_array(n,s) = prctile(fluo_vec(boot_ids),99);
+        fluo_boot = fluo_vec(boot_ids);
+        offset_boot = offset_vec(boot_ids);
+        [fluo_sorted, f_rank] = sort(fluo_boot);
+        offset_sorted = offset_boot(f_rank);            
+        offset_array(n,s) = nanmean(offset_sorted(n8_ids));
+        fluo_array(n,s) = nanmean(fluo_sorted(n8_ids));
     end
 end
 % calculate average and standard error
@@ -70,7 +76,7 @@ mean_offset_ste = nanstd(offset_array);
 max_fluo_mean = nanmean(fluo_array);
 max_fluo_ste = nanstd(fluo_array);
     
-% Make figure
+%%% Make figure
 fig = figure;
 cmap2 = brewermap([],'Set2');
 hold on
@@ -81,8 +87,8 @@ box on
 xlabel('MCP offset (95th percentile )')
 ylabel('spot fluorescence (95th percentile )')
 set(gca,'Fontsize',14)
-ylim([0 320])
-saveas(fig,[FigPath 'mcp_vs_fluo.png'])    
+% ylim([0 320])
+saveas(fig,[FigPath 'mcp_vs_fluo_OG.png'])    
 
 %% look at MCP offset vs Dl levels...is there a trend?
 mf_lb = prctile(dorsal_vec,1);
