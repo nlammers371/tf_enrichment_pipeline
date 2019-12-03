@@ -14,7 +14,7 @@ for  p = 1:numel(project_cell)
     master_struct(p).nucleus_struct_protein = nucleus_struct_protein;    
     master_struct(p).project = project_cell{p};
 end
-FigPath = [FigRoot '/data_qc_checks/'];
+FigPath = [FigRoot '/mcp_offset_analyses/'];
 mkdir(FigPath)
 clear nucleus_struct;
 clear nucleus_struct_protein;
@@ -56,7 +56,10 @@ for m = 1%:numel(master_struct)
     mcp_vec = [mcp_vec mcp_temp];
     dorsal_vec = [dorsal_vec dorsal_temp];
 end
+mcp_vec_plot = mcp_vec + rand(size(mcp_vec))*20;
 %% simple cross-correlations
+cmap = brewermap([],'Set3');
+
 close all
 % MCP sample vs offset
 nan_ft = ~isnan(mcp_vec); 
@@ -64,26 +67,35 @@ p_mcp_off = polyfit(offset_vec(nan_ft),mcp_vec(nan_ft),1);
 yfit_mcp_off = p_mcp_off(1)*offset_vec+p_mcp_off(2);
 hold on;
 
-dl_off_fig = figure;
+mcp_off_fig = figure;
 hold on
-scatter(offset_vec,mcp_vec)
-plot(offset_vec,yfit_mcp_off,'r-.');
+scatter(offset_vec,mcp_vec_plot)
+plot(offset_vec,yfit_mcp_off,'-','Color','black');
 xlabel('MCP (random site)')
 ylabel('MCP (inferred offset)')
+grid on
+box on
+set(gca,'Fontsize',14)
+ylim([0 450])
+saveas(mcp_off_fig, [FigPath 'offset_vs_mcp.png'])
 
-% offset vs. Dorsal
+%%% offset vs. Dorsal
 nan_ft = ~isnan(dorsal_vec); 
 p_dl_off = polyfit(dorsal_vec(nan_ft),offset_vec(nan_ft),1);
 yfit_dl_off = p_dl_off(1)*dorsal_vec+p_dl_off(2);
 hold on;
 
 dl_off_fig = figure;
+colormap(cmap)
 hold on
-scatter(dorsal_vec,offset_vec)
+scatter(dorsal_vec,offset_vec,10,set_vec)
 plot(dorsal_vec,yfit_dl_off,'r-.');
 xlabel('Dl level')
 ylabel('MCP (inferred offset)')
-
+grid on
+box on
+set(gca,'Fontsize',14)
+saveas(dl_off_fig,[FigPath 'offset_vs_dorsal.png'])
 
 % mcp vs. Dorsal
 nan_ft = ~isnan(mcp_vec); 
@@ -92,23 +104,82 @@ yfit_dl_mcp = p_dl_mcp(1)*dorsal_vec+p_dl_mcp(2);
 hold on;
 
 dl_mcp_fig = figure;
+colormap(cmap)
 hold on
-scatter(dorsal_vec,mcp_vec)
+scatter(dorsal_vec,mcp_vec_plot,10,set_vec)
 plot(dorsal_vec,yfit_dl_mcp,'r-.');
 xlabel('Dl level')
 ylabel('MCP (random site)')
+ylim([0 450])
+grid on
+box on
+set(gca,'Fontsize',14)
+saveas(dl_mcp_fig,[FigPath 'mcp_vs_dorsal.png'])
 
 
 time_mcp_fig = figure;
+colormap(cmap)
 hold on
-scatter(time_vec,offset_vec)
+scatter(time_vec(set_vec~=4)/60,offset_vec(set_vec~=4),10,set_vec(set_vec~=4))
+grid on
+box on
+xlabel('time (minutes)')
+ylabel('MCP (inferred offset)')
+set(gca,'Fontsize',14)
+saveas(time_mcp_fig,[FigPath 'offset_vs_time.png'])
 
-%%
 
-lm_time = fitlm([time_vec'],offset_vec')
+%% estimate degree to which time can account for correlation
+set_ft = set_vec ~= 4;% exclude problematic set for now
+% permorm linear regressions
+lm_time = fitlm([time_vec(set_vec~=4)'],offset_vec(set_vec~=4)');
+lm_off = fitlm([time_vec(set_vec~=4)' dorsal_vec(set_vec~=4)'],offset_vec(set_vec~=4)');
 
-lm_off = fitlm([time_vec' dorsal_vec'],offset_vec')
+% get average offset as a function of dorsal
+dorsal_index = linspace(prctile(dorsal_vec,1),prctile(dorsal_vec,99));
+dl_window = 1;
+nBoots = 100;
+offset_array = NaN(nBoots,numel(dorsal_index));
+time_array = NaN(nBoots,numel(dorsal_index));
+for d = 1:numel(dorsal_index)
+    dl = dorsal_index(max(1,d-1));
+    dh = dorsal_index(min(numel(dorsal_index),d+1));
+    index_vec = find(dorsal_vec<dh & dorsal_vec >= dl & set_ft);
+    for n = 1:nBoots
+        s_ids = randsample(index_vec,numel(index_vec),true);
+        offset_array(n,d) = nanmean(offset_vec(s_ids));
+        time_array(n,d) = nanmean(time_vec(s_ids));
+    end
+end
 
+offset_mean_vec = nanmean(offset_array);
+offset_se_vec = nanstd(offset_array);
+
+time_mean_vec = nanmean(time_array);
+
+% extract fit parameters
+int_time_only = lm_time.Coefficients.Estimate(1);
+time_time_only = lm_time.Coefficients.Estimate(2);
+
+int_dl = lm_off.Coefficients.Estimate(1);
+time_dl = lm_off.Coefficients.Estimate(2);
+dl_dl = lm_off.Coefficients.Estimate(3);
+
+% make figure
+time_exp_fig = figure;
+hold on
+% actual trend
+e = errorbar(dorsal_index, offset_mean_vec,offset_se_vec,'Color','black');
+e.CapSize = 0;
+% prediction with time only
+p1 = plot(dorsal_index,time_mean_vec*time_time_only + int_time_only,'Color',cmap(5,:));
+p2 = plot(dorsal_index,dorsal_index*dl_dl + time_mean_vec*time_dl + int_dl,'Color',cmap(6,:));
+legend('raw data','fit (time only)','fit (including dorsal)')
+xlabel('Dorsal concentration')
+ylabel('MCP (inferred offset')
+set(gca,'Fontsize',14)
+grid on
+box on
 
 
 %%
