@@ -221,7 +221,7 @@ dist_mat_r = sqrt(dist_mat_x.^2 + dist_mat_y.^2);
 % now find closest match for each nucleus
 for i = 1:numel(hmm_input_output)
     % require that mat trace is (1) from same set, (2) starts and ends
-    % within 3 min of locus trace
+    % within 5 min of locus trace
     setID = set_vec(i);  
     option_filter = ((start_time_vec-start_time_vec(i)) <= 3*60) & ...
         ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;        

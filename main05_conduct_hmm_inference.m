@@ -86,11 +86,12 @@ end
 % out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
 if protein_bin_flag
     load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+    analysis_struct = nucleus_struct_protein;
     out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
 else
     load([DataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
     out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
-    nucleus_struct_protein = nucleus_struct;
+    analysis_struct = nucleus_struct;
 end
 
 % set write path
@@ -102,27 +103,27 @@ end
 outDir = [out_prefix out_suffix];
 mkdir(outDir);
 
-Tres = nucleus_struct_protein(1).TresInterp; % Time Resolution
+Tres = analysis_struct(1).TresInterp; % Time Resolution
 % filter for quality traces of sufficient length
 trace_struct_filtered = [];
-for i = 1:length(nucleus_struct_protein)
+for i = 1:length(analysis_struct)
     temp = struct;
-    time = nucleus_struct_protein(i).time_interp;
-    fluo = nucleus_struct_protein(i).fluo_interp;
-    if length(time) >= minDp
+    time = analysis_struct(i).time_interp;
+    fluo = analysis_struct(i).fluo_interp;
+    if sum(~isnan(fluo)) >= fluo % NL: this is a bit redundant. Leaving for now
         temp.fluo = fluo;
         temp.time = time;
         if protein_bin_flag
-            temp.mf_protein = nanmean(nucleus_struct_protein(i).mf_null_protein_vec);
+            temp.mf_protein = nanmean(analysis_struct(i).mf_null_protein_vec);
         end
-        temp.qc_flag = nucleus_struct_protein(i).qc_flag;
-        temp.ParticleID = nucleus_struct_protein(i).ParticleID;        
+        temp.qc_flag = analysis_struct(i).qc_flag;
+        temp.ParticleID = analysis_struct(i).ParticleID;        
         trace_struct_filtered = [trace_struct_filtered temp];
     end
 end
 trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1);
 
-if protein_bin_flag
+if protein_bin_flag 
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
     % generate protein groupings
@@ -139,6 +140,7 @@ if protein_bin_flag
         trace_struct_filtered(i).mf_protein_bin = id_vec(i);
     end
 end
+
 % define iteration wrapper
 iter_list = 1;
 iter_ref_index = ones(size(trace_struct_filtered));

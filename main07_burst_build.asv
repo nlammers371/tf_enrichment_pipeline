@@ -1,28 +1,26 @@
-function hmm_input_output = main07_burst_build(project,DropboxFolder,varargin)
-
+clear
 close all
-addpath('./utilities')
-%%%%% These options will remain fixed for now
-alphaFrac = 1302 / 6000;
+addpath('utilities')
+% define core ID variables
+% project = 'Dl-Ven_snaBAC-mCh';
+% project = 'Dl-Ven_New_snaBAC-mCh';
+project = 'Dl-Ven_hbP2P-mCh';
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+[RawResultsPath, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 w = 7;
-K = 3;  
+K = 3;
 % window analysis params
 window_size = 15; 
-%%%%%%%%%%%%%%
-for i = 1:numel(varargin)    
-    if strcmpi(varargin{i},'dropboxFolder')
-        dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
-    end
-    if ischar(varargin{i}) && i ~= numel(varargin)
-        if ismember(varargin{i},{'dpBootstrap','controlProject'})
-            eval([varargin{i} '=varargin{i+1};']);
-        end
-    end
-end
-
-[~, DataPath, ~] =   header_function(DropboxFolder, project);
+% arrays for fitting linear offsets
+window_vec = -window_size:window_size;
+fit_array = [ones(numel(window_vec),1) window_vec'];
 % load input-output data set
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+
+
+
+% turn off display for fits
+options = optimoptions('lsqnonlin','Display','off');
 n_features = 0;
 % iterate
 for i = 1:numel(hmm_input_output)    
@@ -103,11 +101,11 @@ save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_i
 %%% Now compile snips for average burst dynamics analyses
 % generate master set of vectors for feature classification
 gap_filter_vec = [hmm_input_output.dt_filter_gap];
-% time_vec = round([hmm_input_output.time]/60);
-% z_dur_lag_list = [hmm_input_output.z_dur_lag_vec];
-% z_dur_lead_list = [hmm_input_output.z_dur_lead_vec];
-% sz_lag_list = [hmm_input_output.sz_lag_vec];
-% sz_lead_list = [hmm_input_output.sz_lead_vec];
+time_vec = round([hmm_input_output.time]/60);
+z_dur_lag_list = [hmm_input_output.z_dur_lag_vec];
+z_dur_lead_list = [hmm_input_output.z_dur_lead_vec];
+sz_lag_list = [hmm_input_output.sz_lag_vec];
+sz_lead_list = [hmm_input_output.sz_lead_vec];
 z_diff_list = [hmm_input_output.z_diff_vec];
 
 
@@ -119,6 +117,7 @@ n_entries = sum(z_diff_list~=0&~gap_filter_vec);
 fluo_array = NaN(n_entries,2*window_size+1);
 hmm_array = NaN(n_entries,2*window_size+1);
 % de-meaned arrays
+swap_hmm_array_dm = NaN(n_entries,2*window_size+1);
 spot_array_dm = NaN(n_entries,2*window_size+1);
 swap_array_dm = NaN(n_entries,2*window_size+1);
 virtual_array_dm = NaN(n_entries,2*window_size+1);        

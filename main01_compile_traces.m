@@ -102,7 +102,7 @@ save([DataPath 'set_key.mat'],'set_key')
 disp('compiling data...')
 nucleus_struct = [];
 % Loop through filenames    
-for i = 1%1:length(cp_filenames) 
+for i = 1:length(cp_filenames) 
     % read in raw files
     try
         load(nc_filenames{i}) % Ellipse Info
