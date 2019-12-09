@@ -92,6 +92,7 @@ else
     out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
     nucleus_struct_protein = nucleus_struct;
 end
+
 % set write path
 if savio
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';

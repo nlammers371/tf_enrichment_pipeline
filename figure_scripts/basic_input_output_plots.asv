@@ -147,10 +147,10 @@ burst_dt_fig_virt = figure;
 yyaxis right
 p1 = plot(time_axis,burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-set(gca,'ytick',.2:.2:1.2)
+set(gca,'ytick',.2:.1:1.2)
 ylim([.2 1.2])
 ax = gca;
-ax.YColor = 'white';
+ax.YColor = 'black';
 % Dorsal activity
 yyaxis left
 hold on
@@ -162,26 +162,19 @@ fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'F
 p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
 p = plot(0,0);
-
-ylim([-20 25])
-set(gca,'ytick',-20:5:25)
+% set(gca,'ytick',-12:3:24)
+% ylim([-12 18])
 ax = gca;
-ax.YColor = 'white';%cmap1(2,:);
-% grid on
+ax.YColor = 'black';
+grid on
 xlabel('offset (minutes)')
-% lgd = legend([p1 p3 p5],'{\it snail} MS2','Dl at {\it snail} locus','Dl at control locus', 'Location','northwest');
+legend([p1 p3 p5],'{\it snail} MS2','Dl at {\it snail} locus','Dl at control locus', 'Location','northwest')
 
-set(gca,'Fontsize',14,'xtick',-4:2:4)
+set(gca,'Fontsize',12,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
-
-set(gca,...
-            'Box','off',...
-            'Color',[228,221,209]/255,...
-            'XColor','w',...
-            'TickLength',[0.02,0.05])    
-        
-burst_dt_fig_virt.InvertHardcopy = 'off';
+StandardFigurePBoC(p,fca
+fluo_fig.InvertHardcopy = 'off';
 % save
 saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.tif'])
 saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.pdf'])

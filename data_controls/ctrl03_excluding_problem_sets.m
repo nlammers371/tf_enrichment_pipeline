@@ -50,7 +50,7 @@ min_burst_len = 2;
 
 % generate basic filter for target locus and computational controls
 burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>min_burst_len & target_set_vec~=4; % filter for rise events
-burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>min_burst_len & control_set_vec~=3; % filter for rise events
+burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>min_burst_len & control_set_vec~=4; % filter for rise events
 
 
 %%% check for potential effects from disparate sampel sizes
