@@ -108,13 +108,13 @@ end
 
 close all
 % make averaging movie
-for n = 17%1:n_iters+1
+for n = 1:n_iters+1
     pt_indices = plot_indices(1:max(1,(n-1)*increment));
     hmm_mean = nanmean(hmm_array(pt_indices,:),1);
     spot_pt_mean = nanmean(spot_array_dt(pt_indices,:),1);
     
     % make figure
-    burst_fig = figure;%('Visible','off');
+    burst_fig = figure('Visible','off');
     cmap1 = brewermap([],'Set2');
     % snail activity
     yyaxis right

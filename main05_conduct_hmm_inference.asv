@@ -32,7 +32,7 @@ modelPath = './utilities';
 savio = 0;
 K = 3;
 w = 7;
-minDp = 10;
+% minDp = 10;
 dpBootstrap = 1;
 nBoots = 5;
 protein_bin_flag = 0;
@@ -68,6 +68,11 @@ if ~dpBootstrap
 end
 
 %-------------------------------System Vars-------------------------------%
+if contains(project,'hbP2P')
+    alphaFrac = 1275 / 4670;
+elseif contains(project,'snaBAC')
+    alphaFrac = 1302 / 6444;
+end
 alpha = alphaFrac*w;
 
 %----------------------------Bootstrap Vars-------------------------------%                                       
@@ -281,8 +286,7 @@ for t = 1:length(iter_list)
             end
             output.w = w;
             output.alpha = alpha;
-            output.deltaT = Tres; 
-            
+            output.deltaT = Tres;             
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;

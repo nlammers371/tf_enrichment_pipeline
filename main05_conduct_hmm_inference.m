@@ -32,16 +32,16 @@ modelPath = './utilities';
 savio = 0;
 K = 3;
 w = 7;
-minDp = 10;
+% minDp = 10;
 dpBootstrap = 1;
-nBoots = 5;
+nBoots = 1;
 protein_bin_flag = 0;
 n_protein_bins = 10;
 time_bin_flag = 0;
 % inference_times = 30*60;
 % tWindow = 60*60; % determines width of sliding window
-sampleSize = 4000;
-maxWorkers = 28;
+sampleSize = 5000;
+maxWorkers = 12;
 alphaFrac = 1302 / 6000;
 % default paths
 [~ , DataPath, ~] =   header_function(DropboxFolder, project); 
@@ -68,6 +68,11 @@ if ~dpBootstrap
 end
 
 %-------------------------------System Vars-------------------------------%
+if contains(project,'hbP2P')
+    alphaFrac = 1275 / 4670;
+elseif contains(project,'snaBAC')
+    alphaFrac = 1302 / 6444;
+end
 alpha = alphaFrac*w;
 
 %----------------------------Bootstrap Vars-------------------------------%                                       
@@ -110,7 +115,7 @@ for i = 1:length(analysis_struct)
     temp = struct;
     time = analysis_struct(i).time_interp;
     fluo = analysis_struct(i).fluo_interp;
-    if sum(~isnan(fluo)) >= fluo % NL: this is a bit redundant. Leaving for now
+    if sum(~isnan(fluo)) >= 2 % NL: this is a bit redundant. Leaving for now
         temp.fluo = fluo;
         temp.time = time;
         if protein_bin_flag
@@ -281,8 +286,7 @@ for t = 1:length(iter_list)
             end
             output.w = w;
             output.alpha = alpha;
-            output.deltaT = Tres; 
-            
+            output.deltaT = Tres;             
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;
