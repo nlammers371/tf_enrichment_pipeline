@@ -36,9 +36,7 @@ TresInterp = 20;
 project = DropboxTab;
 for i = 1:numel(varargin)
     if ischar(varargin{i}) && i < numel(varargin)
-%         if ismember(varargin{i},{'includeVec','firstNC','expType','minDP'})
         eval([varargin{i} '=varargin{i+1};']);
-%         end
     end
 end
 
