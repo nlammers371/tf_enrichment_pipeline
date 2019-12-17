@@ -1,0 +1,2 @@
+/var/spool/slurmd/job5302615/slurm_script: line 34: syntax error near unexpected token `('
+/var/spool/slurmd/job5302615/slurm_script: line 34: `matlab -nodisplay -nodesktop < main05_conduct_hmm_inference(project, '../../dat/tf_enrichment/','w',7,'protein_bin_flag',true,'K',3)'
