@@ -260,6 +260,7 @@ for t = 1:length(iter_list)
             if protein_bin_flag
                 output.protein_bin = t;
                 output.protein_bin_list = iter_list;
+                output.protein_bin_edges = mf_prctile_vec;
             end
             output.dp_bootstrap_flag = dpBootstrap;   
             output.iter_id = b;            
