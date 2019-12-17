@@ -168,7 +168,6 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).yPosParticle = NaN(1,sum(nc_filter));
             s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter)); 
             s_cells(e_pass).APPosParticle = NaN(1,sum(nc_filter)); 
-            s_cells(e_pass).spot_frames = NaN(1,sum(nc_filter)); 
             if threeD_flag
                 s_cells(e_pass).xPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(e_pass).yPosParticle3D = NaN(1,sum(nc_filter));
@@ -191,8 +190,8 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).frames = nc_frames';            
             s_cells(e_pass).Nucleus = e;     
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
-%             s_cells(e_pass).xMean = mean(x(nc_filter));
-%             s_cells(e_pass).yMean = mean(y(nc_filter));
+            s_cells(e_pass).xMean = mean(x(nc_filter));
+            s_cells(e_pass).yMean = mean(y(nc_filter));
             s_cells(e_pass).ncStart = firstNC;
             s_cells(e_pass).minDP = minDP;
             s_cells(e_pass).min_time = min_time;
@@ -284,9 +283,6 @@ for i = 1:length(cp_filenames)
         end
         % Record particle identifier
         s_cells(nc_ind).ParticleID = ParticleID;
-        if isempty(ParticleID)
-            error('aawrw')
-        end
         % find overlap between nucleus and trace
         nc_frames = s_cells(nc_ind).frames;         
         spot_filter = ismember(nc_frames,trace_frames_full);            
@@ -331,9 +327,6 @@ for i = 1:numel(nucleus_struct)
 end
 % implement post-facto cleaning to remove problematic frames from 1 set
 problem_prefix =  '2019-03-21-Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW_03';
-field_list = [{'time'},{'xPosParticle' }  {'yPosParticle'} {'zPosParticle'}...
-    {'APPosParticle'} {'xPosParticle3D'} {'yPosParticle3D'} {'zPosParticle3D'}...
-    {'fluo3D'} {'fluo'} {'fluoOffset'} {'xPos'} {'yPos'} {'spot_frames'} {'frames'}];
 pf_ind = find(contains(prefix_cell,problem_prefix));
 % if set is included, remove all time points after 25 min (everything prior
 % is fine)
@@ -349,10 +342,13 @@ if ~isempty(pf_ind)
         nan_bin = ~isnan(fluo(time_ft));
         nucleus_struct(i).N = sum(nan_bin);        
         sparsity = prctile(diff(find(~isnan(fluo(time_ft)))),pctSparsity);
-        nucleus_struct(i).qc_flag = sum(nan_bin) >= minDP && sparsity == 1;            
-        for j = 1:numel(field_list)
-            vec = nucleus_struct(i).(field_list{j});            
-            nucleus_struct(i).(field_list{j}) = vec(time_ft);            
+        nucleus_struct(i).qc_flag = nDP >= sum(nan_bin) && sparsity == 1;    
+        
+        for j = 1:numel(fnames)
+            vec = nucleus_struct(i).(fnames{j});
+            if numel(vec) == numel(fluo)        
+                nucleus_struct(i).(fnames{j}) = vec(time_ft);
+            end
         end
     end
 end

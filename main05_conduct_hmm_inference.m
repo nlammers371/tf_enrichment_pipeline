@@ -36,11 +36,8 @@ w = 7;
 dpBootstrap = 1;
 nBoots = 1;
 protein_bin_flag = 0;
-n_protein_bins = 10;
-time_bin_flag = 0;
-% inference_times = 30*60;
-% tWindow = 60*60; % determines width of sliding window
-sampleSize = 5000;
+n_protein_bins = 20;
+sampleSize = 4000;
 maxWorkers = 12;
 alphaFrac = 1302 / 6000;
 % default paths
@@ -131,16 +128,11 @@ trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1
 if protein_bin_flag 
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
-    % generate protein groupings
-    mf_prctile_vec = NaN(1,n_protein_bins+1);
-    mf_prctile_vec(1) = 0;
-    inc = 100 / n_protein_bins;
-    for i = 1:n_protein_bins
-        mf_prctile_vec(i+1) = prctile(mf_index,inc*i);
-    end
-    % assign traces to groups
-    [~, rank_num] = sort(mf_index);
-    id_vec = ceil(rank_num/numel(rank_num)*n_protein_bins);
+    % generate protein groupings    
+    q_vec = linspace(0,1,n_protein_bins+1);        
+    mf_prctile_vec = quantile(mf_index,q_vec);    
+    % assign traces to groups    
+    id_vec = discretize(mf_index,mf_prctile_vec);
     for i = 1:numel(trace_struct_filtered)
         trace_struct_filtered(i).mf_protein_bin = id_vec(i);
     end
@@ -150,11 +142,8 @@ end
 iter_list = 1;
 iter_ref_index = ones(size(trace_struct_filtered));
 if protein_bin_flag
-    iter_list = mf_prctile_vec;
+    iter_list = 1:numel(mf_prctile_vec)-1;
     iter_ref_index = [trace_struct_filtered.mf_protein_bin];
-elseif time_bin_flag
-    error('time grouping functionality not yet added')
-    iter_list = inference_times;
 end
 
 %%% Conduct Inference
@@ -267,11 +256,6 @@ for t = 1:length(iter_list)
             output.total_steps = local_struct(max_index).total_steps;                                  
             output.total_time = 100000*(now - iter_start);            
             % other inference characteristics            
-            output.time_bin_flag = time_bin_flag;
-            if time_bin_flag
-                output.t_inf = t_inf;
-                output.t_window = tWindow;
-            end
             output.protein_bin_flag = protein_bin_flag;
             if protein_bin_flag
                 output.protein_bin = t;
@@ -286,7 +270,8 @@ for t = 1:length(iter_list)
             end
             output.w = w;
             output.alpha = alpha;
-            output.deltaT = Tres;             
+            output.deltaT = Tres; 
+            output.sampleSize = sampleSize; 
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;

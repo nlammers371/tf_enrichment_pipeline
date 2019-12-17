@@ -3,20 +3,14 @@ function hmm_input_output = main07_burst_build(project,DropboxFolder,varargin)
 close all
 addpath('./utilities')
 %%%%% These options will remain fixed for now
-alphaFrac = 1302 / 6000;
 w = 7;
 K = 3;  
 % window analysis params
 window_size = 15; 
 %%%%%%%%%%%%%%
-for i = 1:numel(varargin)    
-    if strcmpi(varargin{i},'dropboxFolder')
-        dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
-    end
-    if ischar(varargin{i}) && i ~= numel(varargin)
-        if ismember(varargin{i},{'dpBootstrap','controlProject'})
-            eval([varargin{i} '=varargin{i+1};']);
-        end
+for i = 1:numel(varargin)     
+    if ischar(varargin{i}) && i < numel(varargin)        
+        eval([varargin{i} '=varargin{i+1};']);        
     end
 end
 
@@ -137,6 +131,10 @@ lead_dur_vec = NaN(1,n_entries);
 lag_size_vec = NaN(1,n_entries);
 lead_size_vec = NaN(1,n_entries);
 feature_sign_vec = NaN(1,n_entries);
+% arraya to indicate qc status of target and various controls
+swap_qc_vec = false(1,n_entries);
+virtual_qc_vec = false(1,n_entries);
+
 % iterate through structure
 iter = 1;       
 test1 = 0;
@@ -182,11 +180,13 @@ for j = 1:numel(hmm_input_output)
         true_range = full_range(full_range>0&full_range<=numel(virtual_protein_dt));
         % record
         ft1 = ismember(full_range,true_range);
-        ft2 = ~isnan(spot_protein_dt(true_range)) & ~isnan(swap_spot_protein_dt(true_range))...
-            &~isnan(virtual_protein_dt(true_range)); % NL: this is pretty restrictive
+        ft2 = ~isnan(spot_protein_dt(true_range));% & ~isnan(swap_spot_protein_dt(true_range))...
+            %&~isnan(virtual_protein_dt(true_range)); % NL: this is pretty restrictive
         % qc check
         if sum(ft2) >= window_size
             test2 = test2 + 1;
+            swap_qc_vec(iter) = sum(~isnan(swap_spot_protein_dt(true_range))) >= window_size;
+            virtual_qc_vec(iter) = sum(~isnan(virtual_protein_dt(true_range))) >= window_size;
             % extract rde-trended fragments 
             spot_fragment_dt = spot_protein_dt(true_range);
             swap_fragment_dt = swap_spot_protein_dt(true_range);
@@ -231,6 +231,10 @@ for j = 1:numel(hmm_input_output)
     end    
 end        
 %%% record data
+% qc vectors
+results_struct.swap_qc_vec = swap_qc_vec;
+results_struct.virtual_qc_vec = virtual_qc_vec;
+% average protein
 results_struct.mf_array = mf_array;
 % detrended protein snips
 results_struct.spot_array_dt = spot_array_dt;

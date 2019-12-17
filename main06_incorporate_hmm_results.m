@@ -29,14 +29,9 @@ alphaFrac = 1302 / 6000;
 w = 7;
 K = 3;  
 %%%%%%%%%%%%%%
-for i = 1:numel(varargin)    
-    if strcmpi(varargin{i},'dropboxFolder')
-        dataRoot = [varargin{i+1} 'ProcessedEnrichmentData\'];
-    end
-    if ischar(varargin{i}) && i ~= numel(varargin)
-        if ismember(varargin{i},{'dpBootstrap','controlProject'})
-            eval([varargin{i} '=varargin{i+1};']);
-        end
+for i = 1:numel(varargin)       
+    if ischar(varargin{i}) && i < numel(varargin)        
+        eval([varargin{i} '=varargin{i+1};']);        
     end
 end
 % load master nucleus data set

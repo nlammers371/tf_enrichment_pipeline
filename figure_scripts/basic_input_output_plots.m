@@ -4,8 +4,8 @@ clear
 % close all
 addpath('utilities')
 % set ID variables
-targetProject = 'Dl-Ven_snaBAC-mCh';
-controlProject = 'Dl-Ven_hbP2P-mCh';
+targetProject = 'Dl-Ven_snaBAC-mCh_v2';
+controlProject = 'Dl-Ven_hbP2P-mCh_v2';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
 [~, DataPathControl, ~] =   header_function(DropboxFolder, controlProject); 
@@ -18,6 +18,7 @@ load([DataPathTarget 'hmm_input_output_results.mat'])
 target_results_struct = results_struct;
 load([DataPathControl 'hmm_input_output_results.mat'])
 control_results_struct = results_struct;
+clear results_struct;
 
 Tres = 20; % seconds
 % extract relevant arrays from target project 
@@ -26,10 +27,13 @@ lead_dur_vec_target = target_results_struct.lead_dur_vec;
 hmm_array = target_results_struct.hmm_array;
 swap_hmm_array = target_results_struct.swap_hmm_array;
 spot_array_dt = target_results_struct.spot_array_dt;
-spot_array_dm = target_results_struct.spot_array_dm;
+% spot_array_dm = target_results_struct.spot_array_dm;
 swap_array_dt = target_results_struct.swap_array_dt;
 virtual_array_dt = target_results_struct.virtual_array_dt;
 feature_sign_vec_target = target_results_struct.feature_sign_vec;
+% extract qc vectors 
+target_swap_qc = target_results_struct.swap_qc_vec;
+target_virtual_qc = target_results_struct.virtual_qc_vec;
 % extract arrays from control project
 lag_dur_vec_control = control_results_struct.lag_dur_vec;
 lead_dur_vec_control = control_results_struct.lead_dur_vec;
@@ -42,7 +46,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 
 % set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
 
 %%% (1) make basic input-output figure
@@ -50,56 +54,56 @@ close all
 burst_rise_hmm_array = NaN(nBoots,n_col);
 burst_rise_spot_array = NaN(nBoots,n_col);
 % generate basic filter for target locus and computational controls
-burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>min_burst_len; % filter for rise events
+burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>min_burst_len&target_swap_qc&target_virtual_qc; % filter for rise events
 burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>min_burst_len; % filter for rise events
 sample_options_target = find(burst_ft_primary);
 sample_options_control = find(burst_ft_control);
 % take bootstrap samples
-for n = 1:nBoots
-    s_ids_target = randsample(sample_options_target,numel(sample_options_target),true);
-    burst_rise_hmm_array(n,:) = nanmean(hmm_array(s_ids_target,:));
-    burst_rise_spot_array(n,:) = nanmean(spot_array_dm(s_ids_target,:));
-end
-% calculate mean and standard error
-burst_rise_hmm_mean = nanmean(burst_rise_hmm_array);
-burst_rise_spot_mean = nanmean(burst_rise_spot_array);
-burst_rise_spot_ste = nanstd(burst_rise_spot_array);
-% calculate upper and lower bound vectors
-br_spot_ub = burst_rise_spot_mean + burst_rise_spot_ste;
-br_spot_lb = burst_rise_spot_mean - burst_rise_spot_ste;
-
-% make figure
-burst_trend_fig = figure;
-cmap1 = brewermap([],'Set2');
-
-% snail activity
-yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1.5,'FaceAlpha',.4);
-ylabel('snail transcription (au)')
-set(gca,'ytick',.2:.1:1.2)
-ylim([.2 1.2])
-ax = gca;
-ax.YColor = 'black';
-
-% Dorsal activity
-yyaxis left
-hold on
-% fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p2 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
-ylabel('relative Dl concentration (au)')
-% set(gca,'ytick',-20:4:20)
-ax = gca;
-ax.YColor = 'black';
-
-grid on
-xlabel('offset (minutes)')
-legend([p1 p2],'snail transcription','Dl concentration','Location','northwest')
-set(gca,'Fontsize',12,'xtick',-4:2:4)
-chH = get(gca,'Children');
-set(gca,'Children',flipud(chH));
-% save
-saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.tif'])
-saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.pdf'])
+% for n = 1:nBoots
+%     s_ids_target = randsample(sample_options_target,numel(sample_options_target),true);
+%     burst_rise_hmm_array(n,:) = nanmean(hmm_array(s_ids_target,:));
+%     burst_rise_spot_array(n,:) = nanmean(spot_array_dm(s_ids_target,:));
+% end
+% % calculate mean and standard error
+% burst_rise_hmm_mean = nanmean(burst_rise_hmm_array);
+% burst_rise_spot_mean = nanmean(burst_rise_spot_array);
+% burst_rise_spot_ste = nanstd(burst_rise_spot_array);
+% % calculate upper and lower bound vectors
+% br_spot_ub = burst_rise_spot_mean + burst_rise_spot_ste;
+% br_spot_lb = burst_rise_spot_mean - burst_rise_spot_ste;
+% 
+% % make figure
+% burst_trend_fig = figure;
+% cmap1 = brewermap([],'Set2');
+% 
+% % snail activity
+% yyaxis right
+% p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1.5,'FaceAlpha',.4);
+% ylabel('snail transcription (au)')
+% set(gca,'ytick',.2:.1:1.2)
+% ylim([.2 1.2])
+% ax = gca;
+% ax.YColor = 'black';
+% 
+% % Dorsal activity
+% yyaxis left
+% hold on
+% % fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+% p2 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+% ylabel('relative Dl concentration (au)')
+% % set(gca,'ytick',-20:4:20)
+% ax = gca;
+% ax.YColor = 'black';
+% 
+% grid on
+% xlabel('offset (minutes)')
+% legend([p1 p2],'snail transcription','Dl concentration','Location','northwest')
+% set(gca,'Fontsize',12,'xtick',-4:2:4)
+% chH = get(gca,'Children');
+% set(gca,'Children',flipud(chH));
+% % save
+% saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.tif'])
+% saveas(burst_trend_fig,[FigPath 'de-meaned_locus_trend.pdf'])
 
 % (2) make de-trended input-output figure with controls
 

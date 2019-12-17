@@ -31,7 +31,7 @@ FigPath = [FigPath 'basicFigs/'];
 mkdir(FigPath)
 
 % Load analysis data
-load([DataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
+% load([DataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
 snip_files = matfile([DataPath 'snip_data.mat']);
 load([DataPath 'snip_data.mat']);
 % extract protein, gene, fluorophore info

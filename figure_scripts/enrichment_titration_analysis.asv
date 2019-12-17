@@ -34,11 +34,11 @@ dist1x_ft_vec = dist1x_vec >= DistLim;
 dist2x_vec = [nc_data_2x.spot_edge_dist_vec];
 dist2x_ft_vec = dist2x_vec >= DistLim;
 
-% Dorsal at spot
-spot_protein1x_vec = ([nc_data_1x.spot_protein_vec])*VoxelSize;
-spot_protein1x_vec = spot_protein1x_vec(dist1x_ft_vec);
-spot_protein2x_vec = [nc_data_2x.spot_protein_vec];
-spot_protein2x_vec = spot_protein2x_vec(dist2x_ft_vec);
+% absolute spot enrichment
+delta_protein1x_vec = ([nc_data_1x.spot_protein_vec] - [nc_data_1x.edge_null_protein_vec])*VoxelSize;
+delta_protein1x_vec = delta_protein1x_vec(dist1x_ft_vec);
+delta_protein2x_vec = [nc_data_2x.spot_protein_vec] - [nc_data_2x.edge_null_protein_vec];
+delta_protein2x_vec = delta_protein2x_vec(dist2x_ft_vec);
 
 % absolute spot enrichment
 delta_protein1x_vec = ([nc_data_1x.spot_protein_vec] - [nc_data_1x.edge_null_protein_vec])*VoxelSize;
@@ -155,15 +155,13 @@ mean_fluo_se = squeeze(nanstd(fluo_boot_array));
 
 mean_titration = figure;
 hold on
-s = [];
 for n = 1:n_types
     e = errorbar(mf_plot_index,mean_enrichment_mean(:,n),mean_enrichment_se(:,n),'--','Color','black','LineWidth',1);
     e.CapSize = 0;
-    s = [s scatter(mf_plot_index,mean_enrichment_mean(:,n),'MarkerFaceColor',cmap1(n,:),'MarkerEdgeAlpha',1,'MarkerEdgeColor','black')];
+    scatter(mf_plot_index,mean_enrichment_mean(:,n),'MarkerFaceColor',cmap1(2,:),'MarkerEdgeAlpha',1,'MarkerEdgeColor','black');
 end
 ylabel('Dl enrichment at locus (au)')
 xlabel('nuclear Dl concentration (au)')
-legend(s,type_names{:},'Location','northwest');
 grid on 
 box on
 set(gca,'Fontsize',14)

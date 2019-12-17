@@ -1,5 +1,5 @@
 function add3Dfits(project,DropboxFolder,varargin)
-addpath('./utilities')
+addpath('../utilities')
 % set defaults
 [RawResultsRoot, ~, ~] =   header_function(DropboxFolder, project);
 LivemRNAPath = 'E:\Nick\LivemRNA\mRNADynamics';
@@ -10,7 +10,7 @@ for i = 1:numel(varargin)
     end
 end
 
-addpath(LivemRNAPath);
+addpath(genpath(LivemRNAPath));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,7 +53,7 @@ for i = 1:length(prefix_cell)
             load(sp_token_path)
             valid_fits = Spots3DToken > minDT;
         end   
-        if valid_fits
+        if false%valid_fits
             disp(['found recent fits for ' Prefix ' skipping...']);
         else
             disp(['loading spots mat for  ' Prefix '...']);
