@@ -26,7 +26,7 @@ for i = 1:numel(hmm_input_output)
     z_prob_vec = sum(hmm_input_output(i).z_mat(:,2:3),2);
     zd_full = [0 diff(z_vec_bin)];
     change_points = find(zd_full~=0);
-    rise_points = find(zd_full>0);
+%     rise_points = find(zd_full>0);
     % calculate duration of bursts    
     dur_vec_lag = diff([change_points NaN]);
     dur_vec_lead = diff([NaN change_points]);

@@ -24,7 +24,11 @@ function hmm_input_output = main06_incorporate_hmm_results(project,DropboxFolder
 close all
 addpath('./utilities')
 %%%%% These options will remain fixed for now
-alphaFrac = 1302 / 6000;
+if contains(project,'hbP2P')
+    alphaFrac = 1275 / 4670;
+elseif contains(project,'snaBAC')
+    alphaFrac = 1302 / 6444;
+end
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;  
