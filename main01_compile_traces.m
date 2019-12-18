@@ -328,35 +328,7 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).threeD_flag = threeD_flag;
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
-end
-% implement post-facto cleaning to remove problematic frames from 1 set
-problem_prefix =  '2019-03-21-Dl_Venus_snaBAC_MCPmCherry_Leica_Zoom2_7uW14uW_03';
-field_list = [{'time'},{'xPosParticle' }  {'yPosParticle'} {'zPosParticle'}...
-    {'APPosParticle'} {'xPosParticle3D'} {'yPosParticle3D'} {'zPosParticle3D'}...
-    {'fluo3D'} {'fluo'} {'fluoOffset'} {'xPos'} {'yPos'} {'spot_frames'} {'frames'}];
-pf_ind = find(contains(prefix_cell,problem_prefix));
-% if set is included, remove all time points after 25 min (everything prior
-% is fine)
-if ~isempty(pf_ind)
-    setID = pf_ind;
-    set_vec = [nucleus_struct.setID];
-    fix_indices = find(set_vec==setID);
-    fnames = fieldnames(nucleus_struct);
-    for i = fix_indices
-        time = nucleus_struct(i).time;
-        time_ft = time/60 <=26;
-        fluo = nucleus_struct(i).fluo;
-        nan_bin = ~isnan(fluo(time_ft));
-        nucleus_struct(i).N = sum(nan_bin);        
-        sparsity = prctile(diff(find(~isnan(fluo(time_ft)))),pctSparsity);
-        nucleus_struct(i).qc_flag = sum(nan_bin) >= minDP && sparsity == 1;            
-        for j = 1:numel(field_list)
-            vec = nucleus_struct(i).(field_list{j});            
-            nucleus_struct(i).(field_list{j}) = vec(time_ft);            
-        end
-    end
-end
-    
+end    
 
 disp('interpolating data...')
 % generate interpolation fields

@@ -48,7 +48,8 @@ for i = 1:numel(burst_range)
         burst_rise_dur_spot_mean(i,:,n) = nanmean(spot_array(boot_burst_indices,:));  
     end
 end
-
+burst_rise_dur_spot_mean = nanmean(burst_rise_dur_spot_mean,3);
+burst_rise_dur_hmm_mean = nanmean(burst_rise_dur_hmm_mean,3);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE HEATMAPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,7 +72,7 @@ set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
 ylabel('{\itsna} transcription burst duration (min)')
 set(gca,'ytick',3:3:(burst_range(end) - burst_range(1) +1),'yticklabels',fliplr([1 2 3]))    %***HARD-CODED***
 c = colorbar;
-caxis([-.25 .25])
+caxis([-.35 .35])
 c.Ticks = linspace(-20,20,5);
 ylabel(c, 'Dorsal enrichment (au)','FontSize',14)
 set(gca,'FontSize', 14);

@@ -200,7 +200,7 @@ end
 
 % find nearest neighbor particles
 % generate array of average protein levels for each nucleus
-time_grid = unique([hmm_input_output.time]);
+% time_grid = unique([hmm_input_output.time]);
 start_time_vec = NaN(size(hmm_input_output));
 stop_time_vec = NaN(size(hmm_input_output));
 set_vec = NaN(size(hmm_input_output));
