@@ -72,7 +72,6 @@ elseif contains(project,'snaBAC')
     alphaFrac = 1302 / 6444;
 end
 alpha = alphaFrac*w;
-Z
 %----------------------------Set Write Paths------------------------------%
 d_type = '';
 if dpBootstrap

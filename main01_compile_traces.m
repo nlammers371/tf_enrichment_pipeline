@@ -191,8 +191,6 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).frames = nc_frames';            
             s_cells(e_pass).Nucleus = e;     
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
-%             s_cells(e_pass).xMean = mean(x(nc_filter));
-%             s_cells(e_pass).yMean = mean(y(nc_filter));
             s_cells(e_pass).ncStart = firstNC;
             s_cells(e_pass).minDP = minDP;
             s_cells(e_pass).min_time = min_time;
@@ -284,9 +282,6 @@ for i = 1:length(cp_filenames)
         end
         % Record particle identifier
         s_cells(nc_ind).ParticleID = ParticleID;
-        if isempty(ParticleID)
-            error('aawrw')
-        end
         % find overlap between nucleus and trace
         nc_frames = s_cells(nc_ind).frames;         
         spot_filter = ismember(nc_frames,trace_frames_full);            
