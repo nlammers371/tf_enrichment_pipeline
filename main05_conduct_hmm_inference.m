@@ -27,15 +27,20 @@ function output = main05_conduct_hmm_inference(project, DropboxFolder, varargin)
 
 close all
 warning('off','all') %Shut off Warnings
+addpath('utilities');
 % default path to model scripts
 modelPath = './utilities';
 savio = 0;
 K = 3;
 w = 7;
-% minDp = 10;
+protein_bin_flag = false;
 dpBootstrap = 1;
-nBoots = 1;
-protein_bin_flag = 0;
+% minDp = 10;
+if protein_bin_flag
+    nBoots = 2; % will run multiple instances on savio
+else
+    nBoots = 3;
+end
 n_protein_bins = 20;
 sampleSize = 4000;
 maxWorkers = 12;

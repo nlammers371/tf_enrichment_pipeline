@@ -36,10 +36,15 @@ modelPath = './utilities';
 savio = 1;
 K = 3;
 w = 7;
-% minDp = 10;
-dpBootstrap = 1;
-nBoots = 2;
 protein_bin_flag = true;
+dpBootstrap = 1;
+% minDp = 10;
+if protein_bin_flag
+    nBoots = 2; % will run multiple instances on savio
+else
+    nBoots = 5;
+end
+
 n_protein_bins = 20;
 sampleSize = 4000;
 maxWorkers = 24;
