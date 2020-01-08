@@ -63,7 +63,7 @@ file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 %     warning('multiple inference files detected. Ignoring all but first')
 % end
 inference_results = struct;
-for inf = 1:numel(file_list)
+for inf = 1:numel(inference_results)
     load([DataPath hmm_suffix file_list(inf).name]);    
     fnames = fieldnames(output);
     for fn = 1:numel(fnames)
@@ -134,7 +134,7 @@ for inf = 1:numel(inference_results)
         sr_pt = nucleus_struct_protein(i).serial_null_protein_vec;       
         sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
         tt_pt = nucleus_struct_protein(i).time;
-        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP 
+        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt_mf)) > minDP && sum(~isnan(sp_pt)) > minDP 
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
             master_fluo = nucleus_struct_protein(i).fluo_interp;
@@ -199,7 +199,9 @@ for inf = 1:numel(inference_results)
             temp.ParticleID = ParticleID; 
             temp.Tres = Tres;
             temp.maxDT = maxDT;
-            temp.InferenceID = inf;    
+            temp.InferenceID = inf;
+            if inf == 5
+                error('afsa'
             hmm_input_output  = [hmm_input_output temp];
         end
         % increment
@@ -209,7 +211,7 @@ end
 
 % find nearest neighbor particles
 % use name nearest neighbor for each bootstrap instance
-n_unique = numel(hmm_input_output) / numel(inference_results);
+n_unique = numel(qc_indices);
 start_time_vec = NaN(1,n_unique);
 stop_time_vec = NaN(1,n_unique);
 set_vec = NaN(1,n_unique);

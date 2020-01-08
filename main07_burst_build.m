@@ -101,7 +101,6 @@ save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_i
 gap_filter_vec = [hmm_input_output.dt_filter_gap];
 z_diff_list = [hmm_input_output.z_diff_vec];
 
-
 % initialize results structure
 results_struct = struct;   
 % calculate expected number of features for pre-allocation
