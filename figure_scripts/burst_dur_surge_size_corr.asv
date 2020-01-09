@@ -18,7 +18,7 @@ load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_inpu
 % define size of window of interest
 roi_window = 6; 
 window_size = 15;
-start = window_size + 2;
+start = window_size + 3;
 % extract roi_vectors from wapo and locus arrays
 locus_protein_vec = nansum(results_struct.spot_array_dt(:,start:start + roi_window),2);% - ...
 %     nanmean(results_struct.spot_array_dt(:,start-2-roi_window:start-2),2);
@@ -89,5 +89,5 @@ mdl2 = fitlm(burst_dur_ft',locus_protein_ft')
 
 mdl3 = fitlm(burst_size_ft',locus_protein_ft')
 
-mdl4 = fitlm([burst_dur_ft burst_size_ft ],locus_protein_ft)
+mdl4 = fitlm([burst_dur_ft burst_size_ft],locus_protein_ft)
 

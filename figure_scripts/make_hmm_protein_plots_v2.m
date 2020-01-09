@@ -1,0 +1,191 @@
+% script to examine results of HMM inference
+clear
+close all
+addpath('utilities')
+% set folder paths
+project = 'Dl-Ven_snaBAC-mCh_v3';
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+[~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
+
+% specify inference parameters
+K = 3;
+w = 7;
+load([DataPath 'nucleus_struct.mat'])
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K) '\'];
+% specify figure path
+FigPath = [FigRoot '\' project '\hmm_figs\'];
+mkdir(FigPath);
+tic
+% read in inference results
+inf_files = dir([resultsPath '*.mat']);
+inference_results = struct;
+iter = 1;
+for i = 1:numel(inf_files)
+    load([resultsPath inf_files(i).name])
+    if ~output.skip_flag
+        fn_list = fieldnames(output);
+        for f = 1:numel(fn_list)
+            inference_results(iter).(fn_list{f}) = output.(fn_list{f});
+        end
+        iter = iter + 1;
+    end
+end
+Tres = inference_results(1).deltaT;
+% get list of mf dorsal values used for inference bins
+mf_axis_vec = inference_results(1).protein_bin_edges(1:end-1) + diff(inference_results(1).protein_bin_edges)/2;
+dorsal_bins = 1:numel(inference_results(1).protein_bin_list);
+bin_id_vec = [inference_results.protein_bin];
+
+% check that bin assignmnets were performed correctly
+pt_id_vec = [];
+mf_id_vec = [];
+for i = 1:numel(inference_results)
+    pt_id_vec = [pt_id_vec inference_results(i).particle_ids];
+    mf_id_vec = [mf_id_vec repelem(inference_results(i).protein_bin,numel(inference_results(i).particle_ids))];
+end
+
+pt_mf_key = unique([pt_id_vec' mf_id_vec'],'rows');
+hmm_pt_vec = [hmm_input_output.ParticleID];
+protein_check_vec = NaN(1,size(pt_mf_key,1));
+for i = 1:size(pt_mf_key,1)
+    indices = find(hmm_pt_vec==pt_mf_key(i,1));
+    if ~isempty(indices)
+        protein_check_vec(i) = nanmean(hmm_input_output(indices(1)).mf_protein);
+    end
+end
+
+pt_check_fig = figure;
+scatter(pt_mf_key(:,2),protein_check_vec)
+xlabel('Dorsal bin')
+ylabel('average Dorsal')
+grid on
+set(gca,'Fontsize',14)
+saveas(pt_check_fig,[FigPath 'protein_binning_check.png'])
+
+% calculate average initiation rate, burst freq, and burst duration
+init_vec_mean = NaN(size(dorsal_bins));
+init_vec_ste = NaN(size(dorsal_bins));
+freq_vec_mean = NaN(size(dorsal_bins));
+freq_vec_ste = NaN(size(dorsal_bins));
+dur_vec_mean = NaN(size(dorsal_bins));
+dur_vec_ste = NaN(size(dorsal_bins));
+fluo_mean = NaN(size(dorsal_bins));
+for d = dorsal_bins
+    d_ids = find(bin_id_vec==d);
+    init_array = NaN(size(d_ids));
+    freq_array = NaN(size(d_ids));
+    dur_array = NaN(size(d_ids));
+    fluo_array = NaN(size(d_ids));
+    for i = 1:numel(d_ids)
+        [r,ri] = sort(inference_results(d_ids(i)).r);
+        A = inference_results(d_ids(i)).A_mat(ri,ri);
+        [V,D] = eig(A);
+        [~,di] = max(diag(D));
+        ss_vec = V(:,di) / sum(V(:,di));
+        % initiation rate
+        init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));
+        % off and on
+        A_eff = NaN(2,2);
+        A_eff(1,1) = A(1,1);
+        A_eff(2,1) = sum(A(2:3,1));
+        A_eff(1,2) = sum(A(1,2:3));
+        A_eff(2,2) = sum(sum(A(2:3,2:3)));
+        A_eff = A_eff ./ sum(A_eff);
+        
+        R_eff = logm(A) / Tres;
+        
+        freq_array(i) = R_eff(2,1);
+        dur_array(i) = 1/R_eff(1,2);
+        
+        fluo_array(i) = nanmean([inference_results(d_ids(i)).fluo_data{:}]);
+    end
+    % calculate average and ste
+    init_vec_mean(d) = nanmean(init_array)*60;
+    init_vec_ste(d) = nanstd(init_array)*60;
+    
+    freq_vec_mean(d) = nanmean(freq_array)*60;
+    freq_vec_ste(d) = nanstd(freq_array)*60;
+    
+    dur_vec_mean(d) = nanmean(dur_array)/60;
+    dur_vec_ste(d) = nanstd(dur_array)/60;
+    
+    fluo_mean(d) = nanmean(fluo_array);
+end              
+%%
+MarkerSize = 50;
+blue = [115 143 193]/256;
+purple = [171 133 172]/256;
+red = [213 108 85]/256;
+ind_list = 3:numel(mf_axis_vec);
+mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
+% fit second order polynomial trend
+p_init = polyfit(mf_axis_vec(ind_list),init_vec_mean(ind_list),2);
+p_trend_init = polyval(p_init,mf_axis_long);
+
+close all
+r_trend = figure;
+hm_cm = flipud(brewermap([],'Spectral'));
+colormap(hm_cm);
+hold on
+plot(mf_axis_long,p_trend_init,'--','Color','black','LineWidth',1.5)
+e = errorbar(mf_axis_vec(ind_list),init_vec_mean(ind_list),init_vec_ste(ind_list),'o','Color','black','LineWidth',1);
+e.CapSize = 0;
+scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',red,'MarkerEdgeColor','black');
+p = plot(0,0);
+grid on
+xlim([0.9 2.65])
+ylim([50 100])
+xlabel('Dorsal concentration (au)')
+ylabel('burst amplitude (au/min)')
+% set(gca,'Fontsize',14)
+StandardFigure(p,gca)
+box on
+saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
+saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
+%%
+
+
+p_dur = polyfit(mf_axis_vec(ind_list),dur_vec_mean(ind_list),2);
+p_trend_dur = polyval(p_dur,mf_axis_long);
+
+dur_trend = figure;
+hold on
+plot(mf_axis_long,p_trend_dur,'--','Color','black','LineWidth',1.5)
+e = errorbar(mf_axis_vec(ind_list),dur_vec_mean(ind_list),dur_vec_ste(ind_list),'o','Color','black','LineWidth',1);
+e.CapSize = 0;
+scatter(mf_axis_vec(ind_list),dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',blue,'MarkerEdgeColor','black');
+grid on
+xlim([.9 2.65])
+p = plot(0,0);
+grid on
+% xlim([0.54 1.8])
+ylim([.6 2.2])
+xlabel('Dorsal concentration (au)')
+ylabel('burst duration (min)')
+% set(gca,'Fontsize',14)
+StandardFigure(p,gca)
+box on
+saveas(dur_trend,[FigPath,'burst_dur_mf_pt.tif'])
+saveas(dur_trend,[FigPath,'burst_dur_mf_pt.pdf'])
+
+%%
+p_freq = polyfit(mf_axis_vec(ind_list),freq_vec_mean(ind_list),2);
+p_trend_freq = polyval(p_freq,mf_axis_long);
+
+freq_trend = figure;
+hold on
+plot(mf_axis_long,p_trend_freq,'--','Color','black','LineWidth',1.5)
+e = errorbar(mf_axis_vec(ind_list),freq_vec_mean(ind_list),freq_vec_ste(ind_list),'o','Color','black','LineWidth',1);
+e.CapSize = 0;
+scatter(mf_axis_vec(ind_list),freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeColor','black');
+grid on
+xlim([0.9 2.65])
+% ylim([0 1.2])
+xlabel('Dorsal concentration (au)')
+ylabel('burst frequency (1/min)')
+p = plot(0,0);
+StandardFigure(p,gca)
+box on
+saveas(freq_trend,[FigPath,'burst_sep_mf_pt.tif'])
+saveas(freq_trend,[FigPath,'burst_sep_mf_pt.pdf'])

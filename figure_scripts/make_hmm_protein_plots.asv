@@ -12,7 +12,7 @@ K = 3;
 w = 7;
 load([DataPath 'nucleus_struct.mat'])
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
-resultsPath = [DataPath 'hmm_inference_mf\w' num2str(w) '_K' num2str(K) '\'];
+resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K) '\'];
 % specify figure path
 FigPath = [FigRoot '\' project '\hmm_figs\'];
 mkdir(FigPath);
@@ -63,7 +63,7 @@ for i  = 1:numel(inference_results)
     p_zz_cell = inference_results(i).soft_struct.p_zz_log_soft;  
     r_avg = inference_results(i).r;
     [r_sorted, ri] = sort(r_avg);
-%     protein_bin = inference_results(i).protein_bin;
+    protein_bin = inference_results(i).protein_bin;
     % iterate
     for j = 1:numel(particle_ids)
         ptID = particle_ids(j);
@@ -105,7 +105,7 @@ for i  = 1:numel(inference_results)
         trace_inf_struct(iter).burst_duration = burst_dur;
         trace_inf_struct(iter).burst_separation = burst_sep;        
         trace_inf_struct(iter).r = r_fit;
-%         trace_inf_struct(iter).mf_id = protein_bin;        
+        trace_inf_struct(iter).mf_id = protein_bin;        
         % increment
         iter = iter + 1;        
     end         
@@ -117,7 +117,7 @@ n_boots = 100;
 mf_protein_index = [trace_inf_struct.mf_protein];
 sample_vec = 1:numel(mf_protein_index)/5;
 mf_axis_vec = linspace(prctile(mf_protein_index,1),prctile(mf_protein_index,99),20);
-mf_sigma = .05;
+mf_sigma = .1;
 burst_amp_full = [trace_inf_struct.r];
 burst_dur_full = [trace_inf_struct.burst_duration]/60;
 burst_freq_full = 60./[trace_inf_struct.burst_separation];

@@ -4,7 +4,7 @@ clear
 % close all
 addpath('utilities')
 % set ID variables
-targetProject = 'Dl-Ven_snaBAC-mCh_v2';
+targetProject = 'Dl-Ven_snaBAC-mCh_v3';
 controlProject = 'Dl-Ven_hbP2P-mCh_v2';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
@@ -49,7 +49,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 nBoots = 100; % number of bootstrap samples to use
 min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
-
+% max_burst_len = 12;
 %%% (1) make basic input-output figure
 close all
 
@@ -113,8 +113,8 @@ burst_dt_fig_virt = figure;
 yyaxis right
 p1 = plot(time_axis,burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-ylim([0 1.2])
-set(gca,'ytick',0:.2:1.2)
+ylim([.1 1.1])
+set(gca,'ytick',.1:.2:1.1)
 ax = gca;
 ax.YColor = 'black';
 % Dorsal activity
@@ -140,7 +140,7 @@ xlabel('offset (minutes)')
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
-
+ylim([-.2 .25])
 set(gca,    'Box','off',...
             'Color',[228,221,209]/255,...            
             'TickLength',[0.02,0.05])    
@@ -157,8 +157,8 @@ burst_dt_fig = figure;
 yyaxis right
 p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1,'FaceAlpha',.25);
 ylabel('snail transcription (au)')
-set(gca,'ytick',.2:.1:1.2)
-ylim([.2 1.2])
+set(gca,'ytick',.1:.1:1.1)
+ylim([.1 1.1])
 ax = gca;
 ax.YColor = 'black';
 % Dorsal activity
@@ -179,6 +179,7 @@ p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
 % set(gca,'ytick',-12:3:24)
 % ylim([-12 18])
+ylim([-.2 .25])
 ax = gca;
 ax.YColor = 'black';
 grid on

@@ -47,7 +47,7 @@ else
 end
 
 n_protein_bins = 20;
-sampleSize = 4000;
+sampleSize = 8000;
 maxWorkers = 24;
 
 %%%%% These options generally remain fixed 
@@ -150,7 +150,7 @@ end
 
 % iterate through designated groups
 for t = 1:length(iter_list)
-    iter_filter = iter_ref_index == t;
+    iter_filter = ismember(iter_ref_index,[t-1, t, t+1]);
     for b = 1:nBoots
         iter_start = now;
         local_struct = struct;    
