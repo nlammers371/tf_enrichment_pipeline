@@ -142,7 +142,7 @@ if soft_fit_flag
                 end    
                 tic 
                 local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                                        v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+                                        v', sigma, pi0_log, A_log, 3, 4, alpha, 1, eps);
                 toc
                 soft_fit_struct(inf).soft_fits(mf_sub_indices) = local_em_outputs.soft_struct.p_z_log_soft;
                 soft_fit_struct(inf).particle_index(mf_sub_indices) = particle_index(mf_trace_indices);
