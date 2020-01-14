@@ -89,5 +89,7 @@ mdl2 = fitlm(burst_dur_ft',locus_protein_ft')
 
 mdl3 = fitlm(burst_size_ft',locus_protein_ft')
 
-mdl4 = fitlm([burst_dur_ft burst_size_ft ],locus_protein_ft)
+mdl4 = fitlm(mf_protein_ft',locus_protein_ft)
+
+mdl5 = fitlm([burst_dur_ft burst_size_ft mf_protein_ft'],locus_protein_ft)
 

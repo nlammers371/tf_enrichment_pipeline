@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results_beta(project,DropboxFolder,varargin)
+function hmm_input_output = main06_incorporate_hmm_results_v2(project,DropboxFolder,varargin)
 
 close all
 addpath('./utilities')
@@ -57,7 +57,11 @@ for i = 1:w
     end
 end
 % Set write path (inference results are now written to external directory)
-hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+if contains(project,'snaBAC')
+    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+else
+    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+end
 file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 % if numel(file_list) > 1
 %     warning('multiple inference files detected. Ignoring all but first')
@@ -72,22 +76,22 @@ for inf = 1:numel(file_list)
 end
 
 % check for existence of soft fit structure
-soft_fit_flag = 1;
-if exist([DataPath hmm_suffix 'soft_fit_struct.mat']) > 0
+viterbi_fit_flag = 1;
+if exist([DataPath hmm_suffix 'viterbi_fit_struct.mat']) > 0
     fit_props = dir([DataPath hmm_suffix 'soft_fit_struct.mat']);
     fit_date = datenum(fit_props(1).date);
     hmm_date = datenum(file_list(1).date);
     if fit_date > hmm_date
-        soft_fit_flag = 0;
+        viterbi_fit_flag = 0;
     end
 end
 qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
-if soft_fit_flag
+if viterbi_fit_flag
     soft_fit_struct = struct; 
-    parfor inf = 1:numel(inference_results)
+    for inf = 1:numel(inference_results)
         disp('conducting single trace fits...')
         A_log = log(inference_results(inf).A_mat);
         v = inference_results(inf).r*Tres;

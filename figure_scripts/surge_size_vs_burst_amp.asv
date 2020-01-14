@@ -15,42 +15,40 @@ w = 7;
 K = 3;
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output');
 
-% define size of window of interest
+%% define size of window of interest
 roi_window = 6; 
 window_size = 15;
-start = window_size + 3;
+start = window_size + 2;
 % extract roi_vectors from wapo and locus arrays
 locus_protein_vec = nansum(results_struct.spot_array_dt(:,start:start + roi_window),2);% - ...
-%     nanmean(results_struct.spot_array_dt(:,start-2-roi_window:start-2),2);
-% swap_protein_vec = nanmean(results_struct.swap_array_dt(:,start:start + roi_window),2);
-% mf_protein_vec = nanmean(results_struct.mf_array(:,start:start + roi_window),2);
-% pull other trend vectors
 feature_sign_vec = results_struct.feature_sign_vec';
 lag_size_vec = results_struct.lag_size_vec';
 lead_size_vec = results_struct.lead_size_vec';
-lag_dur_vec = results_struct.lag_dur_vec';
+% lag_dur_vec = results_struct.lag_dur_vec';
 lead_dur_vec = results_struct.lead_dur_vec';
-tr_burst_size_vec = lag_dur_vec.*lag_size_vec;
+% tr_burst_size_vec = lag_dur_vec.*lag_size_vec;
 mf_protein_vec = results_struct.mf_protein_vec;
 % make rise filter
 rise_ft = feature_sign_vec == 1;
 analysis_ft = rise_ft & lead_dur_vec>5 & ~isnan(locus_protein_vec)&~isnan(lag_size_vec);
 
+% generate vector of burst amplitudes
+amp_val_vec = lag_size_vec(feature_sign_vec==1);
+n_bins = 15;
+amp_range = linspace(prctile(amp_val_vec,5),prctile(amp_val_vec,95),n_bins);
 
-
-burst_vec = (2:1:12)/3;
-burst_sigma = 1;
+amp_sigma = median(diff(amp_range));
 n_boots = 100;
-locus_pt_array = NaN(n_boots,numel(burst_vec));
+locus_pt_array = NaN(n_boots,numel(amp_range));
 index_vec = find(analysis_ft);
-for b = 1:numel(burst_vec)
+for a = 1:numel(amp_range)
     for n = 1:n_boots
         s_ids = randsample(index_vec,numel(index_vec),true);
-        boot_durs = lag_dur_vec(s_ids)/3;
+        boot_amps = lag_size_vec(s_ids);
         boot_protein = locus_protein_vec(s_ids);
-        burst_curr = burst_vec(b);
-        wt_vec = exp(-.5*((boot_durs-burst_curr)/burst_sigma).^2);
-        locus_pt_array(n,b) = nansum(wt_vec.*boot_protein) ./ nansum(wt_vec);
+        amp_curr = amp_range(a);
+        wt_vec = exp(-.5*((boot_amps-amp_curr)/amp_sigma).^2);
+        locus_pt_array(n,a) = nansum(wt_vec.*boot_protein) ./ nansum(wt_vec);
     end
 end
     
@@ -77,17 +75,19 @@ StandardFigurePBoC(p,gca)
 % saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.pdf'])
 % saveas(dur_sz_fig,[FigPath 'burst_dur_surge_sz_fig.png'])
 
-%%
-burst_dur_ft = lag_dur_vec(analysis_ft);
-burst_size_ft = lag_size_vec(analysis_ft);
-locus_protein_ft = locus_protein_vec(analysis_ft);
-mf_protein_ft = mf_protein_vec(analysis_ft);
-
-mdl1 = fitlm(burst_dur_ft',burst_size_ft')
-
-mdl2 = fitlm(burst_dur_ft',locus_protein_ft')
-
-mdl3 = fitlm(burst_size_ft',locus_protein_ft')
-
-mdl4 = fitlm([burst_dur_ft burst_size_ft],locus_protein_ft)
-
+% %%
+% burst_dur_ft = lag_dur_vec(analysis_ft);
+% burst_size_ft = lag_size_vec(analysis_ft);
+% locus_protein_ft = locus_protein_vec(analysis_ft);
+% mf_protein_ft = mf_protein_vec(analysis_ft);
+% 
+% mdl1 = fitlm(burst_dur_ft',burst_size_ft')
+% 
+% mdl2 = fitlm(burst_dur_ft',locus_protein_ft')
+% 
+% mdl3 = fitlm(burst_size_ft',locus_protein_ft')
+% 
+% mdl4 = fitlm(mf_protein_ft',locus_protein_ft)
+% 
+% mdl5 = fitlm([burst_dur_ft burst_size_ft mf_protein_ft'],locus_protein_ft)
+% 

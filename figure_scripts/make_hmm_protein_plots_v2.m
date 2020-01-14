@@ -1,7 +1,7 @@
 % script to examine results of HMM inference
 clear
 close all
-addpath('utilities')
+addpath('../utilities')
 % set folder paths
 project = 'Dl-Ven_snaBAC-mCh_v3';
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
@@ -63,7 +63,7 @@ grid on
 set(gca,'Fontsize',14)
 saveas(pt_check_fig,[FigPath 'protein_binning_check.png'])
 
-% calculate average initiation rate, burst freq, and burst duration
+%% calculate average initiation rate, burst freq, and burst duration
 init_vec_mean = NaN(size(dorsal_bins));
 init_vec_ste = NaN(size(dorsal_bins));
 freq_vec_mean = NaN(size(dorsal_bins));
@@ -80,23 +80,32 @@ for d = dorsal_bins
     for i = 1:numel(d_ids)
         [r,ri] = sort(inference_results(d_ids(i)).r);
         A = inference_results(d_ids(i)).A_mat(ri,ri);
-        [V,D] = eig(A);
+        
+        R = logm(A) / Tres;
+        if ~isreal(R) || sum(R(:)<0) > K
+            out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
+            R = out.R_out;     
+        end
+        [V,D] = eig(R);
         [~,di] = max(diag(D));
         ss_vec = V(:,di) / sum(V(:,di));
+%         [V,D] = eig(A);
+%         [~,di] = max(diag(D));
+%         ss_vec = V(:,di) / sum(V(:,di));
         % initiation rate
         init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));
         % off and on
-        A_eff = NaN(2,2);
-        A_eff(1,1) = A(1,1);
-        A_eff(2,1) = sum(A(2:3,1));
-        A_eff(1,2) = sum(A(1,2:3));
-        A_eff(2,2) = sum(sum(A(2:3,2:3)));
-        A_eff = A_eff ./ sum(A_eff);
+%         A_eff = NaN(2,2);
+%         A_eff(1,1) = A(1,1);
+%         A_eff(2,1) = sum(A(2:3,1));
+%         A_eff(1,2) = sum(A(1,2:3));
+%         A_eff(2,2) = sum(sum(A(2:3,2:3)));
+%         A_eff = A_eff ./ sum(A_eff);
         
-        R_eff = logm(A) / Tres;
+%         R_eff = logm(A) / Tres;
         
-        freq_array(i) = R_eff(2,1);
-        dur_array(i) = 1/R_eff(1,2);
+        freq_array(i) = -R(1,1);%_eff(2,1);
+        dur_array(i) = -1/R(1,1) *(1/ss_vec(1) - 1);%1/R_eff(1,2);
         
         fluo_array(i) = nanmean([inference_results(d_ids(i)).fluo_data{:}]);
     end
@@ -117,52 +126,67 @@ MarkerSize = 50;
 blue = [115 143 193]/256;
 purple = [171 133 172]/256;
 red = [213 108 85]/256;
-ind_list = 3:numel(mf_axis_vec);
+ind_list = [1:numel(mf_axis_vec)];
 mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
-% fit second order polynomial trend
+
+% set x axis
+x_lim = [.6 2.6];
+
 p_init = polyfit(mf_axis_vec(ind_list),init_vec_mean(ind_list),2);
 p_trend_init = polyval(p_init,mf_axis_long);
 
+
+mf_sigma = 5*median(diff(mf_axis_long));
+init_trend_sm = NaN(size(mf_axis_long));
+% calculate smoothed trend
+for i = 1:numel(mf_axis_long)
+    mf = mf_axis_long(i);
+    sigma_wt_vec = exp(-.5*((mf_axis_vec(ind_list)-mf)/mf_sigma).^2);
+    init_trend_sm(i) = nansum(init_vec_mean(ind_list).*sigma_wt_vec) / nansum(sigma_wt_vec);
+end
+    
 close all
 r_trend = figure;
 hm_cm = flipud(brewermap([],'Spectral'));
 colormap(hm_cm);
 hold on
-plot(mf_axis_long,p_trend_init,'--','Color','black','LineWidth',1.5)
+p1 = plot(mf_axis_long,p_trend_init,'--','Color','black','LineWidth',1.5);
 e = errorbar(mf_axis_vec(ind_list),init_vec_mean(ind_list),init_vec_ste(ind_list),'o','Color','black','LineWidth',1);
 e.CapSize = 0;
-scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',red,'MarkerEdgeColor','black');
+s = scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',red,'MarkerEdgeColor','black');
 p = plot(0,0);
 grid on
-xlim([0.9 2.65])
-ylim([50 100])
+xlim(x_lim)
+ylim([40 105])
 xlabel('Dorsal concentration (au)')
 ylabel('burst amplitude (au/min)')
+legend([s p1],'raw HMM results','trend','Location','southeast')
 % set(gca,'Fontsize',14)
 StandardFigure(p,gca)
 box on
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
+
 %%
 
-
-p_dur = polyfit(mf_axis_vec(ind_list),dur_vec_mean(ind_list),2);
+p_dur = polyfit(mf_axis_vec(ind_list),dur_vec_mean(ind_list),1);
 p_trend_dur = polyval(p_dur,mf_axis_long);
 
 dur_trend = figure;
 hold on
-plot(mf_axis_long,p_trend_dur,'--','Color','black','LineWidth',1.5)
+p1 = plot(mf_axis_long,p_trend_dur,'--','Color','black','LineWidth',1.5);
 e = errorbar(mf_axis_vec(ind_list),dur_vec_mean(ind_list),dur_vec_ste(ind_list),'o','Color','black','LineWidth',1);
 e.CapSize = 0;
-scatter(mf_axis_vec(ind_list),dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',blue,'MarkerEdgeColor','black');
+s = scatter(mf_axis_vec(ind_list),dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',blue,'MarkerEdgeColor','black');
 grid on
-xlim([.9 2.65])
+xlim(x_lim)
 p = plot(0,0);
 grid on
-% xlim([0.54 1.8])
-ylim([.6 2.2])
+xlim(x_lim)
+ylim([0 6])
 xlabel('Dorsal concentration (au)')
 ylabel('burst duration (min)')
+legend([s p1],'raw HMM results','trend','Location','northeast')
 % set(gca,'Fontsize',14)
 StandardFigure(p,gca)
 box on
@@ -170,21 +194,23 @@ saveas(dur_trend,[FigPath,'burst_dur_mf_pt.tif'])
 saveas(dur_trend,[FigPath,'burst_dur_mf_pt.pdf'])
 
 %%
-p_freq = polyfit(mf_axis_vec(ind_list),freq_vec_mean(ind_list),2);
+p_freq = polyfit(mf_axis_vec(ind_list),freq_vec_mean(ind_list),1);
 p_trend_freq = polyval(p_freq,mf_axis_long);
 
 freq_trend = figure;
 hold on
-plot(mf_axis_long,p_trend_freq,'--','Color','black','LineWidth',1.5)
+p1 = plot(mf_axis_long,p_trend_freq,'--','Color','black','LineWidth',1.5);
 e = errorbar(mf_axis_vec(ind_list),freq_vec_mean(ind_list),freq_vec_ste(ind_list),'o','Color','black','LineWidth',1);
 e.CapSize = 0;
-scatter(mf_axis_vec(ind_list),freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeColor','black');
+s = scatter(mf_axis_vec(ind_list),freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeColor','black');
 grid on
-xlim([0.9 2.65])
+xlim(x_lim)
 % ylim([0 1.2])
 xlabel('Dorsal concentration (au)')
 ylabel('burst frequency (1/min)')
+legend([s p1],'raw HMM results','trend','Location','southeast')
 p = plot(0,0);
+legend([s p1],'raw HMM results','trend','Location','northeast')
 StandardFigure(p,gca)
 box on
 saveas(freq_trend,[FigPath,'burst_sep_mf_pt.tif'])

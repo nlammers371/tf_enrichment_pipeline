@@ -8,7 +8,7 @@ project = 'Dl-Ven_snaBAC-mCh_v3';
 % DropboxFolder =  'E:\Meghan\Dropbox\';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
-FigPath = [FigRoot '\_paper_figures\input_output04\'];
+FigPath = [FigRoot '\_paper_figures\burst_analyses\'];
 mkdir(FigPath)
 
 % load data
@@ -27,34 +27,34 @@ spot_array = results_struct.spot_array_dt; % protein snips at target locus
 window_size = size(spot_array,2);
 
 
-% burst rise range
+%% burst amp range
 amp_val_vec = lag_size_vec(feature_sign_vec==1);
-n_bins = 10;
+n_bins = 11;
 amp_range = linspace(prctile(amp_val_vec,5),prctile(amp_val_vec,95),n_bins);
-amp_sigma = median(diff(am;
+amp_sigma = 2*median(diff(amp_range));
 min_buffer_len = 5;
-max_buffer_len = 30;
+max_burst_dur = 15;
 
 
 % initialize data arrays
 n_boots = 100;
-burst_rise_dur_hmm_mean = NaN(numel(amp_range),window_size,n_boots);
-burst_rise_dur_spot_mean = NaN(numel(amp_range),window_size,n_boots);
+burst_size_hmm_mean = NaN(numel(amp_range),window_size,n_boots);
+burst_size_spot_mean = NaN(numel(amp_range),window_size,n_boots);
 
 for i = 1:numel(amp_range)
-    burst_vec = amp_range(i)-amp_sigma:amp_range(i)+amp_sigma;
-    burst_ft = feature_sign_vec == 1 & ismember(lag_dur_vec,burst_vec) & ...
-        lead_dur_vec>= min_buffer_len & lead_dur_vec < max_buffer_len;
+    amp_vec = [amp_range(i)-amp_sigma amp_range(i)+amp_sigma];
+    burst_ft = feature_sign_vec == 1 & lag_size_vec >= amp_vec(1) & lag_size_vec < amp_vec(2) & ...
+        lead_dur_vec>= min_buffer_len & lag_dur_vec < max_burst_dur;
     burst_indices = find(burst_ft);
     for n = 1:n_boots
         boot_burst_indices = randsample(burst_indices,numel(burst_indices),true);        
         % calculate averages
-        burst_rise_dur_hmm_mean(i,:,n) = nanmean(hmm_array(boot_burst_indices,:));  
-        burst_rise_dur_spot_mean(i,:,n) = nanmean(spot_array(boot_burst_indices,:));  
+        burst_size_hmm_mean(i,:,n) = nanmean(hmm_array(boot_burst_indices,:));  
+        burst_size_spot_mean(i,:,n) = nanmean(spot_array(boot_burst_indices,:));  
     end
 end
-burst_rise_dur_spot_mean = nanmean(burst_rise_dur_spot_mean,3);
-burst_rise_dur_hmm_mean = nanmean(burst_rise_dur_hmm_mean,3);
+burst_size_spot_mean = nanmean(burst_size_spot_mean,3);
+burst_size_hmm_mean = nanmean(burst_size_hmm_mean,3);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE HEATMAPS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,30 +67,30 @@ time_ub = 4;
 xlim_ub = find(time_vec == time_ub);   % [min], end x axis here
 
 % protein channel
-burst_rise_dur_hm = figure;
-burst_rise_dur_hm.Name = 'target spot burst rise hmm';
+burst_amp_dur_hm = figure;
+burst_amp_dur_hm.Name = 'target spot burst rise hmm';
 pt_hm_cm = flipud(brewermap([],'RdBu'));
 colormap(pt_hm_cm)
-pcolor(flipud(burst_rise_dur_spot_mean(:,xlim_lb:xlim_ub)))
+pcolor(flipud(burst_size_spot_mean(:,xlim_lb:xlim_ub)))
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
 ylabel('{\itsna} transcription burst duration (min)')
 set(gca,'ytick',3:3:(amp_range(end) - amp_range(1) +1),'yticklabels',fliplr([1 2 3]))    %***HARD-CODED***
 c = colorbar;
-caxis([-.35 .35])
-c.Ticks = linspace(-20,20,5);
+caxis([-.30 .30])
+c.Ticks = round(linspace(-.35,.35,11),2);
 ylabel(c, 'Dorsal enrichment (au)','FontSize',14)
 set(gca,'FontSize', 14);
-% saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_protein.tif'])
-% saveas(burst_rise_dur_hm, [FigPath 'burst_rise_hm_protein.pdf'])
+saveas(burst_amp_dur_hm, [FigPath 'burst_amp_hm_protein.tif'])
+saveas(burst_amp_dur_hm, [FigPath 'burst_amp_hm_protein.pdf'])
 
 
 %% transcription channel
 hmm_rise_dur_hm = figure;
 hmm_rise_dur_hm.Name = 'target spot burst rise hmm';
-tr_hm_cm = flipud(flipud(brewermap([],'Greys')));
-colormap(tr_hm_cm)
-pcolor(flipud(burst_rise_dur_hmm_mean(:,xlim_lb:xlim_ub)))
+tr_hm_cm = flipud(brewermap([],'RdGy'));
+colormap(pt_hm_cm)
+pcolor(flipud(burst_size_hmm_mean(:,xlim_lb:xlim_ub)))
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
 ylabel('{\itsna} transcription burst duration (min)')
@@ -99,8 +99,8 @@ c = colorbar;
 caxis([0 1.5])
 ylabel(c, '{\itsna} transcriptional activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
-% saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.tif'])
-% saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.pdf'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.tif'])
+saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.pdf'])
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%% RISE WATERFALLS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,7 +112,7 @@ burst_rise_dur_wt = figure;
 index_vec = 1:numel(amp_range);
 hold on
 for i = 1:numel(amp_range)
-    temp = burst_rise_dur_spot_mean;
+    temp = burst_size_spot_mean;
     temp(index_vec~=i,:) = NaN;
     temp = temp(:,7:end-6);
     w = waterfall(temp-nanmin(temp(:)),repmat((1:numel(amp_range))',1,window_size-12));
@@ -135,7 +135,7 @@ hmm_rise_dur_wt = figure;
 index_vec = 1:numel(amp_range);
 hold on
 for i = 1:numel(amp_range)
-    temp = burst_rise_dur_hmm_mean;
+    temp = burst_size_hmm_mean;
     temp(index_vec~=i,:) = NaN;
     temp = temp(:,7:end-6);
     w = waterfall(temp-nanmin(temp(:)),repmat((1:numel(amp_range))',1,window_size-12));
@@ -170,16 +170,16 @@ durationTimes = [find(time_vec == 1), find(time_vec == 2), find(time_vec == 3)];
 cohortLabels = ["short bursts (1 min)", "medium bursts (2 min)", "long bursts (3 min)"];
 burst_rise_dur_hmm_square = zeros(length(durationCohorts),window_size);
 for i = 1:numel(durationCohorts)
-    burst_rise_dur_hmm_square(durationCohorts(i),zeroIndex:durationTimes(i)) = burst_rise_dur_hmm_mean(durationCohorts(i),durationTimes(i));
+    burst_rise_dur_hmm_square(durationCohorts(i),zeroIndex:durationTimes(i)) = burst_size_hmm_mean(durationCohorts(i),durationTimes(i));
 end
 
 for i = 1:numel(durationCohorts)
 %     burstDur_hmmSquare = burst_rise_dur_hmm_square(durationCohorts(i),xlim_lb:xlim_ub);
-    burstDur_hmm = burst_rise_dur_hmm_mean(durationCohorts(i),xlim_lb:xlim_ub);
+    burstDur_hmm = burst_size_hmm_mean(durationCohorts(i),xlim_lb:xlim_ub);
     burstDur_hmm = burstDur_hmm - nanmin(burstDur_hmm);
 %     burstDur_hmmSquare = burstDur_hmmSquare - nanmin(burstDur_hmmSquare);
-    burstDur_protein = burst_rise_dur_spot_mean(durationCohorts(i),xlim_lb:xlim_ub);
-    burstDur_protein_min = burstDur_protein - nanmin(nanmin(burst_rise_dur_spot_mean));
+    burstDur_protein = burst_size_spot_mean(durationCohorts(i),xlim_lb:xlim_ub);
+    burstDur_protein_min = burstDur_protein - nanmin(nanmin(burst_size_spot_mean));
 %     burstDur_protein(durationCohorts(i),1) = 0;
 %     burstDur_protein(durationCohorts(i),end) = 0;
 

@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results_beta(project,DropboxFolder,varargin)
+function hmm_input_output = main06_incorporate_hmm_results_v3(project,DropboxFolder,varargin)
 
 close all
 addpath('./utilities')
@@ -32,6 +32,7 @@ end
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;  
+viterbi_fit_flag = 1;
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)       
     if ischar(varargin{i}) && i < numel(varargin)        
@@ -46,24 +47,28 @@ Tres = nucleus_struct_protein(1).TresInterp; % Time Resolution
 maxDT = 1.2*Tres; % maximum distance from observed data point
 alpha = alphaFrac*w;
 % generate alpha kernel for estimating predicted HMM fluroescence
-alpha_kernel = NaN(1,w);
-for i = 1:w
-    if i < alpha
-        alpha_kernel(i) = ((i-1) / alpha  + .5 * 1/alpha )*Tres;
-    elseif i > alpha && (i-1) < alpha
-        alpha_kernel(i) = Tres*(1 - .5*(alpha-i+1)*(1-(i-1)/alpha));
-    else
-        alpha_kernel(i) = Tres;
-    end
-end
+% alpha_kernel = NaN(1,w);
+% for i = 1:w
+%     if i < alpha
+%         alpha_kernel(i) = ((i-1) / alpha  + .5 * 1/alpha )*Tres;
+%     elseif i > alpha && (i-1) < alpha
+%         alpha_kernel(i) = Tres*(1 - .5*(alpha-i+1)*(1-(i-1)/alpha));
+%     else
+%         alpha_kernel(i) = Tres;
+%     end
+% end
 % Set write path (inference results are now written to external directory)
-hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+if contains(project,'snaBAC')
+    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+else
+    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+end
 file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 % if numel(file_list) > 1
 %     warning('multiple inference files detected. Ignoring all but first')
 % end
 inference_results = struct;
-for inf = 1:numel(inference_results)
+for inf = 1:numel(file_list)
     load([DataPath hmm_suffix file_list(inf).name]);    
     fnames = fieldnames(output);
     for fn = 1:numel(fnames)
@@ -72,28 +77,29 @@ for inf = 1:numel(inference_results)
 end
 
 % check for existence of soft fit structure
-soft_fit_flag = 1;
-if exist([DataPath hmm_suffix 'soft_fit_struct.mat']) > 0
+if exist([DataPath hmm_suffix 'viterbi_fit_struct.mat']) > 0
     fit_props = dir([DataPath hmm_suffix 'soft_fit_struct.mat']);
     fit_date = datenum(fit_props(1).date);
     hmm_date = datenum(file_list(1).date);
     if fit_date > hmm_date
-        soft_fit_flag = 0;
+        viterbi_fit_flag = 0;
     end
 end
 qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
-if soft_fit_flag
-    soft_fit_struct = struct; 
-    parfor inf = 1:numel(inference_results)
+if viterbi_fit_flag
+    viterbi_fit_struct = struct; 
+    for inf = 1:numel(inference_results)
         disp('conducting single trace fits...')
         A_log = log(inference_results(inf).A_mat);
-        v = inference_results(inf).r*Tres;
+        [r, ri] = sort(inference_results(inf).r);
+        v = r*Tres;
+        A_log = A_log(ri,ri);
         sigma = sqrt(inference_results(inf).noise);
-        pi0_log = log(inference_results(inf).pi0); 
-        eps = 1e-4;
+        pi0_log = log(inference_results(inf).pi0(ri)); 
+%         eps = 1e-4;
         fluo_values = cell(numel(qc_indices),1);
         for i = 1:numel(qc_indices)
             fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
@@ -103,22 +109,31 @@ if soft_fit_flag
             fluo_values{i} = fluo;
         end    
         tic 
-        local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                                v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+        v_fits = struct;
+        parfor f = 1:numel(fluo_values)
+            viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, K, w, alpha)
+            fnames = fieldnames(viterbi_out);
+            for j = 1:numel(fnames)
+                v_fits(f).(fnames{j}) = viterbi_out{j};
+            end
+        end    
+%         local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
+%                                 v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+%                             
         toc
-        soft_fit_struct(inf).soft_struct = local_em_outputs.soft_struct;
-        soft_fit_struct(inf).particle_index = particle_index(qc_indices);
+        viterbi_fit_struct(inf).v_fits = v_fits;
+        viterbi_fit_struct(inf).particle_index = particle_index(qc_indices);
     end    
-    save([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+    save([DataPath hmm_suffix 'viterbi_fit_struct.mat'],'viterbi_fit_struct')
 else
-    load([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
+    load([DataPath hmm_suffix 'viterbi_fit_struct.mat'],'viterbi_fit_struct')
 end
 
 %%% now extract corresponding hmm traces
 hmm_input_output = [];
 for inf = 1:numel(inference_results)
     iter = 1;
-    soft_struct = soft_fit_struct(inf).soft_struct;
+    v_fits = viterbi_fit_struct(inf).v_fits;
     for i = qc_indices
         % initialize temporary structure to store results
         ParticleID = particle_index(i);    
@@ -134,7 +149,7 @@ for inf = 1:numel(inference_results)
         sr_pt = nucleus_struct_protein(i).serial_null_protein_vec;       
         sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
         tt_pt = nucleus_struct_protein(i).time;
-        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt_mf)) > minDP && sum(~isnan(sp_pt)) > minDP 
+        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP 
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
             master_fluo = nucleus_struct_protein(i).fluo_interp;
@@ -149,19 +164,17 @@ for inf = 1:numel(inference_results)
             temp.time = master_time(start_i:stop_i);
             temp.fluo = master_fluo(start_i:stop_i);   
             temp.fluo_raw = ff_pt;      
-
             % extract useful HMM inference parameters
-            [r,ri] = sort(inference_results(inf).r); % enforce rank ordering of states
-            z = exp(soft_struct.p_z_log_soft{iter});    
-            temp.z_mat = z(ri,:)';    
-            temp.r_mat = z(ri,:)'.*r';
-            temp.r_inf = r';
-            temp.r_vec = sum(temp.r_mat,2)';
-            [~,z_vec] = max(temp.z_mat,[],2);
-            temp.z_vec = z_vec; 
-
+%             [r,ri] = sort(inference_results(inf).r); % enforce rank ordering of states
+%             z = exp(soft_struct.p_z_log_soft{iter});    
+%             temp.z_mat = z(ri,:)';    
+%             temp.r_mat = z(ri,:)'.*r';
+%             temp.r_inf = r';
+            temp.r_vec = v_fits(iter).v_viterbi;
+%             [~,z_vec] = max(temp.z_mat,[],2);
+            temp.z_vec = v_fits(iter).z_viterbi;
             % make predicted fluo vec (for consistency checks)
-            fluo_hmm = conv(temp.r_vec,alpha_kernel);
+            fluo_hmm = v_fits(iter).fluo_viterbi;
             temp.fluo_hmm = fluo_hmm(1:numel(temp.r_vec));        
 
             % checks using mcp channel to ensure that we are correctly matching
@@ -199,9 +212,7 @@ for inf = 1:numel(inference_results)
             temp.ParticleID = ParticleID; 
             temp.Tres = Tres;
             temp.maxDT = maxDT;
-            temp.InferenceID = inf;
-            if inf == 5
-                error('afsa'
+            temp.InferenceID = inf;    
             hmm_input_output  = [hmm_input_output temp];
         end
         % increment
@@ -211,7 +222,7 @@ end
 
 % find nearest neighbor particles
 % use name nearest neighbor for each bootstrap instance
-n_unique = numel(qc_indices);
+n_unique = numel(hmm_input_output) / numel(inference_results);
 start_time_vec = NaN(1,n_unique);
 stop_time_vec = NaN(1,n_unique);
 set_vec = NaN(1,n_unique);
