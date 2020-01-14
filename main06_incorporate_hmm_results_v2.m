@@ -114,23 +114,26 @@ if soft_fit_flag
         for n = 1:n_protein_boots
             soft_fit_struct(n).soft_fits = cell(1,numel(qc_indices));
             soft_fit_struct(n).particle_index = NaN(1,numel(qc_indices));
+            soft_fit_struct(n).inference_id_vec = NaN(1,numel(qc_indices));
         end
         % for each protein bin, select subset of inf results to use for
         % soft fits
         for d = 1:numel(dorsal_index)
             % select subset of inference results to use
             mf_indices = find(inf_dorsal_bins==dorsal_index(d));
-            mf_ind_samp = randsample(mf_indices,n_protein_boots,false);
+            rep = numel(mf_indices) < n_protein_boots; % sample with replacement if too few inference results            
+            mf_ind_samp = randsample(mf_indices,n_protein_boots,rep);
             % get set of traces to use
             mf_sub_indices = mf_id_vec==dorsal_index(d);
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
             disp('conducting single trace fits...')
-            for inf = mf_ind_samp                
-                A_log = log(inference_results(inf).A_mat);
-                v = inference_results(inf).r*Tres;
-                sigma = sqrt(inference_results(inf).noise);
-                pi0_log = log(inference_results(inf).pi0); 
+            parfor inf = 1:numel(mf_ind_samp)                
+                ind = mf_ind_samp(inf)
+                A_log = log(inference_results(ind).A_mat);
+                v = inference_results(ind).r*Tres;
+                sigma = sqrt(inference_results(ind).noise);
+                pi0_log = log(inference_results(ind).pi0); 
                 eps = 1e-4;
                 fluo_values = cell(numel(mf_trace_indices),1);
                 for i = 1:numel(mf_trace_indices)
@@ -146,12 +149,13 @@ if soft_fit_flag
                 toc
                 soft_fit_struct(inf).soft_fits(mf_sub_indices) = local_em_outputs.soft_struct.p_z_log_soft;
                 soft_fit_struct(inf).particle_index(mf_sub_indices) = particle_index(mf_trace_indices);
+                soft_fit_struct(inf).inference_id_vec(mf_sub_indices) = ind;
             end    
         end     
     
     else % just use average inference for hbP2P
         soft_fit_struct = struct; 
-        for inf = 1:numel(inference_results)
+        parfor inf = 1:numel(inference_results)
             disp('conducting single trace fits...')
             A_log = log(inference_results(inf).A_mat);
             v = inference_results(inf).r*Tres;
@@ -172,6 +176,7 @@ if soft_fit_flag
             toc
             soft_fit_struct(inf).soft_fits = local_em_outputs.soft_struct.p_z_log_soft;
             soft_fit_struct(inf).particle_index = particle_index(qc_indices);
+            soft_fit_struct(inf).inference_id_vec = repelem(inf,numel(particle_index));
         end    
     end
     save([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
@@ -184,6 +189,7 @@ hmm_input_output = [];
 for inf = 1:numel(soft_fit_struct)
     iter = 1;
     soft_fits = soft_fit_struct(inf).soft_fits;
+    inference_id_vec = soft_fit_struct(inf).inference_id_vec;
     for i = qc_indices
         % initialize temporary structure to store results
         ParticleID = particle_index(i);    
@@ -200,6 +206,8 @@ for inf = 1:numel(soft_fit_struct)
         sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
         tt_pt = nucleus_struct_protein(i).time;
         if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP 
+            % extract inference id
+            inference_id = inference_id_vec(iter);
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
             master_fluo = nucleus_struct_protein(i).fluo_interp;
@@ -216,7 +224,7 @@ for inf = 1:numel(soft_fit_struct)
             temp.fluo_raw = ff_pt;      
 
             % extract useful HMM inference parameters
-            [r,ri] = sort(inference_results(inf).r); % enforce rank ordering of states
+            [r,ri] = sort(inference_results(inference_id).r); % enforce rank ordering of states
             z = exp(soft_fits{iter});    
             temp.z_mat = z(ri,:)';    
             temp.r_mat = z(ri,:)'.*r';

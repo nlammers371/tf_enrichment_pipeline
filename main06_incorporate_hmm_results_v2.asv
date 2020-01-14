@@ -114,23 +114,26 @@ if soft_fit_flag
         for n = 1:n_protein_boots
             soft_fit_struct(n).soft_fits = cell(1,numel(qc_indices));
             soft_fit_struct(n).particle_index = NaN(1,numel(qc_indices));
+            soft_fit_struct(n).inference_id_vec = NaN(1,numel(qc_indices));
         end
         % for each protein bin, select subset of inf results to use for
         % soft fits
         for d = 1:numel(dorsal_index)
             % select subset of inference results to use
             mf_indices = find(inf_dorsal_bins==dorsal_index(d));
-            mf_ind_samp = randsample(mf_indices,n_protein_boots,false);
+            rep = numel(mf_indices) < n_protein_boots; % sample with replacement if too few inference results            
+            mf_ind_samp = randsample(mf_indices,n_protein_boots,rep);
             % get set of traces to use
             mf_sub_indices = mf_id_vec==dorsal_index(d);
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
             disp('conducting single trace fits...')
-            for inf = mf_ind_samp                
-                A_log = log(inference_results(inf).A_mat);
-                v = inference_results(inf).r*Tres;
-                sigma = sqrt(inference_results(inf).noise);
-                pi0_log = log(inference_results(inf).pi0); 
+            parfor inf = 1:numel(mf_ind_samp)                
+                ind = mf_ind_samp(inf)
+                A_log = log(inference_results(ind).A_mat);
+                v = inference_results(ind).r*Tres;
+                sigma = sqrt(inference_results(ind).noise);
+                pi0_log = log(inference_results(ind).pi0); 
                 eps = 1e-4;
                 fluo_values = cell(numel(mf_trace_indices),1);
                 for i = 1:numel(mf_trace_indices)
@@ -142,16 +145,17 @@ if soft_fit_flag
                 end    
                 tic 
                 local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                                        v', sigma, pi0_log, A_log, 3, 4, alpha, 1, eps);
+                                        v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
                 toc
                 soft_fit_struct(inf).soft_fits(mf_sub_indices) = local_em_outputs.soft_struct.p_z_log_soft;
                 soft_fit_struct(inf).particle_index(mf_sub_indices) = particle_index(mf_trace_indices);
+                soft_fit_struct(inf).inference_id_vec(mf_sub_indices) = 
             end    
         end     
     
     else % just use average inference for hbP2P
         soft_fit_struct = struct; 
-        for inf = 1:numel(inference_results)
+        parfor inf = 1:numel(inference_results)
             disp('conducting single trace fits...')
             A_log = log(inference_results(inf).A_mat);
             v = inference_results(inf).r*Tres;
