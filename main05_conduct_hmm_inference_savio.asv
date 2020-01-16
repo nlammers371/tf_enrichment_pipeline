@@ -30,8 +30,8 @@ warning('off','all') %Shut off Warnings
 
 % basic inputs
 project = 'Dl-Ven_snaBAC-mCh_v3';
-DataPath = '../../dat/tf_enrichment/';
-% DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_v3\';
+% DataPath = '../../dat/tf_enrichment/';
+DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_v3\';
 % default path to model scripts
 modelPath = './utilities';
 savio = 1;
