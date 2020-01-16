@@ -27,7 +27,7 @@ spot_array = results_struct.spot_array_dt; % protein snips at target locus
 window_size = size(spot_array,2);
 
 
-%% burst rise range
+% burst rise range
 burst_range = 2:12;
 burst_sigma = 2;
 min_buffer_len = 5;
@@ -72,7 +72,7 @@ colormap(pt_hm_cm)
 pcolor(flipud(burst_dur_spot_mean(:,xlim_lb:xlim_ub)))
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
-ylabel('{\itsna} transcription burst duration (min)')
+ylabel('{\itsna} burst duration (min)')
 set(gca,'ytick',3:3:(burst_range(end) - burst_range(1) +1),'yticklabels',fliplr([1 2 3]))    %***HARD-CODED***
 c = colorbar;
 caxis([-.3 .3])
@@ -91,7 +91,7 @@ colormap(tr_hm_cm)
 pcolor(flipud(burst_dur_hmm_mean(:,xlim_lb:xlim_ub)))
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
-ylabel('{\itsna} transcription burst duration (min)')
+ylabel('{\itsna} burst duration (min)')
 set(gca,'ytick',3:3:(burst_range(end) - burst_range(1) +1),'yticklabels',fliplr([1 2 3]))	%***HARD-CODED***
 c = colorbar;
 caxis([0 1.5])

@@ -149,7 +149,7 @@ if soft_fit_flag
                 toc
                 soft_fit_struct(inf).soft_fits(mf_sub_indices) = local_em_outputs.soft_struct.p_z_log_soft;
                 soft_fit_struct(inf).particle_index(mf_sub_indices) = particle_index(mf_trace_indices);
-                soft_fit_struct(inf).inference_id_vec(mf_sub_indices) = 
+                soft_fit_struct(inf).inference_id_vec(mf_sub_indices) = ind;
             end    
         end     
     
@@ -176,6 +176,7 @@ if soft_fit_flag
             toc
             soft_fit_struct(inf).soft_fits = local_em_outputs.soft_struct.p_z_log_soft;
             soft_fit_struct(inf).particle_index = particle_index(qc_indices);
+            soft_fit_struct(inf).inference_id_vec = repelem(inf,numel(particle_index));
         end    
     end
     save([DataPath hmm_suffix 'soft_fit_struct.mat'],'soft_fit_struct')
@@ -188,6 +189,7 @@ hmm_input_output = [];
 for inf = 1:numel(soft_fit_struct)
     iter = 1;
     soft_fits = soft_fit_struct(inf).soft_fits;
+    inference_id_vec = soft_fit_struct(inf).inference_id_vec;
     for i = qc_indices
         % initialize temporary structure to store results
         ParticleID = particle_index(i);    
@@ -203,15 +205,17 @@ for inf = 1:numel(soft_fit_struct)
         sr_pt = nucleus_struct_protein(i).serial_null_protein_vec;       
         sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
         tt_pt = nucleus_struct_protein(i).time;
-        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP 
+        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP            
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
             master_fluo = nucleus_struct_protein(i).fluo_interp;
+            
             % extract position vectors (used for selecting nearest neighbor)
             x_nc = double(nucleus_struct_protein(i).xPos);
             y_nc = double(nucleus_struct_protein(i).yPos);
             temp.xPosMean = nanmean(x_nc(~isnan(ff_pt)));
             temp.yPosMean = nanmean(y_nc(~isnan(ff_pt)));
+            
             % record time, space, and fluo vars
             start_i = find(~isnan(master_fluo),1);
             stop_i = find(~isnan(master_fluo),1,'last');
@@ -219,8 +223,9 @@ for inf = 1:numel(soft_fit_struct)
             temp.fluo = master_fluo(start_i:stop_i);   
             temp.fluo_raw = ff_pt;      
 
-            % extract useful HMM inference parameters
-            [r,ri] = sort(inference_results(inf).r); % enforce rank ordering of states
+            % extract useful HMM inference parameters             
+            inference_id = inference_id_vec(iter); % inference id
+            [r,ri] = sort(inference_results(inference_id).r); % enforce rank ordering of states
             z = exp(soft_fits{iter});    
             temp.z_mat = z(ri,:)';    
             temp.r_mat = z(ri,:)'.*r';
@@ -278,7 +283,7 @@ end
 
 % find nearest neighbor particles
 % use name nearest neighbor for each bootstrap instance
-n_unique = numel(hmm_input_output) / numel(inference_results);
+n_unique = numel(hmm_input_output) / n_protein_boots;%numel(inference_results);
 start_time_vec = NaN(1,n_unique);
 stop_time_vec = NaN(1,n_unique);
 set_vec = NaN(1,n_unique);

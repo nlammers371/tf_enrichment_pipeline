@@ -11,9 +11,9 @@ FigPath = [FigRoot '\' project '\burst_analyses\'];
 mkdir(FigPath)
 % load data
 load([DataPath 'hmm_input_output_results.mat'])
-w = 7;
-K = 3;
-load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output');
+% w = 7;
+% K = 3;
+% load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output');
 
 % define size of window of interest
 roi_window = 6; 
@@ -91,9 +91,9 @@ for i = 1:numel(dur_range)
     for n = 1:n_boots
         s_ids = randsample(index_vec,numel(index_vec),true);
         lag_boot_vec = lag_dur_vec(s_ids);
-        boot_protein = 
+        boot_protein = locus_protein_vec(s_ids);
         burst_wts = exp(-.5*((lag_boot_vec-bd)/dur_sigma).^2);
-        dur_locus_pt_array(n,i) = nansum(lag_boot_vec.*burst_wts)/nansum(burst_wts);        
+        dur_locus_pt_array(n,i) = nansum(boot_protein.*burst_wts)/nansum(burst_wts);        
     end
 end
 dur_pt_mean = nanmean(dur_locus_pt_array);
@@ -109,7 +109,7 @@ scatter(dur_range/3,dur_pt_mean,75,'MarkerFaceColor',[213,108,85]/256,'MarkerEdg
 % grid on
 p = plot(0,0);
 box on
-% xlim([.95*dur_range(1)/3  dur_range(end)*3+dur_range(1)/3-.95*dur_range(1)/3]);
+xlim([.95*dur_range(1)/3  dur_range(end)/3+dur_range(1)/3-.95*dur_range(1)/3]);
 % ylim([40 130])
 xlabel('burst duration (min)')
 ylabel('Dorsal enrichment (au)')
@@ -121,11 +121,22 @@ set(gca,'Color',[228 220 209]/255)
 saveas(burst_dur_fig,[FigPath 'burst_dur_surge_sz_fig.pdf'])
 saveas(burst_dur_fig,[FigPath 'burst_dur_surge_sz_fig.png'])
 
-%%
+%% Regressions
+% generate normalized regression vectors
+% duration
 burst_dur_ft = lag_dur_vec(analysis_ft);
+burst_dur_ft = burst_dur_ft / nanstd(burst_dur_ft);
+burst_dur_ft = burst_dur_ft - nanmean(burst_dur_ft);
+% size
 burst_size_ft = lag_size_vec(analysis_ft);
-locus_protein_ft = locus_protein_vec(analysis_ft);
+burst_size_ft = burst_size_ft / nanstd(burst_size_ft);
+burst_size_ft = burst_size_ft - nanmean(burst_size_ft);
+% nuclear protein
 mf_protein_ft = mf_protein_vec(analysis_ft);
+mf_protein_ft = mf_protein_ft / nanstd(mf_protein_ft);
+mf_protein_ft = mf_protein_ft - nanmean(mf_protein_ft);
+% average protein
+locus_protein_ft = locus_protein_vec(analysis_ft);
 
 mdl1 = fitlm(burst_dur_ft',burst_size_ft')
 

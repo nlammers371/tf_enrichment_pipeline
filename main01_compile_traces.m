@@ -35,7 +35,7 @@ min_time = 0*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 project = DropboxTab;
 for i = 1:numel(varargin)
-    if ischar(varargin{i}) && i < numel(varargin)
+    if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
         eval([varargin{i} '=varargin{i+1};']);
     end
 end
@@ -46,7 +46,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % find sheet
-sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
+sheet_path = [RawResultsRoot 'DataStatusCl.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
 sheet_index = find(ismember(sheet_names,DropboxTab));
 if isempty(sheet_index)

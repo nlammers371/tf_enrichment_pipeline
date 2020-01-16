@@ -4,8 +4,8 @@ clear
 close all
 addpath('../utilities')
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-mCh';
-project = 'Dl-Ven_hbP2P-mCh';
+project = 'Dl-Ven_snaBAC-mCh_v3';
+% project = 'Dl-Ven_hbP2P-mCh';
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 

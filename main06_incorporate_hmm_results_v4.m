@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results_v2(project,DropboxFolder,varargin)
+function hmm_input_output = main06_incorporate_hmm_results_v4(project,DropboxFolder,varargin)
 
 close all
 addpath('./utilities')
@@ -112,7 +112,8 @@ if soft_fit_flag
         % initialize soft fit struct
         soft_fit_struct = struct;
         for n = 1:n_protein_boots
-            soft_fit_struct(n).soft_fits = cell(1,numel(qc_indices));
+            soft_fit_struct(n).v_fits = cell(1,numel(qc_indices));
+            soft_fit_struct(n).f_fits = cell(1,numel(qc_indices));
             soft_fit_struct(n).particle_index = NaN(1,numel(qc_indices));
             soft_fit_struct(n).inference_id_vec = NaN(1,numel(qc_indices));
         end
@@ -124,17 +125,17 @@ if soft_fit_flag
             rep = numel(mf_indices) < n_protein_boots; % sample with replacement if too few inference results            
             mf_ind_samp = randsample(mf_indices,n_protein_boots,rep);
             % get set of traces to use
-            mf_sub_indices = mf_id_vec==dorsal_index(d);
+            mf_sub_indices = find(mf_id_vec==dorsal_index(d));
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
             disp('conducting single trace fits...')
-            parfor inf = 1:numel(mf_ind_samp)                
-                ind = mf_ind_samp(inf)
+            for inf = 1:numel(mf_ind_samp)                
+                ind = mf_ind_samp(inf);
                 A_log = log(inference_results(ind).A_mat);
                 v = inference_results(ind).r*Tres;
                 sigma = sqrt(inference_results(ind).noise);
                 pi0_log = log(inference_results(ind).pi0); 
-                eps = 1e-4;
+%                 eps = 1e-4;
                 fluo_values = cell(numel(mf_trace_indices),1);
                 for i = 1:numel(mf_trace_indices)
                     fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
@@ -143,11 +144,26 @@ if soft_fit_flag
                     fluo = fluo(start_i:stop_i);
                     fluo_values{i} = fluo;
                 end    
-                tic 
-                local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                                        v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+                tic
+                parfor f = 1:numel(fluo_values)
+                    viterbi_out = viterbi(fluo_values{f}, v', sigma, pi0_log,A_log, K, w, alpha);
+                    fnames = fieldnames(viterbi_out);
+                    for j = 1:numel(fnames)
+                        v_fits(f).(fnames{j}) = viterbi_out.(fnames{j});
+                    end
+                end   
                 toc
-                soft_fit_struct(inf).soft_fits(mf_sub_indices) = local_em_outputs.soft_struct.p_z_log_soft;
+%                 fnames = fieldnames(v_fits);
+%                 for  m = 1:numel(mf_sub_indices)
+%                     for fn = 1:numel(fnames)
+%                         soft_fit_struct(inf).v_fits(mf_sub_indices(m)).(fnames{fn}) = v_fits(m).(fnames{fn});
+%                     end
+%                 end                
+                for m = 1:numel(mf_sub_indices)
+                    soft_fit_struct(inf).v_fits{mf_sub_indices(m)} = v_fits(m).z_viterbi;%local_em_outputs.soft_struct.p_z_log_soft;
+                    soft_fit_struct(inf).f_fits{mf_sub_indices(m)} = v_fits(m).fluo_viterbi;%local_em_outputs.soft_struct.p_z_log_soft;
+                end
+%                 soft_fit_struct(inf).v_fits = v_temp;
                 soft_fit_struct(inf).particle_index(mf_sub_indices) = particle_index(mf_trace_indices);
                 soft_fit_struct(inf).inference_id_vec(mf_sub_indices) = ind;
             end    
@@ -155,7 +171,7 @@ if soft_fit_flag
     
     else % just use average inference for hbP2P
         soft_fit_struct = struct; 
-        parfor inf = 1:numel(inference_results)
+        for inf = 1:numel(inference_results)
             disp('conducting single trace fits...')
             A_log = log(inference_results(inf).A_mat);
             v = inference_results(inf).r*Tres;
@@ -169,12 +185,27 @@ if soft_fit_flag
                 stop_i = find(~isnan(fluo),1,'last');
                 fluo = fluo(start_i:stop_i);
                 fluo_values{i} = fluo;
+            end                
+            v_fits = struct;
+            parfor f = 1:numel(fluo_values)
+                viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, K, w, alpha);
+                fnames = fieldnames(viterbi_out);
+                for j = 1:numel(fnames)
+                    v_fits(f).(fnames{j}) = viterbi_out{j};
+                end
             end    
-            tic 
-            local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
-                                    v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
-            toc
-            soft_fit_struct(inf).soft_fits = local_em_outputs.soft_struct.p_z_log_soft;
+%             tic 
+%             local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
+%                                     v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
+%             toc
+            v_temp = cell(1,numel(qc_indices));
+            f_temp = cell(1,numel(qc_indices));
+            for m = 1:numel(qc_indices)
+                v_temp{m} = v_fits(m).z_viterbi;
+                f_temp{m} = v_fits(m).fluo_viterbi;
+            end
+            soft_fit_struct(inf).v_fits = v_temp;%soft_fits = local_em_outputs.soft_struct.p_z_log_soft;
+            soft_fit_struct(inf).f_fits = f_temp;
             soft_fit_struct(inf).particle_index = particle_index(qc_indices);
             soft_fit_struct(inf).inference_id_vec = repelem(inf,numel(particle_index));
         end    
@@ -188,7 +219,8 @@ end
 hmm_input_output = [];
 for inf = 1:numel(soft_fit_struct)
     iter = 1;
-    soft_fits = soft_fit_struct(inf).soft_fits;
+    v_fits = soft_fit_struct(inf).v_fits;
+    f_fits = soft_fit_struct(inf).f_fits;
     inference_id_vec = soft_fit_struct(inf).inference_id_vec;
     for i = qc_indices
         % initialize temporary structure to store results
@@ -226,17 +258,18 @@ for inf = 1:numel(soft_fit_struct)
             % extract useful HMM inference parameters             
             inference_id = inference_id_vec(iter); % inference id
             [r,ri] = sort(inference_results(inference_id).r); % enforce rank ordering of states
-            z = exp(soft_fits{iter});    
-            temp.z_mat = z(ri,:)';    
-            temp.r_mat = z(ri,:)'.*r';
+%             state_key = 1:K;
+            z_vec = ri(v_fits{iter});    
+%             temp.z_vec = z(ri,:)';    
+%             temp.r_mat = z(ri,:)'.*r';
             temp.r_inf = r';
-            temp.r_vec = sum(temp.r_mat,2)';
-            [~,z_vec] = max(temp.z_mat,[],2);
+            temp.r_vec =r(z_vec);% sum(temp.r_mat,2)';
+%             [~,z_vec] = max(temp.z_mat,[],2);
             temp.z_vec = z_vec; 
 
             % make predicted fluo vec (for consistency checks)
-            fluo_hmm = conv(temp.r_vec,alpha_kernel);
-            temp.fluo_hmm = fluo_hmm(1:numel(temp.r_vec));        
+%             fluo_hmm = conv(temp.r_vec,alpha_kernel);
+            temp.fluo_hmm = f_fits{iter};%fluo_hmm(1:numel(temp.r_vec));        
 
             % checks using mcp channel to ensure that we are correctly matching
             % particles and time frames

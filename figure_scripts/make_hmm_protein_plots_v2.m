@@ -63,7 +63,7 @@ grid on
 set(gca,'Fontsize',14)
 saveas(pt_check_fig,[FigPath 'protein_binning_check.png'])
 
-%% calculate average initiation rate, burst freq, and burst duration
+% calculate average initiation rate, burst freq, and burst duration
 init_vec_mean = NaN(size(dorsal_bins));
 init_vec_ste = NaN(size(dorsal_bins));
 freq_vec_mean = NaN(size(dorsal_bins));
@@ -126,7 +126,7 @@ MarkerSize = 50;
 blue = [115 143 193]/256;
 purple = [171 133 172]/256;
 red = [213 108 85]/256;
-ind_list = [1:numel(mf_axis_vec)];
+ind_list = [1 3:numel(mf_axis_vec)];
 mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
 
 % set x axis
@@ -183,7 +183,7 @@ xlim(x_lim)
 p = plot(0,0);
 grid on
 xlim(x_lim)
-ylim([0 6])
+ylim([0 3])
 xlabel('Dorsal concentration (au)')
 ylabel('burst duration (min)')
 legend([s p1],'raw HMM results','trend','Location','northeast')
