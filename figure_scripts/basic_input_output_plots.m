@@ -4,7 +4,7 @@ clear
 % close all
 addpath('utilities')
 % set ID variables
-targetProject = 'Dl-Ven_snaBAC-mCh_v3';
+targetProject = 'Dl-Ven_snaBAC-mCh_v3_beta';
 controlProject = 'Dl-Ven_hbP2P-mCh_v2';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
@@ -47,7 +47,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 
 % set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 2; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
 % max_burst_len = 12;
 %%% (1) make basic input-output figure
