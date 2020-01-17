@@ -47,7 +47,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 
 % set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 2; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 2;
 % max_burst_len = 12;
 %%% (1) make basic input-output figure

@@ -70,7 +70,7 @@ for i = 1:numel(hmm_input_output)
     
     % perform simple quadratic fits to acount for differences in offset and dynamic
     % range
-    spot_pt_vec = hmm_input_output(i).spot_protein; 
+    spot_pt_vec = hmm_input_output(i).spot_protein_3D; 
     spot_nan_ft = ~isnan(spot_pt_vec)&~dt_filter_gap;
     spot_protein_fit = detrend(spot_pt_vec(spot_nan_ft),2,'SamplePoints',time_vec(spot_nan_ft));
     spot_protein_dt = NaN(size(dt_filter_gap));
@@ -78,7 +78,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).spot_protein_dt = spot_protein_dt;
 
     % virtual spot protein    
-    virtual_pt_vec = hmm_input_output(i).serial_protein;    
+    virtual_pt_vec = hmm_input_output(i).serial_protein_3D;    
     nan_ft_virt = ~isnan(virtual_pt_vec)&~dt_filter_gap;
     serial_protein_fit = detrend(virtual_pt_vec(nan_ft_virt),2,'SamplePoints',time_vec(nan_ft_virt));     
     serial_protein_dt = NaN(size(dt_filter_gap));
