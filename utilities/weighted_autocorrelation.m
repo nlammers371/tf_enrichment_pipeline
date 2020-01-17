@@ -1,5 +1,5 @@
 %Create Weighted Average Autocorrelation
-function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = ...
+function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors, wt_ddd, ddd_boot_errors] = ...
     weighted_autocorrelation(traces, lags, bootstrap,n_boots,trace_weights)
     %traces: array of traces with zeros preceeding and succeeding period of
     %        activity. Oriented column-wise
@@ -17,6 +17,7 @@ function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = ...
     end
     samples = NaN(lags+1,n_boots);    
     dd_samples = NaN(lags-1,n_boots);
+    ddd_samples = NaN(lags-2,n_boots);
     for b = 1:n_boots
         %If bootstrap errors are desired, take n_boots samples with
         %replacement, each the size of original array
@@ -49,8 +50,11 @@ function [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors] = ...
         denominator = sum(time_steps,2);
         samples(:,b) = numerator ./ denominator;
         dd_samples(:,b) = diff(diff(samples(:,b)));
+        ddd_samples(:,b) = diff(samples(:,b),3);
     end
     wt_autocorr = mean(samples,2);
     wt_dd = mean(dd_samples,2);
+    wt_ddd = mean(ddd_samples,2);
     a_boot_errors = std(samples')';
     dd_boot_errors = std(dd_samples')';
+    ddd_boot_errors = std(ddd_samples')';
