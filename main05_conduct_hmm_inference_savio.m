@@ -29,9 +29,9 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_v3';
+project = 'Dl-Ven_snaBAC-mCh_slow';
 DataPath = '../../dat/tf_enrichment/';
-% DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_v3\';
+% DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_slow\';
 % default path to model scripts
 modelPath = './utilities';
 savio = 1;
@@ -87,7 +87,7 @@ end
 % Set write path (inference results are now written to external directory)
 % out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
 if protein_bin_flag
-    load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
+ out_prefix = ['/global/scratch/nlammers/' project '/'];    load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
     analysis_struct = nucleus_struct_protein;
     out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
 else
@@ -98,7 +98,7 @@ end
 
 % set write path
 if savio
-    out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
+    out_prefix = ['/global/scratch/nlammers/' project '/']; %hmmm_data/inference_out/';
 else    
     out_prefix = DataPath;
 end
@@ -129,7 +129,7 @@ if protein_bin_flag
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
-    q_vec = linspace(.01,.99,n_protein_bins+1);        
+    q_vec = linspace(0,1,n_protein_bins+1);        
     mf_prctile_vec = quantile(mf_index,q_vec);    
     % assign traces to groups    
     id_vec = discretize(mf_index,mf_prctile_vec);

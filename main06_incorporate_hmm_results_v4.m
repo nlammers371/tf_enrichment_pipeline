@@ -293,7 +293,7 @@ for inf = 1:numel(soft_fit_struct)
             temp.serial_protein_3D = interp1(tt_pt(~isnan(sr_pt_3D)),sr_pt_3D(~isnan(sr_pt_3D)),temp.time);
             % interpolate position info
             temp.xPos = interp1(tt_pt(~isnan(x_nc)),x_nc(~isnan(x_nc)),temp.time);        
-            temp.yPos = interp1(tt_pt(~isnan(y_nc)),y_nc(~isnan(y_nc)),temp.time);        
+            temp.yPos = interp1(tt_pt(~isnan(y_nc)),y_nc(~isnan(y_nc)),temp.time);    
             % generate flag var indicating interpolated obs that are too far from 
             % true points
             input_times = tt_pt(~isnan(sp_pt));
