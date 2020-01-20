@@ -4,8 +4,8 @@ clear
 close all
 addpath('../utilities')
 % define core ID variables
-project = 'Dl-Ven_snaBAC-mCh_v3';
-% project = 'Dl-Ven_hbP2P-mCh_v2';
+% project = 'Dl-Ven_snaBAC-mCh_v3';
+project = 'Dl-Ven_hbP2P-mCh_v2';
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 
@@ -18,7 +18,7 @@ n_boots = 100;
 load([DataPath 'nucleus_struct.mat'])
 %%
 qc_indices = find([nucleus_struct.qc_flag]==1);
-%%
+
 % load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 % compile traces into single array
 time_grid = unique([nucleus_struct.time_interp]);
@@ -30,7 +30,7 @@ for i = 1:numel(qc_indices)
     fluo = nucleus_struct(qc).fluo_interp;
     trace_array(ismember(time_grid,time),i) = fluo;
 end
-%%
+
 [wt_autocorr, a_boot_errors, wt_dd, dd_boot_errors, wt_ddd, ddd_boot_errors] = ...
     weighted_autocorrelation(trace_array, n_lags, 1,n_boots,ones(size(trace_array)));
 %% make figure
