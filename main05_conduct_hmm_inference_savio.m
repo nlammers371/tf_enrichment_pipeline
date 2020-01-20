@@ -29,7 +29,7 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_slow';
+project = 'Dl-Ven_snaBAC-mCh_v3';
 DataPath = '../../dat/tf_enrichment/';
 % DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_slow\';
 % default path to model scripts
@@ -46,7 +46,7 @@ else
     nBoots = 5;
 end
 
-n_protein_bins = 15;
+n_protein_bins = 20;
 sampleSize = 8000;
 maxWorkers = 24;
 
@@ -149,7 +149,7 @@ if protein_bin_flag
 end
 
 %%% Conduct Inference
-
+rng('shuffle'); % ensure we don't repeat 
 % iterate through designated groups
 for t = 1:length(iter_list)
     iter_filter = iter_ref_index == t;%ismember(iter_ref_index,[t-1, t, t+1]);

@@ -149,7 +149,7 @@ if protein_bin_flag
 end
 
 %%% Conduct Inference
-
+rng('shuffle'); 
 % iterate through designated groups
 for t = 1:length(iter_list)
     iter_filter = iter_ref_index == t;%ismember(iter_ref_index,[t-1, t, t+1]);
