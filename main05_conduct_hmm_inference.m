@@ -39,10 +39,10 @@ dpBootstrap = 1;
 if protein_bin_flag
     nBoots = 2; % will run multiple instances on savio
 else
-    nBoots = 3;
+    nBoots = 5;
 end
 n_protein_bins = 20;
-sampleSize = 4000;
+sampleSize = 8000;
 maxWorkers = 12;
 alphaFrac = 1302 / 6000;
 % default paths
