@@ -194,46 +194,46 @@ set(gca,'Children',flipud(chH));
 saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.tif'])
 saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.pdf'])
 
-%%
-%%% (3) Make bar plots of preceding and succeeding 2 minutes
-before_ids = time_axis < 0 & time_axis >=-2;
-after_ids = time_axis > 0 & time_axis <=2;
-% generate difference vectors
-burst_rise_spot_after = nanmean(spot_array_dt(burst_ft_primary,after_ids),2);
-burst_rise_spot_before = nanmean(spot_array_dt(burst_ft_primary,before_ids),2);
-
-burst_rise_swap_after = nanmean(swap_array_dt(burst_ft_primary,after_ids),2);
-burst_rise_swap_before = nanmean(swap_array_dt(burst_ft_primary,before_ids),2);
-
-burst_rise_virt_after = nanmean(virtual_array_dt(burst_ft_primary,after_ids),2);
-burst_rise_virt_before = nanmean(virtual_array_dt(burst_ft_primary,before_ids),2);
-
-burst_rise_bio_after = nanmean(biocontrol_array_dt(burst_ft_control,after_ids),2);
-burst_rise_bio_before = nanmean(biocontrol_array_dt(burst_ft_control,before_ids),2);
-
-% Kolmogorov–Smirnov test)
-[~, p_virt] = kstest2(burst_rise_virt_before,burst_rise_virt_after)
-[~, p_swap] = kstest2(burst_rise_swap_before,burst_rise_swap_after)
-[~, p_bio] = kstest2(burst_rise_bio_before,burst_rise_bio_after)
-[~, p_spot] = kstest2(burst_rise_spot_before,burst_rise_spot_after)
-
-bar_fig = figure;
-cmap2 = brewermap([],'Paired');
-colormap(cmap2);
-bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after)
-             nanmean(burst_rise_swap_before), nanmean(burst_rise_swap_after)
-             nanmean(burst_rise_virt_before), nanmean(burst_rise_virt_after)
-             nanmean(burst_rise_bio_before), nanmean(burst_rise_bio_after)];
-         
-b = bar(bar_array,'FaceColor','flat');
-b(1).CData = cmap1([2 5 3 6],:);
-b(1).FaceAlpha = .3;
-b(2).CData = cmap1([2 5 3 6],:)/1.2;
-set(gca,'xtick',1:4,'xticklabel',{'target locus','nearest neighbor','virtual spot','biological control',});
-set(gca,'Fontsize',14)
-xtickangle(30)
-ylabel('Dorsal enrichment (au)')
-ylim([-8 14])
-grid on
-saveas(bar_fig,[FigPath 'bar_plots.tif'])
-saveas(bar_fig,[FigPath 'bar_plots.pdf'])
+% %%
+% %%% (3) Make bar plots of preceding and succeeding 2 minutes
+% before_ids = time_axis < 0 & time_axis >=-2;
+% after_ids = time_axis > 0 & time_axis <=2;
+% % generate difference vectors
+% burst_rise_spot_after = nanmean(spot_array_dt(burst_ft_primary,after_ids),2);
+% burst_rise_spot_before = nanmean(spot_array_dt(burst_ft_primary,before_ids),2);
+% 
+% burst_rise_swap_after = nanmean(swap_array_dt(burst_ft_primary,after_ids),2);
+% burst_rise_swap_before = nanmean(swap_array_dt(burst_ft_primary,before_ids),2);
+% 
+% burst_rise_virt_after = nanmean(virtual_array_dt(burst_ft_primary,after_ids),2);
+% burst_rise_virt_before = nanmean(virtual_array_dt(burst_ft_primary,before_ids),2);
+% 
+% burst_rise_bio_after = nanmean(biocontrol_array_dt(burst_ft_control,after_ids),2);
+% burst_rise_bio_before = nanmean(biocontrol_array_dt(burst_ft_control,before_ids),2);
+% 
+% % Kolmogorov–Smirnov test)
+% [~, p_virt] = kstest2(burst_rise_virt_before,burst_rise_virt_after)
+% [~, p_swap] = kstest2(burst_rise_swap_before,burst_rise_swap_after)
+% [~, p_bio] = kstest2(burst_rise_bio_before,burst_rise_bio_after)
+% [~, p_spot] = kstest2(burst_rise_spot_before,burst_rise_spot_after)
+% 
+% bar_fig = figure;
+% cmap2 = brewermap([],'Paired');
+% colormap(cmap2);
+% bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after)
+%              nanmean(burst_rise_swap_before), nanmean(burst_rise_swap_after)
+%              nanmean(burst_rise_virt_before), nanmean(burst_rise_virt_after)
+%              nanmean(burst_rise_bio_before), nanmean(burst_rise_bio_after)];
+%          
+% b = bar(bar_array,'FaceColor','flat');
+% b(1).CData = cmap1([2 5 3 6],:);
+% b(1).FaceAlpha = .3;
+% b(2).CData = cmap1([2 5 3 6],:)/1.2;
+% set(gca,'xtick',1:4,'xticklabel',{'target locus','nearest neighbor','virtual spot','biological control',});
+% set(gca,'Fontsize',14)
+% xtickangle(30)
+% ylabel('Dorsal enrichment (au)')
+% ylim([-8 14])
+% grid on
+% saveas(bar_fig,[FigPath 'bar_plots.tif'])
+% saveas(bar_fig,[FigPath 'bar_plots.pdf'])
