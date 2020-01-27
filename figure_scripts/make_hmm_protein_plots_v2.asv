@@ -94,8 +94,7 @@ for d = dorsal_bins
         % initiation rate
         init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
         if sum(r.*ss_vec) > 1.1*init_array(i)
-            error('nontrivial "off" state initiation')
-        end            
+            error('nontrivial 
         % burst freq
         freq_array(i) = -R(1,1);%_eff(2,1);
         % burst dur
@@ -151,7 +150,7 @@ s = scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','Marker
 p = plot(0,0);
 grid on
 xlim(x_lim)
-ylim([45 95])
+ylim([45 90])
 xlabel('Dorsal concentration (au)')
 ylabel('burst amplitude (au/min)')
 legend([s p1],'raw HMM results','trend','Location','southeast')
