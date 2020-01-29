@@ -264,42 +264,25 @@ s_2min = scatter(burst_amp_range_auPerMin,amp_surgeMag2min_mean,75,'MarkerFaceCo
 e_2minZeroed = errorbar(burst_amp_range_auPerMin,amp_surgeMag2minZeroed_mean,amp_surgeMag2minZeroed_ste,'Color','black','LineWidth',1.5);
 e_2minZeroed.CapSize = 0;
 s_2minZeroed = scatter(burst_amp_range_auPerMin,amp_surgeMag2minZeroed_mean,75,'MarkerFaceColor',PBoC_blue,'MarkerEdgeColor','black');
-p = plot(0,0);
-box on
-xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
-xlabel('burst amplitude (au/min)')
-ylabel('Dorsal surge magnitude (au)')
-legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
-set(gca,'FontSize',14)
-StandardFigure(p,gca)
-set(gca,'Color',[228 220 209]/255) 
-
-saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag' '.pdf'])
-saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag' '.tif'])
-
-
-burstAmp_vs_surgeMagActBurstDur_fig = figure(4);
-hold on
-%Actual burst duration
+%Fixed 2min, zeroed to start
 e_ActBurstDur = errorbar(burst_amp_range_auPerMin,amp_surgeMagActBurstDur_mean,amp_surgeMagActBurstDur_ste,'Color','black','LineWidth',1.5);
 e_ActBurstDur.CapSize = 0;
-s_ActBurstDur = scatter(burst_amp_range_auPerMin,amp_surgeMagActBurstDur_mean,75,'MarkerFaceColor',PBoC_purple,'MarkerEdgeColor','black');
+s_ActBurstDur = scatter(burst_amp_range_auPerMin,amp_surgeMagActBurstDur_mean,75,'MarkerFaceColor',PBoC_green,'MarkerEdgeColor','black');
 p = plot(0,0);
 box on
 xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
 xlabel('burst amplitude (au/min)')
 ylabel('Dorsal surge magnitude (au)')
-legend(s_ActBurstDur, 'Actual burst dur','Location','northwest')
+legend([s_2min s_2minZeroed s_ActBurstDur],'2min surge dur','2min surge dur, zeroed', 'Actual burst dur','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
 set(gca,'Color',[228 220 209]/255) 
 
-saveas(burstAmp_vs_surgeMagActBurstDur_fig, [FigPath 'burstAmp_vs_surgeMagActBurstDur' '.pdf'])
-saveas(burstAmp_vs_surgeMagActBurstDur_fig, [FigPath 'burstAmp_vs_surgeMagActBurstDur' '.tif'])
-
+saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeDur' '.pdf'])
+saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeDur' '.tif'])
 
 % Plot surge mag = rate at start results
-burstAmp_vs_surgeRate_fig = figure(5);
+burstAmp_vs_surgeRate_fig = figure(4);
 burst_amp_range_auPerMin = burst_amp_range * (1/time_step);
 hold on
 e_20s = errorbar(burst_amp_range_auPerMin,amp_surgeMagRate20s_mean,amp_surgeMagRate20s_ste,'Color','black','LineWidth',1.5);
@@ -403,7 +386,7 @@ dur_surgeMagRate40s_ste= nanstd(burst_dur_surgeMagRate40s_boots);
 dur_surgeMagRate60s_mean = nanmean(burst_dur_surgeMagRate60s_boots);
 dur_surgeMagRate60s_ste= nanstd(burst_dur_surgeMagRate60s_boots);
 
-burstDur_vs_surgeMag_fig = figure(6);
+burstDur_vs_surgeMag_fig = figure(5);
 hold on
 % Fixed 2 min, raw
 e_2min = errorbar(burst_dur_range_inMin,dur_surgeMag2min_mean,dur_surgeMag2min_ste,'Color','black','LineWidth',1.5);
@@ -426,26 +409,13 @@ set(gca,'Color',[228 220 209]/255)
 saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur' '.pdf'])
 saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur' '.tif'])
 
-
-burstDur_vs_surgeMagActBurstDur_fig = figure(7);
+burstDur_vs_surgeMagActBurstDur_fig = figure(6);
 hold on
 % Actual burst duration
 e_ActBurstDur = errorbar(burst_dur_range_inMin,dur_surgeMagActBurstDur_mean,dur_surgeMagActBurstDur_ste,'Color','black','LineWidth',1.5);
 e_ActBurstDur.CapSize = 0;
 s_ActBurstDur = scatter(burst_dur_range_inMin,dur_surgeMagActBurstDur_mean,75,'MarkerFaceColor',PBoC_purple,'MarkerEdgeColor','black');
-p = plot(0,0);
-box on
-xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
-xlabel('burst duration (min)')
-ylabel('Dorsal surge magnitude (au/min)')
-legend(s_ActBurstDur,'Total, actual burst dur','Location','northwest')
-set(gca,'FontSize',14)
-StandardFigure(p,gca)
-set(gca,'Color',[228 220 209]/255)
-
-saveas(burstDur_vs_surgeMagActBurstDur_fig, [FigPath 'burstDur_vs_surgeMagActBurstDur' '.pdf'])
-saveas(burstDur_vs_surgeMagActBurstDur_fig, [FigPath 'burstDur_vs_surgeMagActBurstDur' '.tif'])
-
+'Actual burst dur'
 
 burstDur_vs_surgeRate_fig = figure(8);
 hold on
@@ -466,13 +436,13 @@ box on
 xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
 xlabel('burst duration (min)')
 ylabel('Dorsal surge rate (au/min)')
-legend([s_20s s_40s s_60s],'20s', '40s','60s','Location','northwest')
+legend([s_ActBurstDur s_20s s_40s s_60s],'20s', '40s','60s','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
 set(gca,'Color',[228 220 209]/255)
 
-saveas(burstDur_vs_surgeRate_fig, [FigPath 'burstDur_vs_surgeRate' '.pdf'])
-saveas(burstDur_vs_surgeRate_fig, [FigPath 'burstDur_vs_surgeRate' '.tif'])
+saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeRate' '.pdf'])
+saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeRate' '.tif'])
 
 % for i = 1:numel(burst_dur_range)
 %    burst_vec = burst_dur_range(i)-burst_dur_sigma:burst_dur_range(i)+burst_dur_sigma;
