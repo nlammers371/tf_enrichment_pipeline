@@ -55,7 +55,7 @@ close all
 
 
 % generate basic filter for target locus and computational controls
-burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>=min_burst_len&target_swap_qc&target_virtual_qc;%&target_set_vec~=4; % filter for rise events
+burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>=min_burst_len;%&target_swap_qc&target_virtual_qc;%&target_set_vec~=4; % filter for rise events
 burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>=min_burst_len; % filter for rise events
 sample_options_target = find(burst_ft_primary);
 sample_options_control = find(burst_ft_control);
