@@ -121,11 +121,11 @@ blue = [115 143 193]/256;
 purple = [171 133 172]/256;
 red = [213 108 85]/256;
 ind_list = [2:numel(mf_axis_vec)-1];
-mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
-
 % set x axis
-x_lim = [min(mf_axis_long)-.05 max(mf_axis_long)+.05];
-
+% x_lim = [min(mf_axis_long)-.05 max(mf_axis_long)+.05];
+x_lim = [.85 2];
+% mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
+mf_axis_long = linspace(x_lim(1),x_lim(2));
 p_init = polyfit(mf_axis_vec(ind_list),init_vec_mean(ind_list),2);
 p_trend_init = polyval(p_init,mf_axis_long);
 
@@ -149,12 +149,12 @@ e = errorbar(mf_axis_vec(ind_list),init_vec_mean(ind_list),init_vec_ste(ind_list
 e.CapSize = 0;
 s = scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',red,'MarkerEdgeColor','black');
 p = plot(0,0);
-grid on
+% grid on
 xlim(x_lim)
-ylim([45 95])
+ylim([50 95])
 xlabel('Dorsal concentration (au)')
 ylabel('burst amplitude (au/min)')
-legend([s p1],'raw HMM results','trend','Location','southeast')
+% legend([s p1],'raw HMM results','trend','Location','southeast')
 % set(gca,'Fontsize',14)
 StandardFigure(p,gca)
 box on
@@ -172,15 +172,15 @@ p1 = plot(mf_axis_long,p_trend_dur,'--','Color','black','LineWidth',1.5);
 e = errorbar(mf_axis_vec(ind_list),dur_vec_mean(ind_list),dur_vec_ste(ind_list),'o','Color','black','LineWidth',1);
 e.CapSize = 0;
 s = scatter(mf_axis_vec(ind_list),dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',blue,'MarkerEdgeColor','black');
-grid on
+% grid on
 xlim(x_lim)
 p = plot(0,0);
-grid on
+% grid on
 xlim(x_lim)
-% ylim([0 2])
+ylim([.5 3])
 xlabel('Dorsal concentration (au)')
 ylabel('burst duration (min)')
-legend([s p1],'raw HMM results','trend','Location','northeast')
+% legend([s p1],'raw HMM results','trend','Location','northeast')
 % set(gca,'Fontsize',14)
 StandardFigure(p,gca)
 box on
@@ -197,13 +197,13 @@ p1 = plot(mf_axis_long,p_trend_freq,'--','Color','black','LineWidth',1.5);
 e = errorbar(mf_axis_vec(ind_list),freq_vec_mean(ind_list),freq_vec_ste(ind_list),'o','Color','black','LineWidth',1);
 e.CapSize = 0;
 s = scatter(mf_axis_vec(ind_list),freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeColor','black');
-grid on
+% grid on
 xlim(x_lim)
-% ylim([0 1.2])
+ylim([.5 1.7])
 xlabel('Dorsal concentration (au)')
 ylabel('burst frequency (1/min)')
 p = plot(0,0);
-legend([s p1],'raw HMM results','trend','Location','southeast')
+% legend([s p1],'raw HMM results','trend','Location','southeast')
 
 % legend([s p1],'raw HMM results','trend','Location','northeast')
 StandardFigure(p,gca)

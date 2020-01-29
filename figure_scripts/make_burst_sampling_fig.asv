@@ -12,6 +12,7 @@ K = 3;
 w = 7;
 % load data structure
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
+load([DataPath 'nucleus_struct.mat'])
 FigPath = [FigureRoot '\' project '\burst_alginment_fig\'];
 mkdir(FigPath)
 
@@ -23,10 +24,13 @@ close all
 %     pause(1.5)
 % end
 Tres = 20;
+PixelSize = nucleus_struct(1).PixelSize;
+zStep = nucleus_struct(1).zStep;
+VoxelSize = PixelSize^2 * zStep;
 cmap1 = brewermap([],'Set2');
 blue = [115 143 193]/256;
 % plot_id = 900;
-plot_id = 941;
+plot_id = 112;
 PBoC_flag_vec = [false true];
 
 % generate vector of burst-specific loading rates (this is for illustrative
@@ -47,31 +51,27 @@ for c = 1:2:numel(z_chpts)
 end
 
 % stairs(init_vec)
-% 
+
 % figure;
-% fluo = hmm_input_output(plot_id).fluo;
+% fluo = hmm_input_output(plot_id).fluo_check;
 % plot(fluo)
 %%
-close all
 
-for i = 1:2
+for i = 1%1:2
     PBoC_flag = PBoC_flag_vec(i);
     % raw fluorescence
-    fluo = hmm_input_output(plot_id).fluo;
+    fluo = hmm_input_output(plot_id).fluo_check;
     time = hmm_input_output(plot_id).time/60;
-    
-    x_lim = [time(10),time(90)];
     
     fluo_fig = figure;
     hold on
     p = plot(0,0);
-    plot(time,fluo,'-','Color','black','LineWidth',1.5');
-    scatter(time,fluo,20,'MarkerFaceColor','black','MarkerEdgeAlpha',0);
+    plot(time,fluo,'--','Color','black','LineWidth',1.5');
 %     scatter(time,fluo,'MarkerFaceColor','black','MarkerEdgeColor','black')
     xlabel('time (minutes)')
     ylabel('fluorescence (AU)')
     box on
-     xlim(x_lim)
+    xlim([10,max(time)])
     if PBoC_flag
         suffix = '_PBoC';
         StandardFigurePBoC(p,gca);
@@ -91,7 +91,7 @@ for i = 1:2
     s = stairs(time,init_vec,'-','Color',blue,'LineWidth',1.5');    
     xlabel('time (minutes)')
     ylabel('promoter state')
-     xlim(x_lim)
+    xlim([10,max(time)])
 %     set(gca,'Ytick',[0 1])
     box on
     if PBoC_flag        
@@ -112,8 +112,8 @@ for i = 1:2
     plot(time(nn_ids),spot_protein(nn_ids),'Color',cmap1(2,:),'LineWidth',1.5);
     xlabel('time (minutes)')
     ylabel('Dl concentration (AU)')    
-    xlim(x_lim)
-    ylim([-.2 .2])
+    xlim([10,max(time)])
+    ylim([-.15 .15])
     box on
     if PBoC_flag        
         StandardFigurePBoC(p,gca);
