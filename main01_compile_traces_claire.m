@@ -360,7 +360,8 @@ for i = 1:numel(nucleus_struct)
             try
                 new_f = interp1(interp_t,interp_f,query_points);      
             catch
-                err
+                error('sigh')
+            end
             vec(ismember(time_vec,query_points)) = new_f;        
             % Interpolate to standardize spacing               
             nucleus_struct(i).([interp_fields{j} '_interp']) = interp1(time_vec,vec,time_interp);

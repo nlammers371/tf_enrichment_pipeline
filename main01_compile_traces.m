@@ -46,7 +46,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
 % find sheet
-sheet_path = [RawResultsRoot 'DataStatusCl.xlsx'];
+sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
 sheet_index = find(ismember(sheet_names,DropboxTab));
 if isempty(sheet_index)
