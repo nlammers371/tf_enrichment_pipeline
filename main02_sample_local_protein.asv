@@ -33,7 +33,7 @@ segmentNuclei = 0;
 use_psf_fit_dims = false; % if true, use fits from PSF fitting
 xy_sigma_um = 0.25;% um 
 z_sigma_um = 0.6; % um
-ignoreQC = false;
+
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
@@ -115,9 +115,6 @@ for i = 1:numel(nucleus_struct)
     sub_ind_ref = [sub_ind_ref 1:numel(nucleus_struct(i).frames)];
 end
 
-if ignoreQC 
-    pt_qc_ref = true(size(pt_qc_ref));
-end
 %%%%%%%%%%%%%%%%%%%%
 %%% Set size parameters
 set_vec = [nucleus_struct.setID];

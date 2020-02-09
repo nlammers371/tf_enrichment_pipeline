@@ -14,15 +14,17 @@ mkdir(DataPath);
 FigPath = [DropboxFolder 'LocalEnrichmentFigures/PipelineOutput/absolute_calibration/venus_gfp_xcal/'];
 mkdir(FigPath);
 
-%% load absolute Bcd concentration data from Gregor 2007
+% load absolute Bcd concentration data from Gregor 2007
 bcd_abs_path = 'E:\Nick\LivemRNA\Dropbox (Personal)\processedenrichmentdata\absolute_calibration\GregorData2007\';
-bkg_data = readtable([bcd_abs_path 'GregorBkg2007.csv']);
+bkg_data = readtable([bcd_abs_path 'Gregor2007Black.csv']);
 bkg_data_clean.AP = bkg_data.Var1;
 bkg_data_clean.nM = bkg_data.Var2;
-bcd_data = readtable([bcd_abs_path 'GregorBcd2007.csv']);
-bcd_data_clean.AP = bcd_data.Var1(1:41);
-bcd_data_clean.nM = bcd_data.Var2(1:41);
-%%
+bcd_data01 = readtable([bcd_abs_path 'Gregor2007BcdRed.csv']);
+bcd_data02 = readtable([bcd_abs_path 'Gregor2007BcdBlue.csv']);
+bcd_data_clean.AP = [bcd_data01.Var1 ; bcd_data02.Var1];
+bcd_data_clean.nM = [bcd_data01.Var2 ; bcd_data02.Var2];
+bcd_data_clean.setID = [repelem(1,numel(bcd_data01.Var1)), repelem(2,numel(bcd_data02.Var1))];
+
 % find sheets
 sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
@@ -169,31 +171,50 @@ saveas(bcd_gfp_fig,[FigPath 'bcd_gfp_scatter.png'])
 % Perform simple cross-calibration using average values
 ap_res = 1;
 time_res = 1;
-ap_range = 15:50;
+ap_range = 0:50;
 time_range = 5:25;
 time_mat = repmat(time_range',1,numel(ap_range));
+nBoots = 100;
 
-venus_fluo_mat = NaN(numel(time_range),numel(ap_range));
+venus_fluo_array = NaN(numel(time_range),numel(ap_range),nBoots);
 venus_ct_mat = NaN(numel(time_range),numel(ap_range));
-gfp_fluo_mat = NaN(numel(time_range),numel(ap_range));
+gfp_fluo_array = NaN(numel(time_range),numel(ap_range),nBoots);
 gfp_ct_mat = NaN(numel(time_range),numel(ap_range));
 
 for  a = 1:numel(ap_range)
     for t = 1:numel(time_range)
+        % Venus
         v_filter = round(100*ap_vec_venus)==ap_range(a) & round(time_vec_venus)==time_range(t);
-        venus_fluo_mat(t,a) = nanmean(pt_vec_venus(v_filter));
-        venus_ct_mat(t,a) = sum(v_filter);
-        
+        venus_ids = find(v_filter);
+        % GFP
         g_filter = round(100*ap_vec_gfp)==ap_range(a) & round(time_vec_gfp)==time_range(t);
-        gfp_fluo_mat(t,a) = nanmean(pt_vec_gfp(g_filter));
+        g_ids = find(g_filter);
+        for n = 1:nBoots
+            if numel(venus_ids) >= 10
+                boot_ids_v = randsample(venus_ids,numel(venus_ids),true);
+                venus_fluo_array(t,a,n) = nanmean(pt_vec_venus(boot_ids_v));            
+            end                
+            if numel(g_ids) >= 10      
+                boot_ids_g = randsample(g_ids,numel(g_ids),true);
+                gfp_fluo_array(t,a,n) = nanmean(pt_vec_gfp(g_filter));      
+            end
+        end
+        venus_ct_mat(t,a) = sum(v_filter);
         gfp_ct_mat(t,a) = sum(g_filter);
     end
 end
-%%
+% mean and se
+venus_fluo_mean = nanmean(venus_fluo_array,3);
+venus_fluo_ste = nanstd(venus_fluo_array,[],3);
+
+gfp_fluo_mean = nanmean(gfp_fluo_array,3);
+gfp_fluo_ste = nanstd(gfp_fluo_array,[],3);
+
+% compare Bcd and Venus intensities
 close all
 xcal_fig = figure;
 colormap(cmap)
-scatter(venus_fluo_mat(:),gfp_fluo_mat(:),20,time_mat(:),'filled')
+scatter(venus_fluo_mean(:),gfp_fluo_mean(:),20,time_mat(:),'filled')
 grid on 
 h = colorbar;
 xlabel('Bcd-Venus intensity (au)')
@@ -203,30 +224,127 @@ set(gca,'FontSize',14)
 axis([0 .4 0 .4])
 saveas(xcal_fig,[FigPath 'venus_gfp_xcal_scatter.png'])
 
-
-% 
-
 %% Compare to Gregor Data
-
+close all
 % obtain estimate as function of AP
 ap_vec_bcd = 100*bcd_data_clean.AP;
 ap_vec_bkg = 100*bkg_data_clean.AP;
-bcd_nM_raw = interp1(ap_vec_bcd,bcd_data_clean.nM,ap_range);
-bkg_nM_raw = interp1(ap_vec_bkg,bkg_data_clean.nM,ap_range);
+bcd_nM_p = polyfit(ap_vec_bcd,bcd_data_clean.nM,3);
+bcd_nM_raw = polyval(bcd_nM_p,ap_range);
+bkg_nM_p = polyfit(ap_vec_bkg,bkg_data_clean.nM,3);
+bkg_nM_raw = polyval(bkg_nM_p,ap_range);
 
 bcd_nM_vec = bcd_nM_raw - bkg_nM_raw;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%     Venus     %%%%%%%%%%%%%%%%
+ven_factor = 2/3; % account for fact that Bcd-Venus transgene drives lower-than-endogenous-levels
+bcd_nM_long = linspace(0,max(bcd_nM_vec));
 % pull Bcd-Venus data at t=15
-bcd_venus_vec = venus_fluo_mat(time_range==15,:);
+bcd_venus_mean_vec = venus_fluo_mean(time_range==15,:);
+bcd_venus_ste_vec = venus_fluo_ste(time_range==15,:);
+% perform simple linear regression
+md_venus = fitlm(bcd_nM_vec, ven_factor*bcd_venus_mean_vec,'Intercept',false);
+venus_au_per_nM = md_venus.Coefficients.Estimate(1);
+venus_au_offset = 0;%md_venus.Coefficients.Estimate(1);
+md_pd_trend_venus = venus_au_offset + venus_au_per_nM*bcd_nM_long;
 
-md = fitlm(bcd_nM_vec, bcd_venus_vec);
+% make fit figure
+venus_cal_fig = figure;
+hold on
+plot(ven_factor*bcd_nM_long,md_pd_trend_venus,'Color','black');
+errorbar(ven_factor*bcd_nM_vec,ven_factor*bcd_venus_mean_vec,bcd_venus_ste_vec,'.','Color','black','CapSize',0);
+scatter(ven_factor*bcd_nM_vec,ven_factor*bcd_venus_mean_vec,20,'MarkerFaceColor',cmap(10,:),'MarkerEdgeAlpha',0);
+% set axis labels etc
+xlabel('[Bcd] (nM)')
+ylabel('Bcd-Venus intensity (au per pixel)')
+grid on
+set(gca,'Fontsize',14)
+xlim([0 35])
+ylim([0 .35])
+saveas(venus_cal_fig,[FigPath 'venus_calibration_scatter.png'])
 
-% calculate confocal volume 
-rxy = .61*510e-9/1.4;
-rz = 2*1.5*510e-9/1.4;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%     GFP     %%%%%%%%%%%%%%%%%%%
+
+% pull Bcd-GFP data at t=15
+bcd_gfp_mean_vec = gfp_fluo_mean(time_range==15,:);
+bcd_gfp_ste_vec = gfp_fluo_ste(time_range==15,:);
+
+% perform simple linear regression
+md_gfp = fitlm(bcd_nM_vec, bcd_gfp_mean_vec);%,'Intercept',false);
+gfp_au_per_nM = md_gfp.Coefficients.Estimate(2);
+gfp_au_offset = md_gfp.Coefficients.Estimate(1);
+md_pd_trend_gfp = gfp_au_offset + gfp_au_per_nM*bcd_nM_long;
+
+% make fit figure
+gfp_cal_fig = figure;
+hold on
+plot(bcd_nM_long,md_pd_trend_gfp,'Color','black');
+errorbar(bcd_nM_vec,bcd_gfp_mean_vec,bcd_gfp_ste_vec,'.','Color','black','CapSize',0);
+scatter(bcd_nM_vec,bcd_gfp_mean_vec,20,'MarkerFaceColor',cmap(end,:),'MarkerEdgeAlpha',0);
+% set axis labels etc
+xlabel('[Bcd] (nM)')
+ylabel('Bcd-GFP intensity (au per pixel)')
+xlim([0 35])
+ylim([0 .35])
+grid on
+set(gca,'Fontsize',14)
+saveas(gfp_cal_fig,[FigPath 'gfp_calibration_scatter.png'])
+
+% calculate conversion factor
 % kappa = 2.33 * 1.5 / 1.4;
 VoxelSize = PixelSize^2 * .5;
 micronLiter = 1e-15;
 Nmol = 6.022e23;
 
-20 * VoxelSize * 
+nM_to_mol = Nmol * 1e-9 * VoxelSize / 1e15;
+
+% replot with N_mol per pixel
+venus_cal_fig = figure;
+hold on
+plot(ven_factor*bcd_nM_long*nM_to_mol,md_pd_trend_venus,'Color','black');
+errorbar(ven_factor*bcd_nM_vec*nM_to_mol,ven_factor*bcd_venus_mean_vec,bcd_venus_ste_vec,'.','Color','black','CapSize',0);
+scatter(ven_factor*bcd_nM_vec*nM_to_mol,ven_factor*bcd_venus_mean_vec,20,'MarkerFaceColor',cmap(10,:),'MarkerEdgeAlpha',0);
+% set axis labels etc
+xlabel('Bcd-Venus molecules per pixel')
+ylabel('Bcd-Venus intensity (au per pixel)')
+grid on
+set(gca,'Fontsize',14)
+% xlim([0 35])
+ylim([0 .35])
+saveas(venus_cal_fig,[FigPath 'venus_cal_nmol_scatter.png'])
+
+
+gfp_cal_fig = figure;
+hold on
+plot(nM_to_mol*bcd_nM_long,md_pd_trend_gfp,'Color','black');
+errorbar(nM_to_mol*bcd_nM_vec,bcd_gfp_mean_vec,bcd_gfp_ste_vec,'.','Color','black','CapSize',0);
+scatter(nM_to_mol*bcd_nM_vec,bcd_gfp_mean_vec,20,'MarkerFaceColor',cmap(end,:),'MarkerEdgeAlpha',0);
+% set axis labels etc
+xlabel('Bcd-GFP molecules per pixel')
+ylabel('Bcd-GFP intensity (au per pixel)')
+% xlim([0 35])
+ylim([0 .35])
+grid on
+set(gca,'Fontsize',14)
+saveas(gfp_cal_fig,[FigPath 'gfp_calnmol_scatter.png'])
+
+%% save calibration info
+% basic parameters
+abs_cal_struct = struct;
+abs_cal_struct.PixelSize = PixelSize;
+abs_cal_struct.zStep = 0.5;
+abs_cal_struct.VoxelSize = VoxelSize;
+abs_cal_struct.Power = 7;
+% cal vales
+abs_cal_struct.venus_au_per_nM = venus_au_per_nM;
+abs_cal_struct.venus_au_per_molecule = venus_au_per_nM/nM_to_mol;
+abs_cal_struct.venus_au_offset = venus_au_offset;
+
+abs_cal_struct.gfp_au_per_nM = venus_au_per_nM;
+abs_cal_struct.gfp_au_per_molecule = venus_au_per_nM/nM_to_mol;
+abs_cal_struct.venus_au_offset = venus_au_offset;
+
 
