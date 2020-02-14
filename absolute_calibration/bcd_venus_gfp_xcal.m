@@ -229,6 +229,7 @@ close all
 % obtain estimate as function of AP
 ap_vec_bcd = 100*bcd_data_clean.AP;
 ap_vec_bkg = 100*bkg_data_clean.AP;
+bcd_set_vec = bcd_data_clean.setID;
 bcd_nM_p = polyfit(ap_vec_bcd,bcd_data_clean.nM,3);
 bcd_nM_raw = polyval(bcd_nM_p,ap_range);
 bkg_nM_p = polyfit(ap_vec_bkg,bkg_data_clean.nM,3);
@@ -330,6 +331,20 @@ ylim([0 .35])
 grid on
 set(gca,'Fontsize',14)
 saveas(gfp_cal_fig,[FigPath 'gfp_calnmol_scatter.png'])
+
+
+gregor_data_fig = figure;
+hold on
+scatter(100*bcd_data_clean.AP(bcd_set_vec==1),bcd_data_clean.nM(bcd_set_vec==1),30,'MarkerFaceColor',cmap(end,:),'MarkerEdgeAlpha',0);
+scatter(100*bcd_data_clean.AP(bcd_set_vec==2),bcd_data_clean.nM(bcd_set_vec==2),30,'MarkerFaceColor',cmap(1,:),'MarkerEdgeAlpha',0);
+scatter(100*bkg_data_clean.AP,bkg_data_clean.nM,30,'MarkerFaceColor','black','MarkerEdgeAlpha',0);
+% set axis labels etc
+xlabel('% embryo length')
+ylabel('[Bcd]_{nuc} (nM)')
+ylim([0 65])
+grid on
+set(gca,'Fontsize',14)
+saveas(gregor_data_fig,[FigPath 'gregor_data_scatter.png'])
 
 %% save calibration info
 % basic parameters

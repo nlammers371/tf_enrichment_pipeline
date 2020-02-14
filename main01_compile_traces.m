@@ -33,6 +33,7 @@ pctSparsity = 50;
 two_spot_flag = contains(DropboxTab, '2spot');
 min_time = 0*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
+calculatePSF = true;
 project = DropboxTab;
 for i = 1:numel(varargin)
     if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
@@ -133,7 +134,7 @@ for i = 1:length(cp_filenames)
         traces_raw = traces_raw{1};
     end
     %%%%% Basic data characteristics %%%%%%
-    frames_raw = 1:length(time_raw); % Frame list       
+    frames_raw = 1:length(time_raw); % Frame list 
     % find index for first frame
     first_frame = max([1, processed_data.(['nc' num2str(firstNC)])]); 
     % filter trace mat and time
@@ -301,7 +302,7 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).yPosParticle(nc_sp_ft1) = cp_particles(j).yPos(nc_sp_ft2);   
         s_cells(nc_ind).zPosParticle(nc_sp_ft1) = cp_particles(j).zPos(nc_sp_ft2);
         if ap_flag
-            s_cells(nc_ind).APPosParticle(nc_sp_ft1) = cp_particles(j).APpos(nc_sp_ft2)*100;
+            s_cells(nc_ind).APPosParticle(nc_sp_ft1) = cp_particles(j).APposParticle(nc_sp_ft2)*100;
         end
         % 3D info
         if threeD_flag
@@ -379,7 +380,9 @@ end
 % save
 save(nucleus_name ,'nucleus_struct') 
 
-disp('calculating psf dims...')
-calculate_average_psf(project,DropboxFolder);
+if calculatePSF
+    disp('calculating psf dims...')
+    calculate_average_psf(project,DropboxFolder);
+end
 
 disp('done.')

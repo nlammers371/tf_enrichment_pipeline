@@ -424,8 +424,7 @@ for i = 1:size(set_frame_array,1)
         % Take average across all pixels within 1.5um of nuclues center 
         dist_mat = bwdist(~spot_nc_mask);        
         mf_samp_mask = dist_mat*PixelSize >= mf_samp_rad;              
-        mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;        
-        
+        mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;           
         % Edge sampling 
         spot_edge_dist = nc_dist_frame(y_spot,x_spot);        
         nc_edge_dist_vec = nc_dist_frame(spot_nc_mask);
@@ -533,9 +532,14 @@ for i = 1:size(set_frame_array,1)
                 new_index = randsample(1:numel(x_pos_vec),1,true,wt_vec);
                 xc = x_pos_vec(new_index);
                 yc = y_pos_vec(new_index);
-                ec = nc_edge_dist_vec(new_index);             
+                ec = nc_edge_dist_vec(new_index);       
             else
-                error('This should not happen')
+                new_index = randsample(1:numel(x_pos_vec),1,true);
+                xc = x_pos_vec(new_index);
+                yc = y_pos_vec(new_index);
+                ec = nc_edge_dist_vec(new_index);  
+%             else
+%                 error('This should not happen')
             end
         end       
         % draw samples
