@@ -4,7 +4,7 @@ clear
 close all
 addpath('utilities')
 
-distLim = 0.8; % min distance of spot from edge permitted (um)
+distLim = 2; % min distance of spot from edge permitted (um)
 colormap_heat = viridis(128); %specifies the colormap used to make heatmaps
 
 rawEnrichHeatmap_ub = 1.75;
@@ -18,10 +18,17 @@ project = 'Dl-Ven_snaBAC-mCh';
 DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
 
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
-FigPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\PipelineOutput\' project '\'];
+% FigPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\PipelineOutput\' project '\'];
+FigPath = ['E:\Meghan\Dropbox' '\LocalEnrichmentFigures\_paper_figures\averaging_movie\'];
 
 writePath = [FigPath '\avg_snips_movie_frames\'];
 mkdir(writePath)
+
+avgTifPath = [FigPath '\avg_movie_tifs\'];
+mkdir(avgTifPath);
+
+singleTifPath = [FigPath '\single_movie_tifs\'];
+mkdir(singleTifPath);
 
 % paperFigPath = [figPath 'paperFigs/'];
 % basicFigPath = [figPath 'basicFigs/'];
@@ -70,11 +77,13 @@ null_protein_snips_mixed = null_protein_snips_reflected(:,:,rand_order_vec);   %
 spot_protein_full_mean = nanmean(spot_protein_snips_mixed,3);
 null_protein_full_mean = nanmean(null_protein_snips_mixed,3);
 
-%% Make Averaged Heatmap Movie
-
-% Set movie parameters
-frame_steps = [1 5 10 20 30 40 50 75 100 150 200 250 300 400 500 600 700 800 900 1000];
-% frame_steps = unique(round(logspace(0,2,50)*8));    %movie with 5 to 800 frames averaged
+% %% Make Averaged Heatmap Movie
+% 
+% % Set movie parameters
+% max_frame_steps = size(spot_protein_snips_mixed, 3);
+% % frame_steps = [1 5 10 20 30 40 50 75 100 150 200 250 300 400 500 600 700 800 900 1000];
+% frame_steps = [1 5 10 20 30 40 50 75 100 150 200 250 300 400 500 600 700 800 900 1000 5000 10000 50000 max_frame_steps];
+% % frame_steps = unique(round(logspace(0,2,50)*8));    %movie with 5 to 800 frames averaged
 visibleOn = false; % Don't want to display figures as they're made
 
 clabel_raw = 'Dorsal total protein (au)';
@@ -83,46 +92,47 @@ title_raw = 'Dorsal at {\itsnail} - total protein (au)';
 % title_rel = 'Dorsal at {\itsnail} - relative enrichment';
 % clabel_absDiff = 'Dorsal absolute enrichment (au)';
 % title_absDiff = 'Dorsal at {\itsnail} - absolute enrichment (au)';
-
-% Create & open the video writer with 2 fps
-meanFrameWriter = VideoWriter([writePath 'meanSnips_v2.avi'],'Uncompressed AVI');
-meanFrameWriter.FrameRate = 2;
-open(meanFrameWriter);
-
-for n = 1:numel(frame_steps)  %(end_frame/frame_incr + 1)
-    %
-    % Make averaged frame version of the movie
-    %
-    curr_max_frame = frame_steps(n);%min([frame_incr*n,numel(index_vec)]);
-    mean_frame_raw = nanmean(spot_protein_snips_mixed(:,:,1:curr_max_frame),3);
-    null_mean_frame = nanmean(null_protein_snips_mixed(:,:,1:curr_max_frame),3);
-    mean_frame_rel = mean_frame_raw ./ null_mean_frame; %Relative difference (fold) enrichment
-    mean_frame_absDiff = mean_frame_raw - null_mean_frame;  %Absolute difference enrichment
-    
-    % Make averaged figures for raw enrichment (total protein)
-    temp_fig_raw = makeHeatmapPlots(mean_frame_raw, visibleOn, ...
-                  '', clabel_raw, colormap_heat,PixelSize,...
-                  rawEnrichHeatmap_lb,rawEnrichHeatmap_ub);
-    set(gca,'xcolor','black','ycolor','black')
-    set(gcf,'color','white');
-    text(0.8,1.9,[num2str(frame_steps(n)) ' samples'],'Color','black', ...
-        'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans')
-    % Write the current frame to the movie
-    writeVideo(meanFrameWriter, getframe(gcf));
-    close all
-    
-end
-close(meanFrameWriter);
+% 
+% % Create & open the video writer with 2 fps
+% % meanFrameWriter = VideoWriter([writePath 'meanSnips_v2.avi'],'Uncompressed AVI');
+% % meanFrameWriter.FrameRate = 2;
+% % open(meanFrameWriter);
+% 
+% for n = 1:numel(frame_steps)  %(end_frame/frame_incr + 1)
+%     %
+%     % Make averaged frame version of the movie
+%     %
+%     curr_max_frame = frame_steps(n);%min([frame_incr*n,numel(index_vec)]);
+%     mean_frame_raw = nanmean(spot_protein_snips_mixed(:,:,1:curr_max_frame),3);
+%     null_mean_frame = nanmean(null_protein_snips_mixed(:,:,1:curr_max_frame),3);
+%     mean_frame_rel = mean_frame_raw ./ null_mean_frame; %Relative difference (fold) enrichment
+%     mean_frame_absDiff = mean_frame_raw - null_mean_frame;  %Absolute difference enrichment
+%     
+%     % Make averaged figures for raw enrichment (total protein)
+%     temp_fig_raw = makeHeatmapPlots(mean_frame_raw, visibleOn, ...
+%                   '', clabel_raw, colormap_heat,PixelSize,...
+%                   rawEnrichHeatmap_lb,rawEnrichHeatmap_ub);
+%     set(gca,'xcolor','black','ycolor','black')
+%     set(gcf,'color','white');
+%     text(0.8,1.9,[num2str(frame_steps(n)) ' samples'],'Color','black', ...
+%         'BackgroundColor','white', 'FontSize',15,'FontName','Lucida Sans')
+%     % Write the current frame to the movie
+% %     writeVideo(meanFrameWriter, getframe(gcf));
+%     saveas(gcf,[avgTifPath 'avg_movie_frame_' num2str(curr_max_frame) '.pdf'])
+%     close all
+%     
+% end
+% % close(meanFrameWriter);
 
 %% Make single-frame heatmap movie
-frame_incr = 25;
+frame_incr = 100;
 end_frame = 1000;
 n_frames = ceil(size(spot_protein_snips_mixed,3)/frame_incr);
 
 % Create & open the video writer with 2 fps
-singleFrameWriter = VideoWriter([writePath 'singleFrameSnips.avi'],'Uncompressed AVI');
-singleFrameWriter.FrameRate = 2;
-open(singleFrameWriter);
+% singleFrameWriter = VideoWriter([writePath 'singleFrameSnips.avi'],'Uncompressed AVI');
+% singleFrameWriter.FrameRate = 2;
+% open(singleFrameWriter);
 for n = 1:(end_frame/frame_incr + 1)
     %
     % Make single-frame version of the movie
@@ -135,11 +145,13 @@ for n = 1:(end_frame/frame_incr + 1)
     
     % Make single-frame figures for raw enrichment (total protein)
     fig_raw_single = makeHeatmapPlots(spot_single_frame_raw, visibleOn, ...
-                  '',clabel_raw, colormap_heat,PixelSize,0,4);
+                  '',clabel_raw, colormap_heat,PixelSize,1,3);
     set(gca,'xcolor','black','ycolor','black')
     set(gcf,'color','white');
     % Write the current frame to the movie
-    writeVideo(singleFrameWriter, getframe(gcf));
+    saveas(gcf,[singleTifPath  'single_movie_frame_' num2str(curr_single_frame_raw) '.tif'])
+    saveas(gcf,[singleTifPath  'single_movie_frame_' num2str(curr_single_frame_raw) '.pdf'])
+%     writeVideo(singleFrameWriter, getframe(gcf));
     close all
 end
-close(singleFrameWriter);
+% close(singleFrameWriter);

@@ -142,9 +142,11 @@ for i = 1:length(cp_filenames)
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
     time_clean = time_clean - min(time_clean); % Normalize to start of nc
-    % temporary fix for problematic time vector
+%     if strcmp(cp_filenames{1},'E:\Nick\LivemRNA\Dropbox (Personal)\LocalEnrichmentResults\2020-02-06-Dl_Ven_snaBAC_MCPmCh_F-F-F_Leica_Zoom2_7uW14uW_04/CompiledParticles.mat') %wtf
+%         time_clean = linspace(0,60*45,numel(time_clean));
+%     end
     if strcmp(cp_filenames{i},'E:\Nick\LivemRNA\Dropbox\LocalEnrichmentResults\2020-02-07-Dl_Ven_snaBAC_MCPmCh_F-F-F_Leica_Zoom2_7uW14uW_06/CompiledParticles.mat') %wtf
-        time_clean = linspace(0,max(time_clean),numel(time_clean));
+        time_clean = linspace(0,60*45,numel(time_clean));
     end
     frames_clean = frames_raw(first_frame:end);        
     % get basic frame info
@@ -207,7 +209,7 @@ for i = 1:length(cp_filenames)
             % Add time and set info
             s_cells(e_pass).time = time_clean(ismember(frames_clean,nc_frames));
             if numel(unique(s_cells(e_pass).time))~=numel(s_cells(e_pass).time)
-                error('non-unique time values. Check FrameInfo')
+                error('why?')
             end
             s_cells(e_pass).setID = setID;
             fn = cp_filenames{i}; % Get filename to store in struct  

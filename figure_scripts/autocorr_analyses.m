@@ -48,73 +48,70 @@ window_size = floor(size(hmm_array,2)/2);
 time_axis = (-window_size:window_size)*Tres/60;
 %%
 
-burst_ft_primary = feature_sign_vec_target == 1;%&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>min_burst_len&target_virtual_qc;%...
+burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>min_burst_len;%...
     %& sum(~isnan(spot_array_dt),2)'==31; % filter for rise events
 burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>min_burst_len;% ...
     %& sum(~isnan(biocontrol_array_dt),2)'==31; % filter for rise events
 
 
-n_lags = 2*numel(time_axis)-1;
-xcov_array_target = NaN(sum(burst_ft_primary),n_lags);
-xcov_array_virtual = NaN(sum(burst_ft_primary),n_lags);
-xcov_array_control = NaN(sum(burst_ft_primary),n_lags);
+n_lags = numel(time_axis)*2-1;
+acorr_array_target = NaN(sum(burst_ft_primary),n_lags);
+acorr_array_virtual = NaN(sum(burst_ft_primary),n_lags);
+acorr_array_control = NaN(sum(burst_ft_primary),n_lags);
 target_indices = find(burst_ft_primary);
 control_indices = find(burst_ft_control);
 for t = 1:numel(target_indices)
-    % target
-    hmm_target = hmm_array(target_indices(t),:);
-    hmm_target_v = hmm_target;
+    % target    
     pt_target = spot_array_dt(target_indices(t),:);
     v_target = virtual_array_dt(target_indices(t),:);
     
-    nan_vec = isnan(hmm_target)|isnan(pt_target);
-    nan_vec_v = isnan(hmm_target)|isnan(v_target);
-    
-    hmm_target(nan_vec) = mean(hmm_target(~nan_vec));
+    nan_vec = isnan(pt_target);
+    nan_vec_v = isnan(v_target);
+        
     pt_target(nan_vec) = mean(pt_target(~nan_vec));
     
-    v_target(nan_vec_v) = mean(v_target(~nan_vec_v));
-    hmm_target_v(nan_vec_v) = mean(hmm_target_v(~nan_vec_v));
+    v_target(nan_vec_v) = mean(v_target(~nan_vec_v));    
     
-    xvec = xcov(hmm_target,pt_target)./xcorr(~nan_vec);
-    xvec(isinf(xvec)) = NaN;
-    xcov_array_target(t,:) = xvec;        
+    avec = xcov(pt_target,'coeff');
+    avec(isinf(avec)) = NaN;
+    acorr_array_target(t,:) = avec;        
     
-    xvec_v = xcov(hmm_target_v,v_target)./xcorr(~nan_vec_v);
-    xvec_v(isinf(xvec_v)) = NaN;
-    xcov_array_virtual(t,:) = xvec_v;        
+    avec_v = xcov(v_target,'coeff');
+    avec_v(isinf(avec_v)) = NaN;
+    acorr_array_virtual(t,:) = avec_v;        
 end
 
 % control
-for c = 1:numel(control_indices)
-    hmm_control = biohmm_array(control_indices(c),:);
+for c = 1:numel(control_indices)    
     pt_control = biocontrol_array_dt(control_indices(c),:);
-    nan_vec = isnan(hmm_control)|isnan(pt_control);
-    hmm_control(nan_vec) = mean(hmm_control(~nan_vec));
+    nan_vec = isnan(pt_control);    
     pt_control(nan_vec) = mean(pt_control(~nan_vec));
-    xvec = xcov(hmm_control,pt_control)./xcorr(~nan_vec);
-    xvec(isinf(xvec)) = NaN;
-    xcov_array_control(c,:) = xvec;
+    avec = xcov(pt_control,'coeff');
+    avec(isinf(avec)) = NaN;
+    acorr_array_control(c,:) = avec;
 end
+%%
+acorr_locus_mean = nanmean(acorr_array_target);
+acorr_locus_ste = nanstd(acorr_array_target);
+locus_ub = acorr_locus_mean + acorr_locus_ste;
+locus_ub(numel(time_axis)) = acorr_locus_mean(numel(time_axis));
+locus_lb = acorr_locus_mean - acorr_locus_ste;
+locus_lb(numel(time_axis)) = acorr_locus_mean(numel(time_axis));
 
 cmap1 = brewermap([],'Set2');
-x_axis = [-fliplr(1:30) 0 1:30];
-xcov_fig = figure;
+x_axis = [-fliplr(1:30) 0 1:30]*20/60;
+acorr_fig = figure;
 hold on
-plot(x_axis,nanmean(xcov_array_target),'Color',cmap1(2,:),'LineWidth',1.5);
-plot(x_axis,nanmean(xcov_array_control),'Color',cmap1(6,:),'LineWidth',1.5);
-plot(x_axis,nanmean(xcov_array_virtual),'Color',cmap1(3,:),'LineWidth',1.5);
-xlabel('lags (time steps)')
-ylabel('cross-covariance')
-legend('target locus','control locus','virtual spot')
+fill([x_axis fliplr(x_axis)],[locus_lb fliplr(locus_ub)],cmap1(2,:),'FaceAlpha',.5,'lineWidth',0.001);
+plot(x_axis,acorr_locus_mean,'Color','black','LineWidth',1.5);
+scatter(x_axis,acorr_locus_mean,10,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeAlpha',0);
+% plot(x_axis,nanmean(acorr_array_control),'Color',cmap1(6,:),'LineWidth',1.5);
+plot(x_axis,nanmean(acorr_array_virtual),'Color',cmap1(3,:),'LineWidth',1.5);
+xlabel('lags (minutes)')
+ylabel('autocorrelation')
+% legend('target locus','control locus','virtual spot')
 set(gca,'Fontsize',14)
 grid on
-xlim([-20 20])
-saveas(xcov_fig,[FigPath 'xcov_plot.png'])
+xlim([x_axis(32) 3])
+saveas(acorr_fig,[FigPath 'acorr_plot.png'])
 
-%%
-close all
-test = rand(1,100);
-c1 = xcov(test(11:100),test(1:90));
-plot(c1)
-grid on

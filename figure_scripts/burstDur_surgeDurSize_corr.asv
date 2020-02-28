@@ -258,52 +258,31 @@ amp_surgeMagRate60s_mean = nanmean(burst_amp_surgeMagRate60s_boots);
 amp_surgeMagRate60s_ste= nanstd(burst_amp_surgeMagRate60s_boots);
 
 % Plot results
-%Fixed 2 min, raw
 burstAmp_vs_surgeMag_fig = figure(3);
 burst_amp_range_auPerMin = burst_amp_range * (1/time_step);
 hold on
 e_2min = errorbar(burst_amp_range_auPerMin,amp_surgeMag2min_mean,amp_surgeMag2min_ste,'Color','black','LineWidth',1.5);
 e_2min.CapSize = 0;
 s_2min = scatter(burst_amp_range_auPerMin,amp_surgeMag2min_mean,75,'filled','MarkerFaceColor',PBoC_red);
-p = plot(0,0);
-box on
-xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
-ylim([-0.5 1.5])    %hard-coded to match amp and dur graphs
-yticks([-0.5 0.5 1.5])
-xlabel('burst amplitude (au/min)')
-ylabel('Dorsal surge magnitude (au)')
-% legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
-set(gca,'FontSize',14)
-StandardFigure(p,gca)
-set(gca,'Color',[228 220 209]/255) 
-
-saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag_2min' '.pdf'])
-saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag_2min' '.tif'])
-
-%Fixed 2 min window, zeroed to start
-burstAmp_vs_surgeMag_zeroed_fig = figure(4);
-burst_amp_range_auPerMin = burst_amp_range * (1/time_step);
-hold on
+%Fixed 2min, zeroed to start
 e_2minZeroed = errorbar(burst_amp_range_auPerMin,amp_surgeMag2minZeroed_mean,amp_surgeMag2minZeroed_ste,'Color','black','LineWidth',1.5);
 e_2minZeroed.CapSize = 0;
 s_2minZeroed = scatter(burst_amp_range_auPerMin,amp_surgeMag2minZeroed_mean,75,'filled','MarkerFaceColor',PBoC_blue);
 p = plot(0,0);
 box on
 xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
-ylim([0 2 ])    %hard-coded to match amp and dur graphs
-yticks([0 1 2])
 xlabel('burst amplitude (au/min)')
 ylabel('Dorsal surge magnitude (au)')
-% legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
+legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
 set(gca,'Color',[228 220 209]/255) 
 
-saveas(burstAmp_vs_surgeMag_zeroed_fig, [FigPath 'burstAmp_vs_surgeMag_2minZeroed' '.pdf'])
-saveas(burstAmp_vs_surgeMag_zeroed_fig, [FigPath 'burstAmp_vs_surgeMag_2minZeroed' '.tif'])
+saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag' '.pdf'])
+saveas(burstAmp_vs_surgeMag_fig, [FigPath 'burstAmp_vs_surgeMag' '.tif'])
 
 
-burstAmp_vs_surgeMagActBurstDur_fig = figure(5);
+burstAmp_vs_surgeMagActBurstDur_fig = figure(4);
 hold on
 %Actual burst duration
 e_ActBurstDur = errorbar(burst_amp_range_auPerMin,amp_surgeMagActBurstDur_mean,amp_surgeMagActBurstDur_ste,'Color','black','LineWidth',1.5);
@@ -312,10 +291,9 @@ s_ActBurstDur = scatter(burst_amp_range_auPerMin,amp_surgeMagActBurstDur_mean,75
 p = plot(0,0);
 box on
 xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
-ylim([0 0.2])     %hard-coded amp and dur graphs match
-yticks([0 0.1 0.2])
+ylim([0 2])     %hard-coded t
 xlabel('burst amplitude (au/min)')
-ylabel('Dorsal surge magnitude (au/min)')
+ylabel('Dorsal surge magnitude (au)')
 legend(s_ActBurstDur, 'Actual burst dur','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
@@ -326,7 +304,7 @@ saveas(burstAmp_vs_surgeMagActBurstDur_fig, [FigPath 'burstAmp_vs_surgeMagActBur
 
 
 % Plot surge mag = rate at start results
-burstAmp_vs_surgeRate_fig = figure(6);
+burstAmp_vs_surgeRate_fig = figure(5);
 burst_amp_range_auPerMin = burst_amp_range * (1/time_step);
 hold on
 %Rate over first 20s
@@ -344,8 +322,6 @@ sca_60s = scatter(burst_amp_range_auPerMin,amp_surgeMagRate60s_mean,75,'filled',
 p = plot(0,0);
 box on
 xlim([0.95*burst_amp_range_auPerMin(1)  burst_amp_range_auPerMin(end)+burst_amp_range_auPerMin(1)-0.95*burst_amp_range_auPerMin(1)]);
-ylim([-0.01 0.06])      %hard-coded amp and dur graphs match
-yticks([0 0.03 0.06])
 xlabel('burst amplitude (au/min)')
 ylabel('Dorsal surge rate (au/min)')
 legend([sca_20s sca_40s sca_60s],'20s', '40s','60s','Location','northwest')
@@ -433,50 +409,31 @@ dur_surgeMagRate40s_ste= nanstd(burst_dur_surgeMagRate40s_boots);
 dur_surgeMagRate60s_mean = nanmean(burst_dur_surgeMagRate60s_boots);
 dur_surgeMagRate60s_ste= nanstd(burst_dur_surgeMagRate60s_boots);
 
-% Fixed 2 min, raw
-burstDur_vs_surgeMag_fig = figure(7);
+burstDur_vs_surgeMag_fig = figure(6);
 hold on
+% Fixed 2 min, raw
 e_2min = errorbar(burst_dur_range_inMin,dur_surgeMag2min_mean,dur_surgeMag2min_ste,'Color','black','LineWidth',1.5);
 e_2min.CapSize = 0;
 s_2min = scatter(burst_dur_range_inMin,dur_surgeMag2min_mean,75,'filled','MarkerFaceColor',PBoC_red);
-p = plot(0,0);
-box on
-xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
-ylim([-0.5 1.5])    %hard-coded to match amp and dur graphs
-yticks([-0.5 0.5 1.5])
-xlabel('burst duration (min)')
-ylabel('Dorsal surge magnitude (au)')
-% legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
-set(gca,'FontSize',14)
-StandardFigure(p,gca)
-set(gca,'Color',[228 220 209]/255)
-
-saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur_2min' '.pdf'])
-saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur_2min' '.tif'])
-
 % Fixed 2min, zeroed to start
-burstDur_vs_surgeMag_zeroed_fig = figure(8);
-hold on
 e_2minZeroed = errorbar(burst_dur_range_inMin,dur_surgeMag2minZeroed_mean,dur_surgeMag2minZeroed_ste,'Color','black','LineWidth',1.5);
 e_2minZeroed.CapSize = 0;
 s_2minZeroed = scatter(burst_dur_range_inMin,dur_surgeMag2minZeroed_mean,75,'filled','MarkerFaceColor',PBoC_blue);
 p = plot(0,0);
 box on
 xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
-ylim([0 2 ])    %hard-coded to match amp and dur graphs
-yticks([0 1 2])
 xlabel('burst duration (min)')
 ylabel('Dorsal surge magnitude (au)')
-% legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
+legend([s_2min s_2minZeroed],'2min surge dur','2min surge dur, zeroed','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
 set(gca,'Color',[228 220 209]/255)
 
-saveas(burstDur_vs_surgeMag_zeroed_fig, [FigPath 'burstDur_vs_surgeDur_2minZeroed' '.pdf'])
-saveas(burstDur_vs_surgeMag_zeroed_fig, [FigPath 'burstDur_vs_surgeDur_2minZeroed' '.tif'])
+saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur' '.pdf'])
+saveas(burstDur_vs_surgeMag_fig, [FigPath 'burstDur_vs_surgeDur' '.tif'])
 
 
-burstDur_vs_surgeMagActBurstDur_fig = figure(9);
+burstDur_vs_surgeMagActBurstDur_fig = figure(7);
 hold on
 % Actual burst duration
 e_ActBurstDur = errorbar(burst_dur_range_inMin,dur_surgeMagActBurstDur_mean,dur_surgeMagActBurstDur_ste,'Color','black','LineWidth',1.5);
@@ -485,8 +442,7 @@ s_ActBurstDur = scatter(burst_dur_range_inMin,dur_surgeMagActBurstDur_mean,75,'f
 p = plot(0,0);
 box on
 xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
-ylim([0 0.2])     %hard-coded so amp and dur graphs match
-yticks([0 0.1 0.2])
+ylim([0 2])     %hard-coded so amp and dur graphs match
 xlabel('burst duration (min)')
 ylabel('Dorsal surge magnitude (au/min)')
 legend(s_ActBurstDur,'Total, actual burst dur','Location','northwest')
@@ -498,7 +454,7 @@ saveas(burstDur_vs_surgeMagActBurstDur_fig, [FigPath 'burstDur_vs_surgeMagActBur
 saveas(burstDur_vs_surgeMagActBurstDur_fig, [FigPath 'burstDur_vs_surgeMagActBurstDur' '.tif'])
 
 
-burstDur_vs_surgeRate_fig = figure(10);
+burstDur_vs_surgeRate_fig = figure(8);
 hold on
 % 20s
 e_20s = errorbar(burst_dur_range_inMin,dur_surgeMagRate20s_mean,dur_surgeMagRate20s_ste,'Color','black','LineWidth',1.5);
@@ -515,11 +471,9 @@ s_60s = scatter(burst_dur_range_inMin,dur_surgeMagRate60s_mean,75,'MarkerFaceCol
 p = plot(0,0);
 box on
 xlim([.95*burst_dur_range_inMin(1)  burst_dur_range_inMin(end)+burst_dur_range_inMin(1)-.95*burst_dur_range_inMin(1)]);
-ylim([-0.01 0.06])      %hard-coded amp and dur graphs match
-yticks([0 0.03 0.06])
 xlabel('burst duration (min)')
 ylabel('Dorsal surge rate (au/min)')
-legend([s_20s s_40s s_60s],'first 20 sec', 'first 40 sec','first 60 sec','Location','northwest')
+legend([s_20s s_40s s_60s],'20s', '40s','60s','Location','northwest')
 set(gca,'FontSize',14)
 StandardFigure(p,gca)
 set(gca,'Color',[228 220 209]/255)

@@ -33,7 +33,7 @@ segmentNuclei = 0;
 use_psf_fit_dims = false; % if true, use fits from PSF fitting
 xy_sigma_um = 0.25;% um 
 z_sigma_um = 0.6; % um
-
+ignoreQC = false;
 rawPath = 'E:\LocalEnrichment\Data\PreProcessedData\';
 proteinChannel = 1;
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
@@ -48,7 +48,9 @@ end
 
 % Load trace data
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
-load([DataPath '/psf_dims.mat'],'psf_dims')
+if use_psf_fit_dims
+    load([DataPath '/psf_dims.mat'],'psf_dims')
+end
 load([DataPath '/set_key.mat'],'set_key')
 snipPath = [DataPath '/qc_images/'];
 refPath = [DataPath '/refFrames/'];
@@ -115,6 +117,10 @@ for i = 1:numel(nucleus_struct)
     sub_ind_ref = [sub_ind_ref 1:numel(nucleus_struct(i).frames)];
 end
 
+% option to override qc 
+if ignoreQC 
+    pt_qc_ref = true(size(pt_qc_ref));
+end
 %%%%%%%%%%%%%%%%%%%%
 %%% Set size parameters
 set_vec = [nucleus_struct.setID];
@@ -421,8 +427,7 @@ for i = 1:size(set_frame_array,1)
         % Take average across all pixels within 1.5um of nuclues center 
         dist_mat = bwdist(~spot_nc_mask);        
         mf_samp_mask = dist_mat*PixelSize >= mf_samp_rad;              
-        mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;        
-        
+        mf_null_protein_vec(j) = nanmean(protein_frame(mf_samp_mask));% / voxel_size;           
         % Edge sampling 
         spot_edge_dist = nc_dist_frame(y_spot,x_spot);        
         nc_edge_dist_vec = nc_dist_frame(spot_nc_mask);
@@ -519,7 +524,7 @@ for i = 1:size(set_frame_array,1)
             drControl = double(sqrt((old_x-x_pos_vec).^2+(old_y-y_pos_vec).^2));   
 %             edge_dev_vec = spot_edge_dist-nc_edge_dist_vec;
             % calculate weights
-            wt_vec = exp(-.5*((drControl/(n_frames*driftTol/PixelSize)).^2));%+((edge_dev_vec)/roi_spot).^2));
+            wt_vec = exp(-.5*((drControl/double((n_frames*driftTol/PixelSize))).^2));%+((edge_dev_vec)/roi_spot).^2));
             % anything too close to locus or with an edge distance too different from locus is excluded
             wt_vec(spot_sep_vec<minSampleSep|nc_edge_dist_vec < minEdgeSep) = 0;
             % draw sample
@@ -530,9 +535,14 @@ for i = 1:size(set_frame_array,1)
                 new_index = randsample(1:numel(x_pos_vec),1,true,wt_vec);
                 xc = x_pos_vec(new_index);
                 yc = y_pos_vec(new_index);
-                ec = nc_edge_dist_vec(new_index);             
+                ec = nc_edge_dist_vec(new_index);       
             else
-                error('This should not happen')
+                new_index = randsample(1:numel(x_pos_vec),1,true);
+                xc = x_pos_vec(new_index);
+                yc = y_pos_vec(new_index);
+                ec = nc_edge_dist_vec(new_index);  
+%             else
+%                 error('This should not happen')
             end
         end       
         % draw samples

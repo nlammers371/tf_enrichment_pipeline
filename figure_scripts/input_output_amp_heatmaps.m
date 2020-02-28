@@ -72,13 +72,14 @@ burst_amp_dur_hm.Name = 'target spot burst rise hmm';
 pt_hm_cm = flipud(brewermap([],'RdBu'));
 colormap(pt_hm_cm)
 pcolor(flipud(burst_size_spot_mean(:,xlim_lb:xlim_ub)))
+axis equal tight
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
 ylabel('{\itsna} burst amplitude (au/min)')
 set(gca,'ytick',3:3:numel(amp_range),'yticklabels',round(3*fliplr(amp_range(3:3:numel(amp_range))),1))    %***HARD-CODED***
 c = colorbar;
-caxis([-.25 .25])
-c.Ticks = round(linspace(-.25,.25,11),2);
+caxis([-.28 .28])
+c.Ticks = round(linspace(-.28,.28,5),2);
 ylabel(c, 'Dorsal enrichment (au)','FontSize',14)
 set(gca,'FontSize', 14);
 saveas(burst_amp_dur_hm, [FigPath 'burst_amp_hm_protein.tif'])
@@ -88,15 +89,16 @@ saveas(burst_amp_dur_hm, [FigPath 'burst_amp_hm_protein.pdf'])
 % transcription channel
 hmm_rise_dur_hm = figure;
 hmm_rise_dur_hm.Name = 'target spot burst rise hmm';
-tr_hm_cm = flipud(brewermap([],'RdGy'));
-colormap(pt_hm_cm)
+tr_hm_cm = brewermap([],'Greys');
+colormap(tr_hm_cm)
 pcolor(flipud(burst_size_hmm_mean(:,xlim_lb:xlim_ub)))
+axis equal tight
 xlabel('time from burst start (minutes)')
 set(gca,'xtick',1:3:(xlim_ub - xlim_lb + 1),'xticklabels',[time_lb:time_ub])
 ylabel('{\itsna} burst amplitude (au/min)')
 set(gca,'ytick',3:3:numel(amp_range),'yticklabels',round(3*fliplr(amp_range(3:3:numel(amp_range))),1))    %***HARD-CODED***
 c = colorbar;
-caxis([0 1])
+caxis([0 1.5])
 ylabel(c, '{\itsna} transcriptional activity (au)','FontSize',14)
 set(gca,'FontSize', 14);
 saveas(hmm_rise_dur_hm, [FigPath 'burst_rise_hm_hmm.tif'])

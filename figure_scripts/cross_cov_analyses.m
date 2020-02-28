@@ -111,6 +111,7 @@ set(gca,'Fontsize',14)
 grid on
 xlim([-20 20])
 saveas(xcov_fig,[FigPath 'xcov_plot.png'])
+saveas(xcov_fig,[FigPath 'xcov_plot.pdf'])
 
 %%
 close all

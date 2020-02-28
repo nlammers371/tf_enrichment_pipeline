@@ -29,16 +29,19 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_slow';
+project = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
 DataPath = '../../dat/tf_enrichment/';
-% DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\Dl-Ven_snaBAC-mCh_slow\';
+% DataPath = ['E:\Nick\LivemRNA\Dropbox\ProcessedEnrichmentData\' project '\'];
 % default path to model scripts
 modelPath = './utilities';
 savio = 1;
 K = 3;
 w = 7;
+fluo3D_flag = true;
+automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
+n_protein_bins = 25; % ignored if automatic_binning is true
 % minDp = 10;
 if protein_bin_flag
     nBoots = 2; % will run multiple instances on savio
@@ -46,12 +49,10 @@ else
     nBoots = 5;
 end
 
-n_protein_bins = 15;
-sampleSize = 8000;
+n_protein_bins = 20;
+SampleSize = 5000;
 maxWorkers = 24;
-
 %%%%% These options generally remain fixed 
-clipped = 1; % if 0 use "full" trace with leading and trailing 0's
 n_localEM = 25; % set num local runs
 n_steps_max = 500; % set max steps per inference
 eps = 1e-4; % set convergence criteria
@@ -112,8 +113,10 @@ Tres = analysis_struct(1).TresInterp; % Time Resolution
 trace_struct_filtered = [];
 for i = 1:length(analysis_struct)
     temp = struct;
+    if fluo3D_flag
+        fluo = analysis_struct(i).fluo3_interp;
     time = analysis_struct(i).time_interp;
-    fluo = analysis_struct(i).fluo_interp;
+    
     if sum(~isnan(fluo)) >= 2 % NL: this is a bit redundant. Leaving for now
         temp.fluo = fluo;
         temp.time = time;
@@ -121,13 +124,19 @@ for i = 1:length(analysis_struct)
             temp.mf_protein = nanmean(analysis_struct(i).mf_null_protein_vec);
         end
         temp.qc_flag = analysis_struct(i).qc_flag;
-        temp.ParticleID = analysis_struct(i).ParticleID;        
+        temp.ParticleID = analysis_struct(i).ParticleID;  
+        temp.N = numel(fluo);
         trace_struct_filtered = [trace_struct_filtered temp];
     end
 end
 trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1);
 
 if protein_bin_flag 
+    % estimate number of bins 
+    if automatic_binning
+        nTotal = sum([trace_struct_filtered.N]);
+        n_protein_bins = ceil(nTotal/SampleSize);
+    end
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
@@ -149,7 +158,7 @@ if protein_bin_flag
 end
 
 %%% Conduct Inference
-rng('shuffle'); 
+rng('shuffle'); % ensure we don't repeat 
 % iterate through designated groups
 for t = 1:length(iter_list)
     iter_filter = iter_ref_index == t;%ismember(iter_ref_index,[t-1, t, t+1]);
@@ -182,10 +191,10 @@ for t = 1:length(iter_list)
                 ndp = 0;    
                 sample_ids = [];                    
                 %Reset bootstrap size to be on order of set size for small bins
-                if set_size < sampleSize
-                    sampleSize = ceil(set_size/100)*100;
+                if set_size < SampleSize
+                    SampleSize = ceil(set_size/100)*100;
                 end
-                while ndp < sampleSize
+                while ndp < SampleSize
                     tr_id = randsample(sample_index,1);
                     sample_ids = [sample_ids tr_id];
                     ndp = ndp + length(inference_set(tr_id).time);
@@ -265,8 +274,7 @@ for t = 1:length(iter_list)
                 output.protein_bin_edges = mf_prctile_vec;
             end
             output.dp_bootstrap_flag = dpBootstrap;   
-            output.iter_id = b;            
-            output.clipped = clipped;            
+            output.iter_id = b;                        
             output.particle_ids = sample_particles;
             if dpBootstrap                                    
                 output.N = ndp;
@@ -274,7 +282,7 @@ for t = 1:length(iter_list)
             output.w = w;
             output.alpha = alpha;
             output.deltaT = Tres; 
-            output.sampleSize = sampleSize; 
+            output.sampleSize = SampleSize; 
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;

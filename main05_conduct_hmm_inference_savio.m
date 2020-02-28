@@ -29,33 +29,42 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_v3';
-DataPath = '../../dat/tf_enrichment/';
-% DataPath = 'E:\Nick\LivemRNA\Dropbox (Personal)\ProcessedEnrichmentData\' project '\';
+project = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
 % default path to model scripts
 modelPath = './utilities';
+
+% INFERENCE PARAMETERS
 savio = 1;
-K = 3;
-w = 7;
+fluo3D_flag = true;
+automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
-% minDp = 10;
-if protein_bin_flag
-    nBoots = 2; % will run multiple instances on savio
-else
-    nBoots = 5;
-end
-
-n_protein_bins = 20;
-sampleSize = 8000;
+n_protein_bins = 25; % ignored if automatic_binning is true
+SampleSize = 5000;
 maxWorkers = 24;
-
 %%%%% These options generally remain fixed 
 n_localEM = 25; % set num local runs
 n_steps_max = 500; % set max steps per inference
 eps = 1e-4; % set convergence criteria
 min_dp_per_inf = 1000; % inference will be aborted if fewer present 
 %%%%%%%%%%%%%%
+
+% MODEL ARCHITECTURE
+K = 3; % number of states
+w = 7; % number of time steps needed for elongation
+
+if protein_bin_flag
+    nBoots = 2; % will run multiple instances on savio
+else
+    nBoots = 5;
+end
+if savio
+    DataPath = '../../dat/tf_enrichment/';
+else
+    DataPath = ['E:\Nick\LivemRNA\Dropbox\ProcessedEnrichmentData\' project '\'];
+end
+
+
 
 % for i = 1:numel(varargin)    
 %     if ischar(varargin{i}) && i ~= numel(varargin)        
@@ -82,17 +91,20 @@ d_type = '';
 if dpBootstrap
     d_type = '_dp';
 end
-
 % Set write path (inference results are now written to external directory)
-% out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
+if fluo3D_flag
+    fluo_suffix = 'f3D';
+else
+    fluo_suffix = 'f2D';
+end
 if protein_bin_flag    
     load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
     analysis_struct = nucleus_struct_protein;
     clear nucleus_struct_protein
-    out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
+    out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/']; 
 else
     load([DataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
-    out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+    out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/']; 
     clear nucleus_struct
     analysis_struct = nucleus_struct;
 end
@@ -111,8 +123,12 @@ Tres = analysis_struct(1).TresInterp; % Time Resolution
 trace_struct_filtered = [];
 for i = 1:length(analysis_struct)
     temp = struct;
-    time = analysis_struct(i).time_interp;
-    fluo = analysis_struct(i).fluo_interp;
+    if fluo3D_flag
+        fluo = analysis_struct(i).fluo3D_interp;
+    else
+        fluo = analysis_struct(i).fluo_interp;
+    end
+    time = analysis_struct(i).time_interp;    
     if sum(~isnan(fluo)) >= 2 % NL: this is a bit redundant. Leaving for now
         temp.fluo = fluo;
         temp.time = time;
@@ -120,13 +136,19 @@ for i = 1:length(analysis_struct)
             temp.mf_protein = nanmean(analysis_struct(i).mf_null_protein_vec);
         end
         temp.qc_flag = analysis_struct(i).qc_flag;
-        temp.ParticleID = analysis_struct(i).ParticleID;        
+        temp.ParticleID = analysis_struct(i).ParticleID;  
+        temp.N = numel(fluo);
         trace_struct_filtered = [trace_struct_filtered temp];
     end
 end
 trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1);
 
 if protein_bin_flag 
+    % estimate number of bins 
+    if automatic_binning
+        nTotal = sum([trace_struct_filtered.N]);
+        n_protein_bins = ceil(nTotal/SampleSize);
+    end
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
@@ -181,10 +203,10 @@ for t = 1:length(iter_list)
                 ndp = 0;    
                 sample_ids = [];                    
                 %Reset bootstrap size to be on order of set size for small bins
-                if set_size < sampleSize
-                    sampleSize = ceil(set_size/100)*100;
+                if set_size < SampleSize
+                    SampleSize = ceil(set_size/100)*100;
                 end
-                while ndp < sampleSize
+                while ndp < SampleSize
                     tr_id = randsample(sample_index,1);
                     sample_ids = [sample_ids tr_id];
                     ndp = ndp + length(inference_set(tr_id).time);
@@ -271,8 +293,9 @@ for t = 1:length(iter_list)
             end
             output.w = w;
             output.alpha = alpha;
-            output.deltaT = Tres; 
-            output.sampleSize = sampleSize; 
+            output.deltaT = Tres;
+            output.fluo3D_flag = fluo3D_flag;
+            output.sampleSize = SampleSize; 
             % save inference data used
             output.fluo_data = fluo_data;
             output.time_data = time_data;

@@ -49,14 +49,15 @@ time_axis = (-window_size:window_size)*Tres/60;
 nBoots = 100; % number of bootstrap samples to use
 min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
 min_burst_len = 3;
+max_burst_len = 12;
 % max_burst_len = 12;
 %%% (1) make basic input-output figure
 close all
 
 
 % generate basic filter for target locus and computational controls
-burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>=min_burst_len&target_swap_qc&target_virtual_qc;%&target_set_vec~=4; % filter for rise events
-burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>=min_burst_len; % filter for rise events
+burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>=min_burst_len;%&lag_dur_vec_target<=max_burst_len;%&target_swap_qc&target_virtual_qc;%&target_set_vec~=4; % filter for rise events
+burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>=min_burst_len;%<=max_burst_len; % filter for rise events
 sample_options_target = find(burst_ft_primary);
 sample_options_control = find(burst_ft_control);
 
