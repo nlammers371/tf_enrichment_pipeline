@@ -181,7 +181,7 @@ for t = 1:length(iter_list)
         inference_id = num2str(round(10e5*now));
 
         % Generate filenames            
-        fName_sub = ['hmm_results_t' inference_id '.mat'];                
+        fName_sub = ['hmm_results_t' inference_id];                
         out_file = [outDir '/' fName_sub];  
         
         % Extract fluo_data        

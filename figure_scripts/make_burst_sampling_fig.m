@@ -5,7 +5,7 @@ clear
 addpath('utilities')
 % set ID variables
 project = 'Dl-Ven_snaBAC-mCh_v3';
-DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
+DropboxFolder = 'S:\Nick\Dropbox\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project); 
 % define HMM parameters
 K = 3;
@@ -46,12 +46,6 @@ for c = 1:2:numel(z_chpts)
     init_vec(z_chpts(c):z_chpts(c+1)-1) = nanmean(r_vec(z_chpts(c):z_chpts(c+1)-1))*Tres;
 end
 
-% stairs(init_vec)
-% 
-% figure;
-% fluo = hmm_input_output(plot_id).fluo;
-% plot(fluo)
-%%
 close all
 
 for i = 1:2
@@ -104,7 +98,7 @@ for i = 1:2
     saveas(hmm_fig,[FigPath 'hmm_trend_' suffix '.png'])
     
     % Protein channel
-    spot_protein = hmm_input_output(plot_id).spot_protein_dt*PixelSize;
+    spot_protein = hmm_input_output(plot_id).spot_protein_dt;%*PixelSize;
     nn_ids = find(~isnan(spot_protein));
     protein_fig = figure;
     hold on
@@ -113,7 +107,7 @@ for i = 1:2
     xlabel('time (minutes)')
     ylabel('Dl concentration (AU)')    
     xlim(x_lim)
-    ylim([-.2 .2])
+%     ylim([-.2 .2])
     box on
     if PBoC_flag        
         StandardFigurePBoC(p,gca);
