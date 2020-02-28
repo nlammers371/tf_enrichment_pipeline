@@ -360,7 +360,7 @@ for p = 1:numel(mf_prctile_vec)-1
 end
 mf_vec_dist = mf_protein_vec_dist;
 tt_vec_dist = time_vec_dist;
-mf_index = linspace(min(mf_protein_vec_dist),prctile(mf_protein_vec_dist,99),50);
+mf_index = linspace(prctile(mf_protein_vec_dist,1),prctile(mf_protein_vec_dist,99),50);
 % track enrichemnt trends as function of space and protein concentration
 delta_v_tt_c_mf_array = NaN(numel(tt_index),numel(prctile_vec)-1,NBoots);
 delta_v_mf_c_tt_array = NaN(numel(mf_index),numel(prctile_vec)-1,NBoots);

@@ -48,7 +48,9 @@ end
 
 % Load trace data
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct')
-load([DataPath '/psf_dims.mat'],'psf_dims')
+if use_psf_fit_dims
+    load([DataPath '/psf_dims.mat'],'psf_dims')
+end
 load([DataPath '/set_key.mat'],'set_key')
 snipPath = [DataPath '/qc_images/'];
 refPath = [DataPath '/refFrames/'];
@@ -115,6 +117,7 @@ for i = 1:numel(nucleus_struct)
     sub_ind_ref = [sub_ind_ref 1:numel(nucleus_struct(i).frames)];
 end
 
+% option to override qc 
 if ignoreQC 
     pt_qc_ref = true(size(pt_qc_ref));
 end
