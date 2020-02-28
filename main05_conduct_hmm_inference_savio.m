@@ -35,7 +35,7 @@ modelPath = './utilities';
 
 % INFERENCE PARAMETERS
 savio = 1;
-fluo3D_flag = true;
+fluo3D_flag = 0;
 automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
@@ -63,8 +63,6 @@ if savio
 else
     DataPath = ['E:\Nick\LivemRNA\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
-
-
 
 % for i = 1:numel(varargin)    
 %     if ischar(varargin{i}) && i ~= numel(varargin)        
