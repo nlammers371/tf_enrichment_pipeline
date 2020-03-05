@@ -10,12 +10,12 @@ DropboxFolder = 'S:\Nick\Dropbox\';
 % specify inference parameters
 K = 3;
 w = 7;
-fluo = 2;
+fluo = 3;
 load([DataPath 'nucleus_struct_protein.mat'])
 
 resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K)  '_f' num2str(fluo) 'D\'];
 % specify figure path
-FigPath = [FigRoot '\' project '\hmm_figs\w' num2str(w) '_K' num2str(K)  '_f' num2str(fluo) 'D\'];
+FigPath = [FigRoot '\' project '\hmm_figs\'];
 mkdir(FigPath);
 tic
 % read in inference results
@@ -66,7 +66,7 @@ grid on
 set(gca,'Fontsize',14)
 saveas(pt_check_fig,[FigPath 'protein_binning_check.png'])
 
-% calculate average initiation rate, burst freq, and burst duration
+%% calculate average initiation rate, burst freq, and burst duration
 init_vec_mean = NaN(size(dorsal_bins));
 init_vec_ste = NaN(size(dorsal_bins));
 freq_vec_mean = NaN(size(dorsal_bins));
@@ -122,12 +122,11 @@ blue = [115 143 193]/256;
 purple = [171 133 172]/256;
 red = [213 108 85]/256;
 ind_list = [2:numel(mf_axis_vec)-1];
-mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
 % set x axis
-x_lim = [min(mf_axis_long)-.05 max(mf_axis_long)+.05];
-% x_lim = [.85 2];
+% x_lim = [min(mf_axis_long)-.05 max(mf_axis_long)+.05];
+x_lim = [.85 2];
 % mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
-
+mf_axis_long = linspace(x_lim(1),x_lim(2));
 p_init = polyfit(mf_axis_vec(ind_list),init_vec_mean(ind_list),2);
 p_trend_init = polyval(p_init,mf_axis_long);
 
@@ -153,7 +152,7 @@ s = scatter(mf_axis_vec(ind_list),init_vec_mean(ind_list),MarkerSize,'o','Marker
 p = plot(0,0);
 % grid on
 xlim(x_lim)
-% ylim([50 95])
+ylim([50 95])
 xlabel('Dorsal concentration (au)')
 ylabel('burst amplitude (au/min)')
 % legend([s p1],'raw HMM results','trend','Location','southeast')
@@ -179,7 +178,7 @@ xlim(x_lim)
 p = plot(0,0);
 % grid on
 xlim(x_lim)
-% ylim([.5 3])
+ylim([.5 3])
 xlabel('Dorsal concentration (au)')
 ylabel('burst duration (min)')
 % legend([s p1],'raw HMM results','trend','Location','northeast')
@@ -201,7 +200,7 @@ e.CapSize = 0;
 s = scatter(mf_axis_vec(ind_list),freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',purple,'MarkerEdgeColor','black');
 % grid on
 xlim(x_lim)
-% ylim([.5 1.7])
+ylim([.5 1.7])
 xlabel('Dorsal concentration (au)')
 ylabel('burst frequency (1/min)')
 p = plot(0,0);
