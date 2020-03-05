@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results_v2(project,DropboxFolder,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(project,DropboxFolder,varargin)
 
 close all
 addpath('./utilities')
@@ -32,6 +32,7 @@ end
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 w = 7;
 K = 3;
+fluo_dim = 3;
 n_protein_boots = 5; % max num protein bootstraps to use for soft fits
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)       
@@ -59,9 +60,9 @@ for i = 1:w
 end
 % Set write path (inference results are now written to external directory)
 if contains(project,'snaBAC')
-    hmm_suffix =  ['hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
+    hmm_suffix =  ['hmm_inference_protein/w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D/']; 
 else
-    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '/']; 
+    hmm_suffix =  ['hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D/']; 
 end
 file_list = dir([DataPath hmm_suffix 'hmm_results*.mat']);
 % if numel(file_list) > 1
@@ -95,6 +96,7 @@ particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
 if soft_fit_flag    
+    disp('performing MAP decoding...')
     if contains(project,'snaBAC') % use dorsal-binned results for sna
         % seed raqndom number generator for consistency
         rng(436);
@@ -185,6 +187,7 @@ else
 end
 
 %%% now extract corresponding hmm traces
+disp('building input/output dataset...')
 hmm_input_output = [];
 for inf = 1:numel(soft_fit_struct)
     iter = 1;
@@ -196,15 +199,20 @@ for inf = 1:numel(soft_fit_struct)
         temp = struct;
         % extract relevant vectors from protein struct    
         % these quantities have not been interpolated
-        ff_pt = nucleus_struct_protein(i).fluo;
-        mcp_pt = nucleus_struct_protein(i).spot_mcp_vec;
-        sp_pt = nucleus_struct_protein(i).spot_protein_vec;
-        sp_pt_3D = nucleus_struct_protein(i).spot_protein_vec_3d;
+        if fluo_dim == 3   
+            ff_pt = nucleus_struct_protein(i).fluo3D;
+            sp_pt = nucleus_struct_protein(i).spot_protein_vec_3d;
+             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
+        else
+            ff_pt = nucleus_struct_protein(i).fluo;
+            sp_pt = nucleus_struct_protein(i).spot_protein_vec;
+            sr_pt = nucleus_struct_protein(i).serial_null_protein_vec; 
+        end        
+        mcp_pt = nucleus_struct_protein(i).spot_mcp_vec;         
         nn_pt = nucleus_struct_protein(i).edge_null_protein_vec;
-        mf_pt_mf = nucleus_struct_protein(i).mf_null_protein_vec;
-        sr_pt = nucleus_struct_protein(i).serial_null_protein_vec;       
-        sr_pt_3D = nucleus_struct_protein(i).serial_null_protein_vec_3d;
+        mf_pt_mf = nucleus_struct_protein(i).mf_null_protein_vec;                    
         tt_pt = nucleus_struct_protein(i).time;
+        
         if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP            
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
@@ -252,12 +260,12 @@ for inf = 1:numel(soft_fit_struct)
             temp.yPos_raw = y_nc;
             % interpolate protein information such that it coincides with HMM
             % inference results
-            temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);        
-            temp.spot_protein_3D = interp1(tt_pt(~isnan(sp_pt_3D)),sp_pt_3D(~isnan(sp_pt_3D)),temp.time);         
-            temp.mf_protein = interp1(tt_pt(~isnan(mf_pt_mf)),mf_pt_mf(~isnan(mf_pt_mf)),temp.time);     
-            temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
+    
+            temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);                    
             temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);
-            temp.serial_protein_3D = interp1(tt_pt(~isnan(sr_pt_3D)),sr_pt_3D(~isnan(sr_pt_3D)),temp.time);
+            end
+            temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
+            temp.mf_protein = interp1(tt_pt(~isnan(mf_pt_mf)),mf_pt_mf(~isnan(mf_pt_mf)),temp.time);     
             % interpolate position info
             temp.xPos = interp1(tt_pt(~isnan(x_nc)),x_nc(~isnan(x_nc)),temp.time);        
             temp.yPos = interp1(tt_pt(~isnan(y_nc)),y_nc(~isnan(y_nc)),temp.time);        
@@ -342,4 +350,4 @@ for i = 1:n_unique
 end
 
 % save results
-save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim)  'D.mat'],'hmm_input_output')
