@@ -158,7 +158,8 @@ for j = 1:numel(hmm_input_output)
     % de-trended protein fields                        
     spot_protein_dt = hmm_input_output(j).spot_protein_dt;
     swap_spot_protein_dt = hmm_input_output(j).swap_spot_protein_dt;
-    virtual_protein_dt = hmm_input_output(j).serial_protein_dt;        
+    virtual_protein_dt = hmm_input_output(j).serial_protein_dt;  
+    
     % apply filter to remove observations far too far from true points             
     spot_protein_dt(gap_filter) = NaN;
     spot_protein_raw(gap_filter) = NaN;
@@ -167,7 +168,9 @@ for j = 1:numel(hmm_input_output)
     virtual_protein_dt(gap_filter) = NaN;
     virtual_protein_raw(gap_filter) = NaN;
     mf_protein_raw(gap_filter) = NaN;
-    % enforce consistency between virt and spot
+    
+    % enforce consistency between virt and spot (need to implement this
+    % upstream)
     virt_spot_ft = ~isnan(spot_protein_dt)&~isnan(virtual_protein_dt);
     spot_protein_dt(~virt_spot_ft) = NaN;
     spot_protein_raw(~virt_spot_ft) = NaN;

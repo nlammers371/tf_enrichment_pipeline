@@ -95,7 +95,6 @@ qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
-soft_fit_flag = 1;
 if soft_fit_flag        
     if contains(project,'snaBAC') % use dorsal-binned results for sna
         % seed raqndom number generator for consistency

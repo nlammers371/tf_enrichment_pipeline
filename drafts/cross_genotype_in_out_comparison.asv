@@ -59,10 +59,10 @@ feature_sign_vec_1 = results_struct1.feature_sign_vec;
 % now project 2
 lag_dur_vec_2 = results_struct2.lag_dur_vec;
 lead_dur_vec_2 = results_struct2.lead_dur_vec;
-hmm_array_dm_2 = results_struct2.hmm_array;
-hmm_array_dm_2 = hmm_array_dm_2 / nanstd(hmm_array_dm_2(:));
-fluo_array_dm_2 = results_struct2.fluo_array  - nanmean(results_struct2.fluo_array,2);
-fluo_array_dm_2 = fluo_array_dm_2 / nanstd(fluo_array_dm_2(:));
+hmm_array_dm_2 = results_struct1.hmm_array;
+hmm_array_dm_2 = hmm_array_dm_1 / nanstd(hmm_array_dm_1(:));
+fluo_array_dm_1 = results_struct1.fluo_array  - nanmean(results_struct1.fluo_array,2);
+fluo_array_dm_1 = fluo_array_dm_1 / nanstd(fluo_array_dm_1(:));
 mf_array_dm_2 = results_struct2.mf_array - nanmean(results_struct2.mf_array,2);
 mf_vec_2 = results_struct2.mf_protein_vec;
 time_vec_2 = results_struct2.center_time_vec/60;
@@ -424,7 +424,7 @@ ylim([100 1.05*max(data_flow_array(:))])
 set(gca,'Fontsize',14)
 ylabel('N datapoints')
 xlabel('pipeline stage')
-legend('OG','FFF')
+legend('FFF','OG')
 saveas(data_fig,[FigPath 'data_flow_fig.tif'])
 
 data_diff_fig = figure;
@@ -433,6 +433,6 @@ set(gca,'YScale','Log')
 set(gca,'Fontsize',14)
 ylabel('N datapoints (pegged)')
 xlabel('pipeline stage')
-legend('OG','FFF')
+legend('FFF','OG')
 grid on
 saveas(data_diff_fig,[FigPath 'data_flow_fig_pegged.tif'])
