@@ -5,6 +5,7 @@ addpath('./utilities')
 %%%%% These options will remain fixed for now
 w = 7;
 K = 3;  
+fluo_dim = 3;
 % window analysis params
 window_size = 15; 
 %%%%%%%%%%%%%%
@@ -16,7 +17,7 @@ end
 
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 % load input-output data set
-load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D.mat'],'hmm_input_output')
 n_features = 0;
 % iterate
 for i = 1:numel(hmm_input_output)    
@@ -94,7 +95,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).swap_spot_protein_dt = swap_spot_protein_dt;
 end
 %save updated structure
-save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
  
 %%% Now compile snips for average burst dynamics analyses
 % generate master set of vectors for feature classification
@@ -166,6 +167,12 @@ for j = 1:numel(hmm_input_output)
     virtual_protein_dt(gap_filter) = NaN;
     virtual_protein_raw(gap_filter) = NaN;
     mf_protein_raw(gap_filter) = NaN;
+    % enforce consistency between virt and spot
+    virt_spot_ft = ~isnan(spot_protein_dt)&~isnan(virtual_protein_dt);
+    spot_protein_dt(~virt_spot_ft) = NaN;
+    spot_protein_raw(~virt_spot_ft) = NaN;
+    virtual_protein_dt(~virt_spot_ft) = NaN;
+    virtual_protein_raw(~virt_spot_ft) = NaN;
     % find features
     id_list = find(z_diff_vec~=0&~gap_filter);
     for id = id_list        
@@ -176,7 +183,7 @@ for j = 1:numel(hmm_input_output)
         ft2 = ~isnan(spot_protein_dt(true_range));% & ~isnan(swap_spot_protein_dt(true_range))...
             %&~isnan(virtual_protein_dt(true_range)); % NL: this is pretty restrictive
         % qc check
-        if sum(ft2) >= window_size            
+        if sum(ft2) >= 1*window_size            
             swap_qc_vec(iter) = sum(~isnan(swap_spot_protein_dt(true_range))) >= window_size;
             virtual_qc_vec(iter) = sum(~isnan(virtual_protein_dt(true_range))) >= window_size;
             % extract rde-trended fragments 
@@ -222,6 +229,7 @@ for j = 1:numel(hmm_input_output)
         end
     end    
 end        
+
 %%% record data
 % qc vectors
 results_struct.swap_qc_vec = swap_qc_vec;
@@ -250,4 +258,4 @@ results_struct.lag_size_vec = lag_size_vec;
 results_struct.lead_size_vec = lead_size_vec;
 results_struct.feature_sign_vec = feature_sign_vec;
 % save
-save([DataPath 'hmm_input_output_results.mat'],'results_struct')
+save([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'],'results_struct')

@@ -95,6 +95,7 @@ qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
+soft_fit_flag = 1;
 if soft_fit_flag        
     if contains(project,'snaBAC') % use dorsal-binned results for sna
         % seed raqndom number generator for consistency
@@ -129,8 +130,8 @@ if soft_fit_flag
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
             disp('conducting single trace fits...')
-            parfor inf = 1:numel(mf_ind_samp)                
-                ind = mf_ind_samp(inf)
+            for inf = 1:numel(mf_ind_samp)                
+                ind = mf_ind_samp(inf);
                 A_log = log(inference_results(ind).A_mat);
                 v = inference_results(ind).r*Tres;
                 sigma = sqrt(inference_results(ind).noise);
@@ -138,7 +139,11 @@ if soft_fit_flag
                 eps = 1e-4;
                 fluo_values = cell(numel(mf_trace_indices),1);
                 for i = 1:numel(mf_trace_indices)
-                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                    if fluo_dim == 2
+                        fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                    else
+                        fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo3D_interp;
+                    end
                     start_i = find(~isnan(fluo),1);
                     stop_i = find(~isnan(fluo),1,'last');
                     fluo = fluo(start_i:stop_i);
@@ -165,7 +170,11 @@ if soft_fit_flag
             eps = 1e-4;
             fluo_values = cell(numel(qc_indices),1);
             for i = 1:numel(qc_indices)
-                fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
+               if fluo_dim == 2
+                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                else
+                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo3D_interp;
+                end
                 start_i = find(~isnan(fluo),1);
                 stop_i = find(~isnan(fluo),1,'last');
                 fluo = fluo(start_i:stop_i);
@@ -201,7 +210,7 @@ for inf = 1:numel(soft_fit_struct)
         if fluo_dim == 3   
             ff_pt = nucleus_struct_protein(i).fluo3D;
             sp_pt = nucleus_struct_protein(i).spot_protein_vec_3d;
-             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
+            sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
         else
             ff_pt = nucleus_struct_protein(i).fluo;
             sp_pt = nucleus_struct_protein(i).spot_protein_vec;
