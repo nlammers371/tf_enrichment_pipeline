@@ -12,7 +12,8 @@ K = 3;
 w = 7;
 % load data structure
 load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_dt.mat'],'hmm_input_output')
-FigPath = [FigureRoot '\' project '\burst_alginment_fig\'];
+% FigPath = [FigureRoot '\' project '\burst_alginment_fig\'];
+FigPath = ['S:\Meghan\Dropbox\LocalEnrichmentFigures\PipelineOutput' '\' project '\burst_alginment_fig\plot_id_900\'];
 mkdir(FigPath)
 
 %% pull illustrative trace, HMM trajectory, and protein
@@ -25,8 +26,8 @@ close all
 Tres = 20;
 cmap1 = brewermap([],'Set2');
 blue = [115 143 193]/256;
-% plot_id = 900;
-plot_id = 941;
+plot_id = 900;
+% plot_id = 941;
 PBoC_flag_vec = [false true];
 
 % generate vector of burst-specific loading rates (this is for illustrative
