@@ -29,13 +29,13 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
+project = 'Dl-Ven_snaBAC-mCh_v4';
 % default path to model scripts
 modelPath = './utilities';
 
 % INFERENCE PARAMETERS
-savio = 1;
-fluo3D_flag = 0;
+savio = 0;
+fluo3D_flag = 1;
 automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
@@ -59,9 +59,9 @@ else
     nBoots = 5;
 end
 if savio
-    DataPath = '../../dat/tf_enrichment/';
+    DataPath = ['../../dat/tf_enrichment/' project '/'];
 else
-    DataPath = ['E:\Nick\LivemRNA\Dropbox\ProcessedEnrichmentData\' project '\'];
+    DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
 
 % for i = 1:numel(varargin)    

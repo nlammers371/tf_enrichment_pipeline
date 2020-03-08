@@ -1,17 +1,18 @@
 % clear
 close all
 % add path to mRNADynamics folder
-livemRNAPath = 'D:\Nick\LivemRNA\';
-% addpath(genpath([livemRNAPath '\mRNADynamics']))
-% cd(livemRNAPath)
+livemRNAPath = 'E:\Nick\LivemRNA\';
+addpath(genpath([livemRNAPath '\mRNADynamics']))
+cd(livemRNAPath)
 % addpath('D:\Nick\LivemRNA\ImportFromAWS.m')
 % addpath('D:\Nick\LivemRNA\ComputerFolders.csv')
 % set path to dropbox
-sheet_path = 'D:\Nick\LivemRNA\Dropbox\LocalEnrichmentResults\DataStatus.xlsx';
-project = 'Dl-Ven_snaBAC-mCh_F-F-F';
+sheet_path = 'S:\Nick\Dropbox\LocalEnrichmentResults\DataStatus_NL_20200306.xlsx';
+DropboxTab = 'Dl-Ven_snaBAC-mCh';
 % specfiy functions to fun
 % command_cell = {'ImportFromAWS(Prefix)'};
-% command_cell = {'segmentSpots(Prefix,5000,"Weka","fit3D","Shadows",0)'};
+% command_cell = {'segmentSpots(Prefix,5000,"Weka","fit3DOnly")'};...,'TrackmRNADynamics(Prefix,5000,5000)',...
+%     'AddParticlePosition(Prefix)','CompileParticles(Prefix,"SkipAll","ApproveAll")'};
 % command_cell = {'TrackmRNADynamics(Prefix,5000,5000)'};
 % command_cell = {'AddParticlePosition(Prefix)','CompileParticles(Prefix)'};
 command_cell = {'CompileParticles(Prefix,"SkipAll","ApproveAll")'};
@@ -19,7 +20,7 @@ command_cell = {'CompileParticles(Prefix,"SkipAll","ApproveAll")'};
 %%%%%%%%%%%%% get prefix list %%%%%%%%%%%%%%%%
 % find sheet
 [~ ,sheet_names] = xlsfinfo(sheet_path);
-sheet_index = find(ismember(sheet_names,project));
+sheet_index = find(ismember(sheet_names,DropboxTab));
 [~,~,sheet_cell] = xlsread(sheet_path,sheet_index);
 name_col = sheet_cell(1:33,1); % hard coded for now
 ready_ft = contains(name_col,'Ignore');

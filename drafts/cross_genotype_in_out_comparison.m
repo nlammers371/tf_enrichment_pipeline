@@ -405,13 +405,13 @@ saveas(ds_virt_fig,[FigPath 'virt_trend_downsample_comparisons.pdf'])
 % spot_mean_ds_2 = nanmean(boot_spot_array_ds_2);
 % virt_mean_ds_2 = nanmean(boot_virt_array_ds_2);
 %% Get a sense for relative size of each set
-n_nuclei = [numel(nc_struct2) numel(nc_struct1)]
-n_frames = [nansum([nc_struct2.N]) nansum([nc_struct1.N])]
-n_frames_qc = [nansum([nc_struct2([nc_struct2.qc_flag]==1).N]) nansum([nc_struct1([nc_struct1.qc_flag]==1).N])]
-n_features = [nansum([hmm2.z_diff_vec]>0) nansum([hmm1.z_diff_vec]>0)]/5
-n_features_qc1 = [nansum([hmm2.z_diff_vec]>0&~[hmm2.dt_filter_gap]) nansum([hmm1.z_diff_vec]>0&~[hmm1.dt_filter_gap])]/5
-n_features_qc2 = [nansum(feature_sign_vec_2==1) nansum(feature_sign_vec_1==1)]/5
-n_features_final = [nansum(burst_ft_2) nansum(burst_ft_1)]/5
+n_nuclei = [numel(nc_struct2) numel(nc_struct1)];
+n_frames = [nansum([nc_struct2.N]) nansum([nc_struct1.N])];
+n_frames_qc = [nansum([nc_struct2([nc_struct2.qc_flag]==1).N]) nansum([nc_struct1([nc_struct1.qc_flag]==1).N])];
+n_features = [nansum([hmm2.z_diff_vec]>0) nansum([hmm1.z_diff_vec]>0)]/5;
+n_features_qc1 = [nansum([hmm2.z_diff_vec]>0&~[hmm2.dt_filter_gap]) nansum([hmm1.z_diff_vec]>0&~[hmm1.dt_filter_gap])]/5;
+n_features_qc2 = [nansum(feature_sign_vec_2==1) nansum(feature_sign_vec_1==1)]/5;
+n_features_final = [nansum(burst_ft_2) nansum(burst_ft_1)]/5;
 
 % n_burst_features = [size([nc_struct2.qc_flag]) sum([nc_struct2.qc_flag])];
 data_flow_array =  [n_frames ; n_frames_qc ; n_features ; n_features_qc1 ; n_features_qc2 ; n_features_final];
