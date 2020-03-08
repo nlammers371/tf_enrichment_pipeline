@@ -34,7 +34,8 @@ project = 'Dl-Ven_snaBAC-mCh_v4';
 modelPath = './utilities';
 
 % INFERENCE PARAMETERS
-savio = 1;
+savioFlag = 0;
+awsFlag = 1;
 fluo3D_flag = 1;
 automatic_binning = false;
 protein_bin_flag = true;
@@ -58,8 +59,11 @@ if protein_bin_flag
 else
     nBoots = 5;
 end
-if savio
+if savioFlag
     DataPath = ['../../dat/tf_enrichment/'];
+elseif awsFlag
+    ['C:\nlammers\Dropbox\ProcessedEnrichmentData\' project '\'];
+    maxWorkers = 16;
 else
     DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
@@ -108,7 +112,7 @@ else
 end
 
 % set write path
-if savio
+if savioFlag
     out_prefix = ['/global/scratch/nlammers/' project '/']; %hmmm_data/inference_out/';
 else    
     out_prefix = DataPath;
