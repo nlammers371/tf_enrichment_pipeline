@@ -1,4 +1,4 @@
-% main01_compile_data(project,DropboxFolder,varargin)
+% main01_compile_data(DataStatusTab,DropboxFolder,varargin)
 %
 % DESCRIPTION
 % Funcion to compile relevant outputs from image analysis pipeline across
@@ -6,7 +6,7 @@
 
 %
 % ARGUMENTS
-% project: master ID variable (should match a tab name in the Data Status
+% DataStatusTab: master ID variable (should match a tab name in the Data Status
 % sheet)
 % DropboxFolder: full file path to folder containing compiled imaging
 % results
@@ -24,24 +24,24 @@
 % OUTPUT: nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_traces(DropboxTab,DropboxFolder,varargin)
+function nucleus_struct = main01_compile_traces(DataStatusTab,DropboxFolder,varargin)
 addpath('./utilities')
 % set defaults
 firstNC = 14;
 minDP = 15;
 pctSparsity = 50;
-two_spot_flag = contains(DropboxTab, '2spot');
+two_spot_flag = contains(DataStatusTab, '2spot');
 min_time = 0*60; % take no fluorescence data prior to this point
 TresInterp = 20; 
 calculatePSF = false;
-project = DropboxTab;
+project = DataStatusTab;
 for i = 1:numel(varargin)
     if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
         eval([varargin{i} '=varargin{i+1};']);
     end
 end
 
-[RawResultsRoot, ~, ~] =   header_function(DropboxFolder, DropboxTab);
+[RawResultsRoot, ~, ~] =   header_function(DropboxFolder, DataStatusTab);
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,7 +49,7 @@ end
 % find sheet
 sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
 [~,sheet_names]=xlsfinfo(sheet_path);
-sheet_index = find(ismember(sheet_names,DropboxTab));
+sheet_index = find(ismember(sheet_names,DataStatusTab));
 if isempty(sheet_index)
     error('no tab matching "DropboxTab" string found in DataStatus')
 end
