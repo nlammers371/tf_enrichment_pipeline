@@ -59,7 +59,7 @@ else
     nBoots = 5;
 end
 if savio
-    DataPath = ['../../dat/tf_enrichment/' project '/'];
+    DataPath = ['../../dat/tf_enrichment/'];
 else
     DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
