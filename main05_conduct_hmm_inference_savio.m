@@ -34,7 +34,8 @@ project = 'Dl-Ven_snaBAC-mCh_v4';
 modelPath = './utilities';
 
 % INFERENCE PARAMETERS
-savio = 1;
+savioFlag = 0;
+awsFlag = 1;
 fluo3D_flag = 1;
 automatic_binning = false;
 protein_bin_flag = true;
@@ -53,13 +54,16 @@ min_dp_per_inf = 1000; % inference will be aborted if fewer present
 K = 3; % number of states
 w = 7; % number of time steps needed for elongation
 
-if protein_bin_flag
+if protein_bin_flag && savioFlag
     nBoots = 2; % will run multiple instances on savio
-else
+else  
     nBoots = 5;
 end
-if savio
+if savioFlag
     DataPath = ['../../dat/tf_enrichment/'];
+elseif awsFlag
+    DataPath = ['C:\Users\nlammers\Dropbox\ProcessedEnrichmentData\' project '\'];
+    maxWorkers = 16;
 else
     DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
@@ -108,7 +112,7 @@ else
 end
 
 % set write path
-if savio
+if savioFlag
     out_prefix = ['/global/scratch/nlammers/' project '/']; %hmmm_data/inference_out/';
 else    
     out_prefix = DataPath;
@@ -299,6 +303,7 @@ for t = 1:length(iter_list)
             output.time_data = time_data;
         end
         output.skip_flag = skip_flag;
+        disp('saving...')
         save([out_file '.mat'], 'output');           
     end  
 end
