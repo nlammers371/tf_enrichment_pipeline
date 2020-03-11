@@ -34,8 +34,8 @@ project = 'Dl-Ven_snaBAC-mCh_v4';
 modelPath = './utilities';
 
 % INFERENCE PARAMETERS
-savioFlag = 0;
-awsFlag = 1;
+savioFlag = 1;
+awsFlag = 0;
 fluo3D_flag = 1;
 automatic_binning = false;
 protein_bin_flag = true;
