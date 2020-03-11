@@ -3,14 +3,14 @@ clear
 close all
 addpath('../utilities')
 % set folder paths
-project = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
+project = 'Dl-Ven_snaBAC-mCh_v4';
 DropboxFolder = 'S:\Nick\Dropbox\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
 
 % specify inference parameters
 K = 3;
 w = 7;
-fluo = 2;
+fluo = 3;
 load([DataPath 'nucleus_struct_protein.mat'])
 
 resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K)  '_f' num2str(fluo) 'D\'];
@@ -66,7 +66,7 @@ grid on
 set(gca,'Fontsize',14)
 saveas(pt_check_fig,[FigPath 'protein_binning_check.png'])
 
-% calculate average initiation rate, burst freq, and burst duration
+%% calculate average initiation rate, burst freq, and burst duration
 init_vec_mean = NaN(size(dorsal_bins));
 init_vec_ste = NaN(size(dorsal_bins));
 freq_vec_mean = NaN(size(dorsal_bins));
