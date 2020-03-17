@@ -36,7 +36,7 @@ modelPath = './utilities';
 % INFERENCE PARAMETERS
 savioFlag = 1;
 awsFlag = 0;
-fluo3D_flag = 0;
+fluo3D_flag = 1;
 automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
