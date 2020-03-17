@@ -55,7 +55,7 @@ K = 3; % number of states
 w = 7; % number of time steps needed for elongation
 
 if protein_bin_flag && savioFlag
-    nBoots = 2; % will run multiple instances on savio
+    nBoots = 1; % will run multiple instances on savio
 else  
     nBoots = 5;
 end
