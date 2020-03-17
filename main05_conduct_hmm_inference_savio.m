@@ -60,7 +60,7 @@ else
     nBoots = 5;
 end
 if savioFlag
-    DataPath = ['../../dat/tf_enrichment/'];
+    DataPath = ['../../dat/tf_enrichment/' project '/'];
 elseif awsFlag
     DataPath = ['C:\Users\nlammers\Dropbox\ProcessedEnrichmentData\' project '\'];
     maxWorkers = 16;

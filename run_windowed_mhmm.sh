@@ -25,8 +25,8 @@
 #
 #SBATCH -a 1
 ## Command(s) to run:
-module load matlab/r2019a
-module load hdf5
+module load matlab
+
 # Make a temporary scratch directory for storing job
 # and task information, to coordinate parallelization.
 # This directory can then be referenced by assigning it to
