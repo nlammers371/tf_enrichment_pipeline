@@ -7,15 +7,15 @@ cd(livemRNAPath)
 % addpath('D:\Nick\LivemRNA\ImportFromAWS.m')
 % addpath('D:\Nick\LivemRNA\ComputerFolders.csv')
 % set path to dropbox
-sheet_path = 'S:\Nick\Dropbox\LocalEnrichmentResults\DataStatus_NL_20200306.xlsx';
-DropboxTab = 'Dl-Ven_snaBAC-mCh';
+sheet_path = 'S:\Nick\Dropbox\LocalEnrichmentResults\DataStatus_NLtemp.xlsx';
+DropboxTab = '2xDl-Ven_snaBAC-mCh';
 % specfiy functions to fun
 % command_cell = {'ImportFromAWS(Prefix)'};
 % command_cell = {'segmentSpots(Prefix,5000,"Weka","fit3DOnly")'};...,'TrackmRNADynamics(Prefix,5000,5000)',...
 %     'AddParticlePosition(Prefix)','CompileParticles(Prefix,"SkipAll","ApproveAll")'};
-% command_cell = {'TrackmRNADynamics(Prefix,5000,5000)'};
+command_cell = {'TrackNuclei(Prefix)','TrackmRNADynamics(Prefix,5000,5000)'};
 % command_cell = {'AddParticlePosition(Prefix)','CompileParticles(Prefix)'};
-command_cell = {'CompileParticles(Prefix,"SkipAll","ApproveAll")'};
+% command_cell = {'CompileParticles(Prefix,"SkipAll","ApproveAll")'};
 
 %%%%%%%%%%%%% get prefix list %%%%%%%%%%%%%%%%
 % find sheet

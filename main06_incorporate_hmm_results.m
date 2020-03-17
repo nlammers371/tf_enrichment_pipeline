@@ -128,7 +128,7 @@ if soft_fit_flag
             mf_sub_indices = mf_id_vec==dorsal_index(d);
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
-            disp('conducting single trace fits...')
+            disp(['conducting single trace fits (' sprintf('%02d',d) '/' num2str(numel(dorsal_index)) ')'])
             for inf = 1:numel(mf_ind_samp)                
                 ind = mf_ind_samp(inf);
                 A_log = log(inference_results(ind).A_mat);
@@ -160,7 +160,7 @@ if soft_fit_flag
     
     else % just use average inference for hbP2P
         soft_fit_struct = struct; 
-        parfor inf = 1:numel(inference_results)
+        for inf = 1:numel(inference_results)
             disp('conducting single trace fits...')
             A_log = log(inference_results(inf).A_mat);
             v = inference_results(inf).r*Tres;

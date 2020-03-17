@@ -230,7 +230,7 @@ elseif ~all(nc_frame_vec) && ~segmentNuclei
     segmentNuclei = 1;   
     segment_indices = find(~nc_frame_vec);
 end
-if true%segmentNuclei
+if segmentNuclei
     disp('segmenting nuclei...')
     tic    
     %%% Segment nuclei     

@@ -4,176 +4,136 @@ clear
 % close all
 addpath('../utilities')
 % set ID variables
-project1 = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
-project2 = 'Dl-Ven_snaBAC-mCh_v3';
 DropboxFolder = 'S:\Nick\Dropbox\';
-
+% project_cell = {'Dl-Ven_snaBAC-mCh_v4','Dl-Ven_snaBAC-mCh_v3','Dl-Ven_snaBAC-mCh_F-F-F_v1'};
+% title_cell = {'OG (New, 2D)','OG (Old, 2D)','FFF (2D)'};
+project_cell = {'Dl-Ven_snaBAC-mCh_v3','Dl-Ven_snaBAC-mCh_v4'};%,'Dl-Ven_snaBAC-mCh_F-F-F_v1'};
+title_cell = {'OG (old, 2D hmm, 3D sampling)','OG (new, full 3D)'};%,'FFF (full 3D)'};
+fluo_dim_vec = [3,3,3];
+type_name = '3D_comparisons_og_only';
 % Params
-fluo_dim = 3;
 K = 3;
 w = 7;
 
-% set write paths
-[~, DataPath1, FigureRoot] =   header_function(DropboxFolder, project1); 
-[~, DataPath2, ~] =   header_function(DropboxFolder, project2); 
+% load data for each project
+results_struct_master = struct;
+hmm_struct_master = struct;
+raw_struct_master = struct;
+for p = 1:numel(project_cell)
+    project = project_cell{p};
+    fluo_dim = fluo_dim_vec(p);
+    % set write paths
+    [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project); 
 
-FigPath = [FigureRoot '\' project1 '\input_comparisons\'];
+    % load data
+    % final results
+    load([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
+    results_struct_master(p).results_struct = results_struct;
+    clear results_struct;
+
+    % intermediate input/output set
+    load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
+    hmm_struct_master(p).hmm = hmm_input_output;
+    clear nucleus_struct;
+
+    % raw compiled data
+    load([DataPath 'nucleus_struct.mat'])
+    raw_struct_master(p).nucleus_struct = nucleus_struct;
+    clear nucleus_struct;
+end
+
+% make figure directory
+FigPath = [FigureRoot '\input_output_comparisons\' type_name '\'];
 mkdir(FigPath)
-
-% load data
-% final results
-load([DataPath1 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
-results_struct1 = results_struct;
-load([DataPath2 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
-results_struct2 = results_struct;
-clear results_struct;
-
-% intermediate input/output set
-load([DataPath1 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
-hmm1 = hmm_input_output;
-load([DataPath2 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
-hmm2 = hmm_input_output;
-clear nucleus_struct;
-
-% raw compiled data
-load([DataPath1 'nucleus_struct.mat'])
-nc_struct1 = nucleus_struct;
-load([DataPath2 'nucleus_struct.mat'])
-nc_struct2 = nucleus_struct;
-clear nucleus_struct;
-%%
+%% create analysis filters
+analysis_struct = struct;
 Tres = 20; % seconds
-% extract relevant arrays from project 1
-lag_dur_vec_1 = results_struct1.lag_dur_vec;
-lead_dur_vec_1 = results_struct1.lead_dur_vec;
-hmm_array_dm_1 = results_struct1.hmm_array;
-hmm_array_dm_1 = hmm_array_dm_1 / nanstd(hmm_array_dm_1(:));
-fluo_array_dm_1 = results_struct1.fluo_array  - nanmean(results_struct1.fluo_array,2);
-fluo_array_dm_1 = fluo_array_dm_1 / nanstd(fluo_array_dm_1(:));
-mf_array_dm_1 = results_struct1.mf_array - nanmean(results_struct1.mf_array,2);
-mf_vec_1 = results_struct1.mf_protein_vec;
-time_vec_1 = results_struct1.center_time_vec/60;
-spot_array_dm_1 = results_struct1.spot_array_dm;
-virtual_array_dm_1 = results_struct1.virtual_array_dm;
-feature_sign_vec_1 = results_struct1.feature_sign_vec;
-% now project 2
-lag_dur_vec_2 = results_struct2.lag_dur_vec;
-lead_dur_vec_2 = results_struct2.lead_dur_vec;
-hmm_array_dm_2 = results_struct2.hmm_array;
-hmm_array_dm_2 = hmm_array_dm_2 / nanstd(hmm_array_dm_2(:));
-fluo_array_dm_2 = results_struct2.fluo_array  - nanmean(results_struct2.fluo_array,2);
-fluo_array_dm_2 = fluo_array_dm_2 / nanstd(fluo_array_dm_2(:));
-mf_array_dm_2 = results_struct2.mf_array - nanmean(results_struct2.mf_array,2);
-mf_vec_2 = results_struct2.mf_protein_vec;
-time_vec_2 = results_struct2.center_time_vec/60;
-spot_array_dm_2 = results_struct2.spot_array_dm;
-virtual_array_dm_2 = results_struct2.virtual_array_dm;
-feature_sign_vec_2 = results_struct2.feature_sign_vec;
+min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
+max_pause_len = 1000;
+min_burst_len = 3;
+max_burst_len = 1000;
 
-%  determine snip size
-n_col = size(spot_array_dm_1,2);
+for p = 1:numel(project_cell)
+    % extract relevant arrays from project 1
+    results_struct = results_struct_master(p).results_struct;
+    analysis_struct(p).lag_dur_vec = results_struct.lag_dur_vec;
+    analysis_struct(p).lead_dur_vec = results_struct.lead_dur_vec;
+    analysis_struct(p).hmm_array_dm = results_struct.hmm_array;
+    analysis_struct(p).hmm_array_dm = analysis_struct(p).hmm_array_dm ./ nanstd(analysis_struct(p).hmm_array_dm);
+    fluo_array_dm = results_struct.fluo_array  - nanmean(results_struct.fluo_array,2);
+    analysis_struct(p).fluo_array_dm = fluo_array_dm / nanstd(fluo_array_dm(:));
+    analysis_struct(p).mf_array_dm = results_struct.mf_array - nanmean(results_struct.mf_array,2);     
+    analysis_struct(p).time_vec = results_struct.center_time_vec/60;
+    analysis_struct(p).spot_array_dm = results_struct.spot_array_dm;
+    analysis_struct(p).virtual_array_dm = results_struct.virtual_array_dm;
+    analysis_struct(p).feature_sign_vec = results_struct.feature_sign_vec;
+    % generate basic filter for target locus and computational controls
+    analysis_struct(p).burst_ft = results_struct.feature_sign_vec == 1&results_struct.lead_dur_vec>=min_pause_len&results_struct.lead_dur_vec<=max_pause_len...
+        &results_struct.lag_dur_vec>=min_burst_len&results_struct.lag_dur_vec<=max_burst_len;%    
+    % record sampling vector
+    analysis_struct(p).sample_options = find(analysis_struct(p).burst_ft);
+end
+
+%%  determine snip size
+n_col = size(fluo_array_dm,2);
 window_size = floor(n_col/2);
 time_axis = (-window_size:window_size)*Tres/60;
 
 % set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-% min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
-% max_pause_len = 10;
-min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
-max_pause_len = 1000;
-min_burst_len = 3;
-max_burst_len = 1000;
-% max_burst_len = 12;
 
-% generate basic filter for target locus and computational controls
-burst_ft_1 = feature_sign_vec_1 == 1&lead_dur_vec_1>=min_pause_len&lead_dur_vec_1<=max_pause_len...
-    &lag_dur_vec_1>=min_burst_len&lag_dur_vec_1<=max_burst_len;%
-burst_ft_2 = feature_sign_vec_2 == 1&lead_dur_vec_2>=min_pause_len&lead_dur_vec_2<=max_pause_len...
-    &lag_dur_vec_2>=min_burst_len&lag_dur_vec_2<=max_burst_len;%
-% sampling vectors
-sample_options_1 = find(burst_ft_1);
-sample_options_2 = find(burst_ft_2);
-
-
-% (1) make de-trended input-output figure with controls
-boot_spot_array_dm_1 = NaN(nBoots,n_col);
-boot_virt_array_dm_1 = NaN(nBoots,n_col);
-boot_hmm_array_dm_1 = NaN(nBoots,n_col);
-boot_mf_array_dm_1 = NaN(nBoots,n_col);
-boot_fluo_array_dm_1 = NaN(nBoots,n_col);
-boot_spot_array_dm_2 = NaN(nBoots,n_col);
-boot_virt_array_dm_2 = NaN(nBoots,n_col);
-boot_hmm_array_dm_2 = NaN(nBoots,n_col);
-boot_mf_array_dm_2 = NaN(nBoots,n_col);
-boot_fluo_array_dm_2 = NaN(nBoots,n_col);
-% take bootstrap samples
-for n = 1:nBoots
-    % project 1
-    s_ids_1 = randsample(sample_options_1,numel(sample_options_1),true);        
-    boot_spot_array_dm_1(n,:) = nanmean(spot_array_dm_1(s_ids_1,:));
-    boot_virt_array_dm_1(n,:) = nanmean(virtual_array_dm_1(s_ids_1,:));
-    boot_hmm_array_dm_1(n,:) = nanmean(hmm_array_dm_1(s_ids_1,:));
-    boot_fluo_array_dm_1(n,:) = nanmean(fluo_array_dm_1(s_ids_1,:));
-    boot_mf_array_dm_1(n,:) = nanmean(mf_array_dm_1(s_ids_1,:));
-    % project 2
-    s_ids_2 = randsample(sample_options_2,numel(sample_options_2),true);        
-    boot_spot_array_dm_2(n,:) = nanmean(spot_array_dm_2(s_ids_2,:));
-    boot_virt_array_dm_2(n,:) = nanmean(virtual_array_dm_2(s_ids_2,:));
-    boot_hmm_array_dm_2(n,:) = nanmean(hmm_array_dm_2(s_ids_2,:));
-    boot_fluo_array_dm_2(n,:) = nanmean(fluo_array_dm_2(s_ids_2,:));
-    boot_mf_array_dm_2(n,:) = nanmean(mf_array_dm_2(s_ids_2,:));
+for p = 1:numel(project_cell)
+    % (1) make de-trended input-output figure with controls
+    boot_spot_array_dm = NaN(nBoots,n_col);
+    boot_virt_array_dm = NaN(nBoots,n_col);
+    boot_hmm_array_dm = NaN(nBoots,n_col);
+    boot_mf_array_dm = NaN(nBoots,n_col);
+    boot_fluo_array_dm = NaN(nBoots,n_col);
+    % take bootstrap samples
+    for n = 1:nBoots
+        % project 1
+        boot_ids = randsample(analysis_struct(p).sample_options,numel(analysis_struct(p).sample_options),true);        
+        boot_spot_array_dm(n,:) = nanmean(analysis_struct(p).spot_array_dm(boot_ids,:));
+        boot_virt_array_dm(n,:) = nanmean(analysis_struct(p).virtual_array_dm(boot_ids,:));
+        boot_hmm_array_dm(n,:) = nanmean(analysis_struct(p).hmm_array_dm(boot_ids,:));
+        boot_fluo_array_dm(n,:) = nanmean(analysis_struct(p).fluo_array_dm(boot_ids,:));
+        boot_mf_array_dm(n,:) = nanmean(analysis_struct(p).mf_array_dm(boot_ids,:));
+    end
+    
+    % bootstrap mean and se
+    % calculate mean and standard error for spot
+    analysis_struct(p).spot_mean = nanmean(boot_spot_array_dm);
+    analysis_struct(p).spot_ste = nanstd(boot_spot_array_dm);
+    % calculate mean and standard error for virtual spot
+    analysis_struct(p).virt_mean = nanmean(boot_virt_array_dm);
+    analysis_struct(p).virt_ste = nanstd(boot_virt_array_dm);
+    % calculate mean and standard error for hmm trend
+    analysis_struct(p).hmm_mean = nanmean(boot_hmm_array_dm);
+    analysis_struct(p).hmm_ste = nanstd(boot_hmm_array_dm);
+    % calculate mean and standard error for raw fluoresecence
+    analysis_struct(p).fluo_mean = nanmean(boot_fluo_array_dm);
+    analysis_struct(p).fluo_ste = nanstd(boot_fluo_array_dm);
+    % calculate mean and standard error for mf protein
+    analysis_struct(p).mf_mean = nanmean(boot_mf_array_dm);
+    analysis_struct(p).mf_ste = nanstd(boot_mf_array_dm);
 end
 
-% project #1
-% calculate mean and standard error for spot
-spot_mean_1 = nanmean(boot_spot_array_dm_1);
-spot_ste_1 = nanstd(boot_spot_array_dm_1);
-% calculate mean and standard error for virtual spot
-virt_mean_1 = nanmean(boot_virt_array_dm_1);
-virt_ste_1 = nanstd(boot_virt_array_dm_1);
-% calculate mean and standard error for hmm trend
-hmm_mean_1 = nanmean(boot_hmm_array_dm_1);
-hmm_ste_1 = nanstd(boot_hmm_array_dm_1);
-% calculate mean and standard error for raw fluoresecence
-fluo_mean_1 = nanmean(boot_fluo_array_dm_1);
-fluo_ste_1 = nanstd(boot_fluo_array_dm_1);
-% calculate mean and standard error for mf protein
-mf_mean_1 = nanmean(boot_mf_array_dm_1);
-mf_ste_1 = nanstd(boot_mf_array_dm_1);
 
-% project #2
-% calculate mean and standard error for spot
-spot_mean_2 = nanmean(boot_spot_array_dm_2);
-spot_ste_2 = nanstd(boot_spot_array_dm_2);
-% calculate mean and standard error for virtual spot
-virt_mean_2 = nanmean(boot_virt_array_dm_2);
-virt_ste_2 = nanstd(boot_virt_array_dm_2);
-% calculate mean and standard error for hmm trend
-hmm_mean_2 = nanmean(boot_hmm_array_dm_2);
-hmm_ste_2 = nanstd(boot_hmm_array_dm_2);
-% calculate mean and standard error for raw fluoresecence
-fluo_mean_2 = nanmean(boot_fluo_array_dm_2);
-fluo_ste_2 = nanstd(boot_fluo_array_dm_2);
-% calculate mean and standard error for mf protein
-mf_mean_2 = nanmean(boot_mf_array_dm_2);
-mf_ste_2 = nanstd(boot_mf_array_dm_2);
-
-%% make figure
-cmap1 = brewermap([],'Set2');
+%% make surge trend figure
+cmap1 = brewermap(5,'Reds');
+line_types = {'-','--','-o'};
 
 burst_dt_comp_fig = figure;
-% Dorsal activity
 hold on
-% locus (project 1)
-p1 = plot(time_axis,spot_mean_1,'-','Color',cmap1(2,:),'LineWidth',2);
-% locus (project 2)
-p2 = plot(time_axis,spot_mean_2,'--','Color',cmap1(2,:),'LineWidth',2);
-ax = gca;
-ax.YColor = 'black';%cmap1(2,:);
-% grid on
+for p = 1:numel(project_cell)
+    % locus 
+    e = errorbar(time_axis,analysis_struct(p).spot_mean,analysis_struct(p).spot_ste,line_types{p},'Color',cmap1(1+p,:),'LineWidth',2);
+    e.CapSize = 0;
+end
+% labels, formatting, etc
 xlabel('offset (minutes)')
 ylabel('relative Dl concentration (au)')
-legend('Dl at {\it snail} locus (FFF)','Dl at {\it snail} locus (OG)', 'Location','northwest');
+legend(title_cell{:}, 'Location','southwest');
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
@@ -186,11 +146,12 @@ burst_dt_comp_fig.InvertHardcopy = 'off';
 saveas(burst_dt_comp_fig,[FigPath 'locus_trend_comparisons.tif'])
 saveas(burst_dt_comp_fig,[FigPath 'locus_trend_comparisons.pdf'])
 
+%%
 burst_dt_fig_1 = figure;
 % Dorsal activity
 hold on
 % locus (project 1)
-p1 = plot(time_axis,spot_mean_1,'-','Color',cmap1(2,:),'LineWidth',2);
+p1 = plot(time_axis,spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 % locus (project 2)
 p2 = plot(time_axis,virt_mean_1,'--','Color',cmap1(3,:),'LineWidth',2);
 ax = gca;
@@ -355,7 +316,7 @@ hold on
 % locus (project 1)
 p1 = plot(time_axis,boot_spot_array_ds_2','--','Color',[cmap1(2,:) .1],'LineWidth',1);
 % locus (project 2)
-p2 = plot(time_axis,spot_mean_1,'-','Color',cmap1(2,:),'LineWidth',2);
+p2 = plot(time_axis,spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on

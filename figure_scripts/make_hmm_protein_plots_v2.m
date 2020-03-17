@@ -33,7 +33,7 @@ for i = 1:numel(inf_files)
     end
 end
 Tres = inference_results(1).deltaT;
-%% get list of mf dorsal values used for inference bins
+% get list of mf dorsal values used for inference binsq
 mf_axis_vec = inference_results(1).protein_bin_edges(1:end-1) + diff(inference_results(1).protein_bin_edges)/2;
 dorsal_bins = 1:numel(inference_results(1).protein_bin_list);
 bin_id_vec = [inference_results.protein_bin];
@@ -163,7 +163,7 @@ box on
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
 
-%%
+%
 
 p_dur = polyfit(mf_axis_vec(ind_list),dur_vec_mean(ind_list),1);
 p_trend_dur = polyval(p_dur,mf_axis_long);
@@ -189,7 +189,7 @@ box on
 saveas(dur_trend,[FigPath,'burst_dur_mf_pt.tif'])
 saveas(dur_trend,[FigPath,'burst_dur_mf_pt.pdf'])
 
-%%
+%
 p_freq = polyfit(mf_axis_vec(ind_list),freq_vec_mean(ind_list),1);
 p_trend_freq = polyval(p_freq,mf_axis_long);
 

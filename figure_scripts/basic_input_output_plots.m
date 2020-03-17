@@ -5,8 +5,8 @@ clear
 addpath('utilities')
 % set ID variables
 % targetProject = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
-targetProject = 'Dl-Ven_snaBAC-mCh_v3';
-controlProject = 'Dl-Ven_hbP2P-mCh_v2';
+targetProject = 'Dl-Ven_snaBAC-mCh_v4';
+controlProject = 'Dl-Ven_snaBAC-mCh_v3';
 DropboxFolder = 'S:\Nick\Dropbox\';
 
 % Params
@@ -24,7 +24,7 @@ mkdir(FigPath)
 % load data
 load([DataPathTarget 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
 target_results_struct = results_struct;
-load([DataPathControl 'hmm_input_output_results.mat'])
+load([DataPathControl 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
 control_results_struct = results_struct;
 clear results_struct;
 
@@ -56,7 +56,7 @@ time_axis = (-window_size:window_size)*Tres/60;
 %% set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
 min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
-max_pause_len = 10;
+max_pause_len = 12;
 % min_pause_len = 1; % minimum length of preceding OFF period (in time steps)
 % max_pause_len = 5;
 min_burst_len = 3;

@@ -39,4 +39,4 @@ surge_axis = round([-20:10:20] * VoxelSize / calibration_info.venus_au_per_molec
 % surge amplitude
 surge_amp_axis = round([-.5:.5:1.5]/ calibration_info.venus_au_per_molecule * integration_disk_size / 6,2)
 
-sna_burst_axis2 = [2 3 4] / au_per_rnap / 3 * 2 * 60
+sna_burst_axis2 = [2 3 4] / au_per_rnap / 3 

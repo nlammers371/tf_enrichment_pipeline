@@ -33,6 +33,7 @@ modelPath = './utilities';
 savio = 0;
 K = 3;
 w = 7;
+exclude_ids = [327 1143];
 protein_bin_flag = false;
 dpBootstrap = 1;
 % minDp = 10;

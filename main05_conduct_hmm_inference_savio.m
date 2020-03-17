@@ -36,7 +36,7 @@ modelPath = './utilities';
 % INFERENCE PARAMETERS
 savioFlag = 1;
 awsFlag = 0;
-fluo3D_flag = 1;
+fluo3D_flag = 0;
 automatic_binning = false;
 protein_bin_flag = true;
 dpBootstrap = 1;
@@ -152,12 +152,12 @@ if protein_bin_flag
         n_protein_bins = ceil(nTotal/SampleSize);
     end
     % generate list of average protein levels
-    mf_index = [trace_struct_filtered.mf_protein];
+    mf_list = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
     q_vec = linspace(0,1,n_protein_bins+1);        
-    mf_prctile_vec = quantile(mf_index,q_vec);    
+    mf_prctile_vec = quantile(mf_list,q_vec);    
     % assign traces to groups    
-    id_vec = discretize(mf_index,mf_prctile_vec);
+    id_vec = discretize(mf_list,mf_prctile_vec);
     for i = 1:numel(trace_struct_filtered)
         trace_struct_filtered(i).mf_protein_bin = id_vec(i);
     end
@@ -303,7 +303,7 @@ for t = 1:length(iter_list)
             output.time_data = time_data;
         end
         output.skip_flag = skip_flag;
-        disp('saving...')
+%         disp('saving...')
         save([out_file '.mat'], 'output');           
     end  
 end
