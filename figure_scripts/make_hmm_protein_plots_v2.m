@@ -3,14 +3,14 @@ clear
 close all
 addpath('../utilities')
 % set folder paths
-project = 'Dl-Ven_snaBAC-mCh_v4';
+project = '2xDl-Ven_snaBAC-mCh_v4';
 DropboxFolder = 'S:\Nick\Dropbox\';
 [~, DataPath, FigRoot] =   header_function(DropboxFolder, project);
 
 % specify inference parameters
 K = 3;
 w = 7;
-fluo = 3;
+fluo = 2;
 load([DataPath 'nucleus_struct_protein.mat'])
 
 resultsPath = [DataPath 'hmm_inference_protein\w' num2str(w) '_K' num2str(K)  '_f' num2str(fluo) 'D\'];

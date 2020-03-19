@@ -175,7 +175,7 @@ for p = 1:numel(project_cell)
     analysis_struct(p).edge_dist_mean = nanmean(edge_dist_array) - nanmean(edge_dist_array(:));
     analysis_struct(p).nc_pt_mean = nanmean(nc_protein_array) - nanmean(nc_protein_array(:));
     
-    drift_filter = 0.1*nanmax(sqrt(spot_dx_array(:,13:17).^2+spot_dy_array(:,13:17).^2),[],2) > 1.2;
+    drift_filter = 0.1*nanmax(sqrt(spot_dx_array(:,.^2+spot_dy_array.^2),[],2) < 1;
     analysis_struct(p).drift_filter = drift_filter;
     
     analysis_struct(p).spot_pt_mean_ft = nanmean(spot_pt_array(drift_filter,:)) - nanmean(nanmean(spot_pt_array(drift_filter,:)));

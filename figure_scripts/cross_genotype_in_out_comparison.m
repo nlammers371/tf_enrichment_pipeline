@@ -7,10 +7,12 @@ addpath('../utilities')
 DropboxFolder = 'S:\Nick\Dropbox\';
 % project_cell = {'Dl-Ven_snaBAC-mCh_v4','Dl-Ven_snaBAC-mCh_v3','Dl-Ven_snaBAC-mCh_F-F-F_v1'};
 % title_cell = {'OG (New, 2D)','OG (Old, 2D)','FFF (2D)'};
-project_cell = {'Dl-Ven_snaBAC-mCh_v3','Dl-Ven_snaBAC-mCh_v4'};%,'Dl-Ven_snaBAC-mCh_F-F-F_v1'};
-title_cell = {'OG (old, 2D hmm, 3D sampling)','OG (new, full 3D)'};%,'FFF (full 3D)'};
-fluo_dim_vec = [3,3,3];
+project_cell = {'Dl-Ven_snaBAC-mCh_v4','Dl-Ven_snaBAC-mCh_v4'};%,'Dl-Ven_snaBAC-mCh_F-F-F_v1'};
+title_cell = {'OG (3D protein, 2D fluo)','OG (3D protein, 3D fluo)'};%,'FFF (full 3D)'};
+fluo_dim_vec = [2,3];
+protein_dim_vec = [3,3];
 type_name = '3D_comparisons_og_only';
+
 % Params
 K = 3;
 w = 7;
@@ -22,17 +24,18 @@ raw_struct_master = struct;
 for p = 1:numel(project_cell)
     project = project_cell{p};
     fluo_dim = fluo_dim_vec(p);
+    protein_dim = protein_dim_vec(p);
     % set write paths
     [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project); 
 
     % load data
     % final results
-    load([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
+    load([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
     results_struct_master(p).results_struct = results_struct;
     clear results_struct;
 
     % intermediate input/output set
-    load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
+    load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D_dt.mat'],'hmm_input_output')
     hmm_struct_master(p).hmm = hmm_input_output;
     clear nucleus_struct;
 
@@ -48,9 +51,9 @@ mkdir(FigPath)
 %% create analysis filters
 analysis_struct = struct;
 Tres = 20; % seconds
-min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
 max_pause_len = 1000;
-min_burst_len = 3;
+min_burst_len = 2;
 max_burst_len = 1000;
 
 for p = 1:numel(project_cell)
@@ -74,7 +77,7 @@ for p = 1:numel(project_cell)
     analysis_struct(p).sample_options = find(analysis_struct(p).burst_ft);
 end
 
-%%  determine snip size
+%  determine snip size
 n_col = size(fluo_array_dm,2);
 window_size = floor(n_col/2);
 time_axis = (-window_size:window_size)*Tres/60;

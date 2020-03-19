@@ -33,6 +33,7 @@ end
 w = 7;
 K = 3;
 fluo_dim = 3;
+protein_dim = fluo_dim;
 n_protein_boots = 5; % max num protein bootstraps to use for soft fits
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)       
@@ -95,7 +96,7 @@ qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
-if soft_fit_flag        
+if false%soft_fit_flag        
     if contains(project,'snaBAC') % use dorsal-binned results for sna
         % seed raqndom number generator for consistency
         rng(436);
@@ -208,13 +209,18 @@ for inf = 1:numel(soft_fit_struct)
         % these quantities have not been interpolated
         if fluo_dim == 3   
             ff_pt = nucleus_struct_protein(i).fluo3D;
+            master_fluo = nucleus_struct_protein(i).fluo3D_interp;            
+        elseif fluo_dim == 2
+            ff_pt = nucleus_struct_protein(i).fluo;
+            master_fluo = nucleus_struct_protein(i).fluo_interp;            
+        end        
+        if protein_dim == 3
             sp_pt = nucleus_struct_protein(i).spot_protein_vec_3d;
             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
-        else
-            ff_pt = nucleus_struct_protein(i).fluo;
+        elseif protein_dim == 2
             sp_pt = nucleus_struct_protein(i).spot_protein_vec;
             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec; 
-        end        
+        end
         mcp_pt = nucleus_struct_protein(i).spot_mcp_vec;         
         nn_pt = nucleus_struct_protein(i).edge_null_protein_vec;
         mf_pt_mf = nucleus_struct_protein(i).mf_null_protein_vec;                    
@@ -223,8 +229,6 @@ for inf = 1:numel(soft_fit_struct)
         if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP            
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
-            master_fluo = nucleus_struct_protein(i).fluo_interp;
-            
             % extract position vectors (used for selecting nearest neighbor)
             x_nc = double(nucleus_struct_protein(i).xPos);
             y_nc = double(nucleus_struct_protein(i).yPos);
@@ -355,4 +359,4 @@ for i = 1:n_unique
 end
 
 % save results
-save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim)  'D.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim)  'D_p' num2str(protein_dim) 'D.mat'],'hmm_input_output')
