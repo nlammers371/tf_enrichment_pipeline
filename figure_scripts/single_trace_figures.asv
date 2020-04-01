@@ -63,37 +63,46 @@ for p = keep_ids
 
 
     % make figure
-    burst_surge_fig = figure('Visible','off');
+    burst_surge_fig = figure;
     hold on       
-    yyaxis right
-%     p_pt = area(time,spot_protein,'FaceColor',cmap(2,:),'EdgeAlpha',0,'FaceAlpha',0.25);
-    plot(time,spot_protein,'Color',cmap(2,:),'LineWidth',1.5);
-    plot(time,serial_protein,'-','Color',cmap(3,:),'LineWidth',1.5);
+    yyaxis left
+    p_pt = area(time,spot_protein,'FaceColor',cmap(2,:),'EdgeAlpha',0,'FaceAlpha',0.25);
     ax = gca;
     ax.YColor = cmap(2,:);
     ylabel('Dorsal al locus (detrended)')
     
-    yyaxis left
-    % fluo trend
-    area(time,fluo,'FaceColor',[.6 .6 .6],'FaceAlpha',0.5,'EdgeAlpha',0);%,'LineWidth',1);
+    yyaxis right
+    % fluo trends
+    p2D = plot(time_interp,fluo1_interp,'-','Color','black','LineWidth',1.5);
 
     % plot inferred burst events
     ax = gca;
-    xlim([nanmin(time) nanmax(time)])
     y_lim = ax.YLim;
     ylim([0 max(y_lim)])
     y_lim = ax.YLim;   
     ax.YColor = 'black';
-        
-    ylabel('MS2 spot intensity')
+    xlim([min(time_interp) max(time_interp)])
+%     
+%     plot([all_burst_times2;all_burst_times2],[repelem(y_lim(1),numel(all_burst_times2)) ; ...
+%         repelem(y_lim(2),numel(all_burst_times2))],'-','Color',[cmap(3,:) 1])
+%     plot([all_burst_times1;all_burst_times1],[repelem(y_lim(1),numel(all_burst_times1)) ; ...
+%         repelem(y_lim(2),numel(all_burst_times1))],'--','Color',[0 0 0 1])
     
-    legend('spot fluorescence','protein at locus','protein at control')    
+    plot([surge_burst_times2;surge_burst_times2],[repelem(y_lim(1),numel(surge_burst_times2)) ; ...
+        repelem(y_lim(2),numel(surge_burst_times2))],'-','Color',[cmap(3,:) 1],'LineWidth',1.5)
+    plot([surge_burst_times1;surge_burst_times1],[repelem(y_lim(1),numel(surge_burst_times1)) ; ...
+        repelem(y_lim(2),numel(surge_burst_times1))],'--','Color',[0 0 0 1],'LineWidth',1.5)
+    
+    ylabel('MS2 spot intensity')
+    chi=get(gca, 'Children');
+    set(gca, 'Children',flipud(chi));
+    legend([p2D p3D p_pt],'2D method','3D method','Dorsal')    
     xlabel('minutes into nc14')
     set(gca,'Fontsize',14);
     box on;
     
-    saveas(burst_surge_fig,[FigPath 'trace_pt' num2str(p) '.png'])
-    saveas(burst_surge_fig,[FigPath 'trace_pt' num2str(p) '.pdf'])
+    saveas(burst_surge_fig,[FigPath 'trace_pt' num2str(pt_id*1e5) '_sub' num2str(pt_sub_id) '.png'])
     close all
-        
+    
+    close all
 end
