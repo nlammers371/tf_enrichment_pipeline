@@ -5,9 +5,9 @@ close all
 addpath('utilities')
 % define core ID variables
 project = 'Dl-Ven_snaBAC-mCh_v3';
-DropboxFolder =  'E:\Meghan\Dropbox\';
+DropboxFolder =  'S:\Nick\Dropbox\';
 [~, ~, FigRoot] =   header_function(DropboxFolder, project);
-DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
+DropboxFolder = 'S:\Nick\Dropbox\';
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 FigPath = [FigRoot '\_paper_figures\burstFeature_vs_surgeFeature\'];
 mkdir(FigPath)

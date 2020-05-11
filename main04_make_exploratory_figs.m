@@ -13,7 +13,8 @@ relEnrich_lb = 0.85; %lower bound of relative enrichment for consistency
 relEnrichHeatMap_ub = 1.2;
 relEnrichHeatMap_lb = 1;
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
-FigPath = [FigureRoot '\' project '\'];
+% FigPath = [FigureRoot '\' project '\'];
+FigPath = ['S:\Meghan\Dropbox\LocalEnrichmentFigures\PipelineOutput' '\' project '\'];
 
 for i = 1:(numel(varargin)-1)  
     if i ~= numel(varargin)
@@ -539,7 +540,7 @@ e = errorbar(dist_index,r_null_mean / r_null_mean(1),r_null_ste / r_null_mean(1)
 e.CapSize = 0;
 e = errorbar(dist_index,r_spot_mean / r_null_mean(1),r_spot_ste / r_null_mean(1),'Color',cm2(35,:),'LineWidth',1.75);
 e.CapSize = 0;
-grid on
+grid off
 r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')

@@ -33,6 +33,7 @@ end
 w = 7;
 K = 3;
 fluo_dim = 3;
+protein_dim = fluo_dim;
 n_protein_boots = 5; % max num protein bootstraps to use for soft fits
 %%%%%%%%%%%%%%
 for i = 1:numel(varargin)       
@@ -95,7 +96,7 @@ qc_indices = find([nucleus_struct_protein.qc_flag]==1);
 particle_index = [nucleus_struct_protein.ParticleID];
 
 % perform soft trace decoding if necessary
-if soft_fit_flag        
+if false%soft_fit_flag        
     if contains(project,'snaBAC') % use dorsal-binned results for sna
         % seed raqndom number generator for consistency
         rng(436);
@@ -128,9 +129,9 @@ if soft_fit_flag
             mf_sub_indices = mf_id_vec==dorsal_index(d);
             mf_trace_indices = qc_indices(mf_sub_indices);
             % conduct trace fits
-            disp('conducting single trace fits...')
-            parfor inf = 1:numel(mf_ind_samp)                
-                ind = mf_ind_samp(inf)
+            disp(['conducting single trace fits (' sprintf('%02d',d) '/' num2str(numel(dorsal_index)) ')'])
+            for inf = 1:numel(mf_ind_samp)                
+                ind = mf_ind_samp(inf);
                 A_log = log(inference_results(ind).A_mat);
                 v = inference_results(ind).r*Tres;
                 sigma = sqrt(inference_results(ind).noise);
@@ -138,7 +139,11 @@ if soft_fit_flag
                 eps = 1e-4;
                 fluo_values = cell(numel(mf_trace_indices),1);
                 for i = 1:numel(mf_trace_indices)
-                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                    if fluo_dim == 2
+                        fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                    else
+                        fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo3D_interp;
+                    end
                     start_i = find(~isnan(fluo),1);
                     stop_i = find(~isnan(fluo),1,'last');
                     fluo = fluo(start_i:stop_i);
@@ -156,7 +161,7 @@ if soft_fit_flag
     
     else % just use average inference for hbP2P
         soft_fit_struct = struct; 
-        parfor inf = 1:numel(inference_results)
+        for inf = 1:numel(inference_results)
             disp('conducting single trace fits...')
             A_log = log(inference_results(inf).A_mat);
             v = inference_results(inf).r*Tres;
@@ -165,7 +170,11 @@ if soft_fit_flag
             eps = 1e-4;
             fluo_values = cell(numel(qc_indices),1);
             for i = 1:numel(qc_indices)
-                fluo = nucleus_struct_protein(qc_indices(i)).fluo_interp;
+               if fluo_dim == 2
+                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo_interp;
+                else
+                    fluo = nucleus_struct_protein(mf_trace_indices(i)).fluo3D_interp;
+                end
                 start_i = find(~isnan(fluo),1);
                 stop_i = find(~isnan(fluo),1,'last');
                 fluo = fluo(start_i:stop_i);
@@ -200,13 +209,18 @@ for inf = 1:numel(soft_fit_struct)
         % these quantities have not been interpolated
         if fluo_dim == 3   
             ff_pt = nucleus_struct_protein(i).fluo3D;
-            sp_pt = nucleus_struct_protein(i).spot_protein_vec_3d;
-             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
-        else
+            master_fluo = nucleus_struct_protein(i).fluo3D_interp;            
+        elseif fluo_dim == 2
             ff_pt = nucleus_struct_protein(i).fluo;
+            master_fluo = nucleus_struct_protein(i).fluo_interp;            
+        end        
+        if protein_dim == 3
+            sp_pt = nucleus_struct_protein(i).spot_protein_vec_3d;
+            sr_pt = nucleus_struct_protein(i).serial_null_protein_vec_3d; 
+        elseif protein_dim == 2
             sp_pt = nucleus_struct_protein(i).spot_protein_vec;
             sr_pt = nucleus_struct_protein(i).serial_null_protein_vec; 
-        end        
+        end
         mcp_pt = nucleus_struct_protein(i).spot_mcp_vec;         
         nn_pt = nucleus_struct_protein(i).edge_null_protein_vec;
         mf_pt_mf = nucleus_struct_protein(i).mf_null_protein_vec;                    
@@ -215,8 +229,6 @@ for inf = 1:numel(soft_fit_struct)
         if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP            
             % extract interpolated fluorescence and time vectors
             master_time = nucleus_struct_protein(i).time_interp;
-            master_fluo = nucleus_struct_protein(i).fluo_interp;
-            
             % extract position vectors (used for selecting nearest neighbor)
             x_nc = double(nucleus_struct_protein(i).xPos);
             y_nc = double(nucleus_struct_protein(i).yPos);
@@ -347,4 +359,4 @@ for i = 1:n_unique
 end
 
 % save results
-save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim)  'D.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim)  'D_p' num2str(protein_dim) 'D.mat'],'hmm_input_output')

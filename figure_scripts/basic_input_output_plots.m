@@ -4,9 +4,17 @@ clear
 % close all
 addpath('utilities')
 % set ID variables
-targetProject = 'Dl-Ven_snaBAC-mCh_v3';
-controlProject = 'Dl-Ven_hbP2P-mCh_v2';
-DropboxFolder = 'E:\Nick\LivemRNA\Dropbox (Personal)\';
+% targetProject = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
+targetProject = 'Dl-Ven_snaBAC-mCh_v4';
+controlProject = 'Dl-Ven_snaBAC-mCh_v3';
+DropboxFolder = 'S:\Nick\Dropbox\';
+
+% Params
+fluo_dim = 3;
+K = 3;
+w = 7;
+
+% set write paths
 [~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
 [~, DataPathControl, ~] =   header_function(DropboxFolder, controlProject); 
 
@@ -14,9 +22,9 @@ FigPath = [FigureRoot '\' targetProject '\input_output01\'];
 mkdir(FigPath)
 
 % load data
-load([DataPathTarget 'hmm_input_output_results.mat'])
+load([DataPathTarget 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
 target_results_struct = results_struct;
-load([DataPathControl 'hmm_input_output_results.mat'])
+load([DataPathControl 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
 control_results_struct = results_struct;
 clear results_struct;
 
@@ -27,7 +35,7 @@ lead_dur_vec_target = target_results_struct.lead_dur_vec;
 hmm_array = target_results_struct.hmm_array;
 swap_hmm_array = target_results_struct.swap_hmm_array;
 spot_array_dt = target_results_struct.spot_array_dt;
-% spot_array_dm = target_results_struct.spot_array_dm;
+% spot_array_dt = target_results_struct.spot_array_dt;
 swap_array_dt = target_results_struct.swap_array_dt;
 virtual_array_dt = target_results_struct.virtual_array_dt;
 feature_sign_vec_target = target_results_struct.feature_sign_vec;
@@ -45,19 +53,24 @@ n_col = size(swap_array_dt,2);
 window_size = floor(n_col/2);
 time_axis = (-window_size:window_size)*Tres/60;
 
-% set basic analyisis parameters
+%% set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 6; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
+max_pause_len = 12;
+% min_pause_len = 1; % minimum length of preceding OFF period (in time steps)
+% max_pause_len = 5;
 min_burst_len = 3;
-max_burst_len = 12;
+max_burst_len = 1000;
 % max_burst_len = 12;
 %%% (1) make basic input-output figure
-close all
+% close all
 
 
 % generate basic filter for target locus and computational controls
-burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lag_dur_vec_target>=min_burst_len;%&lag_dur_vec_target<=max_burst_len;%&target_swap_qc&target_virtual_qc;%&target_set_vec~=4; % filter for rise events
-burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len&lag_dur_vec_control>=min_burst_len;%<=max_burst_len; % filter for rise events
+burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lead_dur_vec_target<=max_pause_len...
+    &lag_dur_vec_target>=min_burst_len&lag_dur_vec_target<=max_burst_len;%&target_swap_qc&target_virtual_qc;; % filter for rise events
+burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len...
+    &lag_dur_vec_control>=min_burst_len;%<=max_burst_len; % filter for rise events
 sample_options_target = find(burst_ft_primary);
 sample_options_control = find(burst_ft_control);
 

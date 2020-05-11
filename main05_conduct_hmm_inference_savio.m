@@ -29,12 +29,13 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
+project = '2xDl-Ven_snaBAC-mCh_v4';
 % default path to model scripts
 modelPath = './utilities';
 
 % INFERENCE PARAMETERS
-savio = 1;
+savioFlag = 1;
+awsFlag = 0;
 fluo3D_flag = 0;
 automatic_binning = false;
 protein_bin_flag = true;
@@ -53,15 +54,18 @@ min_dp_per_inf = 1000; % inference will be aborted if fewer present
 K = 3; % number of states
 w = 7; % number of time steps needed for elongation
 
-if protein_bin_flag
-    nBoots = 2; % will run multiple instances on savio
-else
+if protein_bin_flag && savioFlag
+    nBoots = 1; % will run multiple instances on savio
+else  
     nBoots = 5;
 end
-if savio
-    DataPath = '../../dat/tf_enrichment/';
+if savioFlag
+    DataPath = ['../../dat/tf_enrichment/' project '/'];
+elseif awsFlag
+    DataPath = ['C:\Users\nlammers\Dropbox\ProcessedEnrichmentData\' project '\'];
+    maxWorkers = 16;
 else
-    DataPath = ['E:\Nick\LivemRNA\Dropbox\ProcessedEnrichmentData\' project '\'];
+    DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];
 end
 
 % for i = 1:numel(varargin)    
@@ -108,7 +112,7 @@ else
 end
 
 % set write path
-if savio
+if savioFlag
     out_prefix = ['/global/scratch/nlammers/' project '/']; %hmmm_data/inference_out/';
 else    
     out_prefix = DataPath;
@@ -148,12 +152,12 @@ if protein_bin_flag
         n_protein_bins = ceil(nTotal/SampleSize);
     end
     % generate list of average protein levels
-    mf_index = [trace_struct_filtered.mf_protein];
+    mf_list = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
     q_vec = linspace(0,1,n_protein_bins+1);        
-    mf_prctile_vec = quantile(mf_index,q_vec);    
+    mf_prctile_vec = quantile(mf_list,q_vec);    
     % assign traces to groups    
-    id_vec = discretize(mf_index,mf_prctile_vec);
+    id_vec = discretize(mf_list,mf_prctile_vec);
     for i = 1:numel(trace_struct_filtered)
         trace_struct_filtered(i).mf_protein_bin = id_vec(i);
     end
@@ -299,6 +303,7 @@ for t = 1:length(iter_list)
             output.time_data = time_data;
         end
         output.skip_flag = skip_flag;
+%         disp('saving...')
         save([out_file '.mat'], 'output');           
     end  
 end

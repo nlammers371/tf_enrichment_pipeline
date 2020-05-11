@@ -18,7 +18,7 @@
 #SBATCH --cpus-per-task=1
 #
 # Number of Processors per Node:
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=1
 #
 # Wall clock limit:
 #SBATCH --time=72:00:00
@@ -26,6 +26,7 @@
 #SBATCH -a 1
 ## Command(s) to run:
 module load matlab
+
 # Make a temporary scratch directory for storing job
 # and task information, to coordinate parallelization.
 # This directory can then be referenced by assigning it to

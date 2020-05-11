@@ -6,7 +6,6 @@ addpath('./utilities')
 w = 7;
 K = 3;  
 fluo_dim = 3;
-protein_dim = fluo_dim;
 % window analysis params
 window_size = 15; 
 %%%%%%%%%%%%%%
@@ -18,7 +17,7 @@ end
 
 [~, DataPath, ~] =   header_function(DropboxFolder, project);
 % load input-output data set
-load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'],'hmm_input_output')
+load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D.mat'],'hmm_input_output')
 n_features = 0;
 % iterate
 for i = 1:numel(hmm_input_output)    
@@ -96,7 +95,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).swap_spot_protein_dt = swap_spot_protein_dt;
 end
 %save updated structure
-save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D_dt.mat'],'hmm_input_output')
+save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_dt.mat'],'hmm_input_output')
  
 %%% Now compile snips for average burst dynamics analyses
 % generate master set of vectors for feature classification
@@ -259,7 +258,6 @@ results_struct.hmm_array = hmm_array;
 results_struct.swap_hmm_array = swap_hmm_array_dt;  
 % ID variables
 results_struct.particle_id_vec = particle_id_vec;
-results_struct.particle_sub_id_vec = particle_sub_id_vec;
 results_struct.mf_protein_vec = mf_protein_vec;
 results_struct.center_time_vec = center_time_vec;
 results_struct.lag_dur_vec = lag_dur_vec;
@@ -268,4 +266,4 @@ results_struct.lag_size_vec = lag_size_vec;
 results_struct.lead_size_vec = lead_size_vec;
 results_struct.feature_sign_vec = feature_sign_vec;
 % save
-save([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'],'results_struct')
+save([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'],'results_struct')

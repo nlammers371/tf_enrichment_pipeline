@@ -1,0 +1,108 @@
+% Script to generate figures comparing MS2 fitting methodologies
+clear 
+close all
+addpath('../utilities')
+% set ID variables
+DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
+% DropboxFolder = 'S:\Nick\Dropbox\';
+project = 'Dl-Ven_snaBAC-mCh_v4';
+DataPath = [DropboxFolder 'ProcessedEnrichmentData/' project '/'];
+% Params
+K = 3;
+w = 7;
+FigPath = ['C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\PipelineOutput\Dl-Ven_snaBAC-mCh_v4\input_output_traces\'];
+mkdir(FigPath);
+% intermediate HMM results
+load([DataPath 'nucleus_struct_protein.mat'])    
+
+
+%% specify plotting constraints
+PixelSize = nucleus_struct_protein(1).PixelSize;
+max_jump = 0.8 / 21; %um
+max_nc_dist = 2.5; %um
+min_n = 75;
+n_vec = [nucleus_struct_protein.N];
+n_ids = find(n_vec>=min_n);
+
+keep_ids = [];
+for n = n_ids
+    xn_vec = nucleus_struct_protein(n).xPos;
+    yn_vec = nucleus_struct_protein(n).yPos;
+    xp_vec = nucleus_struct_protein(n).xPosParticle - xn_vec;
+    yp_vec = nucleus_struct_protein(n).yPosParticle - yn_vec;
+    
+    t_vec = nucleus_struct_protein(n).time;
+    dt_vec = diff(t_vec);
+    
+    nc_dist_vec = sqrt(xp_vec.^2 + yp_vec.^2)*PixelSize;
+    
+    r_vec = sqrt(diff(xp_vec).^2 + diff(yp_vec).^2)*PixelSize;
+    
+    if all(r_vec./dt_vec<=max_jump) && all(nc_dist_vec<=max_nc_dist)
+        keep_ids = [keep_ids n];
+    end
+end
+
+
+%%
+
+rng(341);
+cmap = brewermap(9,'Set2');
+
+for p = keep_ids
+    
+   
+    % extract basic time, fluo, and protein fields
+    time = nucleus_struct_protein(p).time/60;    
+    
+    fluo = nucleus_struct_protein(p).fluo;    
+    
+    spot_protein = nucleus_struct_protein(p).spot_protein_vec;    
+    serial_protein = nucleus_struct_protein(p).serial_null_protein_vec;    
+
+
+
+    % make figure
+    burst_surge_fig = figure;
+    hold on       
+    yyaxis left
+    p_pt = area(time,spot_protein,'FaceColor',cmap(2,:),'EdgeAlpha',0,'FaceAlpha',0.25);
+    ax = gca;
+    ax.YColor = cmap(2,:);
+    ylabel('Dorsal al locus (detrended)')
+    
+    yyaxis right
+    % fluo trends
+    p2D = plot(time_interp,fluo1_interp,'-','Color','black','LineWidth',1.5);
+
+    % plot inferred burst events
+    ax = gca;
+    y_lim = ax.YLim;
+    ylim([0 max(y_lim)])
+    y_lim = ax.YLim;   
+    ax.YColor = 'black';
+    xlim([min(time_interp) max(time_interp)])
+%     
+%     plot([all_burst_times2;all_burst_times2],[repelem(y_lim(1),numel(all_burst_times2)) ; ...
+%         repelem(y_lim(2),numel(all_burst_times2))],'-','Color',[cmap(3,:) 1])
+%     plot([all_burst_times1;all_burst_times1],[repelem(y_lim(1),numel(all_burst_times1)) ; ...
+%         repelem(y_lim(2),numel(all_burst_times1))],'--','Color',[0 0 0 1])
+    
+    plot([surge_burst_times2;surge_burst_times2],[repelem(y_lim(1),numel(surge_burst_times2)) ; ...
+        repelem(y_lim(2),numel(surge_burst_times2))],'-','Color',[cmap(3,:) 1],'LineWidth',1.5)
+    plot([surge_burst_times1;surge_burst_times1],[repelem(y_lim(1),numel(surge_burst_times1)) ; ...
+        repelem(y_lim(2),numel(surge_burst_times1))],'--','Color',[0 0 0 1],'LineWidth',1.5)
+    
+    ylabel('MS2 spot intensity')
+    chi=get(gca, 'Children');
+    set(gca, 'Children',flipud(chi));
+    legend([p2D p3D p_pt],'2D method','3D method','Dorsal')    
+    xlabel('minutes into nc14')
+    set(gca,'Fontsize',14);
+    box on;
+    
+    saveas(burst_surge_fig,[FigPath 'trace_pt' num2str(pt_id*1e5) '_sub' num2str(pt_sub_id) '.png'])
+    close all
+    
+    close all
+end
