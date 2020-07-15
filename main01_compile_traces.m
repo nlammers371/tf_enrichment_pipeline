@@ -3,76 +3,58 @@
 % DESCRIPTION
 % Funcion to compile relevant outputs from image analysis pipeline across
 % multiple experiments
-
+%
 %
 % ARGUMENTS
 % DataStatusTab: master ID variable (should match a tab name in the Data Status
 % sheet)
 % DropboxFolder: full file path to folder containing compiled imaging
 % results
-
+%
 % OPTIONS
-% dropboxFolder: Pass this option, followed by the path to data folder 
-%                where you wish to save
-%                pipeline-generated data sets and figures. If this
-%                var is not specified, output will be saved one level
-%                above git repo in the folder structure
-% first_nc: script defaults to taking only nc14 traces. If you want
-%           earlier traces, pass 'first_nc', followed by desired nuclear cycle
+% firstNC: script defaults to taking only nc14 traces. If you want
+%           earlier traces, pass 'firstNC', followed by desired nuclear cycle
 %           number
 %
-% OUTPUT: nucleus_struct: compiled data set contain key nucleus and
+% OUTPUT
+% nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_traces(DataStatusTab,DropboxFolder,varargin)
+function nucleus_struct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
 addpath('./utilities')
-% set defaults
+
+% Set defaults
 firstNC = 14;
 minDP = 15;
 pctSparsity = 50;
-two_spot_flag = contains(DataStatusTab, '2spot');
-min_time = 0*60; % take no fluorescence data prior to this point
-TresInterp = 20; 
+twoSpotFlag = contains(dataStatusTab, '2spot');
+minTime = 0*60; % take no fluorescence data prior to this point
+tresInterp = 20; 
 calculatePSF = false;
-project = DataStatusTab;
+projectName = dataStatusTab;
+
+% Process input parameters
 for i = 1:numel(varargin)
     if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
         eval([varargin{i} '=varargin{i+1};']);
     end
 end
 
-[RawResultsRoot, ~, ~] =   header_function(DropboxFolder, DataStatusTab);
-[~, DataPath, ~] =   header_function(DropboxFolder, project);
+[rawResultsRoot, ~, ~] =   header_function(dropboxFolder, dataStatusTab);
+[~, dataPath, ~] =   header_function(dropboxFolder, projectName);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
-% find sheet
-sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
-[~,sheet_names]=xlsfinfo(sheet_path);
-sheet_index = find(ismember(sheet_names,DataStatusTab));
-if isempty(sheet_index)
-    error('no tab matching "DropboxTab" string found in DataStatus')
-end
-[~,~,sheet_cell] = xlsread(sheet_path,sheet_index);
-name_col = sheet_cell(1:33,1); % hard coded for now
-ready_ft = contains(name_col,'ReadyForEnrichment');
-ready_cols = 1 + find([sheet_cell{ready_ft,2:end}]==1);
-sheet_cell = sheet_cell(:,[1 ready_cols]);
-% get list of project names
-prefix_ft = contains(name_col,'Prefix');
-prefix_cell_raw = sheet_cell(prefix_ft,2:end);
-prefix_cell = {};
-for i = 1:numel(prefix_cell_raw)
-    if ~isempty(prefix_cell_raw{i})
-        eval([prefix_cell_raw{i} ';'])
-        prefix_cell = [prefix_cell{:} {Prefix}];
-    end
-end
+% Find the DataStatus.xlsx file and grab only those datasets marked as
+% approved by 'ReadyForEnrichmentAnalysis' flag
+readyPrefixes = getProjectPrefixes(projectName,'customApproved','ReadyForEnrichmentAnalysis');
+prefixes = readyPrefixes;
     
-% make filepath
-mkdir(DataPath);
-% assign save names
-nucleus_name = [DataPath 'nucleus_struct.mat']; % names for compiled elipse struct
+% Make the output filepath
+mkdir(dataPath);
+% Assign save names
+nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%%
@@ -81,19 +63,19 @@ cp_filenames = {}; % particles
 cn_filenames = {}; % protein data
 nc_filenames = {}; % nuclei
 fov_filenames = {}; % fov info
-for d = 1:numel(prefix_cell)
-    thisdir = prefix_cell{d};            
+for d = 1:numel(prefixes)
+    thisdir = prefixes{d};            
     % append file paths
-    cn_filenames = [cn_filenames {[RawResultsRoot thisdir '/CompiledNuclei.mat']}];
-    cp_filenames = [cp_filenames {[RawResultsRoot thisdir '/CompiledParticles.mat']}];        
-    nc_filenames = [nc_filenames {[RawResultsRoot thisdir '/' thisdir '_lin.mat']}];           
-    fov_filenames = [fov_filenames {[RawResultsRoot thisdir '/FrameInfo.mat']}];        
+    cn_filenames = [cn_filenames {[rawResultsRoot thisdir '/CompiledNuclei.mat']}];
+    cp_filenames = [cp_filenames {[rawResultsRoot thisdir '/CompiledParticles.mat']}];        
+    nc_filenames = [nc_filenames {[rawResultsRoot thisdir '/' thisdir '_lin.mat']}];           
+    fov_filenames = [fov_filenames {[rawResultsRoot thisdir '/FrameInfo.mat']}];        
 end
 
 % generate set key data structure
-set_key = array2table((1:numel(prefix_cell))','VariableNames',{'setID'});
-set_key.prefix = prefix_cell';
-save([DataPath 'set_key.mat'],'set_key')
+set_key = array2table((1:numel(prefixes))','VariableNames',{'setID'});
+set_key.prefix = prefixes';
+save([dataPath 'set_key.mat'],'set_key')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
@@ -107,7 +89,7 @@ for i = 1:length(cp_filenames)
         load(nc_filenames{i}) % Ellipse Info
         load(fov_filenames{i}) % FrameInfo Info                
     catch
-        warning(['failed to load one or more files for prefix: ' prefix_cell{i} '. Skipping...' ])
+        warning(['failed to load one or more files for prefix: ' prefixes{i} '. Skipping...' ])
         continue
     end         
     % extract data structures
@@ -392,11 +374,11 @@ for i = 1:numel(nucleus_struct)
 end
 % call function to calculate average psf difs
 % save
-save(nucleus_name ,'nucleus_struct') 
+save(nucleusName ,'nucleus_struct') 
 
 if calculatePSF
     disp('calculating psf dims...')
-    calculate_average_psf(project,DropboxFolder);
+    calculate_average_psf(projectName,DropboxFolder);
 end
 
 disp('done.')
