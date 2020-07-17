@@ -20,7 +20,7 @@
 % nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
+function nucleusStruct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
 addpath('./utilities')
 
 % Set defaults
@@ -48,7 +48,8 @@ end
 
 % Find the DataStatus.xlsx file and grab only those datasets marked as
 % approved by 'ReadyForEnrichmentAnalysis' flag
-readyPrefixes = getProjectPrefixes(projectName,'customApproved','ReadyForEnrichmentAnalysis');
+approvedFlag = 'ReadyForEnrichmentAnalysis';
+readyPrefixes = getProjectPrefixes(projectName,'customApproved',approvedFlag);
 prefixes = readyPrefixes;
     
 % Make the output filepath
@@ -58,60 +59,67 @@ nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%%
-% initialize filename vectors
-cp_filenames = {}; % particles
-cn_filenames = {}; % protein data
-nc_filenames = {}; % nuclei
-fov_filenames = {}; % fov info
-for d = 1:numel(prefixes)
-    thisdir = prefixes{d};            
-    % append file paths
-    cn_filenames = [cn_filenames {[rawResultsRoot thisdir '/CompiledNuclei.mat']}];
-    cp_filenames = [cp_filenames {[rawResultsRoot thisdir '/CompiledParticles.mat']}];        
-    nc_filenames = [nc_filenames {[rawResultsRoot thisdir '/' thisdir '_lin.mat']}];           
-    fov_filenames = [fov_filenames {[rawResultsRoot thisdir '/FrameInfo.mat']}];        
+
+% Get all the file paths for the relevant pipeline outputs
+numExperiments = numel(prefixes);
+compiledParticlesFilenames = cell(1,numExperiments); % particles
+compiledNucleiFilenames = cell(1,numExperiments); % nuclear protein
+nucleiLineagesFilenames = cell(1,numExperiments); % nuclei lineages
+frameInfoFilenames = cell(1,numExperiments); % movie frame info
+for i = 1:numExperiments
+    currDir = prefixes{i};            
+    compiledNucleiFilenames{i} = [rawResultsRoot, currDir, filesep, 'CompiledNuclei.mat'];
+    compiledParticlesFilenames = [rawResultsRoot, currDir, filesep, 'CompiledParticles.mat'];        
+    nucleiLineagesFilenames = [rawResultsRoot, currDir, filesep, currDir, '_lin.mat'];           
+    frameInfoFilenames = [rawResultsRoot, currDir, filesep, 'FrameInfo.mat'];        
 end
 
-% generate set key data structure
-set_key = array2table((1:numel(prefixes))','VariableNames',{'setID'});
-set_key.prefix = prefixes';
-save([dataPath 'set_key.mat'],'set_key')
+% Generate set key data structure
+setKey = array2table((1:numel(prefixes))','VariableNames',{'setID'});
+setKey.prefix = prefixes';
+save([dataPath 'set_key.mat'],'setKey')
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
-
-disp('compiling data...')
-nucleus_struct = [];
+disp('Compiling data...')
+nucleusStruct = [];
 % Loop through filenames    
-for i = 1:length(cp_filenames) 
-    % read in raw files
+for i = 1:numExperiments
+    % Try to read in raw files
+    %nuclear lineages  
     try
-        load(nc_filenames{i}) % Ellipse Info
-        load(fov_filenames{i}) % FrameInfo Info                
+        load(nucleiLineagesFilenames{i})              
     catch
-        warning(['failed to load one or more files for prefix: ' prefixes{i} '. Skipping...' ])
+        warning(['Failed to load nuclei lineages (''_lin.mat'') for prefix: ' prefixes{i} '. Skipping...' ])
         continue
-    end         
-    % extract data structures
-    processed_spot_data = load(cp_filenames{i}); % processed particles  
-    processed_nucleus_data = load(cn_filenames{i}); % processed particles  
+    end
+    %FrameInfo 
+    try
+        load(frameInfoFilenames{i})
+    catch
+        warning(['failed to load FrameInfo.mat files for prefix: ' prefixes{i} '. Skipping...' ])
+        continue
+    end    
     
-    % Extract compiled particles structure         
-    cp_particles = processed_spot_data.CompiledParticles;    
-    if iscell(cp_particles)
-        cp_particles = cp_particles{1};
+    % MT 2020-07-15 I don't think this is ever used ... maybe remove?
+%     processedNucleiData = load(compiledNucleiFilenames{i}); % processed nuclei 
+    
+    % Extract compiled particles structure
+    processedSpotData = load(compiledParticlesFilenames{i});
+    compiledParticles = processedSpotData.CompiledParticles;    
+    if iscell(compiledParticles)
+        compiledParticles = compiledParticles{1};
     end   
     
-    % check for 3D fit data    
-    threeD_flag = isfield(cp_particles,'Fluo3DRaw');        
-    % determine whether there is AP info
-    ap_flag = isfield(cp_particles, 'APpos');
+    % Check if certain info is present for this experiment    
+    threeDFlag = isfield(compiledParticles,'Fluo3DRaw');    %3D spot fitting data        
+    apFlag = isfield(compiledParticles, 'APpos');   %AP position info
         
-    % set identifier
+    % Set the data set identifier
     setID = i;            
     % pull trace, time, and frame variables
-    time_raw = processed_spot_data.ElapsedTime*60; % time vector   
-    traces_raw = processed_spot_data.AllTracesVector; % array with a column for each trace 
+    time_raw = processedSpotData.ElapsedTime*60; % time vector   
+    traces_raw = processedSpotData.AllTracesVector; % array with a column for each trace 
     % check to see if traces are stored in cell array
     if iscell(traces_raw)
         traces_raw = traces_raw{1};
@@ -119,13 +127,13 @@ for i = 1:length(cp_filenames)
     %%%%% Basic data characteristics %%%%%%
     frames_raw = 1:length(time_raw); % Frame list 
     % find index for first frame
-    first_frame = max([1, processed_spot_data.(['nc' num2str(firstNC)])]); 
+    first_frame = max([1, processedSpotData.(['nc' num2str(firstNC)])]); 
     % filter trace mat and time
     traces_clean = traces_raw(first_frame:end,:);
     time_clean = time_raw(first_frame:end);    
     time_clean = time_clean - min(time_clean); % Normalize to start of nc
     % temporary fix for problematic time vector
-    if strcmp(cp_filenames{i},'E:\Nick\LivemRNA\Dropbox\LocalEnrichmentResults\2020-02-07-Dl_Ven_snaBAC_MCPmCh_F-F-F_Leica_Zoom2_7uW14uW_06/CompiledParticles.mat') %wtf
+    if strcmp(compiledParticlesFilenames{i},'E:\Nick\LivemRNA\Dropbox\LocalEnrichmentResults\2020-02-07-Dl_Ven_snaBAC_MCPmCh_F-F-F_Leica_Zoom2_7uW14uW_06/CompiledParticles.mat') %wtf
         time_clean = linspace(0,max(time_clean),numel(time_clean));
     end
     frames_clean = frames_raw(first_frame:end);        
@@ -157,7 +165,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).zPosParticle = NaN(1,sum(nc_filter)); 
             s_cells(e_pass).APPosParticle = NaN(1,sum(nc_filter)); 
             s_cells(e_pass).spot_frames = NaN(1,sum(nc_filter)); 
-            if threeD_flag
+            if threeDFlag
                 s_cells(e_pass).xPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(e_pass).yPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(e_pass).zPosParticle3D = NaN(1,sum(nc_filter)); 
@@ -192,7 +200,7 @@ for i = 1:length(cp_filenames)
                 error('non-unique time values. Check FrameInfo')
             end
             s_cells(e_pass).setID = setID;
-            fn = cp_filenames{i}; % Get filename to store in struct  
+            fn = compiledParticlesFilenames{i}; % Get filename to store in struct  
             fn = fn(1:strfind(fn,'/')-1);
             s_cells(e_pass).source_path = fn;                                     
             % AP flag not relevant atm
@@ -214,7 +222,7 @@ for i = 1:length(cp_filenames)
         % Raw fluo trace
         raw_trace = traces_clean(:,j); 
         % Get nucleus ID
-        schnitz = cp_particles(j).schnitz;    
+        schnitz = compiledParticles(j).schnitz;    
         % Find first and last expression frames, requiring that spots
         % cannot apear earlier than some fixed time (min_time)
         trace_start = find(time_clean>=min_time&~isnan(raw_trace'),1);
@@ -229,7 +237,7 @@ for i = 1:length(cp_filenames)
         end   
         
         % Find intersection btw full frame range and CP frames        
-        raw_pt_frames = cp_particles(j).Frame;
+        raw_pt_frames = compiledParticles(j).Frame;
         raw_pt_frames = raw_pt_frames(ismember(raw_pt_frames,trace_frames_full));
         % Perform qc tests    
         nDP = sum(~isnan(trace_full));
@@ -243,7 +251,7 @@ for i = 1:length(cp_filenames)
         end 
         
         % Identifier variable                        
-        particle = cp_particles(j).OriginalParticle;                        
+        particle = compiledParticles(j).OriginalParticle;                        
         ParticleID = eval([num2str(setID) '.' sprintf('%04d',particle)]);
         
         % check to see if a different particle has already been assigned
@@ -264,7 +272,7 @@ for i = 1:length(cp_filenames)
             s_cells(nc_ind).xPosParticle = NaN(1,n_entries);
             s_cells(nc_ind).yPosParticle = NaN(1,n_entries);
             s_cells(nc_ind).zPosParticle = NaN(1,n_entries);
-            if threeD_flag
+            if threeDFlag
                 s_cells(nc_ind).xPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(nc_ind).yPosParticle3D = NaN(1,sum(nc_filter));
                 s_cells(nc_ind).zPosParticle3D = NaN(1,sum(nc_filter));
@@ -288,54 +296,54 @@ for i = 1:length(cp_filenames)
         nc_sp_ft1 = ismember(nc_frames,raw_pt_frames);
         nc_sp_ft2 = ismember(raw_pt_frames,nc_frames);
         % add offset info
-        s_cells(nc_ind).fluoOffset(nc_sp_ft1) = cp_particles(j).Off(nc_sp_ft2);
+        s_cells(nc_ind).fluoOffset(nc_sp_ft1) = compiledParticles(j).Off(nc_sp_ft2);
         % x, y, and z info                                
-        s_cells(nc_ind).xPosParticle(nc_sp_ft1) = cp_particles(j).xPos(nc_sp_ft2);
-        s_cells(nc_ind).yPosParticle(nc_sp_ft1) = cp_particles(j).yPos(nc_sp_ft2);   
-        s_cells(nc_ind).zPosParticle(nc_sp_ft1) = cp_particles(j).zPos(nc_sp_ft2);
-        if ap_flag
-            s_cells(nc_ind).APPosParticle(nc_sp_ft1) = cp_particles(j).APposParticle(nc_sp_ft2)*100;
+        s_cells(nc_ind).xPosParticle(nc_sp_ft1) = compiledParticles(j).xPos(nc_sp_ft2);
+        s_cells(nc_ind).yPosParticle(nc_sp_ft1) = compiledParticles(j).yPos(nc_sp_ft2);   
+        s_cells(nc_ind).zPosParticle(nc_sp_ft1) = compiledParticles(j).zPos(nc_sp_ft2);
+        if apFlag
+            s_cells(nc_ind).APPosParticle(nc_sp_ft1) = compiledParticles(j).APposParticle(nc_sp_ft2)*100;
         end
         % 3D info
-        if threeD_flag
-            s_cells(nc_ind).xPosParticle3D(nc_sp_ft1) = cp_particles(j).xPosGauss3D(nc_sp_ft2);            
-            s_cells(nc_ind).yPosParticle3D(nc_sp_ft1) = cp_particles(j).yPosGauss3D(nc_sp_ft2);              
-            s_cells(nc_ind).zPosParticle3D(nc_sp_ft1) = cp_particles(j).zPosGauss3D(nc_sp_ft2);            
-            s_cells(nc_ind).fluo3D(nc_sp_ft1) = cp_particles(j).Fluo3DRaw(nc_sp_ft2);
+        if threeDFlag
+            s_cells(nc_ind).xPosParticle3D(nc_sp_ft1) = compiledParticles(j).xPosGauss3D(nc_sp_ft2);            
+            s_cells(nc_ind).yPosParticle3D(nc_sp_ft1) = compiledParticles(j).yPosGauss3D(nc_sp_ft2);              
+            s_cells(nc_ind).zPosParticle3D(nc_sp_ft1) = compiledParticles(j).zPosGauss3D(nc_sp_ft2);            
+            s_cells(nc_ind).fluo3D(nc_sp_ft1) = compiledParticles(j).Fluo3DRaw(nc_sp_ft2);
         end
         % add qc info
         s_cells(nc_ind).N = nDP;
         s_cells(nc_ind).sparsity = sparsity;        
         s_cells(nc_ind).qc_flag = qc_flag;  
     end      
-    nucleus_struct = [nucleus_struct  s_cells];        
+    nucleusStruct = [nucleusStruct  s_cells];        
 end
 % add additional fields
-for i = 1:numel(nucleus_struct)
-    nucleus_struct(i).two_spot_flag = two_spot_flag;
-    nucleus_struct(i).threeD_flag = threeD_flag;
-    nucleus_struct(i).target_locus_flag = NaN;
-    nucleus_struct(i).control_locus_flag = NaN;
+for i = 1:numel(nucleusStruct)
+    nucleusStruct(i).two_spot_flag = two_spot_flag;
+    nucleusStruct(i).threeD_flag = threeDFlag;
+    nucleusStruct(i).target_locus_flag = NaN;
+    nucleusStruct(i).control_locus_flag = NaN;
 end    
 
 disp('interpolating data...')
 % generate interpolation fields
-if threeD_flag
+if threeDFlag
     interp_fields = {'fluo','fluo3D'};
 else
     interp_fields = {'fluo'};
 end
 interpGrid = 0:TresInterp:60*60;
-for i = 1:numel(nucleus_struct)
-    time_vec = nucleus_struct(i).time;
-    fluo_vec = nucleus_struct(i).fluo;
+for i = 1:numel(nucleusStruct)
+    time_vec = nucleusStruct(i).time;
+    fluo_vec = nucleusStruct(i).fluo;
     start_i = find(~isnan(fluo_vec),1);
     stop_i = find(~isnan(fluo_vec),1,'last');    
     time_vec = time_vec(start_i:stop_i);       
     if numel(time_vec)>1%nucleus_struct(i).qc_flag == 1
         time_interp = interpGrid(interpGrid>=time_vec(1)&interpGrid<=time_vec(end));
         for  j = 1:numel(interp_fields)
-            vec = nucleus_struct(i).(interp_fields{j})(start_i:stop_i);
+            vec = nucleusStruct(i).(interp_fields{j})(start_i:stop_i);
             %Look for clusters of 6 or more NaNs
             kernel = [1,1,1,1,1];
             vec_nans = isnan(vec);
@@ -358,7 +366,7 @@ for i = 1:numel(nucleus_struct)
             end                 
             % Interpolate to standardize spacing   
             try
-                nucleus_struct(i).([interp_fields{j} '_interp']) = interp1(time_vec,vec,time_interp);
+                nucleusStruct(i).([interp_fields{j} '_interp']) = interp1(time_vec,vec,time_interp);
             catch
                 error('why?')
             end
@@ -366,11 +374,11 @@ for i = 1:numel(nucleus_struct)
     else
         time_interp = NaN;
         for  j = 1:numel(interp_fields)
-            nucleus_struct(i).([interp_fields{j} '_interp']) = NaN;
+            nucleusStruct(i).([interp_fields{j} '_interp']) = NaN;
         end
     end
-    nucleus_struct(i).time_interp = time_interp;
-    nucleus_struct(i).TresInterp = TresInterp;
+    nucleusStruct(i).time_interp = time_interp;
+    nucleusStruct(i).TresInterp = TresInterp;
 end
 % call function to calculate average psf difs
 % save
