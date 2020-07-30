@@ -1,0 +1,15 @@
+clear
+close all
+
+addpath('../utilities/')
+% define basic path variables
+DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+snail_project = '2xDl-Ven_snaBAC-mCh_v4';
+n
+
+
+[RawResultsRoot, ~, ~] =   header_function(DropboxFolder, snail_project);
+DataPath =  [DropboxFolder 'ProcessedEnrichmentData\absolute_calibration\'];
+mkdir(DataPath);
+FigPath = [DropboxFolder 'LocalEnrichmentFigures/PipelineOutput/absolute_calibration/venus_gfp_xcal/'];
+mkdir(FigPath);

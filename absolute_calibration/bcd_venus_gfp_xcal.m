@@ -1,4 +1,13 @@
-clear
+
+
+% load absolute Bcd concentration data from Gregor 2007
+bcd_abs_path = 'E:\Nick\LivemRNA\Dropbox (Personal)\processedenrichmentdata\absolute_calibration\GregorData2007\';
+bkg_data = readtable([bcd_abs_path 'Gregor2007Black.csv']);
+bkg_data_clean.AP = bkg_data.Var1;
+bkg_data_clean.nM = bkg_data.Var2;
+bcd_data01 = readtable([bcd_abs_path 'Gregor2007BcdRed.csv']);
+bcd_data02 = readtable([bcd_abs_path 'Gregor2007BcdBlue.csv']);
+bcd_data_clean.AP = [bclear
 close all
 
 addpath('../utilities/')
@@ -12,16 +21,7 @@ Bcd_Venus_project = 'Bcd-Venus';
 DataPath =  [DropboxFolder 'ProcessedEnrichmentData\absolute_calibration\'];
 mkdir(DataPath);
 FigPath = [DropboxFolder 'LocalEnrichmentFigures/PipelineOutput/absolute_calibration/venus_gfp_xcal/'];
-mkdir(FigPath);
-
-% load absolute Bcd concentration data from Gregor 2007
-bcd_abs_path = 'E:\Nick\LivemRNA\Dropbox (Personal)\processedenrichmentdata\absolute_calibration\GregorData2007\';
-bkg_data = readtable([bcd_abs_path 'Gregor2007Black.csv']);
-bkg_data_clean.AP = bkg_data.Var1;
-bkg_data_clean.nM = bkg_data.Var2;
-bcd_data01 = readtable([bcd_abs_path 'Gregor2007BcdRed.csv']);
-bcd_data02 = readtable([bcd_abs_path 'Gregor2007BcdBlue.csv']);
-bcd_data_clean.AP = [bcd_data01.Var1 ; bcd_data02.Var1];
+mkdir(FigPath);cd_data01.Var1 ; bcd_data02.Var1];
 bcd_data_clean.nM = [bcd_data01.Var2 ; bcd_data02.Var2];
 bcd_data_clean.setID = [repelem(1,numel(bcd_data01.Var1)), repelem(2,numel(bcd_data02.Var1))];
 

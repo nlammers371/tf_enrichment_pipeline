@@ -2,10 +2,10 @@
 % start of transcription bursts
 clear 
 % close all
-addpath('utilities')
+addpath('../utilities')
 % set ID variables
 project = 'Dl-Ven_snaBAC-mCh_v3';
-DropboxFolder = 'S:\Nick\Dropbox\';
+DropboxFolder = 'S:\Nick\Dropbox (Personal)\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project); 
 % define HMM parameters
 K = 3;
@@ -68,11 +68,11 @@ for i = 1:2
     box on
      xlim(x_lim)
     if PBoC_flag
-        suffix = '_PBoC';
+        suffix = 'PBoC';
         StandardFigurePBoC(p,gca);
         fluo_fig.InvertHardcopy = 'off';
     else
-        suffix = '_standard';
+        suffix = 'standard';
         StandardFigure(p,gca);
     end
     saveas(fluo_fig,[FigPath 'fluo_trend_' suffix '.pdf'])
