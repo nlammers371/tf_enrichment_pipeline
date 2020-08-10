@@ -110,8 +110,8 @@ if viterbi_fit_flag
         end    
         tic 
         v_fits = struct;
-        parfor f = 1:numel(fluo_values)
-            viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, K, w, alpha)
+        for f = 1:numel(fluo_values)
+            viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, K, w, alpha);
             fnames = fieldnames(viterbi_out);
             for j = 1:numel(fnames)
                 v_fits(f).(fnames{j}) = viterbi_out{j};
