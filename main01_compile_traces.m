@@ -66,10 +66,12 @@ function nucleus_struct = main01_compile_traces(dataStatusTab,dropboxFolder,vara
 %     sisterIndex
 %     sisterParticleID
 
-%% Set defaults
-firstNC = 14;
-minDP = 15;
-pctSparsity = 50;
+%% Set defaults & process input parameters
+
+% Defaults
+firstNC = 14;   % first nuclear cycle to pull data from
+minDP = 15;     % what is this for?
+pctSparsity = 50;   % 
 twoSpotFlag = contains(dataStatusTab, '2spot');
 minTime = 0*60; % take no fluorescence data prior to this point
 tresInterp = 20; 
@@ -78,11 +80,20 @@ projectName = dataStatusTab;
 
 % Process input parameters
 for i = 1:numel(varargin)
-    if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
-        eval([varargin{i} '=varargin{i+1};']);
+    if ischar(varargin{i})
+        if strcmpi(varargin{i}, 'firstNC')
+            if  i < numel(varargin) && isnumeric(varargin{i+1}) && (9 <= varargin{i+1} && varargin{i+1} <= 14)
+                firstNC = varargin{i+1};
+            else
+                error(['The ''firstNC'' option must be followed by an integer from 9 to 14, inclusive. Default firstNC is ' num2str(firstNC) '.']) 
+            end
+        else
+            error(['This option is not valid for this function: ' varargin{i}]) 
+        end
     end
 end
 
+% Get useful folders
 [rawResultsRoot, dataPath, ~] =   header_function(dropboxFolder, projectName);
 
 
@@ -137,9 +148,16 @@ for i = 1:numExperiments
         compiledParticles = compiledParticles{1};               % this is the CompiledParticles structure we actually want to use  
     end   
     
-    % MT 2020-07-15 I don't think this is ever used ... maybe remove?
-    processedNucleiData = load(compiledNucleiFilenames{i}); % processed nuclei 
-
+    % MT 2020-08-11: Right now we don't use any of the data in
+    % CompiledNuclei (from mRNADynamics pipeline) because we generate all
+    % of it ourselves in main02. This might change in the future, so I'm
+    % including step so it's easy to use should we need it 
+    processedNucleiData = getCompiledParticles(currExperiment); % this structure contains all info compiled for this experiment
+    compiledNuclei = processedNucleiData.CompiledNuclei;        % this is the CompiledNuclei structure we actually want to use  
+    if iscell(compiledNuclei)
+        compiledNuclei = compiledNuclei{1};                     % unlike compiledParticles, I don't think this gets stored in a cell array, but just in case...           
+    end
+    
     %%%%% Basic data characteristics %%%%%%
         
     % Check if certain info is present for this experiment    
