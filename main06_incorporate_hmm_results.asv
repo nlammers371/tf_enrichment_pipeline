@@ -183,9 +183,7 @@ for inf = 1:numel(trace_fit_struct)
     soft_fits = trace_fit_struct(inf).soft_fits;
     viterbi_fits = trace_fit_struct(inf).viterbi_fits;
     inference_id_vec = trace_fit_struct(inf).inference_id_vec;
-    inference_particles = trace_fit_struct(inf).particle_index;
-    fit_indices = find(ismember(particle_index,inference_particles));
-    for i = fit_indices
+    for i = qc_indices
         % initialize temporary structure to store results
         ParticleID = particle_index(i);    
         temp = struct;

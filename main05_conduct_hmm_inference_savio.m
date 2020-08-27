@@ -29,7 +29,7 @@ close all
 warning('off','all') %Shut off Warnings
 
 % basic inputs
-project = '2xDl-Ven_snaBAC-mCh';
+project = '2xDl-Ven_hbP2P-mCh';
 % default path to model scripts
 modelPath = './utilities';
 
