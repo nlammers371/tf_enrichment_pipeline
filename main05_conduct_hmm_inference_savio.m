@@ -37,10 +37,10 @@ modelPath = './utilities';
 savioFlag = 1;
 awsFlag = 0;
 fluo3D_flag = 0;
-automatic_binning = false;
+automatic_binning = true;
 protein_bin_flag = true;
 dpBootstrap = 1;
-n_protein_bins = 25; % ignored if automatic_binning is true
+% n_protein_bins = 10; % ignored if automatic_binning is true
 SampleSize = 5000;
 maxWorkers = 24;
 %%%%% These options generally remain fixed 

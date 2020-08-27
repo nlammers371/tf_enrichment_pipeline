@@ -59,7 +59,7 @@ mkdir(snipPath)
 
 % get MCP channel
 options = [1 2];
-mcp_channel = options(options~=proteinChannel);
+mcpChannel = options(options~=proteinChannel);
 write_snip_flag = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
