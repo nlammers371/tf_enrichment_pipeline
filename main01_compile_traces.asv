@@ -399,18 +399,18 @@ for i = 1:numel(nucleus_struct)
             z_ids = unique([z_ids-1 z_ids z_ids+1]); % get set of z_ids    
             vec(z_ids) = 0; % set clusters to zeros    
             vec(vec<0) = 0; % deal with negative values
-                
+            
+            if ~isempty(z_ids)
+              error('check')
+            end
             % find single dp "blips". These will be replaced via interpolation
             % interpolate remaining NaNs  
             fluo_dd = [0 diff(vec,2) 0];
             vec(abs(fluo_dd)>big_blip_thresh) = NaN;
             
-%             % find and remove suspsiciously large rises and falls
-%             fluo_d = [0 diff(vec,1)];
-%             if any(abs(fluo_d)>0.75*big_blip_thresh)
-%               error('check')
-%             end
-%             vec(abs(fluo_d)>big_blip_thresh) = NaN;
+            % find and remove suspsiciously large rises
+            fluo_d = [0 diff(vec,1) 0];
+            vec(abs(fluo_dd)>big_blip_thresh) = NaN;
             
             % interpolate to fill remaining NaN frames
             query_points = time_vec(isnan(vec));
@@ -436,11 +436,6 @@ for i = 1:numel(nucleus_struct)
     nucleus_struct(i).time_interp = time_interp;
     nucleus_struct(i).TresInterp = TresInterp;
 end
-
-warning('NL: removing all traces taht did not meet strict QC require,ent')
-qc_vec = [nucleus_struct.qc_flag];
-nucleus_struct = nucleus_struct(qc_vec==1);
-
 % call function to calculate average psf difs
 % save
 save(nucleus_name ,'nucleus_struct') 

@@ -60,8 +60,7 @@ else
     nBoots = 5;
 end
 
-% DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];%
-DataPath = ['../../dat/tf_enrichment/' project '/'];
+DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];%['../../dat/tf_enrichment/' project '/'];
 
 addpath(modelPath); % Route to utilities folder
 % check that we have proper fields
@@ -95,17 +94,16 @@ end
 %     clear nucleus_struct_protein
 %     out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/']; 
 % else
-load([DataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
-out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/'];   
-analysis_struct = nucleus_struct;
-clear nucleus_struct
+  load([DataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
+  out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/'];   
+  analysis_struct = nucleus_struct;
+  clear nucleus_struct
 % end
 
 % set write path
 out_prefix = ['/global/scratch/nlammers/' project '/']; %hmmm_data/inference_out/';
-% outDir = [DataPath out_suffix];%
 outDir = [out_prefix out_suffix];
-mkdir(outDir);
+% mkdir(outDir);
 
 Tres = analysis_struct(1).TresInterp; % Time Resolution
 % filter for quality traces of sufficient length
