@@ -5,12 +5,13 @@ clear
 addpath('utilities')
 % set ID variables
 % targetProject = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
-targetProject = 'Dl-Ven_snaBAC-mCh_v4';
-controlProject = 'Dl-Ven_snaBAC-mCh_v3';
+targetProject = '2xDl-Ven_snaBAC-mCh';
+controlProject = '2xDl-Ven_hbP2P-mCh';
 DropboxFolder = 'S:\Nick\Dropbox\';
 
 % Params
-fluo_dim = 3;
+fluo_dim = 2;
+protein_dim = 2;
 K = 3;
 w = 7;
 
@@ -22,9 +23,9 @@ FigPath = [FigureRoot '\' targetProject '\input_output01\'];
 mkdir(FigPath)
 
 % load data
-load([DataPathTarget 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
+load([DataPathTarget 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
 target_results_struct = results_struct;
-load([DataPathControl 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) '.mat'])
+load([DataPathControl 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
 control_results_struct = results_struct;
 clear results_struct;
 
@@ -55,11 +56,11 @@ time_axis = (-window_size:window_size)*Tres/60;
 
 %% set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 5; % minimum length of preceding OFF period (in time steps)
+min_pause_len = 2; % minimum length of preceding OFF period (in time steps)
 max_pause_len = 12;
 % min_pause_len = 1; % minimum length of preceding OFF period (in time steps)
 % max_pause_len = 5;
-min_burst_len = 3;
+min_burst_len = 2;
 max_burst_len = 1000;
 % max_burst_len = 12;
 %%% (1) make basic input-output figure

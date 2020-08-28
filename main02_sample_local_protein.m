@@ -77,7 +77,7 @@ for i = 1:numel(nucleus_struct)
     nan_ft = ~isnan(fluo);
     for j = 1:numel(fnames)
         vec = nucleus_struct(i).(fnames{j});
-        if numel(vec) == numel(fluo)        
+        if numel(vec) == numel(fluo)  && ~contains(fnames{j},'interp')      
             nucleus_struct(i).(fnames{j}) = vec(nan_ft);
         end
     end

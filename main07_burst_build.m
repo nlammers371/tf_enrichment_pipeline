@@ -5,7 +5,7 @@ addpath('./utilities')
 %%%%% These options will remain fixed for now
 w = 7;
 K = 3;  
-fluo_dim = 3;
+fluo_dim = 2;
 protein_dim = fluo_dim;
 % window analysis params
 window_size = 15; 
@@ -22,7 +22,7 @@ load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo
 n_features = 0;
 % iterate
 for i = 1:numel(hmm_input_output)    
-    z_vec_bin = hmm_input_output(i).z_vec' > 1;
+    z_vec_bin = hmm_input_output(i).z_viterbi > 1;
     r_vec = hmm_input_output(i).r_vec';
     hmm_input_output(i).z_vec_bin = z_vec_bin;
     z_prob_vec = sum(hmm_input_output(i).z_mat(:,2:3),2);
@@ -57,7 +57,7 @@ for i = 1:numel(hmm_input_output)
     hmm_input_output(i).change_points = change_points;
     hmm_input_output(i).z_diff_vec = zd_full;
     hmm_input_output(i).z_prob_vec = z_prob_vec';   
-    
+        
     % increment
     if ~isempty(change_points)
         n_features = n_features + numel(change_points)-1;
@@ -67,6 +67,9 @@ for i = 1:numel(hmm_input_output)
     dt_filter_gap = hmm_input_output(i).dt_filter_gap;
     dt_filter_gap_swap = hmm_input_output(i).dist_swap_dt_filter_gap;
     
+    if length(zd_full)~=length(dt_filter_gap)
+      error('asfa')
+    end
     % locus protein       
     time_vec = hmm_input_output(i).time;
     
@@ -87,7 +90,7 @@ for i = 1:numel(hmm_input_output)
     serial_protein_dt(nan_ft_virt) = serial_protein_fit;
     hmm_input_output(i).serial_protein_dt = serial_protein_dt;
 
-    % swap spot protein
+    % swap spot protein (NL: is this correct?)
     swap_pt_vec = hmm_input_output(i).dist_swap_spot_protein;  
     nan_ft_swap = ~isnan(swap_pt_vec)&~dt_filter_gap_swap;
     swap_spot_protein_fit = detrend(swap_pt_vec(nan_ft_swap),2,'SamplePoints',time_vec(nan_ft_swap));

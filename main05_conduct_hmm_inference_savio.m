@@ -93,10 +93,12 @@ end
 %     load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
 %     analysis_struct = nucleus_struct_protein;
 %     clear nucleus_struct_protein
-%     out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/']; 
-% else
+if protein_bin_flag
+    out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/']; 
+else
+  out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/'];   
+end
 load([DataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
-out_suffix =  ['/hmm_inference_mf/w' num2str(w) '_K' num2str(K) '_' fluo_suffix '/'];   
 analysis_struct = nucleus_struct;
 clear nucleus_struct
 % end
