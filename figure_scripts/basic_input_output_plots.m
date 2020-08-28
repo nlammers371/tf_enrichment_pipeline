@@ -1,123 +1,117 @@
 % Script to generate figures establishing presence of enrichment bursts at
 % start of transcription bursts
 clear 
-% close all
+close all
 addpath('utilities')
 % set ID variables
 % targetProject = 'Dl-Ven_snaBAC-mCh_F-F-F_v1';
 targetProject = '2xDl-Ven_snaBAC-mCh';
 controlProject = '2xDl-Ven_hbP2P-mCh';
-DropboxFolder = 'S:\Nick\Dropbox\';
-
+targetProjectOrig = 'Dl-Ven_snaBAC-mCh_v4';
+project_cell = {targetProject controlProject targetProjectOrig};
+% DropboxFolder = 'S:\Nick\Dropbox\';
+DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
 % Params
 fluo_dim = 2;
 protein_dim = 2;
 K = 3;
 w = 7;
 
-% set write paths
-[~, DataPathTarget, FigureRoot] =   header_function(DropboxFolder, targetProject); 
-[~, DataPathControl, ~] =   header_function(DropboxFolder, controlProject); 
-
+[~, ~, FigureRoot] =   header_function(DropboxFolder, targetProject); 
 FigPath = [FigureRoot '\' targetProject '\input_output01\'];
 mkdir(FigPath)
 
 % load data
-load([DataPathTarget 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
-target_results_struct = results_struct;
-load([DataPathControl 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
-control_results_struct = results_struct;
-clear results_struct;
+master_struct = struct;
+for i = 1:3
+  % set write paths
+  [~, DataPath] =   header_function(DropboxFolder, project_cell{i});   
+  load([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])
+  master_struct(i).results_struct = results_struct;
+  clear results_struct;
+end
+
 
 Tres = 20; % seconds
 % extract relevant arrays from target project 
-lag_dur_vec_target = target_results_struct.lag_dur_vec;
-lead_dur_vec_target = target_results_struct.lead_dur_vec;
-hmm_array = target_results_struct.hmm_array;
-swap_hmm_array = target_results_struct.swap_hmm_array;
-spot_array_dt = target_results_struct.spot_array_dt;
-% spot_array_dt = target_results_struct.spot_array_dt;
-swap_array_dt = target_results_struct.swap_array_dt;
-virtual_array_dt = target_results_struct.virtual_array_dt;
-feature_sign_vec_target = target_results_struct.feature_sign_vec;
-% extract qc vectors 
-target_swap_qc = target_results_struct.swap_qc_vec;
-target_virtual_qc = target_results_struct.virtual_qc_vec;
-target_set_vec = floor(target_results_struct.particle_id_vec);
-% extract arrays from control project
-lag_dur_vec_control = control_results_struct.lag_dur_vec;
-lead_dur_vec_control = control_results_struct.lead_dur_vec;
-biocontrol_array_dt = control_results_struct.spot_array_dt;
-feature_sign_vec_control = control_results_struct.feature_sign_vec;
+for i = 1:length(master_struct)
+  master_struct(i).lag_dur_vec = master_struct(i).results_struct.lag_dur_vec;
+  master_struct(i).lead_dur_vec = master_struct(i).results_struct.lead_dur_vec;
+  master_struct(i).hmm_array = master_struct(i).results_struct.hmm_array;
+  master_struct(i).swap_hmm_array = master_struct(i).results_struct.swap_hmm_array;
+  master_struct(i).spot_array_dt = master_struct(i).results_struct.spot_array_dt;
+
+  master_struct(i).swap_array_dt = master_struct(i).results_struct.swap_array_dt;
+  master_struct(i).virtual_array_dt = master_struct(i).results_struct.virtual_array_dt;
+  master_struct(i).feature_sign_vec = master_struct(i).results_struct.feature_sign_vec;
+  
+  % extract qc vectors 
+  master_struct(i).swap_qc = master_struct(i).results_struct.swap_qc_vec;
+  master_struct(i).virtual_qc = master_struct(i).results_struct.virtual_qc_vec;
+  master_struct(i).set_vec = floor(master_struct(i).results_struct.particle_id_vec);
+end
+
 %  determine snip size
-n_col = size(swap_array_dt,2);
+n_col = size(master_struct(1).swap_array_dt,2);
 window_size = floor(n_col/2);
 time_axis = (-window_size:window_size)*Tres/60;
 
 %% set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
-min_pause_len = 2; % minimum length of preceding OFF period (in time steps)
-max_pause_len = 12;
-% min_pause_len = 1; % minimum length of preceding OFF period (in time steps)
-% max_pause_len = 5;
+min_pause_len = 4; % minimum length of preceding OFF period (in time steps)
+max_pause_len = 100;
 min_burst_len = 2;
 max_burst_len = 1000;
-% max_burst_len = 12;
-%%% (1) make basic input-output figure
-% close all
 
 
-% generate basic filter for target locus and computational controls
-burst_ft_primary = feature_sign_vec_target == 1&lead_dur_vec_target>=min_pause_len&lead_dur_vec_target<=max_pause_len...
-    &lag_dur_vec_target>=min_burst_len&lag_dur_vec_target<=max_burst_len;%&target_swap_qc&target_virtual_qc;; % filter for rise events
-burst_ft_control = feature_sign_vec_control == 1&lead_dur_vec_control>=min_pause_len...
-    &lag_dur_vec_control>=min_burst_len;%<=max_burst_len; % filter for rise events
-sample_options_target = find(burst_ft_primary);
-sample_options_control = find(burst_ft_control);
+for i = 1:length(master_struct)
+  % generate basic filter for target locus and computational controls
+  master_struct(i).burst_ft = master_struct(i).feature_sign_vec == 1&master_struct(i).lead_dur_vec>=...
+    min_pause_len&master_struct(i).lead_dur_vec<=max_pause_len...
+      & master_struct(i).lag_dur_vec>=min_burst_len&master_struct(i).lag_dur_vec<=max_burst_len;%&target_swap_qc&target_virtual_qc;; % filter for rise events
+  sample_options = find(master_struct(i).burst_ft);
 
 
-% (1) make de-trended input-output figure with controls
-burst_rise_spot_array_dt = NaN(nBoots,n_col);
-burst_rise_swap_array_dt = NaN(nBoots,n_col);
-burst_rise_virt_array_dt = NaN(nBoots,n_col);
-burst_rise_bio_array_dt = NaN(nBoots,n_col);
-burst_rise_hmm_array = NaN(nBoots,n_col);
-% take bootstrap samples
-for n = 1:nBoots
-    % primary
-    s_ids_target = randsample(sample_options_target,numel(sample_options_target),true);    
-    burst_rise_hmm_array(n,:) = nanmean(hmm_array(s_ids_target,:));
-    burst_rise_spot_array_dt(n,:) = nanmean(spot_array_dt(s_ids_target,:));
-    burst_rise_swap_array_dt(n,:) = nanmean(swap_array_dt(s_ids_target,:));
-    burst_rise_virt_array_dt(n,:) = nanmean(virtual_array_dt(s_ids_target,:));
-    % biological control
-    s_ids_control = randsample(sample_options_control,numel(sample_options_control),true);    
-    burst_rise_bio_array_dt(n,:) = nanmean(biocontrol_array_dt(s_ids_control,:));
+
+  % (1) make de-trended input-output figure with controls
+  master_struct(i).burst_rise_spot_array_dt = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_swap_array_dt = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_virt_array_dt = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_hmm_array = NaN(nBoots,n_col);
+  % take bootstrap samples
+  for n = 1:nBoots
+      % primary
+      s_ids_target = randsample(sample_options,numel(sample_options),true);    
+      master_struct(i).burst_rise_hmm_array(n,:) = nanmean(master_struct(i).hmm_array(s_ids_target,:));
+      master_struct(i).burst_rise_spot_array_dt(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_target,:));
+      master_struct(i).burst_rise_swap_array_dt(n,:) = nanmean(master_struct(i).swap_array_dt(s_ids_target,:));
+      master_struct(i).burst_rise_virt_array_dt(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_target,:));      
+  end
+
+  % HMM trends
+  master_struct(i).burst_rise_hmm_mean = nanmean(master_struct(i).burst_rise_hmm_array);
+  master_struct(i).burst_rise_hmm_ste = nanstd(master_struct(i).burst_rise_hmm_array);
+  % calculate mean and standard error for spot
+  master_struct(i).burst_rise_spot_mean = nanmean(master_struct(i).burst_rise_spot_array_dt);
+  master_struct(i).burst_rise_spot_ste = nanstd(master_struct(i).burst_rise_spot_array_dt);
+  master_struct(i).br_spot_ub = master_struct(i).burst_rise_spot_mean + master_struct(i).burst_rise_spot_ste;
+  master_struct(i).br_spot_lb = master_struct(i).burst_rise_spot_mean - master_struct(i).burst_rise_spot_ste;
+  % calculate mean and standard error for nn swap
+  master_struct(i).burst_rise_swap_mean = nanmean(master_struct(i).burst_rise_swap_array_dt);
+  master_struct(i).burst_rise_swap_ste = nanstd(master_struct(i).burst_rise_swap_array_dt);
+  master_struct(i).br_swap_ub = master_struct(i).burst_rise_swap_mean + master_struct(i).burst_rise_swap_ste;
+  master_struct(i).br_swap_lb = master_struct(i).burst_rise_swap_mean - master_struct(i).burst_rise_swap_ste;
+  % calculate mean and standard error for virtual spot
+  master_struct(i).burst_rise_virt_mean = nanmean(master_struct(i).burst_rise_virt_array_dt);
+  master_struct(i).burst_rise_virt_ste = nanstd(master_struct(i).burst_rise_virt_array_dt);
+  master_struct(i).br_virt_ub = master_struct(i).burst_rise_virt_mean + master_struct(i).burst_rise_virt_ste;
+  master_struct(i).br_virt_lb = master_struct(i).burst_rise_virt_mean - master_struct(i).burst_rise_virt_ste;
 end
-
-% HMM trends
-burst_rise_hmm_mean = nanmean(burst_rise_hmm_array);
-burst_rise_hmm_ste = nanstd(burst_rise_hmm_array);
-% calculate mean and standard error for spot
-burst_rise_spot_mean = nanmean(burst_rise_spot_array_dt);
-burst_rise_spot_ste = nanstd(burst_rise_spot_array_dt);
-br_spot_ub = burst_rise_spot_mean + burst_rise_spot_ste;
-br_spot_lb = burst_rise_spot_mean - burst_rise_spot_ste;
-% calculate mean and standard error for nn swap
-burst_rise_swap_mean = nanmean(burst_rise_swap_array_dt);
-burst_rise_swap_ste = nanstd(burst_rise_swap_array_dt);
-br_swap_ub = burst_rise_swap_mean + burst_rise_swap_ste;
-br_swap_lb = burst_rise_swap_mean - burst_rise_swap_ste;
 % calculate mean and standard error for virtual spot
-burst_rise_virt_mean = nanmean(burst_rise_virt_array_dt);
-burst_rise_virt_ste = nanstd(burst_rise_virt_array_dt);
-br_virt_ub = burst_rise_virt_mean + burst_rise_virt_ste;
-br_virt_lb = burst_rise_virt_mean - burst_rise_virt_ste;
-% calculate mean and standard error for virtual spot
-burst_rise_bio_mean = nanmean(burst_rise_bio_array_dt);
-burst_rise_bio_ste = nanstd(burst_rise_bio_array_dt);
-br_bio_ub = burst_rise_bio_mean + burst_rise_bio_ste;
-br_bio_lb = burst_rise_bio_mean - burst_rise_bio_ste;
+% burst_rise_bio_mean = nanmean(burst_rise_bio_array_dt);
+% burst_rise_bio_ste = nanstd(burst_rise_bio_array_dt);
+% br_bio_ub = burst_rise_bio_mean + burst_rise_bio_ste;
+% br_bio_lb = burst_rise_bio_mean - burst_rise_bio_ste;
 
 
 %% make figure
@@ -126,22 +120,33 @@ cmap1 = brewermap([],'Set2');
 burst_dt_fig_virt = figure;
 % snail activity
 yyaxis right
-p1 = plot(time_axis,burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
+plot(time_axis,master_struct(1).burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-ylim([.1 1.1])
-set(gca,'ytick',.1:.2:1.1)
+ylim([.1 0.75])
+% set(gca,'ytick',.1:.2:1.1)
 ax = gca;
 ax.YColor = 'black';
+
 % Dorsal activity
 yyaxis left
 hold on
-% swap control
-fill([time_axis fliplr(time_axis)],[br_virt_ub fliplr(br_virt_lb)],cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p3 = plot(time_axis,burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
-% locus
-fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+
+% virtual control
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],...
+  cmap1(3,:),'FaceAlpha',.2,'EdgeAlpha',0)
+p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+
+
+% bio control
+fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(1,:),'FaceAlpha',.2,'EdgeAlpha',0)
+p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(1,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
+
+% locus
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+ylabel('relative Dl concentration (au)')
+
 p = plot(0,0);
 
 % ylim([-20 25])
@@ -150,12 +155,12 @@ ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel('offset (minutes)')
-% lgd = legend([p1 p3 p5],'{\it snail} MS2','Dl at {\it snail} locus','Dl at control locus', 'Location','northwest');
+legend([p2 p1  p3],'Dl at {\it snail} locus','Dl at control locus','Dl at {\it hbP2P}', 'Location','northwest');
 
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
-ylim([-.15 .2])
+ylim([-.05 .07])
 set(gca,    'Box','off',...
             'Color',[228,221,209]/255,...            
             'TickLength',[0.02,0.05])    
@@ -165,90 +170,58 @@ burst_dt_fig_virt.InvertHardcopy = 'off';
 saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.tif'])
 saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.pdf'])
 
-%%
-% make figure
-burst_dt_fig = figure;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compare to original results
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+burst_comparison = figure;
 % snail activity
 yyaxis right
-p1 = area(time_axis,burst_rise_hmm_mean,'FaceColor',cmap1(end,:),'LineWidth',1,'FaceAlpha',.25);
+plot(time_axis,master_struct(1).burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-set(gca,'ytick',.1:.1:1.1)
-ylim([.1 1.1])
+% ylim([.1 1.1])
+% set(gca,'ytick',.1:.2:1.1)
 ax = gca;
 ax.YColor = 'black';
+
 % Dorsal activity
 yyaxis left
 hold on
-% virtual control
-fill([time_axis fliplr(time_axis)],[br_virt_ub fliplr(br_virt_lb)],cmap1(3,:),'FaceAlpha',.15,'EdgeAlpha',0)
-p2 = plot(time_axis,burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',1.5);
-% swap control
-fill([time_axis fliplr(time_axis)],[br_swap_ub fliplr(br_swap_lb)],cmap1(5,:),'FaceAlpha',.15,'EdgeAlpha',0)
-p3 = plot(time_axis,burst_rise_swap_mean,'-','Color',cmap1(5,:),'LineWidth',1.5);
-%biological control
-fill([time_axis fliplr(time_axis)],[br_bio_ub fliplr(br_bio_lb)],cmap1(6,:),'FaceAlpha',.15,'EdgeAlpha',0)
-p4 = plot(time_axis,burst_rise_bio_mean,'-','Color',cmap1(6,:),'LineWidth',1.5);
-%locus
-fill([time_axis fliplr(time_axis)],[br_spot_ub fliplr(br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p5 = plot(time_axis,burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+
+% % virtual control
+% fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],...
+%   cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
+% plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+
+% locus
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p1 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
-% set(gca,'ytick',-12:3:24)
-% ylim([-12 18])
-ylim([-.15 .2])
+
+% original result
+fill([time_axis fliplr(time_axis)],[master_struct(3).br_spot_ub fliplr(master_struct(3).br_spot_lb)],brighten(cmap1(2,:),-0.5),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,master_struct(3).burst_rise_spot_mean,'-','Color',brighten(cmap1(2,:),-0.5),'LineWidth',2);
+ylabel('relative Dl concentration (au)')
+
+p = plot(0,0);
+
+% ylim([-20 25])
+% set(gca,'ytick',-20:5:25)
 ax = gca;
-ax.YColor = 'black';
-grid on
+ax.YColor = 'black';%cmap1(2,:);
+% grid on
 xlabel('offset (minutes)')
-legend([p1 p2 p3 p4 p5],'snail transcription','virtual spot',...
-    'nearest neighbor','off-target ({\ithbP2P})','target ({\itsnail})',...
-    'Location','northwest')
-set(gca,'Fontsize',12,'xtick',-4:2:4)
+legend([p1 p2],'Dl at {\it snail} (new)','Dl at {\it snail} (original)', 'Location','northwest');
+
+set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
+ylim([-.05 .1])
+set(gca,    'Box','off',...
+            'Color',[228,221,209]/255,...            
+            'TickLength',[0.02,0.05])    
+burst_comparison.Color = 'white';        
+burst_comparison.InvertHardcopy = 'off';
 % save
-saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.tif'])
-saveas(burst_dt_fig,[FigPath 'locus_trend_w_controls.pdf'])
-
-% %%
-% %%% (3) Make bar plots of preceding and succeeding 2 minutes
-% before_ids = time_axis < 0 & time_axis >=-2;
-% after_ids = time_axis > 0 & time_axis <=2;
-% % generate difference vectors
-% burst_rise_spot_after = nanmean(spot_array_dt(burst_ft_primary,after_ids),2);
-% burst_rise_spot_before = nanmean(spot_array_dt(burst_ft_primary,before_ids),2);
-% 
-% burst_rise_swap_after = nanmean(swap_array_dt(burst_ft_primary,after_ids),2);
-% burst_rise_swap_before = nanmean(swap_array_dt(burst_ft_primary,before_ids),2);
-% 
-% burst_rise_virt_after = nanmean(virtual_array_dt(burst_ft_primary,after_ids),2);
-% burst_rise_virt_before = nanmean(virtual_array_dt(burst_ft_primary,before_ids),2);
-% 
-% burst_rise_bio_after = nanmean(biocontrol_array_dt(burst_ft_control,after_ids),2);
-% burst_rise_bio_before = nanmean(biocontrol_array_dt(burst_ft_control,before_ids),2);
-% 
-% % Kolmogorov–Smirnov test)
-% [~, p_virt] = kstest2(burst_rise_virt_before,burst_rise_virt_after)
-% [~, p_swap] = kstest2(burst_rise_swap_before,burst_rise_swap_after)
-% [~, p_bio] = kstest2(burst_rise_bio_before,burst_rise_bio_after)
-% [~, p_spot] = kstest2(burst_rise_spot_before,burst_rise_spot_after)
-% 
-% bar_fig = figure;
-% cmap2 = brewermap([],'Paired');
-% colormap(cmap2);
-% bar_array = [nanmean(burst_rise_spot_before), nanmean(burst_rise_spot_after)
-%              nanmean(burst_rise_swap_before), nanmean(burst_rise_swap_after)
-%              nanmean(burst_rise_virt_before), nanmean(burst_rise_virt_after)
-%              nanmean(burst_rise_bio_before), nanmean(burst_rise_bio_after)];
-%          
-% b = bar(bar_array,'FaceColor','flat');
-% b(1).CData = cmap1([2 5 3 6],:);
-% b(1).FaceAlpha = .3;
-% b(2).CData = cmap1([2 5 3 6],:)/1.2;
-% set(gca,'xtick',1:4,'xticklabel',{'target locus','nearest neighbor','virtual spot','biological control',});
-% set(gca,'Fontsize',14)
-% xtickangle(30)
-% ylabel('Dorsal enrichment (au)')
-% ylim([-8 14])
-% grid on
-% saveas(bar_fig,[FigPath 'bar_plots.tif'])
-% saveas(bar_fig,[FigPath 'bar_plots.pdf'])
+saveas(burst_comparison,[FigPath 'burst_comparison.tif'])
+saveas(burst_comparison,[FigPath 'burst_comparison.pdf'])
