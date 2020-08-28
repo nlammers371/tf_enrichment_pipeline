@@ -69,23 +69,28 @@ for i = 1:length(master_struct)
   nucleus_struct = master_struct(i).nucleus_struct;
   particle_vec_nc = [nucleus_struct.ParticleID];
   
-  prefix_cell = cell(1,length(event_indices));
-  particles_index_vec = NaN(1,length(event_indices));
-  frame_vec = NaN(1,length(event_indices));
+  cross_ref_struct(i).prefix_cell = cell(1,length(event_indices));
+  cross_ref_struct(i).particles_index_vec = NaN(1,length(event_indices));
+  cross_ref_struct(i).frame_vec = NaN(1,length(event_indices));
   
   for e = 1:length(event_indices)
     % get prefix
     source_path = nucleus_struct(particle_vec_nc==event_particles(e)).source_path;
     slashes = regexp(source_path,'[\\|/]');
     
-    prefix_cell{e} = source_path(slashes(end)+1:end);
+    cross_ref_struct(i).prefix_cell{e} = source_path(slashes(end)+1:end);
     
     % get frame    
     event_time = master_struct(i).results_struct.center_time_vec(event_indices(e));
-    [~, frame_vec(e)] = min(abs(nucleus_struct(particle_vec_nc==event_particles(e)).time-event_time));
+    [~, cross_ref_struct(i).frame_vec(e)] = min(abs(nucleus_struct(particle_vec_nc==event_particles(e)).time-event_time));
     
     % get corresponding index  in "Particles" structure
     ParticleID = event_particles(e);
-    particles_index_vec(e) = 1e4*(ParticleID-floor(ParticleID));
+    cross_ref_struct(i).particles_index_vec(e) = 1e4*(ParticleID-floor(ParticleID));
   end
 end
+
+% save data structure 
+save([DataPath 'cross_ref_struct.mat'],'cross_ref_struct');
+
+% for each prefix, save 
