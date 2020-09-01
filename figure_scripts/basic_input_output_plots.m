@@ -56,7 +56,7 @@ n_col = size(master_struct(1).swap_array_dt,2);
 window_size = floor(n_col/2);
 time_axis = (-window_size:window_size)*Tres/60;
 
-%% set basic analyisis parameters
+% set basic analyisis parameters
 nBoots = 100; % number of bootstrap samples to use
 min_pause_len = 4; % minimum length of preceding OFF period (in time steps)
 max_pause_len = 100;
@@ -131,15 +131,15 @@ ax.YColor = 'black';
 yyaxis left
 hold on
 
-% virtual control
-fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],...
-  cmap1(3,:),'FaceAlpha',.2,'EdgeAlpha',0)
-p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+% % virtual control
+% fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],...
+%   cmap1(3,:),'FaceAlpha',.2,'EdgeAlpha',0)
+% p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
 
 
 % bio control
-fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(1,:),'FaceAlpha',.2,'EdgeAlpha',0)
-p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(1,:),'LineWidth',2);
+fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(3,:),'FaceAlpha',.2,'EdgeAlpha',0)
+p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(3,:),'LineWidth',2);
 ylabel('relative Dl concentration (au)')
 
 % locus
@@ -155,7 +155,7 @@ ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel('offset (minutes)')
-legend([p2 p1  p3],'Dl at {\it snail} locus','Dl at control locus','Dl at {\it hbP2P}', 'Location','northwest');
+legend([p2 p3],'Dl at {\it snail} locus', 'Dl at {\it hbP2P}', 'Location','northwest');
 
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
@@ -167,11 +167,11 @@ set(gca,    'Box','off',...
 burst_dt_fig_virt.Color = 'white';        
 burst_dt_fig_virt.InvertHardcopy = 'off';
 % save
-saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.tif'])
-saveas(burst_dt_fig_virt,[FigPath 'locus_trend_w_virt_control.pdf'])
+saveas(burst_dt_fig_virt,[FigPath 'snail_w_hbP2P_control.tif'])
+saveas(burst_dt_fig_virt,[FigPath 'snail_w_hbP2P_control.pdf'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compare to original results
+%% Compare to original results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 burst_comparison = figure;
