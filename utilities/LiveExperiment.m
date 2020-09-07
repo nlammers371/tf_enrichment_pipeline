@@ -429,6 +429,8 @@ classdef LiveExperiment
             ellipsesFile = [this.resultsFolder, 'Ellipses.mat'];
             if this.hasEllipsesFile
                 load(ellipsesFile, 'Ellipses');
+            else
+                Ellipses = {};
             end
             
         end

@@ -66,7 +66,8 @@ function nucleus_struct = main01_compile_traces(dataStatusTab,dropboxFolder,vara
 %     sisterIndex
 %     sisterParticleID
 
-%% Set defaults & process input parameters
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%% Set defaults %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
@@ -78,7 +79,9 @@ tresInterp = 20;
 calculatePSF = false;
 projectName = dataStatusTab;
 
-% Process input parameters
+
+%% %%%%%%%%%%%%%%%%%%%%%%% Process input parameters %%%%%%%%%%%%%%%%%%%%%%%
+
 for i = 1:numel(varargin)
     if ischar(varargin{i})
         if strcmpi(varargin{i}, 'firstNC')
@@ -93,11 +96,10 @@ for i = 1:numel(varargin)
     end
 end
 
-% Get useful folders
-[rawResultsRoot, dataPath, ~] =   header_function(dropboxFolder, projectName);
-
-
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Get useful folders
+[~, dataPath, ~] =   header_function(dropboxFolder, projectName);
 
 % Find the DataStatus.xlsx file and grab only those datasets marked as
 % approved by 'ReadyForEnrichmentAnalysis' flag
@@ -105,42 +107,38 @@ liveProject = LiveProject(projectName);
 approvedFlag = 'ReadyForEnrichmentAnalysis';
 approvedPrefixes = getCustomApprovedPrefixes(liveProject,approvedFlag);
 prefixes = approvedPrefixes;
+numExperiments = numel(prefixes);
     
 % Make the output filepath
 mkdir(dataPath);
 % Assign save names
 nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
-
-%% %%%%%%%%%%%%%%%%%%%%%%% Obtain Relevant Filepaths %%%%%%%%%%%%%%%%%%%%%%
-
-% Get all the file paths for the relevant pipeline outputs
-numExperiments = numel(prefixes);
-compiledNucleiFilenames = cell(1,numExperiments); % nuclear protein
-for i = 1:numExperiments
-    currPrefix = prefixes{i};            
-    compiledNucleiFilenames{i} = [rawResultsRoot, currPrefix, filesep, 'CompiledNuclei.mat'];      
-end
-
 % Generate set key data structure
-setKey = array2table((1:numel(prefixes))','VariableNames',{'setID'});
+setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
 % prefixesTable = cell2table(prefixes);
 setKey.prefix = prefixes;
 save([dataPath 'set_key.mat'],'setKey')
 
+
+%% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
+
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
-h = waitbar(0,'Compiling data ...');
 nucleus_struct = [];
 
-% Loop through prefixes    
+% Add data from each experiment to the master structure
+h = waitbar(0,'Compiling data ...');
 for i = 1:numExperiments
+    
     waitbar(i/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
     
     setID = i;
     currExperiment = LiveExperiment(prefixes{i});
     
-    % Read in processed data files from the main mRNADyanmics pipeline
+    
+    %%%%%%%% Read in processed data from main mRNADyanmics pipeline %%%%%%%
+    
     schnitzcells = getSchnitzcells(currExperiment);
     processedSpotData = getCompiledParticles(currExperiment);   % this structure contains all info compiled for this experiment
     compiledParticles = processedSpotData.CompiledParticles;    % this is the cell array containing the CompiledParticles cell array
@@ -151,14 +149,15 @@ for i = 1:numExperiments
     % MT 2020-08-11: Right now we don't use any of the data in
     % CompiledNuclei (from mRNADynamics pipeline) because we generate all
     % of it ourselves in main02. This might change in the future, so I'm
-    % including step so it's easy to use should we need it 
+    % including this section so it's easy to use should we need it 
     processedNucleiData = getCompiledParticles(currExperiment); % this structure contains all info compiled for this experiment
     compiledNuclei = processedNucleiData.CompiledNuclei;        % this is the CompiledNuclei structure we actually want to use  
     if iscell(compiledNuclei)
         compiledNuclei = compiledNuclei{1};                     % unlike compiledParticles, I don't think this gets stored in a cell array, but just in case...           
     end
     
-    %%%%% Basic data characteristics %%%%%%
+    
+    %%%%%%%%%%%%%%%%%%% Get basic data characteristics %%%%%%%%%%%%%%%%%%%%
         
     % Check if certain info is present for this experiment    
     threeDFlag = isfield(compiledParticles,'Fluo3DRaw');    %3D spot fitting data        
@@ -193,7 +192,8 @@ for i = 1:numExperiments
     pixelSize = currExperiment.pixelSize_um; %um
     
     
-    %%%%% Compile nucleus schnitz info %%%%%%
+    %%%%%%%%%%%%%%%%%%%% Compile nucleus schnitz info %%%%%%%%%%%%%%%%%%%%%
+    
     compiledSchnitzCells = struct;
     
     sWithNC = 1;    %counter to ensure no empty spaces in the compiledSchnitzCells
