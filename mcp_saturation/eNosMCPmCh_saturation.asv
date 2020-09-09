@@ -1,0 +1,176 @@
+clear
+close all
+
+typeName = 'eNos-MCP-mCh';
+
+quantiles_in = [15:15:90 98]/100; % specify quantiles to use for analysis
+tlims_in = [5 25]; % specify time limits (roughly when the spots should be ON)
+nc14_flag_in = true;
+
+% Define basic ID variables
+DropboxFolder =  'S:\Meghan\Dropbox\';
+figPath = [DropboxFolder 'ModularEnhancersResults' filesep 'eNos-MCP-mCh_saturation' filesep];
+mkdir(figPath);
+
+% prefixes = {...
+%     '2017-09-14-P2P-MCP-NoNLS-mCherry-doubledosage2',...
+%     '2017-09-14-P2P-MCP-NoNLS-mCherry-doubledosage3'};
+prefixes = {};
+
+if isempty(prefixes) 
+    projects = {'eNosx1-MCP-mCh_VK33_het','eNosx1-MCP-mCh_VK33_homo','eNosx2-MCP-mCh_VK33_homo','eNosx2-MCP-mCh_VK22'};
+    projectData(numel(projects)).constructName = '';  %storing in a struct so it's organized by eNos construct
+    
+    for p = 1:numel(projects)
+        tempPrefixes = getProjectPrefixes(projects{p},'onlyApproved');
+        projectData(p).constructName = projects{p};
+        projectData(p).prefixes = tempPrefixes;
+    end
+end
+
+% call function to calculate offset and fluo quantiles for each prefix
+disp('calculating quantiles...')
+for i = 1:numel(projects)
+    currNumPrefixes = numel(projectData(i).prefixes);
+    
+    % intialize data arrays
+    spot_mean_array = NaN(numel(quantiles_in),currNumPrefixes);
+    spot_se_array = NaN(numel(quantiles_in),currNumPrefixes);
+
+    offset_mean_array = NaN(numel(quantiles_in),currNumPrefixes);
+    offset_se_array = NaN(numel(quantiles_in),currNumPrefixes);
+    
+    for j = 1:currNumPrefixes
+        currPrefix = projectData(i).prefixes{j};    %needs to be a string
+        disp(['analyzing ' currPrefix '...'])
+        [spot_mean_array(:,j), spot_se_array(:,j), offset_mean_array(:,j),...
+                offset_se_array(:,j), nc14_flag, quantiles, tlims] = ...
+            mcp_saturation_analysis(currPrefix,'quantiles',quantiles_in, ...
+                'nc14_flag',nc14_flag_in,'tlims',tlims_in);
+                
+    end
+    
+    projectData(i).spotMean = spot_mean_array;
+    projectData(i).spotSE = spot_se_array;
+    projectData(i).offsetMean = offset_mean_array;
+    projectData(i).offsetSE = offset_se_array;
+    projectData(i).quantiles = quantiles_in;
+    projectData(i).nc14Flag = nc14_flag_in;
+    projectData(i).tlims = tlims_in;
+end
+
+%% Make spot fluorescence vs MCP offset figure
+% nrows = size(offset_mean_array,1);
+% inc = 1/nrows;
+% close all
+% pct_fig = figure;
+% hold on
+% hm_cm = flipud(brewermap(nrows,'Spectral'));
+% colormap(hm_cm);
+% plot(offset_mean_array,spot_mean_array,'-o','Color',[0 0 0 .3])
+% for i = 1:nrows
+%     scatter(offset_mean_array(i,:),spot_mean_array(i,:),'MarkerFaceColor',hm_cm(i,:),'MarkerEdgeColor','black')
+% end
+% xlabel('MCP offset (au)')
+% ylabel('spot fluorescence (au)')
+% h = colorbar('YTick',inc/2:inc:1,'YTickLabel',quantiles*100);
+% ylabel(h,'quantile (%)')
+% grid on
+% box on
+% set(gca,'Fontsize',14)
+% saveas(pct_fig,[figPath typeName '_prctile_scatters.png'])
+
+% PBoC colors
+pbocRed = [213,108,85]/255;
+pbocBlu = [115,142,193]/255;
+pbocYlw = [234, 194,100]/255;
+pbocGrn = [122,169,116]/255;
+pbocPur = [171,133,172]/255;
+
+pbocColors = [pbocRed ; pbocBlu ; pbocYlw ; pbocGrn ; pbocPur];
+
+ind98pct = 7;
+
+spotVsOffset98pctFig = figure;
+hold on
+for p = 2:numel(projectData)
+    
+    nPrefixes = size(projectData(p).offsetMean,2);
+    
+    offsetMean98pct = projectData(p).offsetMean(ind98pct,:);
+    spotMean98pct = projectData(p).spotMean(ind98pct,:);
+    
+    s = scatter(offsetMean98pct, spotMean98pct,'o','MarkerFaceColor',pbocColors(p,:),'MarkerEdgeColor','black');
+end
+
+ax = gca;
+% ax.XLim = [0 5];
+% ax.YLim = [0.5 2];
+% ax.XTick = [1, 2, 3, 4];
+% ax.XTickLabels = {'eNosx1-MCP-mCh @VK33, het','eNosx1-MCP-mCh @VK33 homo','eNosx2-MCP-mCh @VK33','eNosx2-MCP-mCh @VK22'};
+
+ylabel('98th pct MCP offset (au)')
+hold off
+
+saveas(spotVsOffset98pctFig,[figPath typeName 'spotFluoVsOffset.png'])
+saveas(spotVsOffset98pctFig,[figPath typeName 'spotFluoVsOffset.pdf'])
+
+%% Make 98th percentile MCP offset (~nuclear MCP concentration) vs construct figure
+
+mcpOffset98pctFig = figure;
+hold on
+for p = 2:numel(projectData)
+    
+    nPrefixes = size(projectData(p).offsetMean,2);
+    xData = p * ones(1, nPrefixes);
+    
+    offsetMean98pct = projectData(p).offsetMean(ind98pct,:);
+    offsetSE98pct = projectData(p).offsetSE(ind98pct,:);
+    
+    e = errorbar(xData, offsetMean98pct, offsetSE98pct,'.');
+    
+    ax = gca;
+    StandardFigurePBoC(e, ax);
+end
+
+ax = gca;
+ax.XLim = [0 5];
+ax.YLim = [0.5 2];
+ax.XTick = [1, 2, 3, 4];
+ax.XTickLabels = {'eNosx1-MCP-mCh @VK33, het','eNosx1-MCP-mCh @VK33 homo','eNosx2-MCP-mCh @VK33','eNosx2-MCP-mCh @VK22'};
+ylabel('98th pct MCP offset (au)')
+hold off
+
+StandardFigurePBoC(e, ax);
+
+
+%% Make 98th percentile MS2 spot fluorescence vs construct figure
+
+mcpSpotFluo98pctFig = figure;
+hold on
+for p = 2:numel(projectData)
+    
+    nPrefixes = size(projectData(p).spotMean,2);
+    xData = p * ones(1, nPrefixes);
+    
+    spotMean98pct = projectData(p).spotMean(ind98pct,:);
+    spotSE98pct = projectData(p).spotSE(ind98pct,:);
+    
+    e = errorbar(xData, spotMean98pct, spotSE98pct,'.');
+    ax = gca;
+    StandardFigurePBoC(e, ax);
+end
+
+ax = gca;
+ax.XLim = [0 5];
+% ax.YLim = [0.5 2];
+ax.XTick = [1, 2, 3, 4];
+ax.XTickLabels = {'eNosx1-MCP-mCh @VK33, het','eNosx1-MCP-mCh @VK33 homo','eNosx2-MCP-mCh @VK33','eNosx2-MCP-mCh @VK22'};
+ylabel('98th pct hbP2P-MS2 spot fluorescence (au)')
+hold off
+
+StandardFigurePBoC(e, ax);
+
+
+% %% save analysis details
+% save([figPath typeName '_saturationData.mat'],'projectData')
