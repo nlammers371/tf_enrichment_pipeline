@@ -121,7 +121,7 @@ MarkerSize = 50;
 blue = [115 143 193]/256;
 purple = [171 133 172]/256;
 red = [213 108 85]/256;
-ind_list = [2:numel(mf_axis_vec)-1];
+ind_list = [1:numel(mf_axis_vec)];
 mf_axis_long = linspace(min(mf_axis_vec(ind_list)),max(mf_axis_vec(ind_list)));
 % set x axis
 x_lim = [min(mf_axis_long)-.05 max(mf_axis_long)+.05];
@@ -163,7 +163,7 @@ box on
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.tif'])
 saveas(r_trend,[FigPath,'burst_amp_mf_pt.pdf'])
 
-%
+
 
 p_dur = polyfit(mf_axis_vec(ind_list),dur_vec_mean(ind_list),1);
 p_trend_dur = polyval(p_dur,mf_axis_long);

@@ -8,9 +8,9 @@ addpath('utilities')
 targetProject = '2xDl-Ven_snaBAC-mCh';
 controlProject = '2xDl-Ven_hbP2P-mCh';
 targetProjectOrig = 'Dl-Ven_snaBAC-mCh_v4';
-project_cell = {targetProject controlProject targetProjectOrig};
-% DropboxFolder = 'S:\Nick\Dropbox\';
-DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
+project_cell = {targetProject controlProject};% targetProjectOrig};
+DropboxFolder = 'S:\Nick\Dropbox\';
+% DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
 % Params
 fluo_dim = 2;
 protein_dim = 2;
@@ -23,7 +23,7 @@ mkdir(FigPath)
 
 % load data
 master_struct = struct;
-for i = 1:3
+for i = 1:length(project_cell)
   % set write paths
   [~, DataPath] =   header_function(DropboxFolder, project_cell{i});   
   load([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'])

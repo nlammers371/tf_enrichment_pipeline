@@ -328,7 +328,9 @@ for i = 1:length(cp_filenames)
         s_cells(nc_ind).xPosParticle(nc_sp_ft1) = cp_particles(j).xPos(nc_sp_ft2);
         s_cells(nc_ind).yPosParticle(nc_sp_ft1) = cp_particles(j).yPos(nc_sp_ft2);   
         s_cells(nc_ind).zPosParticle(nc_sp_ft1) = cp_particles(j).zPos(nc_sp_ft2);
-        s_cells(nc_ind).zPosParticleDetrended(nc_sp_ft1) = cp_particles(j).zPosDetrended(nc_sp_ft2);
+        if isfield(cp_particles,'zPosDetrended')
+          s_cells(nc_ind).zPosParticleDetrended(nc_sp_ft1) = cp_particles(j).zPosDetrended(nc_sp_ft2);
+        end
         if ap_flag
             s_cells(nc_ind).APPosParticle(nc_sp_ft1) = cp_particles(j).APposParticle(nc_sp_ft2)*100;
         end

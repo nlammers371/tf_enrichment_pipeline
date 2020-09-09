@@ -4,10 +4,13 @@ clear
 close all
 addpath('utilities')
 % path to LivemRNA folder 
-livemRNAPath = 'C:\Users\nlamm\projects\LivemRNA';
-addpath(genpath(livemRNAPath));
+% livemRNAPath = 'C:\Users\nlamm\projects\LivemRNA';
+currentDir - pwd;
+livemRNAPath = 'P:\Nick\LivemRNA';
+addpath(genpath([livemRNAPath '\mRNADynamics\']));
 % path to processed data
-DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
+% DropboxFolder = 'C:\Users\nlamm\Dropbox (Personal)\';
+DropboxFolder = 'S:\Nick\Dropbox\';
 % set ID variables
 project_cell = {'2xDl-Ven_snaBAC-mCh'};
 
@@ -93,4 +96,25 @@ end
 % save data structure 
 save([DataPath 'cross_ref_struct.mat'],'cross_ref_struct');
 
-% for each prefix, save 
+%% change directory so that we can use livemRNA functions
+cd(livemRNAPath)
+
+%% get unique list of Prefixes
+for i = 1:length(cross_ref_struct)
+  prefix_index = unique(cross_ref_struct(i).prefix_cell);  
+  for p = 1:length(prefix_index)
+    Prefix = prefix_index{p};
+    liveExperiment = LiveExperiment(Prefix);
+    % get indices that pertain to this prefix
+    PrefixFilter = strcmp(cross_ref_struct(i).prefix_cell,Prefix);
+    % make a structure
+    surge_cross_ref_structure.frame_vec = cross_ref_struct(i).frame_vec(PrefixFilter);
+    surge_cross_ref_structure.particles_index = cross_ref_struct(i).particles_index_vec(PrefixFilter);
+    % save a reference structure
+    save([liveExperiment.resultsFolder 'surge_cross_ref_structure.mat'],'surge_cross_ref_structure')
+  end
+end
+
+
+%% lastly, change back
+cd(origDir);

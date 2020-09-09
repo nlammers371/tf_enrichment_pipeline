@@ -14,7 +14,8 @@ relEnrichHeatMap_ub = 1.2;
 relEnrichHeatMap_lb = 1;
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 % FigPath = [FigureRoot '\' project '\'];
-FigPath = ['S:\Meghan\Dropbox\LocalEnrichmentFigures\PipelineOutput' '\' project '\'];
+FigPath = [FigureRoot '\' project '\'];
+mkdir(FigPath);
 
 for i = 1:(numel(varargin)-1)  
     if i ~= numel(varargin)
@@ -300,7 +301,7 @@ hold on
 p = plot(0,0);
 ax = gca;
 ax.YColor = [.2 .2 .2];
-xlim([6 60])
+xlim([tt_index(1) tt_index(end)]/60)
 ylabel([gene_name ' activity (au)'])
 legend('enrichment trend','activity trend', 'Location','northeast')
 xlabel('minutes')
@@ -316,7 +317,7 @@ ylabel([protein_name ' enrichment at locus (au)'])
 grid on
 StandardFigure(e,gca);
 xlabel('minutes')
-xlim([6 60])
+xlim([tt_index(1) tt_index(end)]/60)
 saveas(delta_time_fig, [FigPath write_string '_temporal_enrichment.png'])
 
 
@@ -334,7 +335,7 @@ hold on
 p = plot(0,0);
 ax = gca;
 ax.YColor = cm1(9,:);
-xlim([6 60])
+xlim([tt_index(1) tt_index(end)]/60)
 ylabel([gene_name ' activity (au)'])
 
 legend('background trend','activity trend', 'Location','northeast')
@@ -546,7 +547,7 @@ r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
 title(['Radial Concentration Profile (' id_string ')'])
 r_ax.XLim = [0 1.2];
-r_ax.YLim = [relEnrich_lb relEnrich_ub];
+% r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigPath write_string '_radial_enrichment.png'])
 
 
