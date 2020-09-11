@@ -1,4 +1,4 @@
-function nucleus_struct = main01_compile_traces(projectName,varargin)
+function nucleus_struct = main01_compile_traces(dataStatusTab,varargin)
 
 %
 % nucleusStruct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
@@ -9,16 +9,15 @@ function nucleus_struct = main01_compile_traces(projectName,varargin)
 %
 %
 % ARGUMENTS
-% projectName: master ID variable (should match a tab name in the 
-%              DataStatus.xlsx spreadsheet)
+% dataStatusTab: master ID variable (should match a tab name in the 
+%                DataStatus.xlsx spreadsheet)
+% dropboxFolder: full file path to folder containing compiled imaging
+%                results
 %
 % OPTIONS
 % firstNC: script defaults to taking only nc14 traces. If you want
 %          earlier traces, pass 'firstNC', followed by desired nuclear 
 %          cycle number
-%
-% other: script allows any default variable to be set using format:
-%       "VariableNameString", VariableValue
 %
 % OUTPUT
 % nucleus_struct: compiled data set contain key nucleus and
@@ -74,11 +73,11 @@ function nucleus_struct = main01_compile_traces(projectName,varargin)
 firstNC = 14;   % first nuclear cycle to pull data from
 minDP = 15;     % what is this for?
 pctSparsity = 50;   % 
-twoSpotFlag = contains(projectName, '2spot');
+twoSpotFlag = contains(dataStatusTab, '2spot');
 minTime = 0*60; % take no fluorescence data prior to this point
 tresInterp = 20; 
 calculatePSF = false;
-% projectName = projectName;
+projectName = dataStatusTab;
 SpotChannelIndex = 1; % this does nothing at the moment, but can serve as a starting point if ever we wish to analyze two-spot-two-color data 
 ncRefVec = 9:14;
 livemRNAPath = [];
@@ -92,8 +91,6 @@ for i = 1:numel(varargin)
             else
                 error(['The ''firstNC'' option must be followed by an integer from 9 to 14, inclusive. Default firstNC is ' num2str(firstNC) '.']) 
             end
-        elseif strcmpi(varargin{i}, 'projectName')
-            error('Pipeline currently does not support alternate names for projects (otehr than what is on the data status tab)')
         elseif i < numel(varargin)                         
             eval([varargin{i} '=varargin{i+1};']);        
         end
@@ -102,12 +99,25 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% search for livemRNAPath if it was not specified
 if isempty(livemRNAPath)
-  livemRNAPath = FindLivemRNA;
+  disp('Searching for livemRNA...')
+  currDir = pwd;
+  slashes = strfind(currDir,'\');
+  rootDir = currDir(1:slashes(end-1));
+  livemRNAContents = dir([rootDir '**\livemRNA']);
+  if isempty(livemRNAContents)
+    livemRNAPath = uigetdir;
+  else
+    livemRNAPath = livemRNAContents(end).folder; 
+  end
 end
 
 % copy ComputerFolders to local directory 
 copyfile([livemRNAPath '\ComputerFolders.csv'],'.');
+
+% add mRNADynamics to filepath
+addpath(genpath([livemRNAPath '\mRNADynamics']));
     
 % Find the DataStatus.xlsx file and grab only those datasets marked as
 % approved by 'ReadyForEnrichmentAnalysis' flag
@@ -123,11 +133,11 @@ mkdir(dataPath);
 % Assign save names
 nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
-% % Generate set key data structure
-% setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
-% % prefixesTable = cell2table(prefixes);
-% setKey.prefix = approvedPrefixes;
-% save([dataPath,'set_key.mat'],'setKey')
+% Generate set key data structure
+setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
+% prefixesTable = cell2table(prefixes);
+setKey.prefix = approvedPrefixes;
+save([dataPath,'set_key.mat'],'setKey')
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
@@ -296,7 +306,7 @@ for i = 1:numExperiments
             traceStop = find(~isnan(rawTrace),1,'last');        
 
             % skip particles not in specified nc range
-            if isempty(traceStart)
+            if sum(isempty(traceStart)) == 0
                 continue
             end   
 
@@ -340,8 +350,8 @@ for i = 1:numExperiments
 
                 % Initialize particle fields--will be set to particle values 
                 % for nuclei with matching particle
-                compiledSchnitzCells = initializeParticleFields(...
-                  compiledSchnitzCells,ncIndex,nEntries);%,threeDFlag,APFlag,DetrendedZFlag);           
+                compiledSchnitzCells(ncIndex) = initializeParticleFields(...
+                  compiledSchnitzCells(ncIndex),nEntries);%,threeDFlag,APFlag,DetrendedZFlag);           
             end
 
             % Record particle identifier

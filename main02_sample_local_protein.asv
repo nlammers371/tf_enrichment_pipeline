@@ -1,4 +1,4 @@
-% main02_sample_local_protein(projectName, varargin)
+% main02_sample_local_protein(project, varargin)
 %
 % DESCRIPTION
 % Script to generate samples of local protein contentration at active gene
@@ -22,7 +22,7 @@
 %
 % OUTPUT: nucleus_struct_protein: compiled data set with protein samples
 
-function nucleus_struct_protein = main02_sample_local_protein(projectName,DropboxFolder,varargin)
+function nucleus_struct_protein = main02_sample_local_protein(project,DropboxFolder,varargin)
 addpath('./utilities')
 ROIRadiusSpot = .2; % radus (um) of region used to query and compare TF concentrations
 minSampleSepUm = 1.5; %um
