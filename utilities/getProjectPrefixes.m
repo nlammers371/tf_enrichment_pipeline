@@ -1,4 +1,4 @@
-function prefixes = getProjectPrefixes(dataType,varargin)
+function [prefixes, dropboxFolder] = getProjectPrefixes(projectName,varargin)
 
 % function allPrefixes = getProjectPrefixes(dataType)
 %
@@ -61,7 +61,7 @@ dataStatusFolders = findDataStatus(allDropboxFolders);
 
 %Look in all DataStatus.xlsx files to find the tab specified by the dataType
 %user input
-dataStatusWithDataTypeFolder = findDataStatusTab(dataStatusFolders, dataType);
+dataStatusWithDataTypeFolder = findDataStatusTab(dataStatusFolders, projectName);
 
 %Redefine the DropboxFolder according to the DataStatus.xlsx we'll use
 dropboxFolder = dataStatusWithDataTypeFolder;
@@ -69,7 +69,7 @@ dropboxFolder = dataStatusWithDataTypeFolder;
 %Load the contents of the DataStatus.XLSX tab we just found
 dataStatusDir = dir([dropboxFolder,filesep,dataStatusFilename]);
 dataTypeTabContents = readcell([dropboxFolder,filesep,dataStatusDir(1).name], ...
-                               'Sheet', dataType);
+                               'Sheet', projectName);
 
 %Get the Prefixes for all datasets
 [allPrefixes,~] = getPrefixesFromDataStatusTab(dataTypeTabContents);
@@ -104,7 +104,7 @@ elseif customApproved
     % Find the row in the DataStatus tab that contains the custom approval flag 
     approvalFlagRow = find(strcmpi(dataTypeTabContents(:,1),customApprovalFlag));
     % Contents of the approval flag row much be int booleans (1s or 0s)
-    approvalFlagLogicalArray = cell2mat(dataTypeTabContents(approvalFlagRow,2:end));
+    approvalFlagLogicalArray = [dataTypeTabContents{approvalFlagRow,2:end}];
     
     approvedPrefixes = allPrefixes(find(approvalFlagLogicalArray));
     prefixes = approvedPrefixes;

@@ -123,11 +123,11 @@ mkdir(dataPath);
 % Assign save names
 nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
-% % Generate set key data structure
-% setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
-% % prefixesTable = cell2table(prefixes);
-% setKey.prefix = approvedPrefixes;
-% save([dataPath,'set_key.mat'],'setKey')
+% Generate set key data structure
+setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
+% prefixesTable = cell2table(prefixes);
+setKey.prefix = approvedPrefixes;
+save([dataPath,'set_key.mat'],'setKey')
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
@@ -229,9 +229,6 @@ for i = 1:numExperiments
                 compiledSchnitzCells(sWithNC).sourcePath = currExperiment.resultsFolder;
                 compiledSchnitzCells(sWithNC).APFlag = 0;  %AP flag not relevant atm
                 compiledSchnitzCells(sWithNC).threeDFlag = threeDFlag;
-                compiledSchnitzCells(sWithNC).xDim = xDim;
-                compiledSchnitzCells(sWithNC).yDim = yDim;
-                compiledSchnitzCells(sWithNC).zDim = zDim;
                 compiledSchnitzCells(sWithNC).zStep = zStep;
                 compiledSchnitzCells(sWithNC).pixelSize = pixelSize;   %um
                 compiledSchnitzCells(sWithNC).nc = ncIndices(ncInd);

@@ -1,0 +1,11 @@
+Computer Name,desktop-v0j0t1d
+User Name,DESKTOP-V0J0T1D/nlamm
+SourcePath,C:\Users\nlamm\Dropbox (Personal)\Data\RawDynamicsData
+PreProcPath,C:\Users\nlamm\Dropbox (Personal)\Data\PreProcessedData
+FISHPath,C:/Users/nlamm/projects/LivemRNA\Data\ProcessedData
+DropboxFolder,C:\Users\nlamm\Dropbox (Personal)\DynamicsResults
+DataRoot,C:\Users\nlamm\Dropbox (Personal)\Data\
+MS2CodePath,C:/Users/nlamm/projects/LivemRNA/mRNADynamics\src
+TestPath,C:/Users/nlamm/projects/LivemRNA\ExpectedData
+LocalEnrichmentResults,C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentResults
+LocalEnrichmentRoot,C:\Users\nlamm\Dropbox (Personal)\Data\
