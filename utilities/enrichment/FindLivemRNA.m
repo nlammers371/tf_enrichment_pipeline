@@ -1,7 +1,8 @@
 function livemRNAPath = FindLivemRNA
-
+pathCell = regexp(path, pathsep, 'split');
+pathIndices = find(contains(pathCell,'LivemRNA'));
 % check to see if mRNADynamics folder is on the working path
-if ~exist('LiveExperiment','class')==8
+if isempty(pathIndices)
   % search for livemRNAPath if it was not specified  
   disp('Searching for livemRNA...')
   currDir = pwd;
@@ -18,7 +19,5 @@ if ~exist('LiveExperiment','class')==8
   % add mRNADynamics to filepath
   addpath(genpath([livemRNAPath '\mRNADynamics']));
 else
-  pathCell = regexp(path, pathsep, 'split');
-  pathIndices = find(contains(pathCell,'LivemRNA'));
   livemRNAPath = pathCell{pathIndices(1)}(1:strfind(pathCell{pathIndices(1)},'LivemRNA')+8);
 end

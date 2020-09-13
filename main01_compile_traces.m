@@ -187,11 +187,8 @@ for i = 1:numExperiments
     firstTime = timeRaw(min(ncStartFrameVec));
     
     % Get basic frame info from the liveExperiment instance
-    yDim = currExperiment.yDim;
-    xDim = currExperiment.xDim;
-    zDim = currExperiment.zDim;
     zStep = currExperiment.zStep_um;
-    pixelSize = currExperiment.pixelSize_um; %um
+    pixelSize = currExperiment.pixelSize_um; %um    
     
     % initialize structure to store nucleus and particle info
     compiledSchnitzCells = struct;
@@ -480,7 +477,7 @@ if calculatePSF % NL: this needs to be fixed...
 end
 
 % revmove temproary copy of ComputerFolders
-if ~strcmpi(pwd,livemRNAPath)
-  delete ComputerFolders.csv
-end
+% if ~strcmpi(pwd,livemRNAPath)
+%   delete ComputerFolders.csv
+% end
 disp('done.')

@@ -145,43 +145,6 @@ set_index = unique(set_vec);
 set_frame_array = unique([setID_ref' frame_ref'],'row');
 qc_structure = struct;
 
-%% %%%%%%%%%%%%%%%%%%%%%%% Set size parameters  %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PixelSize = nucleus_struct(1).pixelSize; 
-% zStep = nucleus_struct(1).zStep;
-
-% set min and max acceptable area for nucleus segmentation
-error('NL: Move these')
-min_area = round(pi*(2 ./ PixelSize).^2);
-max_area = round(pi*(4 ./ PixelSize).^2);
-
-% set snippet to be 3um in size
-pt_snippet_size = round(1.5 ./ PixelSize);
-
-% set min separation between control and locus 
-minSampleSep = round(minSampleSepUm ./ PixelSize);
-minEdgeSep = round(minEdgeSepUm ./ PixelSize);
-
-% calculate ROI size in pixels for spot and control
-roi_rad_spot_pix = round(ROIRadiusSpot ./ PixelSize);
-
-% calculate average frame-over-frame particle drift from data
-lin_diff_vec = diff(particle_order_ref);
-x_diff_vec = diff(spot_x_ref);
-y_diff_vec = diff(spot_y_ref);
-dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
-dr_vec = dr_vec(lin_diff_vec==0);
-
-% sets sigma of movement for virtual spot
-driftTol = nanmedian(dr_vec)*PixelSize;
-
-% set dims for 3D protein sampling
-if use_psf_fit_dims
-    xy_sigma = psf_dims.xy_sigma;
-    z_sigma = psf_dims.z_sigma;
-else
-    xy_sigma = round(xy_sigma_um/PixelSize,1);% pixels
-    z_sigma = round(z_sigma_um/zStep,1); % pixels
-end
 
 %% %%%%%%%%%%%%%%%%%%%%%%% Initialize enrichment-related fields  %%%%%%%%%%
 new_vec_fields = {'spot_protein_vec_3d','spot_protein_vec', 'serial_null_protein_vec',...
@@ -254,7 +217,7 @@ if segmentNuclei
         sm_kernel = round(1 ./ PixelSize); % size of gaussian smoothing kernel 
                 
         % get protein channel                 
-        protein_stack = load_stacks(rawPath, src, frame_temp, proteinChannel,xDim,yDim,zDim);
+        protein_stack = load_stacks(rawPath, Prefix, frame_temp, proteinChannel,xDim,yDim,zDim);
         
         % generate protein gradient frame for segmentation
         protein_smooth = imgaussfilt(mean(protein_stack,3),round(sm_kernel/2));                
@@ -333,7 +296,55 @@ for i = 1:size(set_frame_array,1)
     tic
     setID = set_frame_array(i,1);
     frame = set_frame_array(i,2);  
-        
+    Prefix = set_key(set_key.setID==setID,:).prefix{1};
+    
+    %%%%%%%%%%%%%%%%%%%%%%% Set size parameters  %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    currExperiment = LiveExperiment(Prefix);
+    PixelSize = currExperiment.pixelSize_nm; 
+    zStep = currExperiment.zStep_um;
+    mcpChannel = currExperiment.spotChannels;
+    if length(mcpChannel) > 1
+      error('This pipeline does not currently support multiple spot channels')
+    end
+    
+    % Generate reference vectors
+    xDim = currExperiment.xDim;
+    yDim = currExperiment.yDim;
+    zDim = currExperiment.zDim;
+    [x_ref,y_ref,z_ref] = meshgrid(1:xDim,1:yDim,1:zDim);
+    
+    % set min and max acceptable area for nucleus segmentation    
+    min_nucleus_area = round(pi*(2 ./ PixelSize).^2);
+    max_nucleus_area = round(pi*(4 ./ PixelSize).^2);
+
+    % set snippet to be 3um in size
+    pt_snippet_size = round(1.5 ./ PixelSize);
+
+    % set min separation between control and locus 
+    minSampleSep = round(minSampleSepUm ./ PixelSize);
+    minEdgeSep = round(minEdgeSepUm ./ PixelSize);
+
+    % calculate ROI size in pixels for spot and control
+    roi_rad_spot_pix = round(ROIRadiusSpot ./ PixelSize);
+
+    % calculate average frame-over-frame particle drift from data
+    lin_diff_vec = diff(particle_order_ref);
+    x_diff_vec = diff(spot_x_ref);
+    y_diff_vec = diff(spot_y_ref);
+    dr_vec = sqrt(x_diff_vec.^2+y_diff_vec.^2);
+    dr_vec = dr_vec(lin_diff_vec==0);
+
+    % sets sigma of movement for virtual spot
+    driftTol = nanmedian(dr_vec)*PixelSize;
+
+    % set dims for 3D protein sampling
+    if use_psf_fit_dims
+        xy_sigma = psf_dims.xy_sigma;
+        z_sigma = psf_dims.z_sigma;
+    else
+        xy_sigma = round(xy_sigma_um/PixelSize,1);% pixels
+        z_sigma = round(z_sigma_um/zStep,1); % pixels
+    end
     % load spot and nucleus reference frames
     nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',setID) '_frame' sprintf('%03d',frame) '.mat'];
     load(nc_ref_name,'nc_ref_frame');
@@ -360,11 +371,11 @@ for i = 1:size(set_frame_array,1)
     spot_y_vec3D = spot_y_ref3D(frame_set_filter);        
     spot_z_vec3D = spot_z_ref3D(frame_set_filter); 
     particle_id_vec = pt_ref(frame_set_filter);
-    src = set_key(set_key.setID==setID,:).prefix{1};
+    
 
     % load stacks    
-    mcp_stack = load_stacks(rawPath, src, frame, mcpChannel,xDim,yDim,zDim);%load_stacks(rawPath, src, frame, mcp_channel);
-    protein_stack = load_stacks(rawPath, src, frame, proteinChannel,xDim,yDim,zDim);    
+    mcp_stack = load_stacks(rawPath, Prefix, frame, mcpChannel,xDim,yDim,zDim);%load_stacks(rawPath, src, frame, mcp_channel);
+    protein_stack = load_stacks(rawPath, Prefix, frame, proteinChannel,xDim,yDim,zDim);    
     % generate lookup table of inter-nucleus distances
     x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
     y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
@@ -411,7 +422,7 @@ for i = 1:size(set_frame_array,1)
         % volume protein sampling 
         spot_protein_vec_3d(j) = sample_protein_3D(x_spot3D,y_spot3D,z_spot3D,x_ref,y_ref,z_ref,xy_sigma,z_sigma,protein_stack);
         % make sure size is reasonable and that spot is inside nucleus
-        if sum(spot_nc_mask(:)) < min_area || sum(spot_nc_mask(:)) > max_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
+        if sum(spot_nc_mask(:)) < min_nucleus_area || sum(spot_nc_mask(:)) > max_nucleus_area || ~spot_nc_mask(y_spot,x_spot) %|| int_it==0  
             edge_qc_flag_vec(j) = -1;            
             serial_qc_flag_vec(j) = -1;
             continue
@@ -456,7 +467,7 @@ for i = 1:size(set_frame_array,1)
                 nan_flag = isnan(nn_nc_mask(y_spot_nn,x_spot_nn));
             end
             % make sure size is reasonable 
-            if sum(nn_nc_mask(:)) >= min_area && sum(nn_nc_mask(:)) <= max_area                    
+            if sum(nn_nc_mask(:)) >= min_nucleus_area && sum(nn_nc_mask(:)) <= max_nucleus_area                    
                 nn_edge_dist_vec = nc_dist_frame(nn_nc_mask);
                 nn_sep_vec = spot_dist_frame(nn_nc_mask);
                 [edge_null_x_vec(j), edge_null_y_vec(j), edge_null_nc_vec(j), edge_qc_flag_vec(j),~]...
