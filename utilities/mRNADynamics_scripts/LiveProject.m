@@ -139,12 +139,6 @@ classdef LiveProject
                 
         end
         
-        
-        function customApprovedPrefixes = getCustomApprovedPrefixes(this, approvedFlag)
-            
-            customApprovedPrefixes = getProjectPrefixes(this.Project,'customApproved',approvedFlag);
-        end
-        
     end
 end
 

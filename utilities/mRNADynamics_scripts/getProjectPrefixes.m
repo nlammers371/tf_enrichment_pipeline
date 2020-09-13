@@ -1,6 +1,6 @@
-function [prefixes, dropboxFolder] = getProjectPrefixes(projectName,varargin)
+function [prefixes, dropboxFolder] = getProjectPrefixes(dataType,varargin)
 
-% function allPrefixes = getProjectPrefixes(dataType)
+% function allPrefixes = getProjectPrefixes(dataType,varargin)
 %
 % DESCRIPTION
 % Returns the Prefixes for all experiments in a project tab of 
@@ -32,7 +32,7 @@ function [prefixes, dropboxFolder] = getProjectPrefixes(projectName,varargin)
 %
 % Author (contact): Meghan Turner (meghan_turner@berkeley.edu)
 % Created: 5/17/2020
-% Last Updated: N/A
+% Last Updated: MT 7/15/2020 in master branch of mRNADynamics git repo
 
 onlyApproved = false; 
 onlyUnapproved = false;
@@ -61,7 +61,7 @@ dataStatusFolders = findDataStatus(allDropboxFolders);
 
 %Look in all DataStatus.xlsx files to find the tab specified by the dataType
 %user input
-dataStatusWithDataTypeFolder = findDataStatusTab(dataStatusFolders, projectName);
+dataStatusWithDataTypeFolder = findDataStatusTab(dataStatusFolders, dataType);
 
 %Redefine the DropboxFolder according to the DataStatus.xlsx we'll use
 dropboxFolder = dataStatusWithDataTypeFolder;
@@ -69,7 +69,7 @@ dropboxFolder = dataStatusWithDataTypeFolder;
 %Load the contents of the DataStatus.XLSX tab we just found
 dataStatusDir = dir([dropboxFolder,filesep,dataStatusFilename]);
 dataTypeTabContents = readcell([dropboxFolder,filesep,dataStatusDir(1).name], ...
-                               'Sheet', projectName);
+                               'Sheet', dataType);
 
 %Get the Prefixes for all datasets
 [allPrefixes,~] = getPrefixesFromDataStatusTab(dataTypeTabContents);
@@ -106,7 +106,7 @@ elseif customApproved
     % Contents of the approval flag row much be int booleans (1s or 0s)
     approvalFlagLogicalArray = [dataTypeTabContents{approvalFlagRow,2:end}];
     
-    approvedPrefixes = allPrefixes(find(approvalFlagLogicalArray));
+    approvedPrefixes = allPrefixes(1==approvalFlagLogicalArray);
     prefixes = approvedPrefixes;
 else
     prefixes = allPrefixes;

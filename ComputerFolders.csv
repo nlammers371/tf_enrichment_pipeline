@@ -1,12 +1,11 @@
-Computer Name,tubby,
-User Name,TUBBY/nlammers,
-DropboxFolder,C:\Users\nlamm\Dropbox (Personal)\DynamicsResults,
-MS2CodePath,C:\Users\nlamm\projects\LivemRNA\mRNADynamics,
-TestPath,X:/Nick\LivemRNA\ExpectedData,
-SourcePath,C:\Users\nlamm\projects\LivemRNA\Data\RawDynamicsData,
-PreProcPath,C:\Users\nlamm\projects\LivemRNA\Data\PreProcessedData,
-FISHPath,C:\Users\nlamm\projects\LivemRNA\Data\ProcessedData,
-DataRoot,C:\Users\nlamm\projects\LivemRNA\LivemRNA\Data,
-,,
-,,
-,,C:\Users\nlamm\Dropbox (Personal)\Berkeley Biophysics
+Computer Name,tubby
+User Name,TUBBY/nlammers
+DropboxFolder,C:\Users\nlamm\Dropbox (Personal)\DynamicsResults
+MS2CodePath,C:\Users\nlamm\projects\LivemRNA\mRNADynamics
+TestPath,X:/Nick\LivemRNA\ExpectedData
+SourcePath,C:\Users\nlamm\projects\LivemRNA\Data\RawDynamicsData
+PreProcPath,C:\Users\nlamm\projects\LivemRNA\Data\PreProcessedData
+FISHPath,C:\Users\nlamm\projects\LivemRNA\Data\ProcessedData
+DataRoot,C:\Users\nlamm\projects\LivemRNA\LivemRNA\Data
+LocalEnrichmentResults,C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentResults
+LocalEnrichmentRoot,C:\Users\nlamm\projects\LivemRNA\Data\RawDynamicsData

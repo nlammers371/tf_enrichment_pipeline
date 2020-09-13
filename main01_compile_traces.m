@@ -69,7 +69,8 @@ function nucleus_struct = main01_compile_traces(projectName,varargin)
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%% Set defaults %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+close all force
+addpath(genpath('utilities'));
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
 minDP = 15;     % what is this for?
@@ -81,7 +82,7 @@ calculatePSF = false;
 % projectName = projectName;
 SpotChannelIndex = 1; % this does nothing at the moment, but can serve as a starting point if ever we wish to analyze two-spot-two-color data 
 ncRefVec = 9:14;
-livemRNAPath = [];
+
 %% %%%%%%%%%%%%%%%%%%%%%%% Process input parameters %%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:numel(varargin)
@@ -101,19 +102,18 @@ for i = 1:numel(varargin)
 end
 
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% if isempty(livemRNAPath)
+%   livemRNAPath = FindLivemRNA;
+% end
 
-if isempty(livemRNAPath)
-  livemRNAPath = FindLivemRNA;
-end
-
-% copy ComputerFolders to local directory 
-copyfile([livemRNAPath '\ComputerFolders.csv'],'.');
+% % copy ComputerFolders to local directory 
+% copyfile([livemRNAPath '\ComputerFolders.csv'],'.');
     
 % Find the DataStatus.xlsx file and grab only those datasets marked as
 % approved by 'ReadyForEnrichmentAnalysis' flag
-liveProject = LiveProject(projectName);
 approvedFlag = 'ReadyForEnrichmentAnalysis';
-[approvedPrefixes, dropboxFolder] = getCustomApprovedExperiments(liveProject,approvedFlag);
+[approvedPrefixes, dropboxFolder] = getProjectPrefixes(projectName,'customApproved',approvedFlag);
 numExperiments = length(approvedPrefixes);
     
 % Make the output filepath
