@@ -1,7 +1,7 @@
-function stack = load_stacks(RawPath, src, frame, channel,xDim,yDim,zDim)
+function stack = load_stacks(preFolder, frame, channel,xDim,yDim,zDim)
 
 %   stack = [];%NaN(size(mcp_stack));
-  file = dir([RawPath src '/*_' sprintf('%03d',frame) '*_ch0' num2str(channel) '.tif']);
+  file = dir([preFolder '/*_' sprintf('%03d',frame) '*_ch0' num2str(channel) '.tif']);
 %     for im = 2:numel(files)-1      
 %         stack(:,:,im-1) = double(imread([RawPath src '/' files(im).name]));
 %     end

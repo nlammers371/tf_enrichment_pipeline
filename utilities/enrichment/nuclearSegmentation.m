@@ -1,16 +1,16 @@
-function segmentNuclei(liveProject, refVecStruct, segmentIndices)  
+function nuclearSegmentation(liveProject, refVecStruct, segmentIndices)  
 
 
   % initialize arrays to store segmentation info
   nucleus_frame_cell = cell(1,length(segmentIndices));
   spot_frame_cell = cell(1,length(segmentIndices));
-  parfor w = 1:numel(segmentIndices)
+  for w = 1:numel(segmentIndices)
       i = segmentIndices(w);
       setID_temp = refVecStruct.set_frame_array(i,1);
       frame_temp = refVecStruct.set_frame_array(i,2);  
       
       % get nucleus
-      frame_set_filter = refVecStruct.setID_ref==refVecStruct.setID_temp&refVecStruct.frame_ref==frame_temp;
+      frame_set_filter = refVecStruct.setID_ref==setID_temp&refVecStruct.frame_ref==frame_temp;
       nc_x_vec_temp = round(refVecStruct.nc_x_ref(frame_set_filter));
       nc_y_vec_temp = round(refVecStruct.nc_y_ref(frame_set_filter)); 
       
@@ -25,8 +25,8 @@ function segmentNuclei(liveProject, refVecStruct, segmentIndices)
       nc_y_vec_u = round(nc_y_vec_temp(ia));    
       
       % particle positions        
-      spot_x_vec = round(refVecStruct.spot_x_ref(refVecStruct.frame_set_filter));
-      spot_y_vec = round(refVecStruct.spot_y_ref(refVecStruct.frame_set_filter));            
+      spot_x_vec = round(refVecStruct.spot_x_ref(frame_set_filter));
+      spot_y_vec = round(refVecStruct.spot_y_ref(frame_set_filter));            
 
       % Get experiment info
       Prefix = liveProject.includedExperimentNames{setID_temp}; 
@@ -46,8 +46,9 @@ function segmentNuclei(liveProject, refVecStruct, segmentIndices)
       nb_size = round(10 ./ PixelSize);  % determine size of neighborhood to use during nucleus segmentation      
       sm_kernel = round(1 ./ PixelSize); % size of gaussian smoothing kernel 
 
-      % get protein channel                 
-      protein_stack = load_stacks(currExperiment.preFolder, Prefix, frame_temp, proteinChannel,xDim,yDim,zDim);
+      % get protein channel       
+      stackPath = [currExperiment.preFolder '/*_' sprintf('%03d',frame) '*_ch0' num2str(channel) '.tif'];
+      protein_stack = imreadStack2(stackPath, yDim, xDim, zDim+2);      
 
       % generate protein gradient frame for segmentation
       protein_smooth = imgaussfilt(mean(protein_stack,3),round(sm_kernel/2));                

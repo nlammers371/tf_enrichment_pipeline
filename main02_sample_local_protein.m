@@ -80,7 +80,7 @@ new_snip_fields = {'spot_protein_snips', 'edge_null_protein_snips',...
 
 if segmentNuclei
     disp('segmenting nuclei...')    
-    segmentNuclei(liveProject, refVecStruct, segmentIndices);      
+    nuclearSegmentation(liveProject, refVecStruct, segmentIndices);      
 end
 
 %% %%%%%%%%%%%%%%%%%%%%%%% Local Protein Sampling %%%%%%%%%%%%%%%%%%%%%%%%%
