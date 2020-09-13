@@ -1,6 +1,8 @@
 function [segmentNuclei, segmentIndices] = ...
-          handleSegmentationOptions(set_frame_array,refPath,segmentNuclei)
+          handleSegmentationOptions(refVecStruct,segmentNuclei)
 
+set_frame_array = refVecStruct.set_frame_array;
+refPath = refVecStruct.refPath;
 
 segmentIndices = 1:size(set_frame_array,1);
 spot_frame_vec = false(1,size(set_frame_array,1));

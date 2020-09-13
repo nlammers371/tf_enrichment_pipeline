@@ -5,7 +5,7 @@ function compiledSchnitzCells = initializeParticleFields(compiledSchnitzCells,nu
     compiledSchnitzCells(nucleusCounter).xPosParticle = NaN(1,n_entries);
     compiledSchnitzCells(nucleusCounter).yPosParticle = NaN(1,n_entries);
     compiledSchnitzCells(nucleusCounter).zPosParticle = NaN(1,n_entries);      
-    compiledSchnitzCells(nucleusCounter).spotFrames = NaN(1,n_entries); 
+    
     if has3DSpotInfo
       compiledSchnitzCells(nucleusCounter).xPosParticle3D = NaN(1,n_entries);
       compiledSchnitzCells(nucleusCounter).yPosParticle3D = NaN(1,n_entries);
