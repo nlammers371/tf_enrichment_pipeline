@@ -35,8 +35,7 @@ function [prefixes, dropboxFolder] = getProjectPrefixes(dataType,varargin)
 % Last Updated: MT 7/15/2020 in master branch of mRNADynamics git repo
 
 onlyApproved = false; 
-% onlyUnapproved = false;
-inverseFlag = false;
+onlyUnapproved = false;
 customApproved = false;
 customApprovalFlag = '';
 prefixes = {}; %#ok<NASGU>
@@ -46,8 +45,8 @@ dataStatusFilename = 'DataStatus.*';    %This naming convention is now enforced 
 for i= 1:length(varargin)
     if strcmpi(varargin{i}, 'onlyApproved')
         onlyApproved = true; 
-    elseif strcmpi(varargin{i}, 'inverseFlag')
-        inverseFlag = true;
+    elseif strcmpi(varargin{i}, 'onlyUnapproved')
+        onlyUnapproved = true;
     elseif strcmpi(varargin{i}, 'customApproved')
         customApproved = true;
         customApprovalFlag = varargin{i+1};
@@ -86,14 +85,16 @@ if onlyApproved %|| onlyUnapproved
     
     readyLogicalArray = strcmpi(dataTypeTabContents(compileRow, 2:end),'READY') | ...
                    strcmpi(dataTypeTabContents(compileRow, 2:end),'ApproveAll');
-    
-    if inverseFlag
-      readyLogicalArray = ~readyLogicalArray;
-    end    
-    outSets = find(readyLogicalArray);
 
-    if isempty(outSets)
-        warning('No ApproveAll or READY sets found.')
+    if onlyApproved
+        outSets = find(readyLogicalArray);
+
+        if isempty(outSets)
+            warning('No ApproveAll or READY sets found.')
+        end
+        
+    elseif onlyUnapproved
+        outSets = find(~readyLogicalArray);
     end
         
     outPrefixes = allPrefixes(outSets);
@@ -104,11 +105,7 @@ elseif customApproved
     approvalFlagRow = strcmpi(dataTypeTabContents(:,1),customApprovalFlag);
     % Contents of the approval flag row much be int booleans (1s or 0s)
     approvalFlagLogicalArray = [dataTypeTabContents{approvalFlagRow,2:end}];
-    approvalFlagLogicalArray(isnan(approvalFlagLogicalArray)) = 0;
     
-    if inverseFlag
-      approvalFlagLogicalArray = ~approvalFlagLogicalArray;
-    end   
     approvedPrefixes = allPrefixes(1==approvalFlagLogicalArray);
     prefixes = approvedPrefixes;
 else

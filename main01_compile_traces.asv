@@ -114,11 +114,17 @@ numExperiments = length(liveProject.includedExperimentNames);
 mkdir(liveProject.dataPath);
 
 % Assign save names
-nucleusName = [liveProject.dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
+nucleusName = [dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
 
 % Check for optiuonal parameter felds
 hasAPInfo = all(liveProject.hasAPInfo);
-has3DSpotInfo = all(liveProject.has3DSpotInfo);
+has3DSpotInfo = all(liveProject.hashas3DSpotInfo);
+
+% % Generate set key data structure
+% setKey = array2table((1:numExperiments)','VariableNames',{'setID'});
+% % prefixesTable = cell2table(prefixes);
+% setKey.prefix = approvedPrefixes;
+% save([dataPath,'set_key.mat'],'setKey')
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
@@ -454,4 +460,8 @@ if calculatePSF % NL: this needs to be fixed...
     calculate_average_psf(projectName,dropboxFolder);
 end
 
+% revmove temproary copy of ComputerFolders
+% if ~strcmpi(pwd,livemRNAPath)
+%   delete ComputerFolders.csv
+% end
 disp('done.')
