@@ -171,13 +171,11 @@ classdef LiveExperiment
             this.Channel1 = Channel1{1};
             this.Channel2 = Channel2{1};
             this.Channel3 = Channel3{1};
-            
-            try
-                [this.xDim, this.yDim, this.pixelSize_nm, this.zStep_um, this.snippetSize_px,...
-                    this.nFrames, this.zDim, this.nDigits] = getFrameInfoParams(getFrameInfo(this));
-                this.pixelSize_um = this.pixelSize_nm/1000;
-            catch %nothing to see here
-            end
+                       
+            [this.xDim, this.yDim, this.pixelSize_nm, this.zStep_um, this.snippetSize_px,...
+                this.nFrames, this.zDim, this.nDigits] = getFrameInfoParams(getFrameInfo(this));
+            this.pixelSize_um = this.pixelSize_nm/1000;
+      
             
             
             this.inputChannels = find(contains(this.Channels, 'input', 'IgnoreCase', true));
