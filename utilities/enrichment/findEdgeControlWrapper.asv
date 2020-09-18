@@ -1,11 +1,12 @@
-function [spot_edge_dist, edge_x, edge_y, qc_flag] = findEdgeControlWrapper(...
+function spot_struct_protein = findEdgeControlWrapper(spot_struct_protein,...
                                 RefStruct,samplingInfo,nucleus_mask,x_index,y_index,...
                                 spotIndex,spotSubIndex,j_pass)
 
   
   % Edge sampling 
   spot_edge_dist = samplingInfo.nc_dist_frame(y_index,x_index);        
-  nc_edge_dist_vec = samplingInfo.nc_dist_frame(nucleus_mask);  
+  nc_edge_dist_vec = samplingInfo.nc_dist_frame(nucleus_mask);
+  spot_struct_protein(spotIndex).spot_edge_dist_vec(spotSubIndex) = spot_edge_dist;        
   spot_sep_vec = samplingInfo.spot_dist_frame(nucleus_mask);        
 
   % Now find control "spot" that is same distance from nucleus edge
@@ -43,9 +44,13 @@ function [spot_edge_dist, edge_x, edge_y, qc_flag] = findEdgeControlWrapper(...
               = find_control_sample(nn_edge_dist_vec, samplingInfo.x_ref, samplingInfo.y_ref, nn_sep_vec, spot_edge_dist,...
                    closestIndex, samplingInfo.minSampleSep, nn_nucleus_mask,1);
                  
-          if qc_flag == 1
-              qc_flag = 2;
+          if spot_struct_protein(spotIndex).edge_qc_flag_vec(spotSubIndex)== 1
+              spot_struct_protein(spotIndex).edge_qc_flag_vec(spotSubIndex) = 2;
           end
       end
   end 
   
+  spot_struct_protein(spotIndex).edge_null_x_vec(spotSubIndex) = edge_x;
+  spot_struct_protein(spotIndex).edge_null_y_vec(spotSubIndex) = edge_y;
+  spot_struct_protein(spotIndex).edge_null_nc_vec(spotSubIndex) = nucleus_id;
+  spot_struct_protein(spotIndex).edge_qc_flag_vec(spotSubIndex) = qc_flag;

@@ -110,9 +110,8 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     % try turning the structure into a cell array to make it more ammenable
     % to parallelization
     spot_cell = cell(1,length(spot_struct_protein));
-    for i = 1:length(spot_cell)
-        spot_temp = spot_struct_protein(i);
-        spot_cell{i} = spot_temp;
+    for i = 1:length(spot_cell)        
+        spot_cell{i} = spot_struct_protein(i);
     end
         
     % convert structure to cell array for conveneince
@@ -248,7 +247,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
                   sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
                   x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
 
-            spot_struct_protein(samplingInfo.spotIndex).spot_mcp_vec(samplingInfo.spotSubIndex) = ...
+            spot_cell{samplingInfo.spotIndex}.spot_mcp_vec(samplingInfo.spotSubIndex) = ...
                   sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
                   x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
 
@@ -256,8 +255,8 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             if sum(nucleus_mask(:)) < samplingInfo.min_nucleus_area || sum(nucleus_mask(:)) > samplingInfo.max_nucleus_area...
                 || ~nucleus_mask(y_index,x_index)
 
-                spot_struct_protein(samplingInfo.spotIndex).edge_qc_flag_vec(samplingInfo.spotSubIndex) = -1;            
-                spot_struct_protein(samplingInfo.spotIndex).serial_qc_flag_vec(samplingInfo.spotSubIndex) = -1;
+                spot_cell{samplingInfo.spotIndex}.edge_qc_flag_vec(samplingInfo.spotSubIndex) = -1;            
+                spot_cell{samplingInfo.spotIndex}.serial_qc_flag_vec(samplingInfo.spotSubIndex) = -1;
 
                 continue
             end 
@@ -267,11 +266,11 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             temp_snip_struct.spot_mcp_snips(:,:,j_pass) = sample_snip_3D(x_spot,y_spot,z_spot,samplingInfo,samplingInfo.mcp_stack); 
 
             % Take average across all pixels within 1.5um of nuclues center           
-            spot_struct_protein(samplingInfo.spotIndex).nucleus_protein_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
+            spot_cell{samplingInfo.spotIndex}.nucleus_protein_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
               samplingInfo,samplingInfo.protein_stack,x_nucleus,y_nucleus,z_spot,samplingInfo.xy_sigma_nuclear,samplingInfo.z_sigma);        
 
             %% %%%%%%%%%%%% Draw edge control spot %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            spot_struct_protein = findEdgeControlWrapper(spot_struct_protein,...
+            [spot_edge_dist, edge_x, edge_y, qc_flag] = findEdgeControlWrapper(spot_struct_protein,...
               RefStruct,samplingInfo,nucleus_mask,x_index,y_index,samplingInfo.spotIndex,samplingInfo.spotSubIndex,j_pass);
 
             % Draw control samples (as appropriate)    

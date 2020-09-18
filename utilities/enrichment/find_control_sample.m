@@ -1,5 +1,5 @@
 function [sample_x, sample_y, sample_nucleus, qc_flag, sample_edge_distance] = find_control_sample(...
-    edge_dist_vec, x_ref, y_ref, spot_sep_vec, spot_edge_dist, index, min_sample_sep,null_mask,...
+    edge_dist_vec, x_ref, y_ref, spot_sep_vec, spot_edge_dist, index, min_sample_sep,nucleus_mask,...
     force_sample)
     
     % initialize variables  
@@ -10,8 +10,8 @@ function [sample_x, sample_y, sample_nucleus, qc_flag, sample_edge_distance] = f
     qc_flag = 0;   
     
     % get position vectors for nucleus mask
-    x_pos_vec_spot = x_ref(null_mask);
-    y_pos_vec_spot = y_ref(null_mask);
+    x_pos_vec_spot = x_ref(nucleus_mask);
+    y_pos_vec_spot = y_ref(nucleus_mask);
    
     sample_index_vec = 1:numel(spot_sep_vec);
     

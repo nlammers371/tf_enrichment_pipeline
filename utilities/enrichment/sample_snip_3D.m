@@ -1,18 +1,19 @@
-function snip2D = sample_snip_3D(x_spot,y_spot,z_spot,z_ref,snip_size,z_sigma,data_stack)
+function snip2D = sample_snip_3D(x_samp,y_samp,z_samp,samplingInfo,data_stack)
+
     
     % generate rounded pos indices
-    x_round = round(x_spot);
-    y_round = round(y_spot);
-    z_round = round(z_spot);
+    x_round = round(x_samp);
+    y_round = round(y_samp);
+    z_round = round(z_samp);
     
     % calculate vol dimensions
-    xy_vol_dim = snip_size;
-    z_vol_dim = ceil(2*z_sigma);
+    xy_vol_dim = samplingInfo.snippet_size;
+    z_vol_dim = ceil(2*samplingInfo.z_sigma);
     
     % calculate dimensions
-    xDim = size(z_ref,2);
-    yDim = size(z_ref,1);
-    zDim = size(z_ref,3);
+    xDim = size(samplingInfo.z_ref,2);
+    yDim = size(samplingInfo.z_ref,1);
+    zDim = size(samplingInfo.z_ref,3);
    
     % volume protein sampling 
     x_range3 = max(1,x_round-xy_vol_dim):min(xDim,x_round+xy_vol_dim);
@@ -28,10 +29,10 @@ function snip2D = sample_snip_3D(x_spot,y_spot,z_spot,z_ref,snip_size,z_sigma,da
         ismember(z_range3_full,z_range3)) = data_stack(y_range3,x_range3,z_range3);
     % z ref    
     z_ref_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
-        ismember(z_range3_full,z_range3)) = z_ref(y_range3,x_range3,z_range3);
+        ismember(z_range3_full,z_range3)) = samplingInfo.z_ref(y_range3,x_range3,z_range3);
       
     % generate weight box
-    wt_box = exp(-.5*(((z_spot-z_ref_box)./z_sigma).^2));
+    wt_box = exp(-.5*(((z_samp-z_ref_box)./samplingInfo.z_sigma).^2));
       
     % take weighted average
     snip2D = nansum(pt_samp_box.*wt_box,3) ./ nansum(~isnan(pt_samp_box).*wt_box,3);

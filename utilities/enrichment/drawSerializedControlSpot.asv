@@ -1,21 +1,26 @@
 function spot_struct_protein = drawSerializedControlSpot(...
                                   spot_struct_protein,samplingInfo,...
-                                x_index,y_index,spotIndex,spotSubIndex,nucleus_mask)                                  
+                                frame_vec, serial_null_x, serial_null_y,...
+                                x_index,y_index,spotIndex,spotSubIndex,nuclear_mask)                                  
 
+(spot_struct_protein,RefStruct,samplingInfo,...
+              spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec, spot_struct_protein(samplingInfo.spotIndex).serial_null_y_vec,...
+              spot_struct_protein(samplingInfo.spotIndex).frames, nucleus_mask,x_index,y_index,samplingInfo.spotIndex,samplingInfo.spotSubIndex,j_pass);                              
+                              
   % spot and nucleus distance info
   spot_edge_dist = samplingInfo.nc_dist_frame(y_index,x_index);        
-  nc_edge_dist_vec = samplingInfo.nc_dist_frame(nucleus_mask);
+  nc_edge_dist_vec = samplingInfo.nc_dist_frame(nuclear_mask);
   
   spot_struct_protein(spotIndex).spot_edge_dist_vec(spotSubIndex) = spot_edge_dist;        
-  spot_sep_vec = samplingInfo.spot_dist_frame(nucleus_mask); 
-  x_pos_vec = samplingInfo.x_ref(nucleus_mask);
-  y_pos_vec = samplingInfo.y_ref(nucleus_mask);         
+  spot_sep_vec = samplingInfo.spot_dist_frame(nuclear_mask); 
+  x_pos_vec = samplingInfo.x_ref(nuclear_mask);
+  y_pos_vec = samplingInfo.y_ref(nuclear_mask);         
   
   % time series info
-  frame_vec = spot_struct_protein(spotIndex).frames; 
+%   frame_vec = spot_struct_protein(spotIndex).frames; 
   currentFrame = double(frame_vec(spotSubIndex));
-  serial_null_x = spot_struct_protein(spotIndex).serial_null_x_vec;
-  serial_null_y = spot_struct_protein(spotIndex).serial_null_y_vec; 
+%   serial_null_x = spot_struct_protein(spotIndex).serial_null_x_vec;
+%   serial_null_y = spot_struct_protein(spotIndex).serial_null_y_vec; 
 
   % generate sampling vector      
   sample_index_vec = find(spot_sep_vec >= samplingInfo.minSampleSep & ...
