@@ -46,7 +46,9 @@ classdef LiveProject
             [approvedPrefixes, dropboxFolder] = getProjectPrefixes(Project,'customApproved','ReadyForEnrichmentAnalysis');
             this.includedExperimentNames = string(approvedPrefixes); %NL: fiddled with this to make it specific to enrichment
             this.ignoredExperimentNames = string( getProjectPrefixes(Project,'customApproved','ReadyForEnrichmentAnalysis','inverseFlag') ); 
-            this.dataPath = [dropboxFolder filesep Project filesep];
+            
+            slashes = regexp(dropboxFolder,'/|\');
+            this.dataPath = [dropboxFolder(1:slashes(end)) 'ProcessedEnrichmentData' filesep Project filesep];
             
             for i = 1:length(this.includedExperimentNames)
                 this.includedExperiments{i} = LiveExperiment(this.includedExperimentNames{i});

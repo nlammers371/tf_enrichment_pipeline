@@ -1,4 +1,4 @@
-function refVecStruct = generateReferenceVectors(spot_struct_protein,refPath,use3DSpotInfo,ignoreQC)
+function [refVecStruct, set_frame_array] = generateReferenceVectors(spot_struct_protein,refPath,use3DSpotInfo,ignoreQC)
 
 % initialize structure to store reference vectors 
 refVecStruct = struct;
@@ -42,3 +42,4 @@ end
 
 %%% Generate reference array for set-frame combos
 refVecStruct.set_frame_array = unique([refVecStruct.setID_ref' refVecStruct.frame_ref'],'row');
+set_frame_array = refVecStruct.set_frame_array;

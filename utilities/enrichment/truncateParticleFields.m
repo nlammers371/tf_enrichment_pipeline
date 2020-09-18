@@ -15,6 +15,10 @@ function nucleus_struct = truncateParticleFields(nucleus_struct,has3DSpotInfo,ha
       nucleus_struct(i).yPosParticle = nucleus_struct(i).yPosParticle(nanFilter);
       nucleus_struct(i).zPosParticle = nucleus_struct(i).zPosParticle(nanFilter);      
       
+      nucleus_struct(i).xPosNucelus = nucleus_struct(i).xPosNucleus(nanFilter);
+      nucleus_struct(i).yPosNucleus = nucleus_struct(i).yPosNucleus(nanFilter);
+      nucleus_struct(i).rawNCPprotein = nucleus_struct(i).rawNCPprotein(nanFilter);
+      
       if has3DSpotInfo
         nucleus_struct(i).xPosParticle3D = nucleus_struct(i).xPosParticle3D(nanFilter);
         nucleus_struct(i).yPosParticle3D = nucleus_struct(i).yPosParticle3D(nanFilter);

@@ -1,6 +1,13 @@
 function [serial_control_x, serial_control_y, serial_edge_dist] = drawSerializedControlSpot(spot_struct_protein,spotIndex,spotSubIndex,...
-                   spot_sep_vec, tempParams, nc_edge_dist_vec)
+                                  tempParams,nc_dist_frame,spot_dist_frame,spot_nc_mask,driftTol)
 
+  % spot and nucleus distance info
+  spot_edge_dist = nc_dist_frame(y_index,x_index);        
+  nc_edge_dist_vec = nc_dist_frame(spot_nc_mask);
+  spot_struct_protein(spotIndex).spot_edge_dist_vec(spotSubIndex) = spot_edge_dist;        
+  spot_sep_vec = spot_dist_frame(spot_nc_mask); 
+                                
+  % time series info
   frame_vec_temp = spot_struct_protein(spotIndex).frames; 
   currentFrame = frame_vec_temp(spotSubIndex);
   serial_null_x = spot_struct_protein(spotIndex).serial_null_x_vec;

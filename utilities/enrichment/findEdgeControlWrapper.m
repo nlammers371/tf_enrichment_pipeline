@@ -1,5 +1,6 @@
-function [spot_struct_protein, null_mask] = findEdgeControlWrapper(spot_struct_protein,refVecStruct,x_index,y_index,spot_nc_mask,...
-              spotIndex,spotSubIndex,r_dist_mat,frame_set_indices,j_pass)
+function spot_struct_protein = findEdgeControlWrapper(spot_struct_protein,refVecStruct,x_index,y_index,spot_nc_mask,...
+                                                      spotIndex,spotSubIndex,r_dist_mat,frame_set_indices,nc_dist_frame,...
+                                                      spot_dist_frame,x_ref,y_ref,tempParams,j_pass)
 
 
   % Edge sampling 
@@ -16,7 +17,7 @@ function [spot_struct_protein, null_mask] = findEdgeControlWrapper(spot_struct_p
            j_pass, tempParams.minSampleSep, spot_nc_mask,0);  
 
   % if initial attempt failed, try nearest neighbor nucleus
-  null_mask = spot_nc_mask;
+%   null_mask = spot_nc_mask;
   if spot_struct_protein(spotIndex).edge_qc_flag_vec(spotSubIndex) == 0
 
       % Find nearest neighbor nucleus
