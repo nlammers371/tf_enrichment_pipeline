@@ -1,24 +1,25 @@
-function nuclearSegmentation(liveProject, refVecStruct, segmentIndices, NumWorkers)  
+function nuclearSegmentation(liveProject, RefStruct, segmentIndices, NumWorkers)  
 
   p = gcp('nocreate');
   if isempty(p) || p.NumWorkers~=NumWorkers
     parpool(NumWorkers);
   end
+  
   % initialize arrays to store segmentation info
   nucleus_frame_cell = cell(1,length(segmentIndices));
   spot_frame_cell = cell(1,length(segmentIndices));
   parfor w = 1:length(segmentIndices)
       i = segmentIndices(w);
-      currentSetID = refVecStruct.set_frame_array(i,1);
-      currentFrame = refVecStruct.set_frame_array(i,2);  
+      currentSetID = RefStruct.set_frame_array(i,1);
+      currentFrame = RefStruct.set_frame_array(i,2);  
       
       % get nucleus
-      frame_set_filter = refVecStruct.setID_ref==currentSetID&refVecStruct.frame_ref==currentFrame;
-      nc_x_vec_temp = round(refVecStruct.nc_x_ref(frame_set_filter));
-      nc_y_vec_temp = round(refVecStruct.nc_y_ref(frame_set_filter)); 
+      frame_set_filter = RefStruct.setID_ref==currentSetID&RefStruct.frame_ref==currentFrame;
+      nc_x_vec_temp = round(RefStruct.nc_x_ref(frame_set_filter));
+      nc_y_vec_temp = round(RefStruct.nc_y_ref(frame_set_filter)); 
       
       % indexing vectors    
-      nc_master_vec = refVecStruct.master_nucleusID_ref(frame_set_filter);  
+      nc_master_vec = RefStruct.master_nucleusID_ref(frame_set_filter);  
       
       % get list of unique indices 
       [nc_master_vec_u,ia,~] = unique(nc_master_vec,'stable');
@@ -28,8 +29,8 @@ function nuclearSegmentation(liveProject, refVecStruct, segmentIndices, NumWorke
       nc_y_vec_u = round(nc_y_vec_temp(ia));    
       
       % particle positions        
-      spot_x_vec = round(refVecStruct.spot_x_ref(frame_set_filter));
-      spot_y_vec = round(refVecStruct.spot_y_ref(frame_set_filter));            
+      spot_x_vec = round(RefStruct.spot_x_ref(frame_set_filter));
+      spot_y_vec = round(RefStruct.spot_y_ref(frame_set_filter));            
 
       % Get experiment info
       Prefix = liveProject.includedExperimentNames{currentSetID}; 
@@ -82,28 +83,33 @@ function nuclearSegmentation(liveProject, refVecStruct, segmentIndices, NumWorke
               protein_bin_clean(y_start:y_stop,x_start:x_stop) = bwmorph(section_bin_clean,'hbreak');
           end
       end        
+      
       % label regions
-      nc_frame_labels = logical(protein_bin_clean);         
+      nc_frame_mask = logical(protein_bin_clean);     
+      
       % frame info
-      nc_lin_indices = sub2ind(size(protein_bin_clean),round(nc_y_vec_u),round(nc_x_vec_u));
+%       nc_lin_indices = sub2ind(size(protein_bin_clean),round(nc_y_vec_u),round(nc_x_vec_u));
+      
       % take convex hull
-      stats = regionprops(nc_frame_labels,'ConvexHull');
-      nc_ref_frame = zeros(size(nc_frame_labels)); 
+      stats = regionprops(nc_frame_mask,'ConvexHull');
+      nc_ref_frame = zeros(size(nc_frame_mask),'uint8'); 
+      
       for j = 2:numel(stats)
           hull_points = stats(j).ConvexHull;
           mask = poly2mask(hull_points(:,1),hull_points(:,2),yDim,xDim);   
-          nc_bin_ids = mask(nc_lin_indices);
-          if sum(nc_bin_ids) == 1 % enforce unique
-              nc_ref_frame(mask) = nc_master_vec_u(nc_bin_ids);
-          end
+%           nc_bin_ids = mask(nc_lin_indices);
+%           if sum(nc_bin_ids) == 1 % enforce unique spot-nucleus-assignment
+          nc_ref_frame(mask) = 1;%nc_master_vec_u(nc_bin_ids);
+%           end
       end       
+      
       % generate array indicating distance of each pixel from an active locus 
       nc_indices = sub2ind(size(nc_ref_frame),spot_y_vec,spot_x_vec);
       spot_dist_frame_temp = zeros(size(nc_ref_frame));
       spot_dist_frame_temp(nc_indices(~isnan(nc_indices))) = 1;
       spot_dist_frame_temp = bwdist(spot_dist_frame_temp);
-      % label regions within designated integration radius of a spot    
-      % store arrays
+      
+      % store results
       nucleus_frame_cell{w} = nc_ref_frame;
       spot_frame_cell{w} = spot_dist_frame_temp;      
   end
@@ -111,12 +117,12 @@ function nuclearSegmentation(liveProject, refVecStruct, segmentIndices, NumWorke
   % save arrays
   for w = 1:numel(segmentIndices)
       i = segmentIndices(w);
-      currentSetID = refVecStruct.set_frame_array(i,1);
-      currentFrame = refVecStruct.set_frame_array(i,2);  
-      nc_ref_name = [refVecStruct.refPath 'nc_ref_frame_set' sprintf('%02d',currentSetID) '_frame' sprintf('%03d',currentFrame) '.mat'];
+      currentSetID = RefStruct.set_frame_array(i,1);
+      currentFrame = RefStruct.set_frame_array(i,2);  
+      nc_ref_name = [RefStruct.refPath 'nc_ref_frame_set' sprintf('%02d',currentSetID) '_frame' sprintf('%03d',currentFrame) '.mat'];
       nc_ref_frame = nucleus_frame_cell{w};
       save(nc_ref_name,'nc_ref_frame');
-      spot_ref_name = [refVecStruct.refPath 'spot_roi_frame_set' sprintf('%02d',currentSetID) '_frame' sprintf('%03d',currentFrame) '.mat'];
+      spot_ref_name = [RefStruct.refPath 'spot_roi_frame_set' sprintf('%02d',currentSetID) '_frame' sprintf('%03d',currentFrame) '.mat'];
       spot_dist_frame = spot_frame_cell{w};
       save(spot_ref_name,'spot_dist_frame');
   end

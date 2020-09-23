@@ -78,14 +78,8 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     mkdir(snipPath)
 
     % remove frames where no particle was observed
-    spot_struct_protein = truncateParticleFields(nucleus_struct,use3DSpotInfo,hasAPInfo);
-
-    %% %%%%%%%%%%%%%%%%%%%%%%% Generate indexing vectors  %%%%%%%%%%%%%%%%%%%%%
-    [RefStruct, set_frame_array] = generateReferenceVectors(spot_struct_protein,refPath,use3DSpotInfo,ignoreQC);
-
-    qc_structure = struct;
-
-
+    spot_struct_protein = truncateParticleFields(nucleus_struct,use3DSpotInfo,hasAPInfo);  
+    
     %% %%%%%%%%%%%%%%%%%%%%%%% Initialize enrichment-related fields  %%%%%%%%%%
 
     [spot_struct_protein, ~] = initializeProteinFields(spot_struct_protein, use3DSpotInfo);
@@ -93,6 +87,14 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     snip_fields = {'spot_protein_snips', 'edge_control_protein_snips',...
         'spot_mcp_snips','edge_control_mcp_snips'};
 
+    % get list of protein-specific fields that were added
+    spot_fields = fieldnames(spot_struct_protein);
+    NewFields = spot_fields(~ismember(spot_fields,fieldnames(nucleus_struct)));
+    
+    %% %%%%%%%%%%%%%%%%%%%%%%% Generate indexing vectors  %%%%%%%%%%%%%%%%%%%%%
+    [RefStruct, SetFrameArray, SamplingResults] = generateReferenceVectors(spot_struct_protein,refPath,use3DSpotInfo,ignoreQC,NewFields);
+
+    qc_structure = struct;   
 
     %% %%%%%%%%%%%%%%%%%%%%%%% Nucleus segmentation  %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -105,124 +107,141 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         nuclearSegmentation(liveProject, RefStruct, segmentIndices, NumWorkers);      
     end
 
-    %% %%%%%%%%%%%%%%%%%%%%%%% Local Protein Sampling %%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    % try turning the structure into a cell array to make it more ammenable
-    % to parallelization
-    spot_cell = cell(1,length(spot_struct_protein));
-    for i = 1:length(spot_cell)
-        spot_temp = spot_struct_protein(i);
-        spot_cell{i} = spot_temp;
-    end
+    %% %%%%%%%%%%%%%%%% Local Protein Sampling: Loop 1 %%%%%%%%%%%%%%%%%%%%
+    % Generate positions for serialized and edge-controlled computational
+    % control spots. This can be done without loading the actual image
+    % stacks so it is quite fast
         
     % convert structure to cell array for conveneince
     pool = gcp('nocreate');
     if isempty(pool)
-      parpool(12)
-    end
-
-    D = parallel.pool.DataQueue;    
+      parpool
+    end        
+    
+    
+        D = parallel.pool.DataQueue;    
     afterEach(D, @nUpdateWaitbar);
-
+    
 %     N = size(set_frame_array,1);
 %     p = 1;
 % 
-%     h = waitbar(0,'Sampling local protein...');
-    for i = 1:size(set_frame_array,1)            
-    %     waitbar(i/size(set_frame_array,1),h)
-
+    h = waitbar(0,'Generating control spots...');
+    
+    for i = 1:size(SetFrameArray,1)  
+        waitbar(i/size(SetFrameArray,1),h)       
         samplingInfo = struct; % use this structure to keep track of key tracking-related info
 
         % read basic info from set_frame array
-        samplingInfo.SetID = set_frame_array(i,1);
-        samplingInfo.Frame = set_frame_array(i,2);  
+        samplingInfo.SetID = SetFrameArray(i,1);
+        samplingInfo.Frame = SetFrameArray(i,2);  
 
-        % get channel info
-        Prefix = liveProject.includedExperimentNames{samplingInfo.SetID}; 
-        currExperiment = liveProject.includedExperiments{samplingInfo.SetID};                  
-        samplingInfo.proteinChannel = currExperiment.inputChannels;
-        samplingInfo.mcpChannel = currExperiment.spotChannels;
-
-        %% %%%%%%%%%%%%%%%%%%%%% Set size parameters  %%%%%%%%%%%%%%%%%%%%%%%%%
-        currExperiment = LiveExperiment(Prefix);
-        PixelSize = currExperiment.pixelSize_nm / 1e3;  
-        zStep = currExperiment.zStep_um;    
-
-        if length(samplingInfo.mcpChannel) > 1 
-          error('This pipeline does not currently support multiple spot channels')
-        elseif length(samplingInfo.proteinChannel) > 1
-          error('This pipeline does not currently support multiple protein channels')
-        end
-
-        % Generate reference vectors
-        xDim = currExperiment.xDim;
-        yDim = currExperiment.yDim;
-        zDim = currExperiment.zDim;
-        [samplingInfo.x_ref,samplingInfo.y_ref,samplingInfo.z_ref] = meshgrid(1:xDim,1:yDim,1:zDim);
-
-        % calculate basic parameters for sampling
-        sampParamNames = fieldnames(proteinSamplingInfo);   
-        for s = 1:length(sampParamNames)
-          paramName = sampParamNames{s};
-          samplingInfo.(paramName(1:end-3)) = proteinSamplingInfo.(paramName) / PixelSize;
-        end
-        samplingInfo.z_sigma = proteinSamplingInfo.z_sigma_um / zStep;
-        samplingInfo.min_nucleus_area = pi*samplingInfo.min_nucleus_radius^2;
-        samplingInfo.max_nucleus_area = pi*samplingInfo.max_nucleus_radius^2;
-        samplingInfo.snippet_size = round(samplingInfo.snippet_size);
-
-        % calculate characteristic drift to use for simulated spot
-        samplingInfo.driftTol = calculateVirtualSpotDrift(RefStruct,PixelSize);
-
-        % load spot and nucleus reference frames
-        nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',samplingInfo.SetID) '_frame' sprintf('%03d',samplingInfo.Frame) '.mat'];
-        temp = load(nc_ref_name,'nc_ref_frame');
-        nc_ref_frame = temp.nc_ref_frame;        
-        samplingInfo.nc_dist_frame = bwdist(~nc_ref_frame);    
+        samplingInfo = getSamplingInfo(samplingInfo,liveProject,proteinSamplingInfo,RefStruct);
         
-        spot_ref_name = [refPath 'spot_roi_frame_set' sprintf('%02d',samplingInfo.SetID) '_frame' sprintf('%03d',samplingInfo.Frame) '.mat'];
-        temp = load(spot_ref_name,'spot_dist_frame');    
-        spot_dist_frame = temp.spot_dist_frame;
-        samplingInfo.spot_dist_frame = spot_dist_frame;
+        % End identical chunk
+        
+        % perform QC and generate lookup table of inter-nucleus distances
+        samplingInfo = performNucleusQC(samplingInfo);
 
-        % get indices of particles in current set/frame 
-        frame_set_filter = RefStruct.setID_ref==samplingInfo.SetID&RefStruct.frame_ref==samplingInfo.Frame;
-        samplingInfo.frame_set_indices = find(frame_set_filter);                
+        j_pass = 1; % counter to track absolute position in iteration
+        for j = samplingInfo.frame_set_indices        
+            % get indexing info         
+            samplingInfo.spotIndex = RefStruct.particle_index_ref(j);
+            samplingInfo.spotSubIndex = RefStruct.particle_subindex_ref(j);
 
-        % load stacks    
-        proteinPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',samplingInfo.Frame) '_ch0' num2str(samplingInfo.proteinChannel) '.tif'];
-        samplingInfo.protein_stack = imreadStack(proteinPath);
-        if size(samplingInfo.protein_stack,3) == zDim+2
+            x_spot = RefStruct.spot_x_ref(j);
+            x_index = min([samplingInfo.xDim max([1 round(x_spot)])]);
+            y_spot = RefStruct.spot_y_ref(j);
+            y_index = min([samplingInfo.yDim max([1 round(y_spot)])]);
+
+            % extract mask 
+            nucleus_mask_id = samplingInfo.nc_label_frame(y_index,x_index);            
+            
+            % if spot does not fall within boundaries of a nucleus, flag it
+            % and skip
+            if ~nucleus_mask_id
+
+                SamplingResults(i).edge_qc_flag_vec(j_pass) = -1;            
+                SamplingResults(i).serial_qc_flag_vec(j_pass) = -1;
+
+                continue
+            end 
+            
+            % create mask
+            nucleus_mask = samplingInfo.nc_label_frame == nucleus_mask_id; 
+                 
+            %% %%%% Find edge control sample location %%%%%%%%%%%%%%%%%%%%%
+            [SamplingResults(i).edge_null_nc_vec(j_pass), ...
+              SamplingResults(i).edge_null_x_vec(j_pass),...
+              SamplingResults(i).edge_null_y_vec(j_pass), ...
+              SamplingResults(i).edge_qc_flag_vec(j_pass)] = ...
+              ...
+              findEdgeControlWrapper(...
+                samplingInfo,nucleus_mask,x_index,y_index,nucleus_mask_id);
+            
+            %% %%%% Find serialized control ocation %%%%%%%%%%%%%%%%%%%%%%%
+            % This is the bit that cannot be easily parallelized
+            [spot_struct_protein(samplingInfo.spotIndex).serial_null_edge_dist_vec(samplingInfo.spotSubIndex),...
+             spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec(samplingInfo.spotSubIndex),...
+             spot_struct_protein(samplingInfo.spotIndex).serial_null_y_vec(samplingInfo.spotSubIndex),...
+             spot_struct_protein(samplingInfo.spotIndex).serial_qc_flag_vec(samplingInfo.spotSubIndex)]...
+             ...
+              = drawSerializedControlSpot(...
+                  samplingInfo,nucleus_mask,spot_struct_protein(samplingInfo.spotIndex).frames, ...
+                  spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec, ...
+                  spot_struct_protein(samplingInfo.spotIndex).serial_null_y_vec);
+                
+             % pass spot structure values to sample structure
+             SamplingResults(i).serial_null_edge_dist_vec(j_pass) = spot_struct_protein(samplingInfo.spotIndex).serial_null_edge_dist_vec(samplingInfo.spotSubIndex);
+             SamplingResults(i).serial_null_x_vec(j_pass) = spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec(samplingInfo.spotSubIndex);
+             SamplingResults(i).serial_null_y_vec(j_pass) = spot_struct_protein(samplingInfo.spotIndex).serial_null_y_vec(samplingInfo.spotSubIndex);
+             SamplingResults(i).serial_qc_flag_vec(j_pass) = spot_struct_protein(samplingInfo.spotIndex).serial_qc_flag_vec(samplingInfo.spotSubIndex);
+             
+             % increment
+             j_pass = j_pass + 1;
+        end      
+    end
+    
+    %% %%%%%%%%%%%%%%%% Local Protein Sampling: Loop 2 %%%%%%%%%%%%%%%%%%%%
+    
+    
+    for i = 1:size(SetFrameArray,1)
+        
+        % generate structure to keep track of sampling info
+        samplingInfo = struct; 
+        
+        samplingInfo.SetID = SetFrameArray(i,1);
+        samplingInfo.Frame = SetFrameArray(i,2);  
+
+        samplingInfo = getSamplingInfo(samplingInfo,liveProject,proteinSamplingInfo,RefStruct);             
+
+        % load stacks            
+        samplingInfo.protein_stack = imreadStack(samplingInfo.proteinPath);
+        if size(samplingInfo.protein_stack,3) == samplingInfo.zDim+2
           samplingInfo.protein_stack = samplingInfo.protein_stack(:,:,2:end); 
         else
           error('Unrecognized form of z-padding')
         end    
-
-
-        mcpPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',samplingInfo.Frame) '_ch0' num2str(samplingInfo.mcpChannel) '.tif'];
-        samplingInfo.mcp_stack = imreadStack2(mcpPath);
-        if size(samplingInfo.mcp_stack,3) == zDim+2
+       
+        samplingInfo.mcp_stack = imreadStack2(samplingInfo.mcpPath);
+        if size(samplingInfo.mcp_stack,3) == samplingInfo.zDim+2
           samplingInfo.mcp_stack = samplingInfo.mcp_stack(:,:,2:end);
         else
           error('Unrecognized form of z-padding')
         end
 
-        % generate lookup table of inter-nucleus distances
-        nc_x_vec = RefStruct.nc_x_ref(frame_set_filter);
-        nc_y_vec = RefStruct.nc_y_ref(frame_set_filter);  
-        x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
-        y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
-        samplingInfo.r_dist_mat = sqrt(double(x_dist_mat).^2 + double(y_dist_mat).^2);            
+        % perform QC and generate lookup table of inter-nucleus distances
+        samplingInfo = performNucleusQC(samplingInfo);           
 
         % initialize temporary arrays to store snip info 
         temp_snip_struct = struct;
         for j = 1:length(snip_fields)
-            temp_snip_struct.(snip_fields{j})  = NaN(2*samplingInfo.snippet_size+1,2*samplingInfo.snippet_size+1,length(nc_x_vec));
+            temp_snip_struct.(snip_fields{j})  = NaN(2*samplingInfo.snippet_size+1,2*samplingInfo.snippet_size+1,length(samplingInfo.frame_set_indices));
         end    
         
         % iterate through spots
         qc_mat = struct;
-        j_pass = 1;
+        
+        j_pass = 1; % counter to track absolute position in iteration
         for j = samplingInfo.frame_set_indices        
             % get indexing info         
             samplingInfo.spotIndex = RefStruct.particle_index_ref(j);
@@ -237,74 +256,92 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             y_spot = RefStruct.spot_y_ref(j);
             y_index = min([ yDim max([1 round(y_spot)])]);
             z_spot = RefStruct.spot_z_ref(j)-1.0; % adjust for z padding
-
+            
+            
             % extract mask 
-            nucleus_mask = nc_ref_frame == RefStruct.master_nucleusID_ref(j);             
+            nucleus_mask_id = samplingInfo.nc_label_frame(y_index,x_index);                                                
 
-            %% %%%%%%%%%%%%%%%%%%% Sample protein levels %%%%%%%%%%%%%%%%%%%%%%
-
-            % sample protein near locus
-            spot_cell{samplingInfo.spotIndex}.spot_protein_vec(samplingInfo.spotSubIndex) = ...
-                  sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
-                  x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
-
-            spot_struct_protein(samplingInfo.spotIndex).spot_mcp_vec(samplingInfo.spotSubIndex) = ...
-                  sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
-                  x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
+            %% %%%%%%%%%%%%%%%%%%% Sample protein levels %%%%%%%%%%%%%%%%%%%%%%                                     
 
             % make sure size is reasonable and that spot is inside nucleus
-            if sum(nucleus_mask(:)) < samplingInfo.min_nucleus_area || sum(nucleus_mask(:)) > samplingInfo.max_nucleus_area...
-                || ~nucleus_mask(y_index,x_index)
+            if ~nucleus_mask_id
 
-                spot_struct_protein(samplingInfo.spotIndex).edge_qc_flag_vec(samplingInfo.spotSubIndex) = -1;            
-                spot_struct_protein(samplingInfo.spotIndex).serial_qc_flag_vec(samplingInfo.spotSubIndex) = -1;
+                SamplingResults(i).edge_qc_flag_vec(j_pass) = -1;            
+                SamplingResults(i).serial_qc_flag_vec(j_pass) = -1;
+                
+                nucleus_mask_3D_dummy = true(size(samplingInfo.protein_stack)); 
+                
+                % still sample protein near locus in this case
+                SamplingResults(i).spot_protein_vec(j_pass) = ...
+                  sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
+                  x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_dummy);
+
+                SamplingResults(i).spot_mcp_vec(j_pass) = ...
+                  sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
+                  x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_dummy);
 
                 continue
             end 
+            
+            % create mask
+            nucleus_mask_3D = repmat(samplingInfo.nc_label_frame == nucleus_mask_id,size(samplingInfo.protein_stack,3)); 
+            
+            % sample protein near locus
+            SamplingResults(i).spot_protein_vec(j_pass) = ...
+              sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
+              x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D);
 
+            SamplingResults(i).spot_mcp_vec(j_pass) = ...
+              sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
+              x_spot,y_spot,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D);
+            
             % sample snippets        
-            temp_snip_struct.spot_protein_snips(:,:,j_pass) = sample_snip_3D(x_spot,y_spot,z_spot,samplingInfo,samplingInfo.protein_stack);
-            temp_snip_struct.spot_mcp_snips(:,:,j_pass) = sample_snip_3D(x_spot,y_spot,z_spot,samplingInfo,samplingInfo.mcp_stack); 
+            temp_snip_struct.spot_protein_snips(:,:,j_pass) = sample_snip_3D(x_spot,y_spot,z_spot,samplingInfo,samplingInfo.protein_stack,nucleus_mask_3D);
+            temp_snip_struct.spot_mcp_snips(:,:,j_pass) = sample_snip_3D(x_spot,y_spot,z_spot,samplingInfo,samplingInfo.mcp_stack,nucleus_mask_3D); 
 
             % Take average across all pixels within 1.5um of nuclues center           
-            spot_struct_protein(samplingInfo.spotIndex).nucleus_protein_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
-              samplingInfo,samplingInfo.protein_stack,x_nucleus,y_nucleus,z_spot,samplingInfo.xy_sigma_nuclear,samplingInfo.z_sigma);        
+            SamplingResults(i).nucleus_protein_vec(j_pass) = sample_protein_3D(...
+              samplingInfo,samplingInfo.protein_stack,x_nucleus,y_nucleus,z_spot,samplingInfo.xy_sigma_nuclear,samplingInfo.z_sigma,nucleus_mask_3D);        
 
-            %% %%%%%%%%%%%% Draw edge control spot %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            spot_struct_protein = findEdgeControlWrapper(spot_struct_protein,...
-              RefStruct,samplingInfo,nucleus_mask,x_index,y_index,samplingInfo.spotIndex,samplingInfo.spotSubIndex,j_pass);
+            %% %%%%%%%%%%%% Draw edge control spot %%%%%%%%%%%%%%%%%%%%%%%%%%%%                           
 
             % Draw control samples (as appropriate)    
-            if spot_struct_protein(samplingInfo.spotIndex).edge_qc_flag_vec(samplingInfo.spotSubIndex) > 0  
-                edge_control_x = spot_struct_protein(samplingInfo.spotIndex).edge_null_x_vec(samplingInfo.spotSubIndex);
-                edge_control_y = spot_struct_protein(samplingInfo.spotIndex).edge_null_y_vec(samplingInfo.spotSubIndex);     
-
-                spot_struct_protein(samplingInfo.spotIndex).edge_null_protein_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
+            if SamplingResults(i).edge_qc_flag_vec(j_pass) > 0                
+                edge_control_x = SamplingResults(i).edge_null_x_vec(j_pass);
+                edge_control_y = SamplingResults(i).edge_null_y_vec(j_pass);     
+                
+                % get mask
+                if SamplingResults(i).edge_qc_flag_vec(j_pass) == 1
+                    nucleus_mask_3D_edge = nucleus_mask_3D;
+                elseif SamplingResults(i).edge_qc_flag_vec(j_pass) == 2
+                    % extract mask 
+                    nn_nucleus_mask_id = samplingInfo.nc_label_frame(edge_control_y,edge_control_x); 
+                    nucleus_mask_3D_edge = repmat(samplingInfo.nc_label_frame == nn_nucleus_mask_id,size(samplingInfo.protein_stack,3)); 
+                end
+                
+                SamplingResults(i).edge_null_protein_vec(j_pass) = sample_protein_3D(...
                   samplingInfo,samplingInfo.protein_stack,edge_control_x,edge_control_y,z_spot,...
-                  samplingInfo.xy_sigma,samplingInfo.z_sigma);
+                  samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_edge);
 
-                spot_struct_protein(samplingInfo.spotIndex).edge_null_mcp_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...              
+                SamplingResults(i).edge_null_mcp_vec(j_pass) = sample_protein_3D(...              
                   samplingInfo,samplingInfo.mcp_stack,edge_control_x,edge_control_y,z_spot,...
-                  samplingInfo.xy_sigma,samplingInfo.z_sigma);
+                  samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_edge);
 
                 % draw snips    
-                temp_snip_struct.edge_control_protein_snips(:,:,j_pass) = sample_snip_3D(edge_control_x,edge_control_y,z_spot,samplingInfo,samplingInfo.protein_stack);
-                temp_snip_struct.edge_control_mcp_snips(:,:,j_pass) = sample_snip_3D(edge_control_x,edge_control_y,z_spot,samplingInfo,samplingInfo.mcp_stack);
+                temp_snip_struct.edge_control_protein_snips(:,:,j_pass) = sample_snip_3D(edge_control_x,edge_control_y,z_spot,samplingInfo,samplingInfo.protein_stack,nucleus_mask_3D_edge);
+                temp_snip_struct.edge_control_mcp_snips(:,:,j_pass) = sample_snip_3D(edge_control_x,edge_control_y,z_spot,samplingInfo,samplingInfo.mcp_stack,nucleus_mask_3D_edge);
             end                  
 
-            %% %%%%%%%%%%%% Draw serialized control spot %%%%%%%%%%%%%%%%%%%%%%%           
-            spot_struct_protein = drawSerializedControlSpot(...
-              spot_struct_protein,samplingInfo,x_index,y_index,samplingInfo.spotIndex,samplingInfo.spotSubIndex,nucleus_mask...
-              );
+            %% %%%%%%%%%%%% Draw serialized control spot %%%%%%%%%%%%%%%%%%%%%%%                                                                        
             
             % sample protein 
-            serial_control_x = spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec(samplingInfo.spotSubIndex);
-            serial_control_y = spot_struct_protein(samplingInfo.spotIndex).serial_null_y_vec(samplingInfo.spotSubIndex);
+            serial_control_x = SamplingResults(i).serial_null_x_vec(j_pass);
+            serial_control_y = SamplingResults(i).serial_null_y_vec(j_pass);
 
-            spot_struct_protein(samplingInfo.spotIndex).serial_null_protein_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
-                  samplingInfo,samplingInfo.protein_stack,serial_control_x,serial_control_y,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
-            spot_struct_protein(samplingInfo.spotIndex).serial_null_mcp_vec(samplingInfo.spotSubIndex) = sample_protein_3D(...
-                  samplingInfo,samplingInfo.mcp_stack,serial_control_x,serial_control_y,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma);
+            SamplingResults(i).serial_null_protein_vec(j_pass) = sample_protein_3D(...
+                  samplingInfo,samplingInfo.protein_stack,serial_control_x,serial_control_y,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D);
+            SamplingResults(i).serial_null_mcp_vec(j_pass) = sample_protein_3D(...
+                  samplingInfo,samplingInfo.mcp_stack,serial_control_x,serial_control_y,z_spot,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D);
 
 
             %% %%%%%%%%%%%% Check for sister spot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -337,12 +374,12 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         % store key ID variables
         snip_data.frame = samplingInfo.Frame;
         snip_data.setID = samplingInfo.SetID;
-        snip_data.particle_id_vec = RefStruct.particleID_ref(frame_set_filter);
+        snip_data.particle_id_vec = RefStruct.particleID_ref(FrameSetFilter);
     
         % indexing vectors    
-        snip_data.nc_sub_index_vec = RefStruct.particle_subindex_ref(frame_set_filter);
-        snip_data.nc_lin_index_vec = RefStruct.particle_index_ref(frame_set_filter); 
-        snip_data.nc_master_vec = RefStruct.master_nucleusID_ref(frame_set_filter);    
+        snip_data.nc_sub_index_vec = RefStruct.particle_subindex_ref(FrameSetFilter);
+        snip_data.nc_lin_index_vec = RefStruct.particle_index_ref(FrameSetFilter); 
+        snip_data.nc_master_vec = RefStruct.master_nucleusID_ref(FrameSetFilter);    
 
         % specify name      
         snip_name = ['snip_data_F' sprintf('%03d',samplingInfo.Frame) '_S' sprintf('%02d',samplingInfo.SetID)]; 

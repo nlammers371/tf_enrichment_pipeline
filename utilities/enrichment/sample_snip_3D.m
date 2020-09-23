@@ -1,5 +1,7 @@
-function snip2D = sample_snip_3D(x_samp,y_samp,z_samp,samplingInfo,data_stack)
-
+function snip2D = sample_snip_3D(x_samp,y_samp,z_samp,samplingInfo,data_stack,nucleus_mask_3D)
+    
+    % mask out nuclear exterior (need to make this truly 3 dimensional)
+    data_stack(~nucleus_mask_3D) = NaN;
     
     % generate rounded pos indices
     x_round = round(x_samp);
