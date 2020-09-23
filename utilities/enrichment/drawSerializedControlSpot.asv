@@ -1,6 +1,7 @@
-function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedControlSpot(...
-                                  samplingInfo,nucleus_mask,CurrentFrame,...
-                                FrameVec, serial_null_x_vec, serial_null_y_vec)                                  
+function [serial_null_edge_dist_vec, serial_null_x_vec, serial_null_y_vec,qc_flag]...
+                          = drawSerializedControlSpot(...
+                                samplingInfo,nucleus_mask,CurrentFrame,...
+                                FrameVec, serial_null_x_vec, serial_null_y_vec, serial_null_edge_dist_vec)                                  
 
   % spot and nucleus distance info  
   nc_edge_dist_vec = samplingInfo.nc_dist_frame(nucleus_mask);
@@ -10,7 +11,8 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedCon
   x_pos_vec = samplingInfo.x_ref(nucleus_mask);
   y_pos_vec = samplingInfo.y_ref(nucleus_mask);         
   
-%   CurrentIndex = find(FrameVec == CurrentFrame);
+  CurrentIndex = find(FrameVec == CurrentFrame);
+  
   % generate sampling vector      
   sample_index_vec = find(spot_sep_vec >= samplingInfo.minSampleSep & ...
               nc_edge_dist_vec >= samplingInfo.minEdgeSep);
@@ -36,7 +38,7 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedCon
     % otherwise, draw snip based on previous location
     else
         prevIndex = (find(~isnan(serial_null_x_vec),1,'last'));
-        n_frames = double(CurrentFrame) - double(FrameVec(prevIndex)); % used to adjust jump weights
+        n_frames = CurrentFrame - double(FrameVec(prevIndex)); % used to adjust jump weights
         old_x = double(serial_null_x_vec(prevIndex));
         old_y = double(serial_null_y_vec(prevIndex));    
 
@@ -66,6 +68,6 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedCon
   end
   
   % record info
-%   serial_null_x_vec(samplingInfo.spotSubIndex) = new_serial_x;
-% 	serial_null_y_vec(samplingInfo.spotSubIndex) = new_serial_y;
-% 	serial_null_edge_dist_vec(samplingInfo.spotSubIndex) = new_edge_dist;
+  serial_null_x_vec(CurrentIndex) = new_serial_x;
+	serial_null_y_vec(CurrentIndex) = new_serial_y;
+	serial_null_edge_dist_vec(CurrentIndex) = new_edge_dist;
