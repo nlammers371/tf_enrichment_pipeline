@@ -5,7 +5,8 @@ new_vec_fields = {'spot_protein_vec', ... % protein levels at locus
                   'edge_null_protein_vec',... % protein level at spot selected to be equidistant from nucleus edge
                   'nuclear_protein_vec',... % average inside nucleus
                   'spot_mcp_vec',... % MCP channel intensity at spot
-                  'edge_mcp_protein_vec',... % " "
+                  'serial_null_mcp_vec',...
+                  'edge_null_mcp_vec',... % " "
                   'serial_qc_flag_vec',... % Flags when there are qc concerns for virtual spot
                   'edge_qc_flag_vec', ... % " "
                   'edge_null_x_vec', ... % x position for edge-controled simulated spot

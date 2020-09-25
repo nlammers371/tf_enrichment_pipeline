@@ -26,16 +26,18 @@ function snip2D = sample_snip_3D(x_samp,y_samp,z_samp,samplingInfo,data_stack,nu
     z_range3_full = z_round-z_vol_dim:z_round+z_vol_dim;
 
     % generate protein sample and ref boxes
-    pt_samp_box = NaN(numel(y_range3_full),numel(x_range3_full),numel(z_range3_full));
-    pt_samp_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
+    protein_samp_box = NaN(numel(y_range3_full),numel(x_range3_full),numel(z_range3_full));
+    protein_samp_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
         ismember(z_range3_full,z_range3)) = data_stack(y_range3,x_range3,z_range3);
+      
     % z ref    
+    z_ref_box = NaN(numel(y_range3_full),numel(x_range3_full),numel(z_range3_full));
     z_ref_box(ismember(y_range3_full,y_range3),ismember(x_range3_full,x_range3),...
         ismember(z_range3_full,z_range3)) = samplingInfo.z_ref(y_range3,x_range3,z_range3);
       
     % generate weight box
-    wt_box = exp(-.5*(((z_samp-z_ref_box)./samplingInfo.z_sigma).^2));
+    weight_box = exp(-.5*(((z_samp-z_ref_box)./samplingInfo.z_sigma).^2));
       
     % take weighted average
-    snip2D = nansum(pt_samp_box.*wt_box,3) ./ nansum(~isnan(pt_samp_box).*wt_box,3);
+    snip2D = nansum(protein_samp_box.*weight_box,3) ./ nansum(~isnan(protein_samp_box).*weight_box,3);
     

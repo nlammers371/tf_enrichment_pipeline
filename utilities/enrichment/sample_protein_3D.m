@@ -1,19 +1,22 @@
 function average_intensity = sample_protein_3D(samplingInfo,data_stack,x_spot,y_spot,z_spot,xy_sigma,z_sigma,nucleus_mask_3D)
     
-    % mask out nucleus exterior
+    % mask out nucleus exterior    
     data_stack(~nucleus_mask_3D) = NaN;
     
     % generate rounded pos indices
     x_round = round(x_spot);
     y_round = round(y_spot);
     z_round = round(z_spot);
+    
     % calculate vol dimensions
     xy_vol_dim = ceil(2*xy_sigma);
     z_vol_dim = ceil(2*z_sigma);
+    
     % calculate dimensions
     xDim = size(samplingInfo.x_ref,2);
     yDim = size(samplingInfo.x_ref,1);
     zDim = size(samplingInfo.x_ref,3);
+    
     % volume protein sampling 
     x_range3 = max(1,x_round-xy_vol_dim):min(xDim,x_round+xy_vol_dim);
     y_range3 = max(1,y_round-xy_vol_dim):min(yDim,y_round+xy_vol_dim);

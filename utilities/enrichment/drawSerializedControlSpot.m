@@ -1,5 +1,5 @@
-function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedControlSpot(...
-                                  samplingInfo,nucleus_mask,CurrentFrame,...
+function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = ...
+                                drawSerializedControlSpot(samplingInfo,nucleus_mask,...
                                 FrameVec, serial_null_x_vec, serial_null_y_vec)                                  
 
   % spot and nucleus distance info  
@@ -9,6 +9,7 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = drawSerializedCon
   spot_sep_vec = samplingInfo.spot_dist_frame(nucleus_mask); 
   x_pos_vec = samplingInfo.x_ref(nucleus_mask);
   y_pos_vec = samplingInfo.y_ref(nucleus_mask);         
+  CurrentFrame = samplingInfo.Frame;         
   
 %   CurrentIndex = find(FrameVec == CurrentFrame);
   % generate sampling vector      

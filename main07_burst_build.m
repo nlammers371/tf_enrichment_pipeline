@@ -157,7 +157,7 @@ for j = 1:numel(hmm_input_output)
     % activity
     fluo = hmm_input_output(j).fluo;
     swap_r_vec = hmm_input_output(j).dist_swap_hmm;
-    r_vec = hmm_input_output(j).r_vec';
+    r_vec = double(hmm_input_output(j).z_viterbi>1);
     % raw protein fields
     spot_protein_raw = hmm_input_output(j).spot_protein;
     swap_spot_protein_raw = hmm_input_output(j).dist_swap_spot_protein;
