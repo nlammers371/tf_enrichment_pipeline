@@ -6,12 +6,9 @@ function samplingInfo = getSamplingInfo(samplingInfo,liveProject,...
     currExperiment = liveProject.includedExperiments{samplingInfo.SetID}; 
     Prefix = liveProject.includedExperimentNames{samplingInfo.SetID}; 
     
-    if NewSetFlag
-%       currExperiment = LiveExperiment(Prefix);
-      % get channel info            
-      samplingInfo.proteinChannel = currExperiment.inputChannels;
-      samplingInfo.mcpChannel = currExperiment.spotChannels;    
-    end
+             
+    samplingInfo.proteinChannel = currExperiment.inputChannels;
+    samplingInfo.mcpChannel = currExperiment.spotChannels;        
     
     % generate path info for protein stacks
     samplingInfo.proteinPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',samplingInfo.Frame) '_ch0' num2str(samplingInfo.proteinChannel) '.tif'];
@@ -49,7 +46,7 @@ function samplingInfo = getSamplingInfo(samplingInfo,liveProject,...
       samplingInfo.driftTol = calculateVirtualSpotDrift(RefStruct,samplingInfo.SetID);
     end
     
-    % load spot and nucleus reference frames
+    % load spot and nucleus reference frames     
     nc_ref_name = [refPath 'nc_ref_frame_set' sprintf('%02d',samplingInfo.SetID) '_frame' sprintf('%03d',samplingInfo.Frame) '.mat'];
     temp = load(nc_ref_name,'nc_ref_frame');
     samplingInfo.nc_ref_frame_raw = temp.nc_ref_frame;            

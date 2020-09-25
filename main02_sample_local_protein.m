@@ -113,8 +113,12 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               handleSegmentationOptions(RefStruct,segmentNuclei);
 
     if segmentNuclei
-        disp('segmenting nuclei...')    
-        nuclearSegmentation(liveProject, RefStruct, segmentIndices, NumWorkers);      
+%         disp('segmenting nuclei...')   
+        if ~parDefaultFlag
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_struct, NumWorkers);      
+        else
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_struct, []);      
+        end
     end
 
     %% %%%%%%%%%%%%%%%% Local Protein Sampling: Loop 1 %%%%%%%%%%%%%%%%%%%%
@@ -123,7 +127,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     % stacks so it is quite fast
              
     h = waitbar(0,'Generating control spots...');        
-    NIter = 50;%size(SetFrameArray,1);
+    NIter = size(SetFrameArray,1);
     for i = 1:NIter%size(SetFrameArray,1)  
         waitbar(i/NIter,h)                       
         
@@ -143,10 +147,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         samplingInfo = getSamplingInfo(samplingInfo,liveProject,proteinSamplingInfo,RefStruct,NewSetFlag);                
         
         % perform QC and generate lookup table of inter-nucleus distances
-        samplingInfo = performNucleusQC(samplingInfo);
-        
-        % perform QC and generate lookup table of inter-nucleus distances
-        samplingInfo = performNucleusQC(samplingInfo);
+        samplingInfo = performNucleusQC(samplingInfo);        
 
         j_pass = 1; % counter to track absolute position in iteration
         for j = samplingInfo.frame_set_indices        
@@ -164,11 +165,11 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             
             % if spot does not fall within boundaries of a nucleus, flag it
             % and skip
-            if ~nucleus_mask_id
-
+            if ~nucleus_mask_id               
                 SamplingResults(i).edge_qc_flag_vec(j_pass) = -1;            
                 SamplingResults(i).serial_qc_flag_vec(j_pass) = -1;
-
+                
+                j_pass = j_pass + 1;
                 continue
             end 
             
@@ -204,7 +205,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
              
              % increment
              j_pass = j_pass + 1;
-        end      
+        end
     end
     delete(h);
     %% %%%%%%%%%%%%%%%% Local Protein Sampling: Loop 2 %%%%%%%%%%%%%%%%%%%%
@@ -226,7 +227,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     p = 1;
     
     tic
-    for i = 1:NIter%size(SetFrameArray,1)
+    parfor i = 1:NIter%size(SetFrameArray,1)
         % generate structure to keep track of sampling info
         samplingInfo = struct; 
         
@@ -306,7 +307,10 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
                   sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
                   samplingSubInfo.x_spot_full,samplingSubInfo.y_spot_full,...
                   samplingSubInfo.z_spot_full,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_dummy);
-
+                
+                % increment
+                j_pass = j_pass + 1;
+                
                 continue
             end 
             
@@ -318,9 +322,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               sample_protein_3D(samplingSubInfo,samplingSubInfo.protein_stack,...
               samplingSubInfo.x_spot,samplingSubInfo.y_spot,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
               samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
-            if isnan(SamplingResults(i).spot_protein_vec(j_pass))
-              error('why?')
-            end
+           
             SamplingResults(i).spot_mcp_vec(j_pass) = ...              
               sample_protein_3D(samplingSubInfo,samplingSubInfo.mcp_stack,...
               samplingSubInfo.x_spot,samplingSubInfo.y_spot,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
@@ -381,21 +383,21 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             end                  
 
             %% %%%%%%%%%%%% Draw serialized control spot %%%%%%%%%%%%%%%%%%%%%%%                                                                                
-                
-            % sample protein 
-            serial_control_x = SamplingResults(i).serial_null_x_vec(j_pass) + samplingSubInfo.x_shift;                
-            serial_control_y = SamplingResults(i).serial_null_y_vec(j_pass) + samplingSubInfo.y_shift;
+            if SamplingResults(i).serial_qc_flag_vec(j_pass) > 0      
+                % sample protein 
+                serial_control_x = SamplingResults(i).serial_null_x_vec(j_pass) + samplingSubInfo.x_shift;                
+                serial_control_y = SamplingResults(i).serial_null_y_vec(j_pass) + samplingSubInfo.y_shift;
 
-            SamplingResults(i).serial_null_protein_vec(j_pass) = ...
-                  sample_protein_3D(samplingSubInfo,samplingSubInfo.protein_stack,...
-                  serial_control_x,serial_control_y,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
-                  samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
-                
-            SamplingResults(i).serial_null_mcp_vec(j_pass) = ...
-                  sample_protein_3D(samplingSubInfo,samplingSubInfo.mcp_stack,...
-                  serial_control_x,serial_control_y,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
-                  samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
+                SamplingResults(i).serial_null_protein_vec(j_pass) = ...
+                      sample_protein_3D(samplingSubInfo,samplingSubInfo.protein_stack,...
+                      serial_control_x,serial_control_y,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
+                      samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
 
+                SamplingResults(i).serial_null_mcp_vec(j_pass) = ...
+                      sample_protein_3D(samplingSubInfo,samplingSubInfo.mcp_stack,...
+                      serial_control_x,serial_control_y,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
+                      samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
+            end
 
             %% %%%%%%%%%%%% Check for sister spot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %         x_spot_sister = NaN;
@@ -422,43 +424,13 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         send(D, i);
     end
     toc
-    
+    delete(h);
     % map sampled fields back to spot structure    
     spot_struct_protein = mapToSpotStructure(spot_struct_protein,SamplingResults,RefStruct,SetFrameArray);
     
     % assemble snip fragments into a single mat file
-    assembleSnips(liveProject);
-        
-    delete(h);
-    % disp('saving qc frames...')
-    % % save qc data
-    % tic
-    % particle_index = unique([spot_struct_protein.particleID]);
-    % particle_index = particle_index(~isnan(particle_index));
-    % qc_particles = randsample(particle_index,min([100,numel(particle_index)]),false);
-    % particle_index_full = [];
-    % particle_frames_full = [];
-    % for i = 1:numel(qc_structure)
-    %     qc_mat = qc_structure(i).qc_mat;
-    %     for  j = 1:numel(qc_mat)
-    %         qc_spot = qc_mat(j);
-    %         if ~isfield(qc_spot,'ParticleID')
-    %             continue
-    %         end
-    %         ParticleID = qc_spot.particleID;
-    %         if isempty(ParticleID) || ~ismember(ParticleID,qc_particles)
-    %             continue
-    %         end        
-    %         samplingInfo.Frame = qc_spot.frame;      
-    %         particle_index_full = [particle_index_full ParticleID];
-    %         particle_frames_full = [particle_frames_full samplingInfo.Frame];        
-    %         save_name = [snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',samplingInfo.Frame) '.mat'];
-    %         save(save_name,'qc_spot');
-    %     end
-    % end
-    % [particle_index_full, si] = sort(particle_index_full);
-    % particle_frames_full = particle_frames_full(si);
-    % 
+    assembleSnips(liveProject);            
+    
     % qc_ref_struct.particle_frames_full = particle_frames_full;
     % qc_ref_struct.particle_index_full = particle_index_full;
     % toc

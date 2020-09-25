@@ -1,6 +1,6 @@
 function samplingInfo = performNucleusQC(samplingInfo)
 
-  nucleus_stats_raw = regionprops(samplingInfo.nc_ref_frame_raw>0,'MajorAxisLength','MinorAxisLength','Area');
+  nucleus_stats_raw = regionprops(samplingInfo.nc_ref_frame_raw>1,'MajorAxisLength','MinorAxisLength','Area');
   
 %   idList = unique(samplingInfo.nc_ref_frame_raw);
 %   idList = idList(idList~=0);
@@ -12,18 +12,18 @@ function samplingInfo = performNucleusQC(samplingInfo)
   % perform basic QC
   areaFlags = [nucleus_stats_raw.Area] < samplingInfo.min_nucleus_area | [nucleus_stats_raw.Area] > samplingInfo.max_nucleus_area;%
   shapeFlags = [nucleus_stats_raw.MajorAxisLength] >= 2*[nucleus_stats_raw.MinorAxisLength];
-  keepIndices = find(~areaFlags&~shapeFlags);
+  keepIndices = idList(~areaFlags&~shapeFlags);
   
   % record binary mask and labeled mask 
-  samplingInfo.nc_ref_frame = ismember(bwlabel(samplingInfo.nc_ref_frame_raw>0),keepIndices);
-  samplingInfo.nc_label_frame = bwlabel(samplingInfo.nc_ref_frame);%cast(samplingInfo.nc_ref_frame,'uint8').*samplingInfo.nc_ref_frame_raw;
-%   samplingInfo.nc_label_frame(samplingInfo.nc_ref_frame) = samplingInfo.nc_ref_frame_raw(samplingInfo.nc_ref_frame);
+  samplingInfo.nc_ref_frame = ismember(samplingInfo.nc_ref_frame_raw,keepIndices);
+  samplingInfo.nc_label_frame = bwlabel(samplingInfo.nc_ref_frame)cast(samplingInfo.nc_ref_frame,'uint8').*samplingInfo.nc_ref_frame_raw;
+  samplingInfo.nc_label_frame(samplingInfo.nc_ref_frame) = samplingInfo.nc_ref_frame_raw(samplingInfo.nc_ref_frame);
   
   % shave off edges for distance calculation to avoid occasional instances
   % where two nucleus masks are directly adjacent
-%   se = strel('disk',1);
-%   eroded_frame = imerode(samplingInfo.nc_ref_frame,se);  
-  samplingInfo.nc_dist_frame = bwdist(~samplingInfo.nc_ref_frame);
+  se = strel('disk',1);
+  eroded_frame = imerode(samplingInfo.nc_ref_frame,se);  
+  samplingInfo.nc_dist_frame = bwdist(~eroded_frame);
        
 
   % generate lookup table

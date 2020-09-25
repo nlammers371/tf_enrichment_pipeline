@@ -35,8 +35,8 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
   % initialize arrays to store segmentation info
   nucleus_frame_cell = cell(1,length(segmentIndices));
   spot_frame_cell = cell(1,length(segmentIndices));
-  parfor w = 1:length(segmentIndices)
-      i = segmentIndices(w);
+  for w = 1:length(segmentIndices)
+      i = 10;%segmentIndices(w);
       currentSetID = RefStruct.set_frame_array(i,1);
       currentFrame = RefStruct.set_frame_array(i,2);  
       
@@ -120,7 +120,7 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       
       % label regions
       se = strel('disk',3);
-      seBig = strel('disk',4);
+      seSmall = strel('disk',1);
       
       nc_frame_mask = imerode(logical(protein_bin_clean),se);     
       
@@ -130,21 +130,21 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       % take convex hull
       stats = regionprops(nc_frame_mask,'ConvexHull');
       nc_ref_frame_raw = zeros(size(nc_frame_mask),'uint8'); 
-%       zeroFilter = false(size(nc_ref_frame_raw));
+      zeroFilter = false(size(nc_ref_frame_raw));
       for j = 2:length(stats)
           hull_points = stats(j).ConvexHull;
           mask = poly2mask(hull_points(:,1),hull_points(:,2),yDim,xDim);   
           nc_bin_ids = mask(nc_lin_indices);
           if sum(nc_bin_ids) == 1 % enforce unique spot-nucleus-assignment
-            mask = imdilate(mask,seBig);
-%             maskBig = imdilate(mask,seSmall);
+            mask = imdilate(mask,se);
+            maskBig = imdilate(mask,seSmall);
             % if there are overlapping pixels, set these to zero
-%             zeroFilter = zeroFilter |((logical(nc_ref_frame_raw).*mask)>0 | (maskBig&~mask));
+            zeroFilter = zeroFilter |((logical(nc_ref_frame_raw).*mask)>0 | (maskBig&~mask));
             nc_ref_frame_raw(mask) = j;%nc_master_vec_u(nc_bin_ids);
 %             nc_ref_frame_raw(zeroFilter) = 0;
           end
       end       
-      nc_ref_frame_raw(boundarymask(nc_ref_frame_raw)) = 0;
+      
       nc_ref_frame = nc_ref_frame_raw;%imdilate(nc_ref_frame_raw,se);
       % generate array indicating distance of each pixel from an active locus 
       nc_indices = sub2ind(size(nc_ref_frame),spot_y_vec,spot_x_vec);
@@ -159,7 +159,6 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       % update waitbar
       send(D, w);
   end
-  delete(h);
   disp('saving segmentation results...')
   % save arrays
   for w = 1:numel(segmentIndices)
@@ -173,7 +172,8 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       spot_dist_frame = spot_frame_cell{w};
       save(spot_ref_name,'spot_dist_frame');
   end
-  disp('done.')  
+  disp('done.')
+  delete(h);
   
   %% %%%%%%%%% waitbar function %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   function nUpdateWaitbar(~)

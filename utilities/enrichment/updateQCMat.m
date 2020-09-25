@@ -28,4 +28,34 @@ function updateQCMat
 %         qc_mat(numel(nc_x_vec)-j_pass+1).y_origin = y_range(1);
 %         qc_mat(numel(nc_x_vec)-j_pass+1).mcp_snip = mcp_slice(y_range,x_range);
 %         qc_mat(numel(nc_x_vec)-j_pass+1).protein_snip = protein_slice(y_range,x_range);
-%         qc_mat(numel(nc_x_vec)-j_pass+1).edge_dist_snip = edge_dist_mat(y_range,x_range);   
+%         qc_mat(numel(nc_x_vec)-j_pass+1).edge_dist_snip = edge_dist_mat(y_range,x_range);  
+
+
+% disp('saving qc frames...')
+% % save qc data
+% tic
+% particle_index = unique([spot_struct_protein.particleID]);
+% particle_index = particle_index(~isnan(particle_index));
+% qc_particles = randsample(particle_index,min([100,numel(particle_index)]),false);
+% particle_index_full = [];
+% particle_frames_full = [];
+% for i = 1:numel(qc_structure)
+%     qc_mat = qc_structure(i).qc_mat;
+%     for  j = 1:numel(qc_mat)
+%         qc_spot = qc_mat(j);
+%         if ~isfield(qc_spot,'ParticleID')
+%             continue
+%         end
+%         ParticleID = qc_spot.particleID;
+%         if isempty(ParticleID) || ~ismember(ParticleID,qc_particles)
+%             continue
+%         end        
+%         samplingInfo.Frame = qc_spot.frame;      
+%         particle_index_full = [particle_index_full ParticleID];
+%         particle_frames_full = [particle_frames_full samplingInfo.Frame];        
+%         save_name = [snipPath 'pt' num2str(1e4*ParticleID) '_frame' sprintf('%03d',samplingInfo.Frame) '.mat'];
+%         save(save_name,'qc_spot');
+%     end
+% end
+% [particle_index_full, si] = sort(particle_index_full);
+% particle_frames_full = particle_frames_full(si);
