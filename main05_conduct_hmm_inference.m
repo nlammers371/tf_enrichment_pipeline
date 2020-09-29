@@ -28,16 +28,16 @@ function output = main05_conduct_hmm_inference(project, DropboxFolder, varargin)
 close all
 warning('off','all') %Shut off Warnings
 addpath('utilities');
+
 % default path to model scripts
 modelPath = './utilities';
-savio = 0;
-K = 3;
-w = 7;
-exclude_ids = [327 1143];
-protein_bin_flag = false;
+savioFlag = 0; % set to 1 if using savio computing cluster
+K = 3; % Number of states in system
+w = 7; % "memory"--length of construct in time steps
+ProteinBinFlag = false;
 dpBootstrap = 1;
 % minDp = 10;
-if protein_bin_flag
+if ProteinBinFlag
     nBoots = 2; % will run multiple instances on savio
 else
     nBoots = 5;
@@ -80,7 +80,7 @@ alpha = alphaFrac*w;
 
 %----------------------------Bootstrap Vars-------------------------------%                                       
 % max num workers
-if savio
+if savioFlag
     maxWorkers = 24;
 end
 
@@ -92,7 +92,7 @@ end
 
 % Set write path (inference results are now written to external directory)
 % out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
-if protein_bin_flag
+if ProteinBinFlag
     load([DataPath '/nucleus_struct_protein.mat'],'nucleus_struct_protein') % load data
     analysis_struct = nucleus_struct_protein;
     out_suffix =  ['/hmm_inference_protein/w' num2str(w) '_K' num2str(K) '/']; 
@@ -103,7 +103,7 @@ else
 end
 
 % set write path
-if savio
+if savioFlag
     out_prefix = '/global/scratch/nlammers/'; %hmmm_data/inference_out/';
 else    
     out_prefix = DataPath;
@@ -121,7 +121,7 @@ for i = 1:length(analysis_struct)
     if sum(~isnan(fluo)) >= 2 % NL: this is a bit redundant. Leaving for now
         temp.fluo = fluo;
         temp.time = time;
-        if protein_bin_flag
+        if ProteinBinFlag
             temp.mf_protein = nanmean(analysis_struct(i).mf_null_protein_vec);
         end
         temp.qc_flag = analysis_struct(i).qc_flag;
@@ -131,7 +131,7 @@ for i = 1:length(analysis_struct)
 end
 trace_struct_filtered = trace_struct_filtered([trace_struct_filtered.qc_flag]==1);
 
-if protein_bin_flag 
+if ProteinBinFlag 
     % generate list of average protein levels
     mf_index = [trace_struct_filtered.mf_protein];
     % generate protein groupings    
@@ -147,7 +147,7 @@ end
 % define iteration wrapper
 iter_list = 1;
 iter_ref_index = ones(size(trace_struct_filtered));
-if protein_bin_flag
+if ProteinBinFlag
     iter_list = 1:numel(mf_prctile_vec)-1;
     iter_ref_index = [trace_struct_filtered.mf_protein_bin];
 end
@@ -262,8 +262,8 @@ for t = 1:length(iter_list)
             output.total_steps = local_struct(max_index).total_steps;                                  
             output.total_time = 100000*(now - iter_start);            
             % other inference characteristics            
-            output.protein_bin_flag = protein_bin_flag;
-            if protein_bin_flag
+            output.protein_bin_flag = ProteinBinFlag;
+            if ProteinBinFlag
                 output.protein_bin = t;
                 output.protein_bin_list = iter_list;
                 output.protein_bin_edges = mf_prctile_vec;

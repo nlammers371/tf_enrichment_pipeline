@@ -13,6 +13,8 @@
 %       "VariableNameString", VariableValue
 %
 % OUTPUT: spot_struct_protein: compiled data set with protein samples
+%         snip_struct: data structure containing "snips" of nerhborhood
+%         around sampled spots
 
 function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
 
