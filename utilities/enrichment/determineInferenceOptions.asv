@@ -8,11 +8,17 @@ function inferenceOptions = determineInferenceOptions(varargin)
   %% INFERENCE PARAMETERS
   inferenceOptions.savioFlag = 1;
   inferenceOptions.fluo3DFlag = 0;
-  inferenceOptions.automaticBinning = 1;
+  inferenceOptions.automaticBinning = true;
   inferenceOptions.ProteinBinFlag = 1;
   inferenceOptions.dpBootstrap = 1;
   inferenceOptions.SampleSize = 5000;
-  inferenceOptions.maxWorkers = 24;  
+  inferenceOptions.maxWorkers = 24;
+  
+  if inferenceOptions.ProteinBinFlag && inferenceOptions.savioFlag
+      inferenceOptions.nBoots = 1; % will run multiple instances on savio
+  else  
+      inferenceOptions.nBoots = 5;
+  end
   
   %% Core inference options (these generally remain fixed)
   inferenceOptions.n_localEM = 25; % set num local runs
@@ -51,38 +57,8 @@ function inferenceOptions = determineInferenceOptions(varargin)
     end    
   end
   
-  %% Adjust options as needed
+  
   if ~inferenceOptions.dpBootstrap
     warning('Bootstrap option not selected. Setting inferenceOptions.nBoots to 1')
     inferenceOptions.nBoots = 1;
   end  
-  
-  if length(inferenceOptions.truncInference) ~= length(inferenceOptions.timeBins)-1
-    warning('Updating inference type options to be consistent with time bins')
-    inferenceOptions.truncInference = ones(1,length(inferenceOptions.timeBins)-1);
-    if inferenceOptions.timeBins(1) == 0
-      inferenceOptions.truncInference(1) = 0;
-    end
-  end
-  
-  % parpool options
-  if inferenceOptions.savioFlag && ~isfield(inferenceOptions,'maxWorkers')
-    inferenceOptions.maxWorkers = 24;
-  else
-    myCluster = parcluster('local');
-    inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
-  end
-  
-  % assign binary flags to indicate wheter space or time groupings are used
-  inferenceOptions.apBinFlag = length(inferenceOptions.apBins)>2;
-  inferenceOptions.timeBinFlag = length(inferenceOptions.timeBins)>2;
-  
-  % set the number of bootstraps
-  if ~isfield(inferenceOptions,'nBoots')
-    if inferenceOptions.ProteinBinFlag && inferenceOptions.savioFlag
-        inferenceOptions.nBoots = 1; % will run multiple instances on savio
-    else  
-        inferenceOptions.nBoots = 5;
-    end
-  end
-  

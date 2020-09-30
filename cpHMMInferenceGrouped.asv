@@ -1,48 +1,16 @@
-function cpHMMInferenceGrouped(projectName,InputDataPath,OutputDataPath)
+function cpHMMInferenceGrouped(projectName,InputDataPath,OutputDataPath,modelSpecs,varargin)
+
 % Script to call primary cpHMM wrapper function
 
 clear
 close all
 warning('off','all') %Shut off Warnings
-modelPath = './utilities';
-addpath(modelPath);
 
 % get inference options
-inferenceOptions = determineInferenceOptions;
+inferenceOptions = determineInferenceOptions(modelSpecs,varargin);
 
-% project identifier
-% projectName = '2xDl-Ven_hbP2P-mCh';
-% default path to model scripts
-
-% InputDataPath = ['../../dat/tf_enrichment/' projectName '/'];
- 
-%%%%%%%%%%%%%%
-
-
-
-if inferenceOptions.ProteinBinFlag && inferenceOptions.savioFlag
-    nBoots = 1; % will run multiple instances on savio
-else  
-    nBoots = 5;
-end
-
-% DataPath = ['S:\Nick\Dropbox\ProcessedEnrichmentData\' project '\'];%
-
-
-% check that we have proper fields
-if ~inferenceOptions.dpBootstrap
-    warning('Bootstrap option not selected. Setting nBoots to 1')
-    nBoots = 1;
-end
-
-%% %%%%%%%%%% Set fraction of gene length comprised of MS2 cassette %%%%%%%
-
-if contains(projectName,'hbP2P')
-    alphaFrac = 1275 / 4670;
-elseif contains(projectName,'snaBAC')
-    alphaFrac = 1302 / 6444;
-end
-alpha = alphaFrac*inferenceOptions.nSteps;
+% add path to HMM functions
+addpath(genpath(inferenceOptions.modelPath));
 
 %% %%%%%%%%%%%%%%%%%%%%%% Load trace data set %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~inferenceOptions.ProteinBinFlag
@@ -70,33 +38,27 @@ else
 end
 
 % set write path
-outPrefix = [OutputDataPath filesep projectName filesep]; %hmmm_data/inference_out/';
+outPrefix = [OutputDataPath filesep projectName filesep];
 outDir = [outPrefix outSuffix];
 mkdir(outDir);
 
 %% %%%%%%%%%%%%%%%%%%%%%% Process/filter trace data %%%%%%%%%%%%%%%%%%%%%%%
-trace_struct_filtered = filterTraces(inferenceOptions,analysis_traces);
-
-% define iteration wrapper
-iter_index = 1;
-iter_ref_list = ones(size(trace_struct_filtered));
-if inferenceOptions.ProteinBinFlag    
-    iter_ref_list = [trace_struct_filtered.mf_protein_bin];
-    iter_index = unique(iter_ref_list);
-end
+[trace_struct_filtered, indexInfo] = filterTraces(inferenceOptions,analysis_traces);
 
 %% %%%%%%%%%%%%%%%%%%%%%% Conduct cpHMM Inference %%%%%%%%%%%%%%%%%%%%%%%%%
 rng('shuffle'); % ensure we don't repeat bootstrap samples across different replicates
 
 % iterate through designated groups
-for t = 1:length(iter_index)
-    iter_filter = iter_ref_list == iter_index(t);
+for t = 1:length(indexInfo.indexVecUnique)
+    % find subset of eligible traces
+    iter_filter = indexInfo.indexList == indexInfo.indexVecUnique(t);
     
-    for b = 1:nBoots
-      
-        iter_start = now;
-        local_struct = struct;    
-        output = struct;                
+    % iterate through bootstraps
+    for b = 1:inferenceOptions.nBoots
+        
+        % initialize structures to store results
+        local_struct_temp = struct;  % stores results from individual iterations
+        output = struct;  % structure that will be saved to file               
         
         % Extract subset of traces relevant to this subgroup       
         inference_set = trace_struct_filtered(iter_filter);                
@@ -136,7 +98,7 @@ for t = 1:length(iter_index)
             param_init = initialize_random (inferenceOptions.nStates, inferenceOptions.nSteps, fluo_data);
             % Approximate inference assuming iid data for param initialization                
             local_iid_out = local_em_iid_reduced_memory(fluo_data, param_init.v, ...
-                                param_init.noise, inferenceOptions.nStates, inferenceOptions.nSteps, alpha, 500, 1e-4);
+                                param_init.noise, inferenceOptions.nStates, inferenceOptions.nSteps, inferenceOptions.alpha, 500, 1e-4);
                               
             noise_iid = 1/sqrt(exp(local_iid_out.lambda_log));
             v_iid = exp(local_iid_out.v_logs);  
@@ -166,41 +128,40 @@ for t = 1:length(iter_index)
                 if ~inferenceOptions.truncInference
                   local_out = local_em_MS2_reduced_memory(fluo_data, ...
                       v_init, noise_init, pi0_log_init', A_log_init, inferenceOptions.nStates, inferenceOptions.nSteps, ...
-                      alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);                    
+                      inferenceOptions.alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);                    
                 else
                   local_out = local_em_MS2_reduced_memory_truncated(fluo_data, ...
                         v_init, noise_init, pi0_log_init', A_log_init, inferenceOptions.nStates, inferenceOptions.nSteps, ...
-                    alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);  
+                    inferenceOptions.alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);  
                 end
                 %---------------------------------------------------------%                
                 % Save Results                 
-                local_struct(i_local).subset_id = i_local;
-                local_struct(i_local).logL = local_out.logL;                
-                local_struct(i_local).A = exp(local_out.A_log);
-                local_struct(i_local).v = exp(local_out.v_logs).*local_out.v_signs;
-                local_struct(i_local).r = exp(local_out.v_logs).*local_out.v_signs / Tres;                                
-                local_struct(i_local).noise = 1/exp(local_out.lambda_log);
-                local_struct(i_local).pi0 = exp(local_out.pi0_log);
-                local_struct(i_local).total_stinferenceOptions.eps = local_out.n_iter;               
-                local_struct(i_local).soft_struct = local_out.soft_struct;               
+                local_struct_temp(i_local).subset_id = i_local;
+                local_struct_temp(i_local).logL = local_out.logL;                
+                local_struct_temp(i_local).A = exp(local_out.A_log);
+                local_struct_temp(i_local).v = exp(local_out.v_logs).*local_out.v_signs;
+                local_struct_temp(i_local).r = exp(local_out.v_logs).*local_out.v_signs / Tres;                                
+                local_struct_temp(i_local).noise = 1/exp(local_out.lambda_log);
+                local_struct_temp(i_local).pi0 = exp(local_out.pi0_log);
+                local_struct_temp(i_local).total_stinferenceOptions.eps = local_out.n_iter;               
+                local_struct_temp(i_local).soft_struct = local_out.soft_struct;               
             end
             
             %% Record output
-            [~, max_index] = max([local_struct.logL]); % Get index of best result  
+            [~, max_index] = max([local_struct_temp.logL]); % Get index of best result  
             
             % Save parameters from most likely local run
-            output.pi0 =local_struct(max_index).pi0;                        
-            output.r = local_struct(max_index).r(:);          
-            output.noise = local_struct(max_index).noise;
-            output.A = local_struct(max_index).A(:);
-            output.A_mat = local_struct(max_index).A;  
+            output.pi0 =local_struct_temp(max_index).pi0;                        
+            output.r = local_struct_temp(max_index).r(:);          
+            output.noise = local_struct_temp(max_index).noise;
+            output.A = local_struct_temp(max_index).A(:);
+            output.A_mat = local_struct_temp(max_index).A;  
             
             % get soft-decoded structure
-            output.soft_struct = local_struct(max_index).soft_struct;
+            output.soft_struct = local_struct_temp(max_index).soft_struct;
             
             % Info about run time
-            output.total_stinferenceOptions.eps = local_struct(max_index).total_stinferenceOptions.eps;                                  
-            output.total_time = 100000*(now - iter_start); 
+            output.total_stinferenceOptions.eps = local_struct_temp(max_index).total_stinferenceOptions.eps;                                               
             
             % other inference characteristics            
             output.protein_bin_flag = inferenceOptions.ProteinBinFlag;
@@ -216,7 +177,7 @@ for t = 1:length(iter_index)
             output.N = ndp;
            
 %             output.w = inferenceOptions.nSteps;
-%             output.alpha = alpha;
+%             output.inferenceOptions.alpha = inferenceOptions.alpha;
 %             output.deltaT = Tres;
 %             output.inferenceOptions.fluo3DFlag = inferenceOptions.fluo3DFlag;
 %             output.sampleSize = inferenceOptions.SampleSize; 
@@ -227,21 +188,23 @@ for t = 1:length(iter_index)
         output.skip_flag = skip_flag;
         
         %% Determine unique filename and sace
-        % Use current time as unique inference identifier 
-        inference_id = num2str(round(10e5*now));
 
         % Generate filenames            
         fName_sub = ['hmm_results_group' sprintf('%03d',t) '_rep'];
         file_list = dir([outDir fname_sub '*']);
+        % Get largest sub-id
         if isempty(file_list) 
           repNum = 1;
         else
           repNumList = zeros(size(file_list));
+          start_index = length(fname_sub)+1;
           for f = 1:length(file_list)
-            repNumList(f) = str2num(file_list(f).name(length(fname_sub
-        % Get largest sub-id
-        out_file = [outDir '/' fName_sub];  
-        
+            repNumList(f) = str2double(file_list(f).name(start_index:start_index+2));
+          end
+          repNum = max(repNumList)+1;
+        end
+        % save
+        out_file = [outDir '/' fName_sub sprintf('%03d',repNum)];          
         save([out_file '.mat'], 'output');           
     end  
 end
