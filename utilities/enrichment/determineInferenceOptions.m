@@ -1,4 +1,4 @@
-function inferenceOptions = determineInferenceOptions(varargin)
+function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
 
   inferenceOptions = struct;
   
@@ -9,8 +9,7 @@ function inferenceOptions = determineInferenceOptions(varargin)
   inferenceOptions.savioFlag = 1;
   inferenceOptions.fluo3DFlag = 0;
   inferenceOptions.automaticBinning = 1;
-  inferenceOptions.ProteinBinFlag = 1;
-  inferenceOptions.dpBootstrap = 1;
+  inferenceOptions.ProteinBinFlag = 1;  
   inferenceOptions.SampleSize = 5000;
   inferenceOptions.maxWorkers = 24;  
   
@@ -40,10 +39,10 @@ function inferenceOptions = determineInferenceOptions(varargin)
   inferenceOptions.minDP = 2*inferenceOptions.nSteps; % minimum number of data points for inclusion
   
   
-  %% Check for user-specified options
+  %% Check for user-specified options  
   for i = 1:length(varargin)-1
     if i ~= length(varargin) && ischar(varargin{i})       
-      if isfield(infrenceOptions,varargin{i})
+      if isfield(inferenceOptions,varargin{i})
         inferenceOptions.(varargin{i}) = varargin{i+1};  
       else
         warining(['Unrecognized input option "' varargin{i} '". Ignoring.'])
@@ -52,10 +51,6 @@ function inferenceOptions = determineInferenceOptions(varargin)
   end
   
   %% Adjust options as needed
-  if ~inferenceOptions.dpBootstrap
-    warning('Bootstrap option not selected. Setting inferenceOptions.nBoots to 1')
-    inferenceOptions.nBoots = 1;
-  end  
   
   if length(inferenceOptions.truncInference) ~= length(inferenceOptions.timeBins)-1
     warning('Updating inference type options to be consistent with time bins')
@@ -82,7 +77,7 @@ function inferenceOptions = determineInferenceOptions(varargin)
     if inferenceOptions.ProteinBinFlag && inferenceOptions.savioFlag
         inferenceOptions.nBoots = 1; % will run multiple instances on savio
     else  
-        inferenceOptions.nBoots = 5;
+        inferenceOptions.nBoots = 10;
     end
   end
   
