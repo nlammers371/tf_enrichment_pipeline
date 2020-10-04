@@ -64,7 +64,11 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Get project info %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    [liveProject, ~, nucleusName, hasAPInfo, has3DSpotInfo] = headerFunction(projectName);
+    [liveProject, ~, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+    if ~hasProteinInfo
+      warning('No input protein info associated with this project. Aborting protein sampling')
+      return
+    end
     use3DSpotInfo = use3DSpotInfo&&has3DSpotInfo;
     proteinSamplingInfo.use3DSpotInfo = use3DSpotInfo;
 

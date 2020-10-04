@@ -147,7 +147,16 @@ classdef LiveExperiment
             
             this.project = '';
             
-            this.hasCompiledParticlesFile = exist([this.resultsFolder, 'CompiledParticles.mat'] , 'file');
+            % NL: Updated this because agusto addes suffixes to his
+            % compiled particles filenames
+            compiledParticlesFiles = dir([this.resultsFolder, 'CompiledParticles*']);
+            compiledParticlesFiles = compiledParticlesFiles(~contains({compiledParticlesFiles.name},'Token'));
+            if length(compiledParticlesFiles)==1
+              this.hasCompiledParticlesFile = true;
+            else
+              warning('Multiple CompiledParticles files detected')
+            end
+            
             this.hasCompiledNucleiFile = exist([this.resultsFolder, 'CompiledNuclei.mat'] , 'file');
             this.hasSchnitzcellsFile = exist([this.resultsFolder,this.Prefix, '_lin.mat'] , 'file');
             this.hasSpotsFile = exist([this.resultsFolder, 'Spots.mat'] , 'file');
@@ -435,9 +444,12 @@ classdef LiveExperiment
         
         function CompiledParticles = getCompiledParticles(this)
             
-            compiledParticlesFile = [this.resultsFolder, 'CompiledParticles.mat'];
-            if this.hasCompiledParticlesFile
-                CompiledParticles = load(compiledParticlesFile);
+            compiledParticlesFiles = dir([this.resultsFolder, 'CompiledParticles*']);
+            compiledParticlesFiles = compiledParticlesFiles(~contains({compiledParticlesFiles.name},'Token'));
+            if length(compiledParticlesFiles) > 1
+              error('Multiple CompiledParticles files detected')
+            elseif this.hasCompiledParticlesFile
+                CompiledParticles = load([this.resultsFolder compiledParticlesFiles(1).name]);
             else
                 warning(['No CompiledParticles.mat file found for prefix: ' this.Prefix '.' ])
             end

@@ -102,7 +102,7 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+[liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo] = headerFunction(projectName);
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
@@ -220,9 +220,7 @@ for i = 1:numExperiments
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
 
                 % Add protein and nucleus info
-                if hasProteinInfo
-                  compiledSchnitzCells(nucleusCounter).rawNCPprotein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2);
-                end
+                compiledSchnitzCells(nucleusCounter).rawNCPprotein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2);
                 compiledSchnitzCells(nucleusCounter).frames = rawNucleusFrames';            
                 compiledSchnitzCells(nucleusCounter).nucleusID = s;     
                 compiledSchnitzCells(nucleusCounter).ncID = eval([num2str(setID) '.' sprintf('%04d',s)]);  
@@ -381,7 +379,6 @@ else
     interpFields = {'fluo'};
 end
 
-% calculate interpolation time
 interpGrid = 0:tresInterp:60*60;
 
 % use 95th percentile of fluorescence values to set scale for flagging 

@@ -1,4 +1,4 @@
-function [liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo] = headerFunction(projectName)
+function [liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName)
 
 % check to see if there is a full mRNADynamics repo on the working path. If
 % so remove it to prevent function cross-talk
@@ -17,3 +17,4 @@ nucleusName = [liveProject.dataPath 'nucleus_struct.mat']; % names for compiled 
 % Check for optiuonal parameter felds
 hasAPInfo = all(liveProject.hasAPInfo);
 has3DSpotInfo = all(liveProject.has3DSpotInfo);
+hasProteinInfo = all(liveProject.hasProteinInfo);
