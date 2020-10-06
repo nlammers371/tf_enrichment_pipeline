@@ -30,5 +30,7 @@ end
 
 % generate options cell
 options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','ectopicFlag','SampleSize',2500};
+
 % Call main inference function
 cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})
+

@@ -32,4 +32,4 @@ module load matlab
 # This directory can then be referenced by assigning it to
 # a 'parcluster.JobStorageLocation' property in your script.
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
-matlab -nodisplay -nodesktop < main05_conduct_hmm_inference_savio.m
+matlab -nodisplay -nodesktop < main05_conduct_cpHMM_inference.m

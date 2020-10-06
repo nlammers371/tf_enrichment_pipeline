@@ -12,12 +12,13 @@ projectList = {'eveWT','EveGtSL','EveS1Null','EveGtSL-S1Null'};
 customDataFolders = {'EveWT_CompiledParticles_segmented',...
   'eveGt_Analysis2.0_Segmented\eveGtSL-CompiledParticles2.0',...
   'eveS1Null_CompiledParticles_analysis',...
-  'eve2Gt_eve1Null2.0-Segmented\eveS2Gt-eS1_Analysis\CompiledParticles-eveGtSL-eS1_2.1'};
+  'CompiledParticles-eveGtSL-eS1_2.1'};
+
 
 ectopicGroups = {[],[1.5 -1],[1.5 -1],[1.5 -1]};
 endogenousGroups = {1:3,1:3,2:3,2:3};
 % iterate through list of projects and generate required variables
-for p = [1 2 4]%length(projectList)
+for p = [4]%length(projectList)
   
   liveProject = LiveProject(projectList{p});
   
@@ -62,6 +63,7 @@ for p = [1 2 4]%length(projectList)
         for ind = expIndices
           % cross reference with custom set
           ParticleID = nucleus_struct(ind).particleID;
+          
           originalParticle = round(ParticleID * 1e4 - e*1e4);          
           
           % cross reference frames and particle position
@@ -71,7 +73,7 @@ for p = [1 2 4]%length(projectList)
           % quick consistency check
           if all(nucleus_struct(ind).xPosParticle(frameFilterTo) == CompiledParticles(origParticleList==originalParticle).xPos(frameFilterFrom))
             % assign            
-            if false%strcmp(projectList{p},'EveGtSL-S1Null')
+            if strcmp(projectList{p},'EveGtSL-S1Null')
               nucleus_struct(ind).APPosPaticleNorm(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).APPos_Normalized(frameFilterFrom);
             end                            
             nucleus_struct(ind).StripeVec(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).Stripe(frameFilterFrom);
@@ -94,7 +96,7 @@ for p = [1 2 4]%length(projectList)
         nucleus_struct(i).Stripe = mode(nucleus_struct(i).StripeVec(timeFilter));
         meanAP = mean(nucleus_struct(i).APPosPaticleNorm(timeFilter));
         
-        if false%strcmp(projectList{p},'EveGtSL-S1Null')
+        if strcmp(projectList{p},'EveGtSL-S1Null')
           % readjust boundary between 1.5 and 2
           if meanAP <= 0.36 && nucleus_struct(i).Stripe == 2
             nucleus_struct(i).Stripe = 1.5;

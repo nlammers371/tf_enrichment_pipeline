@@ -12,12 +12,13 @@ projectList = {'eveWT','EveGtSL','EveS1Null','EveGtSL-S1Null'};
 customDataFolders = {'EveWT_CompiledParticles_segmented',...
   'eveGt_Analysis2.0_Segmented\eveGtSL-CompiledParticles2.0',...
   'eveS1Null_CompiledParticles_analysis',...
-  'eve2Gt_eve1Null2.0-Segmented\eveS2Gt-eS1_Analysis\CompiledParticles-eveGtSL-eS1_2.0'};
+  'CompiledParticles-eveGtSL-eS1_2.1'};
+
 
 ectopicGroups = {[],[1.5 -1],[1.5 -1],[1.5 -1]};
 endogenousGroups = {1:3,1:3,2:3,2:3};
 % iterate through list of projects and generate required variables
-for p = 3:length(projectList)
+for p = [4]%length(projectList)
   
   liveProject = LiveProject(projectList{p});
   
@@ -43,10 +44,10 @@ for p = 3:length(projectList)
     
     % iterate through each individual experiment
     for e = 1:numExperiments
-      liveExperiment = liveProject.includedExperiments{e};
+      currExperiment = liveProject.includedExperiments{e};
       
       % dearch for corresponding custom data file
-      customFile = dir([customDataPath filesep '*' liveExperiment.Prefix '*']);
+      customFile = dir([customDataPath filesep '*' currExperiment.Prefix '*']);
       if length(customFile) == 1
         % load custom file
         load([customFile.folder filesep customFile.name]);
@@ -80,7 +81,7 @@ for p = 3:length(projectList)
           end
         end
       else
-        error(['Could not find custom file for Prefix:' Prefix])
+        error(['Could not find custom file for Prefix: ' currExperiment.Prefix])
       end    
     end
     
