@@ -6,8 +6,8 @@ warning('off','all') %Shut off Warnings
 addpath(genpath('utilities'))
 
 % set project identifier
-projectName = 'EveGtSL';
-% projectName = 'EveGtSL-S1Null';
+% projectName = 'EveGtSL';
+projectName = 'EveGtSL-S1Null';
 
 % set inference options
 ProteinBinFlag = 0;
