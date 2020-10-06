@@ -7,7 +7,7 @@ if ~savioFlag
 else
   currentDir = pwd;
   user_i = strfind(currentDir,'users/');
-  slashes = strfind(test_string,'/');
+  slashes = strfind(currentDir,'/');
   indices = slashes(find(slashes>user_i,2));  
   if length(indices)==2
     stop_i = indices(2)-1;
