@@ -7,7 +7,7 @@ addpath(genpath('utilities'))
 
 % set project identifier
 % projectName = 'EveGtSL';
-projectName = 'EveGtSL-S1Null';
+projectName = 'EveWT';
 
 % set inference options
 ProteinBinFlag = 0;
