@@ -5,6 +5,7 @@ if ~savioFlag
   InputDataPath = liveProject.dataPath;
   OutputDataPath = InputDataPath;%[InputDataPath filesep 'cpHMM_results' filesep];
 else
+  currentDir = pwd;
   user_i = strfind(currentDir,'users/');
   slashes = strfind(test_string,'/');
   indices = slashes(find(slashes>user_i,2));  
