@@ -67,12 +67,13 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   end
   
   % parpool options
-  if inferenceOptions.savioFlag && ~isfield(inferenceOptions,'maxWorkers')
-    inferenceOptions.maxWorkers = 24;
-  else
-    myCluster = parcluster('local');
-    inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
-  end
+%   if inferenceOptions.savioFlag && ~isfield(inferenceOptions,'maxWorkers')
+%     inferenceOptions.maxWorkers = 24;
+%   else
+%     myCluster = parcluster('local');
+%     inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
+%   end
+  inferenceOptions.maxWorkers = 24;
   
   % assign binary flags to indicate wheter space or time groupings are used
   inferenceOptions.apBinFlag = length(inferenceOptions.apBins)>2;
