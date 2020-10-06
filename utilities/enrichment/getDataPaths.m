@@ -14,7 +14,7 @@ else
   else
     stop_i = length(currentDir);
   end
-  InputDataPath = [currentDir(1:stop_i) filesep 'tf_enrichment' filesep 'dat' filesep projectName filesep];
+  InputDataPath = [currentDir(1:stop_i) filesep 'dat' filesep 'tf_enrichment' filesep projectName filesep];
   OutputDataPath = InputDataPath;%[currentDir(1:stop_i) filesep 'tf_enrichment' filesep 'dat' filesep projectName filesep 'cpHMM_results' filesep];
 end
 mkdir(OutputDataPath);
