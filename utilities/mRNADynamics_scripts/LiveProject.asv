@@ -23,6 +23,9 @@ classdef LiveProject
         hasAPInfo = [];        
         has3DSpotInfo = [];
         hasProteinInfo = [];
+        
+        hasTracesCompiled = [];
+        hasLocalProteinSampled = [];
                 
     end
     
@@ -60,7 +63,7 @@ classdef LiveProject
                 end
             end
             
-            
+            % check progress within enrichment
             this.hasSpots = haveSpots(this);
             this.hasParticles = haveParticles(this);
             this.hasSchnitzcells =  haveSchnitzcells(this);
@@ -69,7 +72,7 @@ classdef LiveProject
             
             this.hasAPInfo = checkAPInfo(this);
             this.has3DSpotInfo = check3DSpotInfo(this);
-            
+            this.hasProteinInfo = checkProteinInfo(this);
         end
         
         
@@ -168,8 +171,20 @@ classdef LiveProject
             has3DSpotInfo = zeros(1, numValidProjects);
             
             for k = 1:numValidProjects
-                APDetectionFile = [this.includedExperiments{k}.resultsFolder 'Spots3DToken.mat'];
-                has3DSpotInfo(k) = exist(APDetectionFile, 'file')~=0;
+                SpotSegmetation = [this.includedExperiments{k}.resultsFolder 'Spots3DToken.mat'];
+                has3DSpotInfo(k) = exist(SpotSegmetation, 'file')~=0;
+            end
+            
+        end
+        
+        function hasProteinInfo = checkProteinInfo(this)
+            
+            numValidProjects = length(this.includedExperimentNames);
+            
+            hasProteinInfo = zeros(1, numValidProjects);
+            
+            for k = 1:numValidProjects                
+                hasProteinInfo(k) = ~isempty(this.includedExperiments{k}.inputChannels);
             end
             
         end

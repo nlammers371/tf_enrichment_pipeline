@@ -96,7 +96,6 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
     inferenceOptions.additionalGroupIDs = unique(additional_group_vec(~isnan(additional_group_vec)));
   end
   
-  nan_filter1 = isnan(ap_group_vec) | isnan(time_group_vec) | isnan(additional_group_vec);
   % perform protein binning if appropriate
   if inferenceOptions.ProteinBinFlag || inferenceOptions.FluoBinFlag  
     
@@ -127,10 +126,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
         end
         % fill in traces that do not fit in any "Additional group" with
         % NaNs
-        for i = find(nan_filter1)
-          trace_struct_filtered(i).intensity_bin = NaN;
-          trace_struct_filtered(i).intensity_quantiles = [-NaN NaN];
-        end
+        
     end
   else
       for i = 1:length(trace_struct_filtered)
@@ -143,7 +139,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   % remove traces where one more more ID field in NAN
   intensity_group_vec = [trace_struct_filtered.intensity_bin];
   
-  nan_filter = isnan(intensity_group_vec) | nan_filter1;
+  nan_filter = isnan(intensity_group_vec) | isnan(ap_group_vec) | isnan(time_group_vec) | isnan(additional_group_vec);
   trace_struct_filtered = trace_struct_filtered(~nan_filter);
   ap_group_vec = ap_group_vec(~nan_filter);
   time_group_vec = time_group_vec(~nan_filter);

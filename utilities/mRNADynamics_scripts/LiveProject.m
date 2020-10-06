@@ -23,6 +23,9 @@ classdef LiveProject
         hasAPInfo = [];        
         has3DSpotInfo = [];
         hasProteinInfo = [];
+        
+        hasTracesCompiled = [];
+        hasLocalProteinSampled = [];
                 
     end
     
@@ -59,6 +62,10 @@ classdef LiveProject
                         this.includedExperimentNames{i}];
                 end
             end
+            
+            % check progress within enrichment pipeline
+            this.hasTracesCompiled = exist([this.dataPath 'nucleus_struct.mat'],'file');
+            this.hasLocalProteinSampled = exist([this.dataPath 'spot_struct_protein.mat'],'file');
             
             
             this.hasSpots = haveSpots(this);

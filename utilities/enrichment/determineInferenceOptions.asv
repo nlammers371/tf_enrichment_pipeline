@@ -46,7 +46,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   
   
   %% Check for user-specified options  
-  for i = 1:2:length(varargin)
+  for i = 1:2length(varargin)-1
     if i ~= length(varargin) && ischar(varargin{i})       
       if isfield(inferenceOptions,varargin{i})
         inferenceOptions.(varargin{i}) = varargin{i+1};  

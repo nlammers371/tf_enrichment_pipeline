@@ -6,11 +6,12 @@ warning('off','all') %Shut off Warnings
 addpath(genpath('utilities'))
 
 % set project identifier
-projectName = '2xDl-Ven_snaBAC-mCh';
+% projectName = 'EveGtSL';
+projectName = 'EveGtSL-S1Null';
 
 % set inference options
 ProteinBinFlag = 0;
-timeBins = [0 60*15 60*30 60*45];
+timeBins = [60*25 60*60];
 
 % set core model specs
 modelSpecs.nStates = 2; % number of states in system
@@ -27,5 +28,7 @@ end
 % Get basic project info and determing file paths
 [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectName);
 
+% generate options cell
+options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','ectopicFlag','SampleSize',2500};
 % Call main inference function
-cpHMMInferenceGrouped(projectName,InputDataPath,OutputDataPath,modelSpecs,'savioFlag',savioFlag,'timeBins',timeBins)
+cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})

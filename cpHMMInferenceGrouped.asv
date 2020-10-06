@@ -26,14 +26,11 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   else
       fluoSuffix = 'f2D';
   end
-  addSuffix = '';
-  if ~isempty(inferenceOptions.AdditionalGroupingVariable)
-    addSuffix = ['_' inferenceOptions.AdditionalGroupingVariable];
-  end
+  if ~isempty(inferenceOptions.AdditionalGroupingVariable
   % generate directory    
   outSuffix =  ['cpHMM_results' filesep 'w' num2str(inferenceOptions.nSteps) '_K' num2str(inferenceOptions.nStates) '_p' ...
     num2str(inferenceOptions.ProteinBinFlag) '_ap' num2str(length(inferenceOptions.apBins)-1) ...
-    '_t' num2str(length(inferenceOptions.timeBins)-1) '_' fluoSuffix addSuffix filesep]; 
+    '_t' num2str(length(inferenceOptions.timeBins)-1) '_' fluoSuffix '_opt' filesep]; 
   
 
   % set write path

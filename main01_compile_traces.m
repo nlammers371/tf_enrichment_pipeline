@@ -329,11 +329,12 @@ for i = 1:numExperiments
                         
             % Find intersection btw full frame range and CP frames        
             rawParticleFrames = compiledParticles(j).Frame;
-            rawParticleFrames = rawParticleFrames(ismember(rawParticleFrames,traceFramesFull));
+%             rawParticleFrames = rawParticleFrames(ismember(rawParticleFrames,traceFramesFull));
             
             % make filters
             ncSpotFilter1 = ismember(rawNucleusFrames,rawParticleFrames);
             ncSpotFilter2 = ismember(rawParticleFrames,rawNucleusFrames);
+            
             % add offset info
             compiledSchnitzCells(ncIndex).fluoOffset(ncSpotFilter1) = compiledParticles(j).Off(ncSpotFilter2);
             % x, y, and z info                                
