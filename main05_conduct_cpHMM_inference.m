@@ -25,7 +25,7 @@ if contains(currentDir,'global/')
   savioFlag = 1;
 end
 % generate options cell
-options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','Stripe','SampleSize',2500};
+options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','ectopicFlag','SampleSize',2500};
 rng('shuffle')
 
 for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
