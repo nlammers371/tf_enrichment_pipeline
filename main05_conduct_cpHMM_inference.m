@@ -26,8 +26,9 @@ if contains(currentDir,'global/')
 end
 % generate options cell
 options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','ectopicFlag','SampleSize',2500};
+rng('shuffle')
 
-for p = 1:length(projectNameCell)
+for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
     % Get basic project info and determing file paths
     [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});
    
