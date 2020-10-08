@@ -160,5 +160,5 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   indexInfo.additional_group_vec = additional_group_vec(mapTo);
   
   % update sample size
-  inferenceOptions.SampleSize = repelem(inferenceOptions.SampleSize,length(indexInfo.indexList));
+  inferenceOptions.SampleSize = repelem(inferenceOptions.SampleSize,size(indexInfo.indexVarArray,1));
   

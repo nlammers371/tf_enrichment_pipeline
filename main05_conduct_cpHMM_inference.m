@@ -7,7 +7,7 @@ addpath(genpath('utilities'))
 
 % set project identifier
 % projectName = 'EveGtSL';
-projectName = 'EveS1Null';
+projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWT'};
 
 % set inference options
 ProteinBinFlag = 0;
@@ -24,13 +24,14 @@ savioFlag = 0;
 if contains(currentDir,'global/')
   savioFlag = 1;
 end
-
-% Get basic project info and determing file paths
-[InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectName);
-
 % generate options cell
 options = {'savioFlag',savioFlag,'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','ectopicFlag','SampleSize',2500};
 
-% Call main inference function
-cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})
+for p = 1:length(projectNameCell)
+    % Get basic project info and determing file paths
+    [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});
+   
+    % Call main inference function
+    cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})
+end
 
