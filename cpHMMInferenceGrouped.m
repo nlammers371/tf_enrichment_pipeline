@@ -189,20 +189,22 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
 
           % Generate filenames            
           fName_sub = ['hmm_results_group' sprintf('%03d',t) '_rep'];
-          file_list = dir([outDir fName_sub '*']);
+%           file_list = dir([outDir fName_sub '*']);
           % Get largest sub-id
-          if isempty(file_list) 
-            repNum = 1;
-          else
-            repNumList = zeros(size(file_list));
-            start_index = length(fName_sub)+1;
-            for f = 1:length(file_list)
-              repNumList(f) = str2double(file_list(f).name(start_index:start_index+2));
-            end
-            repNum = max(repNumList)+1;
-          end
+%           if isempty(file_list) 
+%             repNum = 1;
+%           else
+%             repNumList = zeros(size(file_list));
+%             start_index = length(fName_sub)+1;
+%             for f = 1:length(file_list)
+%               repNumList(f) = str2double(file_list(f).name(start_index:start_index+2));
+%             end
+%             repNum = max(repNumList)+1;
+%           end
+          % generate random string
+          rand_string = strrep(num2str(randsample(1:9,5,true)),' ','');
           % save
-          out_file = [outDir fName_sub sprintf('%03d',repNum)];          
+          out_file = [outDir fName_sub sprintf('%03d',rand_string)];          
           save([out_file '.mat'], 'output');           
       end  
       if ~inferenceOptions.savioFlag

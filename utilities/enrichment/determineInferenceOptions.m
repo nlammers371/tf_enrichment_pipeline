@@ -82,7 +82,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   % set the number of bootstraps
   if ~isfield(inferenceOptions,'nBoots')
     if inferenceOptions.savioFlag
-        inferenceOptions.nBoots = 5; % will run multiple instances on savio
+        inferenceOptions.nBoots = 2; % will run multiple instances on savio
     else  
         inferenceOptions.nBoots = 5;
     end
