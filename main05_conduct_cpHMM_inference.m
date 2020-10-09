@@ -14,8 +14,8 @@ ProteinBinFlag = 0;
 timeBins = [60*25 60*60];
 
 % set core model specs
-modelSpecs.nStates = 3; % number of states in system
-modelSpecs.nSteps = 7; % number of steps to traverse gene
+modelSpecs.nStates = 2; % number of states in system
+modelSpecs.nSteps = 4; % number of steps to traverse gene
 modelSpecs.alphaFrac = 1302/6444;
 
 % check to see if we are on savio
