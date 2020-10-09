@@ -204,7 +204,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
           % generate random string
           rand_string = strrep(num2str(randsample(1:9,5,true)),' ','');
           % save
-          out_file = [outDir fName_sub sprintf('%03d',rand_string)];          
+          out_file = [outDir fName_sub rand_string];          
           save([out_file '.mat'], 'output');           
       end  
       if ~inferenceOptions.savioFlag
