@@ -1,0 +1,42 @@
+% Script to call primary cpHMM wrapper function
+
+clear
+close all
+warning('off','all') %Shut off Warnings
+addpath(genpath('utilities'))
+
+
+InferenceInfo = struct;
+% set project identifiers
+InferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
+
+% set inference options
+InferenceInfo.ProteinBinFlag = 0;
+InferenceInfo.FluoBinFlag = 0;
+InferenceInfo.timeBins = [60*25 60*60];
+
+% set core model specs
+InferenceInfo.modelSpecs.nStates = 3; % number of states in system
+InferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
+InferenceInfo.modelSpecs.alphaFrac = 1302/6444;
+
+% check to see if we are on savio
+% currentDir = pwd;
+% savioFlag = 0;
+% if contains(currentDir,'global/')
+%   savioFlag = 1;
+% end
+% generate options cell
+% InferenceInfo.options = {'timeBins',timeBins,'intensityBinVar','fluo','AdditionalGroupingVariable','Stripe','SampleSize',2500};
+
+% Get basic project info and determing file paths
+liveProject = LiveProject(InferenceInfo.projectNameCell{1});
+
+% save
+slashes = regexp(liveProject.dataPath,'/|\');
+dataDir = liveProject.dataPath(1:slashes(end-1));
+inferenceDir = [dataDir 'inferenceDirectory' filesep];
+mkdir(inferenceDir)
+save([inferenceDir 'inferenceInfo.mat'],'InferenceInfo')
+
+

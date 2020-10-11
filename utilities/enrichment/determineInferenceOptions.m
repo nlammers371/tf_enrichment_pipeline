@@ -9,8 +9,8 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.savioFlag = 1;
   inferenceOptions.fluo3DFlag = 0;
   inferenceOptions.automaticBinning = 1;
-  inferenceOptions.ProteinBinFlag = 1;
-  inferenceOptions.intensityBinVar = 'nuclear_protein_vec';
+  inferenceOptions.ProteinBinFlag = 0;
+  inferenceOptions.intensityBinVar = '';
   inferenceOptions.FluoBinFlag = 0;
   inferenceOptions.SampleSize = 5000;
   inferenceOptions.maxWorkers = 24;  
@@ -82,7 +82,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   % set the number of bootstraps
   if ~isfield(inferenceOptions,'nBoots')
     if inferenceOptions.savioFlag
-        inferenceOptions.nBoots = 2; % will run multiple instances on savio
+        inferenceOptions.nBoots = 1; % will run multiple instances on savio
     else  
         inferenceOptions.nBoots = 5;
     end

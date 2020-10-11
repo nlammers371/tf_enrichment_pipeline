@@ -17,7 +17,6 @@ end
 if savioFlag
   inferenceDir = '~/dat/tf_enrichment/inferenceDirectory/';
 else
-  liveProject = LiveProject(projectNameCell{1});
   slashes = regexp(liveProject.dataPath,'/|\');
   dataDir = liveProject.dataPath(1:slashes(end-1));
   inferenceDir = [dataDir 'inferenceDirectory' filesep];
@@ -26,27 +25,26 @@ end
 % load dataset with inference info
 load([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')
 
+
 % set core model specs
 modelSpecs = inferenceInfo.modelSpecs;
 
+
 % generate options cell
-options = {'savioFlag',savioFlag,'timeBins',inferenceInfo.timeBins,'SampleSize',inferenceInfo.SampleSize};
+options = {'savioFlag',savioFlag,'timeBins',inferenceOptions.timeBins,'SampleSize',2500};
 
 % intensity binning
 if inferenceInfo.FluoBinFlag
-  options(end+1:end+2) = {'intensityBinVar','fluo'};
+  options{end+1:end+2} = {'intensityBinVar','fluo'};
 elseif inferenceInfo.ProteinBinFlag
-  options(end+1:end+2) = {'intensityBinVar','nuclear_protein_vec'};  
+  options{end+1:end+2} = {'intensityBinVar','nuclear_protein_vec'};  
 end
 
-% additional grouping options
-if ~isempty(inferenceInfo.AdditionalGroupingVariable)
-  options(end+1:end+2) = {'AdditionalGroupingVariable',inferenceInfo.AdditionalGroupingVariable};  
-end
+%
+  
 rng('shuffle')
 
 for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
-  
     % Get basic project info and determing file paths
     [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});
    

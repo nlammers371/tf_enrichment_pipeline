@@ -23,7 +23,10 @@
 # Wall clock limit:
 #SBATCH --time=72:00:00
 #
-#SBATCH -a 1
+
+## NL: This tells Savio to run 10 distinct instances of the job (essentially euivalent to "nBoots")
+#SBATCH -a 1-10
+
 ## Command(s) to run:
 module load matlab
 
@@ -32,4 +35,6 @@ module load matlab
 # This directory can then be referenced by assigning it to
 # a 'parcluster.JobStorageLocation' property in your script.
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
-matlab -nodisplay -nodesktop < main05_conduct_cpHMM_inference.m
+
+## Call the inference function
+matlab -nodisplay -nodesktop < main05_conduct_cpHMM_inference({'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'})
