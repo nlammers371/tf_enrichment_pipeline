@@ -1,5 +1,5 @@
 % Script to call primary cpHMM wrapper function
-function main05_conduct_cpHMM_inference(projectNameCell)
+function main05_conduct_cpHMM_inference(varargin)
 
 
 close all
@@ -11,6 +11,12 @@ currentDir = pwd;
 savioFlag = 0;
 if contains(currentDir,'global/')
   savioFlag = 1;
+end
+
+if ~savioFlag && isempty(varargin)
+  warning('Cell array of project names must be passed when not running function on Savio')
+elseif ~isempty(varargin)
+  projectNameCell = varargin{1};
 end
 
 % get path to inference files
@@ -25,6 +31,10 @@ end
 
 % load dataset with inference info
 load([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')
+
+if savioFlag 
+  projectNameCell = inferenceInfo.projectNamecell;
+end
 
 % set core model specs
 modelSpecs = inferenceInfo.modelSpecs;

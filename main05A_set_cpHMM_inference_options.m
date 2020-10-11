@@ -7,7 +7,7 @@ addpath(genpath('utilities'))
 
 
 inferenceInfo = struct;
-% set project identifiers
+% set project identifiers (only applicable if running this on savio)
 inferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
 
 % set inference options

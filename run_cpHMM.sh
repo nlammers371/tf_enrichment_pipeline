@@ -25,7 +25,7 @@
 #
 
 ## NL: This tells Savio to run 10 distinct instances of the job (essentially euivalent to "nBoots")
-#SBATCH -a 1-10
+#SBATCH -a 1
 
 ## Command(s) to run:
 module load matlab
@@ -37,4 +37,4 @@ module load matlab
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
 
 ## Call the inference function
-matlab -nodisplay -nodesktop < main05_conduct_cpHMM_inference({'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'})
+matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/main05_conduct_cpHMM_inference.m
