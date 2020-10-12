@@ -2,7 +2,7 @@
 clear 
 close all
 
-currentDir = pdw;
+currentDir = pwd;
 addpath(genpath(currentDir));
 
 % call the inference function
