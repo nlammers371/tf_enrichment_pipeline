@@ -37,4 +37,4 @@ module load matlab
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
 
 ## Call the inference function
-matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/main05_conduct_cpHMM_inference.m
+matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/call_inference_savio.m
