@@ -33,7 +33,7 @@ end
 load([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')
 
 if savioFlag 
-  projectNameCell = inferenceInfo.projectNamecell;
+  projectNameCell = inferenceInfo.projectNameCell;
 end
 
 % set core model specs
