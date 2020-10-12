@@ -24,6 +24,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
       if ~isfield(inferenceOptions,'Tres')
         inferenceOptions.Tres = time(2)-time(1);
       end
+      fluo_raw = analysis_traces(i).fluo;
       time_raw = analysis_traces(i).time;
       
       if isfield(analysis_traces,'APPosParticle')
@@ -31,6 +32,8 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
       else
         ap_raw = ones(size(time));
       end
+      
+      qcFlag = analysis_traces(i).qcFlag || ~inferenceOptions.useQCFlag;
       
       for a = 1:length(inferenceOptions.apBins)-1 % Note: if either option is no activated, there will be only one bin
           apBounds = inferenceOptions.apBins(a:a+1);
@@ -47,15 +50,13 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
               ap_time_filter_raw = time_raw >= timeBounds(1) & time_raw < timeBounds(2) & time_raw >= start_time &...
                                ap_raw >= apBounds(1) & ap_raw < apBounds(2);
 
-              nRaw = sum(ap_time_filter_raw);
+              nRaw = sum(~isnan(fluo_raw(ap_time_filter_raw)));
 
-              if nRaw >= inferenceOptions.minDP
+              if nRaw >= inferenceOptions.minDP && qcFlag
                 ap_interp = interp1(time_raw,ap_raw,time);
-%                 time_vec_temp = time_raw(ap_time_filter_raw);
                 
                 ap_time_filter_interp = time >= timeBounds(1) & time < timeBounds(2) & time >= start_time &...
                                ap_interp >= apBounds(1) & ap_interp < apBounds(2);
-%                 ap_time_filter_interp = time>=time_vec_temp(1) & time<=time_vec_temp(end);
          
                 % generate new entry    
                 trace_struct_filtered(i_pass).fluo = fluo(ap_time_filter_interp);
@@ -142,12 +143,14 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   
   % remove traces where one more more ID field in NAN
   intensity_group_vec = [trace_struct_filtered.intensity_bin];
+  intensity_value_vec = [trace_struct_filtered.intensity_quantiles];
   
   nan_filter = isnan(intensity_group_vec) | nan_filter1;
   trace_struct_filtered = trace_struct_filtered(~nan_filter);
   ap_group_vec = ap_group_vec(~nan_filter);
   time_group_vec = time_group_vec(~nan_filter);
   intensity_group_vec = intensity_group_vec(~nan_filter);
+  intensity_value_vec = intensity_value_vec(~nan_filter);
   additional_group_vec = additional_group_vec(~nan_filter);
   
   % generate indexing structure
@@ -157,8 +160,9 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   indexInfo.ap_group_vec = ap_group_vec(mapTo);
   indexInfo.time_group_vec = time_group_vec(mapTo);  
   indexInfo.intensity_group_vec = intensity_group_vec(mapTo);
+  indexInfo.intensity_value_vec = intensity_value_vec(mapTo);
   indexInfo.additional_group_vec = additional_group_vec(mapTo);
-  
+  indexInfo.varArrayCols = {'AP','Time',inferenceOptions.intensityBinVar,inferenceOptions.AdditionalGroupingVariable};
   % update sample size
   inferenceOptions.SampleSize = repelem(inferenceOptions.SampleSize,size(indexInfo.indexVarArray,1));
   

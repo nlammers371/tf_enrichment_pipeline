@@ -40,10 +40,9 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.additionalGroupIDs = 1;
   inferenceOptions.AdditionalGroupingVariable = '';
   
-  %% Truncated inference (starting mid-trace) or normal inference?
-  inferenceOptions.truncInference = 0;    
+  %% Truncated inference (starting mid-trace) or normal inference?  
   inferenceOptions.minDP = 2*inferenceOptions.nSteps; % minimum number of data points for inclusion
-  
+  inferenceOptions.useQCFlag = 1;
   
   %% Check for user-specified options  
   for i = 1:2:length(varargin)
@@ -58,27 +57,24 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   
   %% Adjust options as needed
   
-  if length(inferenceOptions.truncInference) ~= length(inferenceOptions.timeBins)-1
-    warning('Updating inference type options to be consistent with time bins')
-    inferenceOptions.truncInference = ones(1,length(inferenceOptions.timeBins)-1);
-    if inferenceOptions.timeBins(1) == 0
-      inferenceOptions.truncInference(1) = 0;
-    end
-  end
-  
   % parpool options
-%   if inferenceOptions.savioFlag && ~isfield(inferenceOptions,'maxWorkers')
-%     inferenceOptions.maxWorkers = 24;
-%   else
-%     myCluster = parcluster('local');
-%     inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
-%   end
-  inferenceOptions.maxWorkers = 24;
-  
+  if inferenceOptions.savioFlag
+    inferenceOptions.maxWorkers = 24;
+  else
+    myCluster = parcluster('local');
+    inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
+  end
   % assign binary flags to indicate wheter space or time groupings are used
   inferenceOptions.apBinFlag = length(inferenceOptions.apBins)>2;
   inferenceOptions.timeBinFlag = length(inferenceOptions.timeBins)>2;
   
+  for t = 1:length(inferenceOptions.timeBins)-1
+    if inferenceOptions.timeBins(t) == 0
+      inferenceOptions.truncInference(t) = 0;    
+    else
+      inferenceOptions.truncInference(t) = 1;    
+    end
+  end
   % set the number of bootstraps
   if ~isfield(inferenceOptions,'nBoots')
     if inferenceOptions.savioFlag

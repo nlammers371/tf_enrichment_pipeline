@@ -170,6 +170,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
               output.timeBin = indexInfo.time_group_vec(t);
               output.apBin = indexInfo.ap_group_vec(t);
               output.additionalBin = indexInfo.additional_group_vec(t);
+              output.groupID = t;
               output.additionalBinVar = inferenceOptions.AdditionalGroupingVariable;
               output.intensityBin = indexInfo.intensity_group_vec(t);
               output.intensityBinVar = inferenceOptions.intensityBinVar;

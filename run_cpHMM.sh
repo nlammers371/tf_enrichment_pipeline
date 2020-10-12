@@ -25,7 +25,7 @@
 #
 
 ## NL: This tells Savio to run 10 distinct instances of the job (essentially euivalent to "nBoots")
-#SBATCH -a 1
+#SBATCH -a 1-10
 
 ## Command(s) to run:
 module load matlab

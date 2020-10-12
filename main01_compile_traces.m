@@ -72,7 +72,7 @@ close all force
 addpath(genpath('utilities'));
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
-minDP = 15;     % what is this for?
+minDP = 20;     % what is this for?
 pctSparsity = 50;   % 
 twoSpotFlag = contains(projectName, '2spot');
 minTime = 0*60; % take no fluorescence data prior to this point

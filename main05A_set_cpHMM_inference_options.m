@@ -16,8 +16,8 @@ inferenceInfo.FluoBinFlag = 1;
 inferenceInfo.timeBins = [60*25 60*60];
 
 % set core model specs
-inferenceInfo.modelSpecs.nStates = 2; % number of states in system
-inferenceInfo.modelSpecs.nSteps = 5; % number of steps to traverse gene
+inferenceInfo.modelSpecs.nStates = 3; % number of states in system
+inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac = 1302/6444;
 
 % other info
