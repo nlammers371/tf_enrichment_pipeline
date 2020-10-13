@@ -122,7 +122,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
 
                 for i = 1:length(id_vec)
                     trace_struct_filtered(group_ids(i)).intensity_bin = id_vec(i);
-                    trace_struct_filtered(group_ids(i)).intensityquantiles = intensity_prctile_vec;
+                    trace_struct_filtered(group_ids(i)).intensity_quantiles = intensity_prctile_vec;
                 end
             end
         end
