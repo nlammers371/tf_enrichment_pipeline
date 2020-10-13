@@ -8,7 +8,7 @@ addpath(genpath('utilities'))
 
 inferenceInfo = struct;
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
+inferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWt'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
@@ -21,7 +21,7 @@ inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac = 1302/6444;
 
 % other info
-inferenceInfo.AdditionalGroupingVariable = 'Stripe';
+inferenceInfo.AdditionalGroupingVariable = 'Stripe';%'ectopicFlag';
 inferenceInfo.SampleSize = 2500;
 
 % Get basic project info and determing file paths
