@@ -140,11 +140,11 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
                   if ~inferenceOptions.truncInference(timeBin)
                     local_out = local_em_MS2_reduced_memory(fluo_data, ...
                         v_init, noise_init, pi0_log_init', A_log_init, inferenceOptions.nStates, inferenceOptions.nSteps, ...
-                        inferenceOptions.alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);                    
+                        inferenceOptions.alpha, inferenceOptions.nStepsMax, inferenceOptions.eps);                    
                   else
                     local_out = local_em_MS2_reduced_memory_truncated(fluo_data, ...
                           v_init, noise_init, pi0_log_init', A_log_init, inferenceOptions.nStates, inferenceOptions.nSteps, ...
-                      inferenceOptions.alpha, inferenceOptions.nStinferenceOptions.epsMax, inferenceOptions.eps);  
+                      inferenceOptions.alpha, inferenceOptions.nStepsMax, inferenceOptions.eps);  
                   end
                   %---------------------------------------------------------%                
                   % Save Results                 
