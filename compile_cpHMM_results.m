@@ -3,7 +3,7 @@ clear
 close all
 addpath(genpath('../utilities'))
 
-projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
+projectNameCell = {'EveS1Null'};%{'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
 
 
 for p = 1:length(projectNameCell)
@@ -60,7 +60,7 @@ for p = 1:length(projectNameCell)
         % get unique list of groups
         groupID_vec = [inferenceResults.groupID];
         groupID_index = unique(groupID_vec);
-
+        n_groups_orig = length(inferenceOptions.indexInfo.intensity_group_vec);
         % initialize structure to store results
         compiledResults = struct;
         compiledResults.inferenceOptions = inferenceOptions;
@@ -77,7 +77,13 @@ for p = 1:length(projectNameCell)
         compiledResults.fluo_mean = NaN(size(groupID_index));
         compiledResults.fluo_ste = NaN(size(groupID_index));
         compiledResults.particle_ids = cell(size(groupID_index));
-                
+        
+        if inferenceOptions.FluoBinFlag
+          compiledResults.spot_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
+        elseif inferenceOptions.ProteinBinFlag
+          compiledResults.protein_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
+        end
+        
         % iterate through groups
         for g = 1:length(groupID_index)
           
@@ -110,14 +116,14 @@ for p = 1:length(projectNameCell)
                 % generate 2 state initiation rates
                 init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
                 if sum(r.*ss_vec) > 1.1*init_array(i)
-                    warning('nontrivial "off" state initiation')
+                    error('nontrivial "off" state initiation')
                 end            
 
                 % burst freq
                 freq_array(i) = -R(1,1);
 
                 % burst dur
-                dur_array(i) = -1/R(1,1) *(1/ss_vec(1) - 1);
+                dur_array(i) = -1/R(1,1) * (1/ss_vec(1) - 1);
                 
                 % fluorescence
                 fluo_array(i) = nanmean([inferenceResults(d_ids(i)).fluo_data{:}]);

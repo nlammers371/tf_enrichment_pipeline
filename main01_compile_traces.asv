@@ -430,12 +430,12 @@ for i = 1:numel(nucleus_struct)
             % interpolate remaining NaNs    
             queryPoints = timeVec(isnan(vec));
             referenceTime = timeVec(~isnan(vec));
-            referenceFluo = vec(~isnan(vec));
+            fluoToInterpolate = vec(~isnan(vec));
             if ~isempty(queryPoints)
-                newF = interp1(referenceTime,referenceFluo,queryPoints);  % NL: this is a little weird but leaving for now
+                newF = interp1(referenceTime,fluoToInterpolate,queryPoints);  
                 vec(ismember(timeVec,queryPoints)) = newF;   
             else
-                vec = referenceFluo;
+                vec = fluoToInterpolate;
             end                 
             % Interpolate to standardize spacing        
             nucleus_struct(i).([interpFields{j} 'Interp']) = interp1(timeVec,vec,timeInterp);

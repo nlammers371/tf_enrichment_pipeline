@@ -27,11 +27,7 @@ function spot_struct_protein = mapToSpotStructure(spot_struct_protein,SamplingRe
   interp_fields = {'nuclear_protein_vec','spot_protein_vec'};
   for i = 1:length(spot_struct_protein)
     timeInterp = spot_struct_protein(i).timeInterp;
-    timeRaw = spot_struct_protein(i).time;
     for j = 1:length(interp_fields)
       vec = spot_struct_protein(i).(interp_fields{j});
-      nan_ft = ~isnan(vec);
-      spot_struct_protein(i).([interp_fields{j} 'Interp']) = interp1(timeRaw(nan_ft),vec(nan_ft),timeInterp);
-    end
-  end
+      spot_struct_protein(i).(interp_fields{j})
   disp('Done.')
