@@ -119,10 +119,14 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
                 
                 % assign traces to groups    
                 id_vec = discretize(intensity_list,intensity_prctile_vec);
-
+                i_val_vec = intensity_prctile_vec(1:end-1) + diff(intensity_prctile_vec)/2;
                 for i = 1:length(id_vec)
                     trace_struct_filtered(group_ids(i)).intensity_bin = id_vec(i);
-                    trace_struct_filtered(group_ids(i)).intensity_quantiles = intensity_prctile_vec;
+                    if ~isnan(id_vec(i))
+                      trace_struct_filtered(group_ids(i)).intensity_bin_val = i_val_vec(id_vec(i));
+                    else
+                      trace_struct_filtered(group_ids(i)).intensity_bin_val = NaN;
+                    end
                 end
             end
         end
@@ -130,20 +134,20 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
         % NaNs
         for i = find(nan_filter1)
           trace_struct_filtered(i).intensity_bin = NaN;
-          trace_struct_filtered(i).intensity_quantiles = [-NaN NaN];
+          trace_struct_filtered(i).intensity_bin_val = NaN;
         end
     end
   else
       for i = 1:length(trace_struct_filtered)
           trace_struct_filtered(i).intensity_bin = 1;
-          trace_struct_filtered(i).intensity_quantiles = [-Inf Inf];
+          trace_struct_filtered(i).intensity_quantiles = NaN;
       end
   end
   
   
   % remove traces where one more more ID field in NAN
   intensity_group_vec = [trace_struct_filtered.intensity_bin];
-  intensity_value_vec = [trace_struct_filtered.intensity_quantiles];
+  intensity_value_vec = [trace_struct_filtered.intensity_bin_val];
   
   nan_filter = isnan(intensity_group_vec) | nan_filter1;
   trace_struct_filtered = trace_struct_filtered(~nan_filter);
