@@ -1,9 +1,9 @@
 % script to compile results from cpHMM inference
 clear
 close all
-addpath(genpath('../utilities'))
+addpath(genpath('utilities'))
 
-projectNameCell = {'EveWt','EveS1Null','EveGtSL','EveGtSL-S1Null'};
+projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWt'};
 
 
 for p = 1:length(projectNameCell)
@@ -76,13 +76,32 @@ for p = 1:length(projectNameCell)
         compiledResults.dur_vec_ste = NaN(size(groupID_index));
         compiledResults.fluo_mean = NaN(size(groupID_index));
         compiledResults.fluo_ste = NaN(size(groupID_index));
+        compiledResults.outlier_frac = NaN(size(groupID_index));
+        
+        % cell arrays to store full results
         compiledResults.particle_ids = cell(size(groupID_index));
+        compiledResults.init_results = cell(size(groupID_index));
+        compiledResults.dur_results = cell(size(groupID_index));
+        compiledResults.freq_results = cell(size(groupID_index));
+        compiledResults.r_results = cell(size(groupID_index));
+        compiledResults.R_results = cell(size(groupID_index));
+        compiledResults.outlier_flags = cell(size(groupID_index));
+        
+        % Pull grouping variable info
+        compiledResults.timeBins = inferenceOptions.timeBins;
+        compiledResults.apBins = inferenceOptions.apBins;        
+        compiledResults.additionalGroupVar = inferenceOptions.AdditionalGroupingVariable;       
+        
+        % longform group vectors (1 per inference group)
+        compiledResults.apGroupVec = inferenceOptions.indexInfo.ap_group_vec;
+        compiledResults.timeGroupVec = inferenceOptions.indexInfo.time_group_vec;
+        compiledResults.additionalGroupVec = inferenceOptions.indexInfo.additional_group_vec;         
         
         if inferenceOptions.FluoBinFlag
           compiledResults.spot_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
         elseif inferenceOptions.ProteinBinFlag
           compiledResults.protein_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
-        end
+        end                
         
         % iterate through groups
         for g = 1:length(groupID_index)
@@ -93,6 +112,9 @@ for p = 1:length(projectNameCell)
             init_array = NaN(size(d_ids));
             freq_array = NaN(size(d_ids));
             dur_array = NaN(size(d_ids)); 
+            outlier_array = NaN(size(d_ids)); 
+            R_array = NaN(inferenceOptions.nStates,inferenceOptions.nStates,length((d_ids)));
+            r_array = NaN(inferenceOptions.nStates,length((d_ids)));
             fluo_array = NaN(size(d_ids)); 
 
             for i = 1:length(d_ids)
@@ -127,22 +149,46 @@ for p = 1:length(projectNameCell)
                 
                 % fluorescence
                 fluo_array(i) = nanmean([inferenceResults(d_ids(i)).fluo_data{:}]);
+                
+                % other
+                R_array(:,:,i) = R;
+                r_array(:,i) = r;
             end
             
             compiledResults.particle_ids{g} = unique(particle_ids_temp);
             
+            % check for outliers
+            [freq_array_filt,freq_flags] = rmoutliers(freq_array);
+            [dur_array_filt,dur_flags] = rmoutliers(dur_array);
+            [init_array_filt,init_flags] = rmoutliers(init_array);
+            
+            outlier_filter = freq_flags|dur_flags|init_flags;
+            
+            % fraction that were outliers
+            compiledResults.outlier_frac(g) = mean(outlier_filter);
+            
+            % save full unfiltered results
+            compiledResults.freq_results{g} = freq_array;
+            compiledResults.dur_results{g} = dur_array;
+            compiledResults.init_results{g} = init_array;
+            compiledResults.outlier_flags{g} = outlier_filter;
+            
             % calculate average and ste
-            compiledResults.init_vec_mean(g) = nanmean(init_array)*60;
-            compiledResults.init_vec_ste(g) = nanstd(init_array)*60;
+            compiledResults.init_vec_mean(g) = nanmean(init_array_filt)*60;
+            compiledResults.init_vec_ste(g) = nanstd(init_array_filt)*60;
 
-            compiledResults.freq_vec_mean(g) = nanmean(freq_array)*60;
-            compiledResults.freq_vec_ste(g) = nanstd(freq_array)*60;
+            compiledResults.freq_vec_mean(g) = nanmean(freq_array_filt)*60;
+            compiledResults.freq_vec_ste(g) = nanstd(freq_array_filt)*60;
 
-            compiledResults.dur_vec_mean(g) = nanmean(dur_array)/60;
-            compiledResults.dur_vec_ste(g) = nanstd(dur_array)/60;
+            compiledResults.dur_vec_mean(g) = nanmean(dur_array_filt)/60;
+            compiledResults.dur_vec_ste(g) = nanstd(dur_array_filt)/60;
             
             compiledResults.fluo_mean(g) = nanmean(fluo_array);
             compiledResults.fluo_ste(g) = nanstd(fluo_array);
+            
+            % basic outputs
+            compiledResults.R_results{g} = R_array;
+            compiledResults.r_results{g} = r_array;
         end  
 
         % save

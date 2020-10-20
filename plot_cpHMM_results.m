@@ -3,7 +3,7 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveWt'};%EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
+projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null'};%,'EveWT'};
 
 % Set basic plotting parameters
 xVar = 'fluo';
@@ -18,7 +18,7 @@ dur_lims = [0 3.5];
 freq_lims = [0 3];
 init_lims = [0 18]*1e4;
 
-for p = 1%:length(projectNameCell)
+for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};
 
