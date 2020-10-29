@@ -7,7 +7,7 @@ close all
 startTime = 25*60;
 
 % list of project names
-projectList = {'eveWT','EveGtSL','EveS1Null','EveGtSL-S1Null'};
+projectList = {'eveWT'};%,'EveGtSL','EveS1Null','EveGtSL-S1Null'};
 
 customDataFolders = {'EveWT_CompiledParticles_segmented',...
   'eveGt_Analysis2.0_Segmented\eveGtSL-CompiledParticles2.0',...
@@ -27,7 +27,7 @@ for p = 1:length(projectList)
   
   % initialize grouping variables
   for i = 1:length(nucleus_struct)
-    nucleus_struct(i).APPosPaticleNorm = NaN(size(nucleus_struct(i).xPosParticle));
+    nucleus_struct(i).APPosParticleNorm = NaN(size(nucleus_struct(i).xPosParticle));
     nucleus_struct(i).StripeVec = NaN(size(nucleus_struct(i).xPosParticle));
     nucleus_struct(i).ectopicFlag = NaN;
     nucleus_struct(i).Stripe = NaN;
@@ -73,9 +73,9 @@ for p = 1:length(projectList)
           % quick consistency check
           if all(nucleus_struct(ind).xPosParticle(frameFilterTo) == CompiledParticles(origParticleList==originalParticle).xPos(frameFilterFrom))
             % assign            
-            if strcmp(projectList{p},'EveGtSL-S1Null')
-              nucleus_struct(ind).APPosPaticleNorm(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).APPos_Normalized(frameFilterFrom);
-            end                            
+%             if strcmp(projectList{p},'EveGtSL-S1Null')
+              nucleus_struct(ind).APPosParticleNorm(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).APPos_Normalized(frameFilterFrom);
+%             end                            
             nucleus_struct(ind).StripeVec(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).Stripe(frameFilterFrom);
           else
             error('Problem with cross-referencing')

@@ -11,9 +11,10 @@ inferenceInfo = struct;
 inferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWt'};
 
 % set inference options
-inferenceInfo.ProteinBinFlag = 0;
-inferenceInfo.FluoBinFlag = 1;
+inferenceInfo.ProteinBinFlag = 1;
+inferenceInfo.FluoBinFlag = 0;
 inferenceInfo.timeBins = [60*25 60*60];
+inferenceInfo.apBins = [.4 .45];
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; % number of states in system
