@@ -10,9 +10,9 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
 
   %% %%%%%%%%%%%%%%%%%%%%%% Load trace data set %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   if ~inferenceOptions.ProteinBinFlag
-    load([InputDataPath '/nucleus_struct.mat'],'nucleus_struct') % load data
-    analysis_traces = nucleus_struct;
-    clear nucleus_struct
+    load([InputDataPath '/spot_struct.mat'],'spot_struct') % load data
+    analysis_traces = spot_struct;
+    clear spot_struct
   else
     load([InputDataPath '/spot_struct_protein.mat'],'spot_struct_protein') % load data
     analysis_traces = spot_struct_protein;
@@ -20,7 +20,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   end
   
   % check for consistency
-  if ~isfield(analysis_traces,'APPosParticle') && inferenceOptions.APBinFlag
+  if ~isfield(analysis_traces,'APPosParticle') && inferenceOptions.apBinFlag
     warning('AP-binned option is selected, but data do not contain AP position info')
     return
   end

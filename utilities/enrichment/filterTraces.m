@@ -35,14 +35,14 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
       
       qcFlag = analysis_traces(i).qcFlag || ~inferenceOptions.useQCFlag;      
 
-      for t = 1:length(inferenceOptions.timeBins)-1
-
-          start_time = time_raw(1);
+      for t = 1:length(inferenceOptions.timeBins)     
+          % calculate first time at which trace can start
+          start_time = time_raw(1);         
           if inferenceOptions.truncInference(t)
             start_time = start_time + (1+inferenceOptions.nSteps)*inferenceOptions.Tres;
           end
-
-          timeBounds = inferenceOptions.timeBins(t:t+1);
+          
+          timeBounds = inferenceOptions.timeBins{t};
 
           time_filter_raw = time_raw >= timeBounds(1) & time_raw < timeBounds(2) & time_raw >= start_time;
 
@@ -140,7 +140,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   else
       for i = 1:length(trace_struct_filtered)
           trace_struct_filtered(i).intensity_bin = 1;
-          trace_struct_filtered(i).intensity_quantiles = NaN;
+          trace_struct_filtered(i).intensity_bin_val = NaN;
       end
   end
   

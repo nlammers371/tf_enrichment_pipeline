@@ -29,13 +29,13 @@ for i = (1+~savioFlag):2:(numel(varargin)-1)
     end    
 end
 
-manualInferenceInfo = exist('inferenceInfo','var');
-customProjectFlag = exist('customProjectPath','var');
+manualInferenceInfo = contains(varagin,'inferenceInfo');
+customProjectFlag = contains(varagin,'customProjectPath');
 
 % get path to inference files
-if savioFlag && ~manualInferenceInfo
+if savioFlag
   inferenceDir = '~/dat/tf_enrichment/inferenceDirectory/';
-elseif ~manualInferenceInfo
+else
   liveProject = LiveProject(projectNameCell{1});
   slashes = regexp(liveProject.dataPath,'/|\');
   dataDir = liveProject.dataPath(1:slashes(end-1));
@@ -55,7 +55,7 @@ end
 modelSpecs = inferenceInfo.modelSpecs;
 
 % generate options cell
-options = {'savioFlag',savioFlag,'apBins',inferenceInfo.apBins,'timeBins',inferenceInfo.timeBins,'SampleSize',inferenceInfo.SampleSize};
+options = {'savioFlag',savioFlag,'timeBins',inferenceInfo.timeBins,'SampleSize',inferenceInfo.SampleSize};
 
 % intensity binning
 if inferenceInfo.FluoBinFlag

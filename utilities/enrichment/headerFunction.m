@@ -1,4 +1,4 @@
-function [liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName)
+function [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName)
 
 % check to see if there is a full mRNADynamics repo on the working path. If
 % so remove it to prevent function cross-talk
@@ -12,7 +12,7 @@ numExperiments = length(liveProject.includedExperimentNames);
 mkdir(liveProject.dataPath);
 
 % Assign save names
-nucleusName = [liveProject.dataPath 'nucleus_struct.mat']; % names for compiled elipse struct
+dataName = [liveProject.dataPath 'spot_struct.mat']; % names for compiled elipse struct
 
 % Check for optiuonal parameter felds
 hasAPInfo = all(liveProject.hasAPInfo);

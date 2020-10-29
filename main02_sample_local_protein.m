@@ -64,7 +64,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Get project info %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    [liveProject, ~, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+    [liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
     if ~hasProteinInfo
       warning('No input protein info associated with this project. Aborting protein sampling')
       return
@@ -73,7 +73,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     proteinSamplingInfo.use3DSpotInfo = use3DSpotInfo;
 
     %% %%%%%%%%%%%%%%%%%%%%%%% Load data and clean trace data %%%%%%%%%%%%%%%%%
-    load(nucleusName,'nucleus_struct')
+    load(dataName,'spot_struct')
 
     if false % NL: Currently not working
         load([liveProject.dataPath '/psf_dims.mat'],'psf_dims')
@@ -93,7 +93,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     snipCleanup(snipPathTemp)
     
     % remove frames where no particle was observed
-    spot_struct_protein = truncateParticleFields(nucleus_struct,use3DSpotInfo,hasAPInfo);  
+    spot_struct_protein = truncateParticleFields(spot_struct,use3DSpotInfo,hasAPInfo);  
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Initialize enrichment-related fields  %%%%%%%%%%
 
@@ -104,7 +104,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
 
     % get list of protein-specific fields that were added
     spot_fields = fieldnames(spot_struct_protein);
-    NewFields = spot_fields(~ismember(spot_fields,fieldnames(nucleus_struct)));
+    NewFields = spot_fields(~ismember(spot_fields,fieldnames(spot_struct)));
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Generate indexing vectors  %%%%%%%%%%%%%%%%%%%%%
     [RefStruct, SetFrameArray, SamplingResults] = generateReferenceVectors(...
@@ -121,9 +121,9 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     if segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_struct, NumWorkers);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers);      
         else
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_struct, []);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, []);      
         end
     end
 
