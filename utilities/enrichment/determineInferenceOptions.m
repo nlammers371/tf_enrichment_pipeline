@@ -33,7 +33,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.alpha = inferenceOptions.alphaFrac*inferenceOptions.nSteps;
   
   %% Binning variables
-  inferenceOptions.timeBins = [0 Inf];
+  inferenceOptions.timeBins = {[0 Inf]};
   inferenceOptions.apBins = [0 Inf];
   
   % initialize optional grouping variable
@@ -67,10 +67,10 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   
   % assign binary flags to indicate wheter space or time groupings are used
   inferenceOptions.apBinFlag = any(~ismember(inferenceOptions.apBins,[0 Inf]));
-  inferenceOptions.timeBinFlag = any(~ismember(inferenceOptions.timeBins,[0 Inf]));
+  inferenceOptions.timeBinFlag = any(~ismember([inferenceOptions.timeBins{:}],[0 Inf]));
   
-  for t = 1:length(inferenceOptions.timeBins)-1
-    if inferenceOptions.timeBins(t) == 0
+  for t = 1:length(inferenceOptions.timeBins)
+    if inferenceOptions.timeBins{t}(1) == 0
       inferenceOptions.truncInference(t) = 0;    
     else
       inferenceOptions.truncInference(t) = 1;    

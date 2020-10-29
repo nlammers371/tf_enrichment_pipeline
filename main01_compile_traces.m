@@ -1,4 +1,4 @@
-function nucleus_struct = main01_compile_traces(projectName,varargin)
+function spot_struct = main01_compile_traces(projectName,varargin)
 
 %
 % nucleusStruct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
@@ -21,7 +21,7 @@ function nucleus_struct = main01_compile_traces(projectName,varargin)
 %       "VariableNameString", VariableValue
 %
 % OUTPUT
-% nucleus_struct: compiled data set contain key nucleus and
+% spot_struct: compiled data set contain key nucleus and
 %                 particle attributes, contains the following fields:
 %
 %     setID: ID number for this dataset (experiment), see set_key.mat to 
@@ -102,13 +102,13 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[liveProject, numExperiments, nucleusName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+[liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
 % Generate master structure with info on all nuclei and traces in
 % constituent sets
-nucleus_struct = [];
+spot_struct = [];
 
 % Add data from each experiment to the master structure
 h = waitbar(0,'Compiling data ...');
@@ -359,7 +359,7 @@ for i = 1:numExperiments
             compiledSchnitzCells(ncIndex).sparsity = sparsity;        
             compiledSchnitzCells(ncIndex).qcFlag = qcFlag;  
         end      
-        nucleus_struct = [nucleus_struct  compiledSchnitzCells];
+        spot_struct = [spot_struct  compiledSchnitzCells];
     end
 end
 close(h)
@@ -367,10 +367,10 @@ close(h)
 % add additional fields
 % NL: this does nothing at the moment, but leaving to preserve two-spot
 % compatibility
-for i = 1:numel(nucleus_struct)
-    nucleus_struct(i).twoSpotFlag = twoSpotFlag;
-    nucleus_struct(i).targetLocusFlag = NaN;
-    nucleus_struct(i).controlLocusFlag = NaN;
+for i = 1:numel(spot_struct)
+    spot_struct(i).twoSpotFlag = twoSpotFlag;
+    spot_struct(i).targetLocusFlag = NaN;
+    spot_struct(i).controlLocusFlag = NaN;
 end    
 
 disp('interpolating data...')
@@ -392,19 +392,19 @@ interpGrid = 0:tresInterp:60*60;
 
 % use 95th percentile of fluorescence values to set scale for flagging 
 % unusual jump events
-fluo_scale = prctile([nucleus_struct.fluo],97.5);
+fluo_scale = prctile([spot_struct.fluo],97.5);
 big_blip_thresh = fluo_scale;
 
-for i = 1:numel(nucleus_struct)
-    timeVec = nucleus_struct(i).time;
-    fluoVec = nucleus_struct(i).fluo;
+for i = 1:numel(spot_struct)
+    timeVec = spot_struct(i).time;
+    fluoVec = spot_struct(i).fluo;
     startIndex = find(~isnan(fluoVec),1);
     stopIndex = find(~isnan(fluoVec),1,'last');    
     timeVec = timeVec(startIndex:stopIndex);       
     if length(timeVec)>1
         timeInterp = interpGrid(interpGrid>=timeVec(1)&interpGrid<=timeVec(end));
         for  j = 1:numel(interpFields)
-            vec = nucleus_struct(i).(interpFields{j})(startIndex:stopIndex);
+            vec = spot_struct(i).(interpFields{j})(startIndex:stopIndex);
             
             if contains(interpFields{j},'fluo')
                 %Look for clusters of 6 or more NaNs
@@ -438,20 +438,20 @@ for i = 1:numel(nucleus_struct)
                 vec = referenceFluo;
             end                 
             % Interpolate to standardize spacing        
-            nucleus_struct(i).([interpFields{j} 'Interp']) = interp1(timeVec,vec,timeInterp);
+            spot_struct(i).([interpFields{j} 'Interp']) = interp1(timeVec,vec,timeInterp);
         end
     else
         timeInterp = NaN;
         for  j = 1:numel(interpFields)
-            nucleus_struct(i).([interpFields{j} 'Interp']) = NaN;
+            spot_struct(i).([interpFields{j} 'Interp']) = NaN;
         end
     end
-    nucleus_struct(i).timeInterp = timeInterp;
-    nucleus_struct(i).tresInterp = tresInterp;
+    spot_struct(i).timeInterp = timeInterp;
+    spot_struct(i).tresInterp = tresInterp;
 end
 
 % save
-save(nucleusName ,'nucleus_struct') 
+save(dataName ,'spot_struct') 
 
 if calculatePSF % NL: this needs to be fixed...
     disp('calculating psf dims...')
