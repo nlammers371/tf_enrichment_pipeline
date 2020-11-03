@@ -48,7 +48,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
 
           nRaw = sum(~isnan(fluo_raw(time_filter_raw)));
 
-          if true%nRaw >= inferenceOptions.minDP && qcFlag            
+          if nRaw >= inferenceOptions.minDP && qcFlag            
 
             time_filter_interp = time >= timeBounds(1) & time < timeBounds(2) & time >= start_time;
 
