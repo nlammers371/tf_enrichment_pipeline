@@ -39,9 +39,14 @@ for i = 1:(numel(varargin)-1)
 end
 
 % get path to results
-liveProject = LiveProject(projectName);
-resultsDir = [liveProject.dataPath filesep 'cpHMM_results' filesep];
-
+if ~exist('resultsRoot','var')
+    liveProject = LiveProject(projectName);
+    resultsRoot = [liveProject.dataPath filesep];
+    resultsDir = [resultsRoot 'cpHMM_results' filesep];
+else
+    resultsRoot = [resultsRoot filesep projectName filesep];
+    resultsDir = [resultsRoot filesep 'cpHMM_results' filesep];
+end
 % get list of all inference subdirectories. By default, we'll generate
 % summaries for all non-empty inference sub-directory
 infDirList = dir([resultsDir 'w*']);% get list of all inference subdirectories. By default, we'll generate
@@ -70,11 +75,11 @@ for inf = 1:length(infDirList)
     
     % load corresponding trace structure
     if ~inferenceOptions.ProteinBinFlag
-        load([liveProject.dataPath filesep 'nucleus_struct.mat'])
-        analysis_traces = nucleus_struct;
-        clear nucleus_struct;
+        load([resultsRoot filesep 'spot_struct.mat'])
+        analysis_traces = spot_struct;
+        clear spot_struct;
     else
-        load([liveProject.dataPath filesep 'spot_struct_protein.mat'])
+        load([resultsRoot filesep 'spot_struct_protein.mat'])
         analysis_traces = spot_struct_protein;
         clear spot_struct_protein;
     end
@@ -107,7 +112,7 @@ for inf = 1:length(infDirList)
     trace_particle_index = [analysis_traces.particleID];
     
     % perform viterbi trace decoding if necessary
-    if trace_fit_flag    
+    if true%trace_fit_flag    
         
         groupID_vec = compiledResults.groupID_index;
         groupParticles = compiledResults.particle_ids;
@@ -214,7 +219,7 @@ for inf = 1:length(infDirList)
     end
   
     % generate longform dataset
-    if true%makeLongFormSet        
+    if makeLongFormSet        
         disp('generating longform table...')
         % generate longform dataset interpolated to regular time grid
         keepFields = {'xPosNucleus','yPosNucleus','xPosParticle','yPosParticle','ncID','particleID','qcFlag'};

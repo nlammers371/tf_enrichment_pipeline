@@ -5,9 +5,6 @@ close all
 warning('off','all') %Shut off Warnings
 addpath(genpath('utilities'))
 
-% set default options
-customProjectPath = '';
-
 
 % check to see if we are on savio
 currentDir = pwd;
@@ -55,7 +52,16 @@ end
 modelSpecs = inferenceInfo.modelSpecs;
 
 % generate options cell
-options = {'savioFlag',savioFlag,'apBins',inferenceInfo.apBins,'timeBins',inferenceInfo.timeBins,'SampleSize',inferenceInfo.SampleSize};
+options = {'savioFlag',savioFlag,'SampleSize',inferenceInfo.SampleSize};
+if isfield(inferenceInfo,'apBins')
+    options(end+1:end+2) = {'apBins',inferenceInfo.apBins};
+end
+if isfield(inferenceInfo,'timeBins')
+    options(end+1:end+2) = {'timeBins',inferenceInfo.timeBins};
+end
+if isfield(inferenceInfo,'useQCFlag')
+    options(end+1:end+2) = {'useQCFlag',inferenceInfo.useQCFlag};
+end
 
 % intensity binning
 if inferenceInfo.FluoBinFlag
@@ -78,8 +84,8 @@ for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
         % Get basic project info and determing file paths
         [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});
     else
-        InputDataPath = customProjectPath;
-        OutputDataPath = customProjectPath;
+        InputDataPath = [customProjectPath projectNameCell{p} filesep];
+        OutputDataPath = [customProjectPath projectNameCell{p} filesep];
     end
     % Call main inference function
     cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})

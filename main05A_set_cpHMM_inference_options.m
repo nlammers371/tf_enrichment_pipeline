@@ -7,14 +7,15 @@ addpath(genpath('utilities'))
 
 
 inferenceInfo = struct;
+
 % set project identifiers (only applicable if running this on savio)
 inferenceInfo.projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWt'};
 
 % set inference options
-inferenceInfo.ProteinBinFlag = 1;
-inferenceInfo.FluoBinFlag = 0;
-inferenceInfo.timeBins = [60*25 60*60];
-inferenceInfo.apBins = [.4 .45];
+inferenceInfo.ProteinBinFlag = 0;
+inferenceInfo.FluoBinFlag = 1;
+inferenceInfo.timeBins = {[60*25 60*60]};
+inferenceInfo.apBins = [0 Inf];
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; % number of states in system
@@ -24,6 +25,7 @@ inferenceInfo.modelSpecs.alphaFrac = 1302/6444;
 % other info
 inferenceInfo.AdditionalGroupingVariable = 'ectopicFlag';%'Stripe'
 inferenceInfo.SampleSize = 2500;
+inferenceInfo.useQCFlag = false;
 
 % Get basic project info and determing file paths
 liveProject = LiveProject(inferenceInfo.projectNameCell{1});

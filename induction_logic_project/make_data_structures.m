@@ -4,10 +4,10 @@ clear
 close all
 
 % set basic paths
-DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\';
-
-% project = '20200807_WT';
-project = '20200807_opto_chronic';
+% DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\';
+DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
+project = '20200807_WT';
+% project = '20200807_opto_chronic';
 DataPath = [DataRoot project filesep];
 
 % get list of data sets
@@ -36,8 +36,8 @@ for e = expIDs
         spot_struct(i_pass).timeFull = time_vec;
 
         % generate find first and last nonzero entry
-        first_i = find(raw_array(:,i)'~=0,1);
-        last_i = find(raw_array(:,i)'~=0,1,'last');
+        first_i = 1;%find(raw_array(:,i)'~=0,1);
+        last_i = size(raw_array,1);%find(raw_array(:,i)'~=0,1,'last');
 
         spot_struct(i_pass).fluoInterp = raw_array(first_i:last_i,i)';
         spot_struct(i_pass).fluo = spot_struct(i_pass).fluoInterp;

@@ -3,17 +3,21 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWt'};
-
+% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
+projectNameCell = {'20200807_WT', '20200807_opto_chronic'};
+resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};
 
     % get path to results
-    liveProject = LiveProject(projectName);
-    resultsDir = [liveProject.dataPath filesep 'cpHMM_results' filesep];
-
+    if exist(resultsRoot,'var')
+        liveProject = LiveProject(projectName);
+        resultsDir = [liveProject.dataPath filesep 'cpHMM_results' filesep];
+    else
+        resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
+    end
     % get list of all inference subdirectories. By default, we'll generate
     % summaries for all non-empty inference sub-directory
     infDirList = dir([resultsDir 'w*']);
@@ -59,8 +63,9 @@ for p = 1:length(projectNameCell)
 
         % get unique list of groups
         groupID_vec = [inferenceResults.groupID];
-        groupID_index = unique(groupID_vec);
+        groupID_index = inferenceOptions.indexInfo.indexVecUnique;%unique(groupID_vec);
         n_groups_orig = length(inferenceOptions.indexInfo.intensity_group_vec);
+        
         % initialize structure to store results
         compiledResults = struct;
         compiledResults.inferenceOptions = inferenceOptions;
@@ -84,6 +89,8 @@ for p = 1:length(projectNameCell)
         compiledResults.R_array_ste = NaN(nStates,nStates,length(groupID_index));
         compiledResults.fluo_mean = NaN(size(groupID_index));
         compiledResults.fluo_ste = NaN(size(groupID_index));
+        compiledResults.time_vec_mean = NaN(size(groupID_index));
+        compiledResults.time_vec_ste = NaN(size(groupID_index));
         compiledResults.outlier_frac = NaN(size(groupID_index));
         
         % cell arrays to store full results
@@ -102,6 +109,7 @@ for p = 1:length(projectNameCell)
         compiledResults.timeBins = inferenceOptions.timeBins;
         compiledResults.apBins = inferenceOptions.apBins;        
         compiledResults.additionalGroupVar = inferenceOptions.AdditionalGroupingVariable;       
+        compiledResults.skippedFlag = true(size(compiledResults.additionalGroupVar));
         
         % longform group vectors (1 per inference group)
         compiledResults.apGroupVec = inferenceOptions.indexInfo.ap_group_vec;
@@ -109,9 +117,9 @@ for p = 1:length(projectNameCell)
         compiledResults.additionalGroupVec = inferenceOptions.indexInfo.additional_group_vec;         
         
         if inferenceOptions.FluoBinFlag
-          compiledResults.spot_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
+          compiledResults.spot_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec;%(ismember(1:n_groups_orig,groupID_index));
         elseif inferenceOptions.ProteinBinFlag
-          compiledResults.protein_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec(ismember(1:n_groups_orig,groupID_index));
+          compiledResults.protein_intensity_vec = inferenceOptions.indexInfo.intensity_value_vec;%(ismember(1:n_groups_orig,groupID_index));
         end                
         
         % iterate through groups
@@ -119,112 +127,120 @@ for p = 1:length(projectNameCell)
           
             d_ids = find(groupID_vec==groupID_index(g));
             
-            particle_ids_temp = [];
-            init_array = NaN(size(d_ids));
-            freq_array = NaN(size(d_ids));
-            dur_array = NaN(size(d_ids)); 
-            sigma_array = NaN(size(d_ids)); 
-            outlier_array = NaN(size(d_ids)); 
-            R_array = NaN(nStates,nStates,length((d_ids)));
-            A_array = NaN(nStates,nStates,length((d_ids)));
-            r_array = NaN(nStates,length((d_ids)));
-            pi0_array = NaN(nStates,length((d_ids)));
-            fluo_array = NaN(size(d_ids)); 
+            if ~isempty(d_ids)
+                particle_ids_temp = [];
+                init_array = NaN(size(d_ids));
+                freq_array = NaN(size(d_ids));
+                dur_array = NaN(size(d_ids)); 
+                sigma_array = NaN(size(d_ids)); 
+                outlier_array = NaN(size(d_ids)); 
+                R_array = NaN(nStates,nStates,length((d_ids)));
+                A_array = NaN(nStates,nStates,length((d_ids)));
+                r_array = NaN(nStates,length((d_ids)));
+                pi0_array = NaN(nStates,length((d_ids)));
+                fluo_array = NaN(size(d_ids)); 
+                time_array = NaN(size(d_ids)); 
 
-            for i = 1:length(d_ids)
-              
-                particle_ids_temp = [particle_ids_temp inferenceResults(d_ids(i)).particle_ids];
-                
-                % enforce rank ordering of states by initiation rate
-                [r,ri] = sort(inferenceResults(d_ids(i)).r);
-                A = inferenceResults(d_ids(i)).A_mat(ri,ri);
+                for i = 1:length(d_ids)
 
-                % convert to transition rate matrix
-                R = logm(A) / Tres;
-                if ~isreal(R) || sum(R(:)<0) > nStates
-                    out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
-                    R = out.R_out;     
+                    particle_ids_temp = [particle_ids_temp inferenceResults(d_ids(i)).particle_ids];
+
+                    % enforce rank ordering of states by initiation rate
+                    [r,ri] = sort(inferenceResults(d_ids(i)).r);
+                    A = inferenceResults(d_ids(i)).A_mat(ri,ri);
+
+                    % convert to transition rate matrix
+                    R = logm(A) / Tres;
+                    if ~isreal(R) || sum(R(:)<0) > nStates
+                        out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
+                        R = out.R_out;     
+                    end
+                    [V,D] = eig(R);
+                    [~,di] = max(diag(D));
+                    ss_vec = V(:,di) / sum(V(:,di));
+
+                    % generate 2 state initiation rates
+                    init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
+                    if sum(r.*ss_vec) > 1.1*init_array(i)
+                        error('nontrivial "off" state initiation')
+                    end            
+
+                    % burst freq
+                    freq_array(i) = -R(1,1);
+
+                    % burst dur
+                    dur_array(i) = -1/R(1,1) * (1/ss_vec(1) - 1);
+
+                    % fluorescence
+                    fluo_array(i) = nanmean([inferenceResults(d_ids(i)).fluo_data{:}]);
+                    time_array(i) = nanmean([inferenceResults(d_ids(i)).time_data{:}]);
+
+                    % basic inference outputs
+                    A_array(:,:,i) = A;
+                    R_array(:,:,i) = R;
+                    r_array(:,i) = r;
+                    sigma_array(i) = sqrt(inferenceResults(d_ids(i)).noise);
+                    pi0_array(:,i) = sqrt(inferenceResults(d_ids(i)).pi0);
                 end
-                [V,D] = eig(R);
-                [~,di] = max(diag(D));
-                ss_vec = V(:,di) / sum(V(:,di));
 
-                % generate 2 state initiation rates
-                init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
-                if sum(r.*ss_vec) > 1.1*init_array(i)
-                    error('nontrivial "off" state initiation')
-                end            
+                compiledResults.particle_ids{g} = unique(particle_ids_temp);
 
-                % burst freq
-                freq_array(i) = -R(1,1);
+                % check for outliers
+                [freq_array_filt,freq_flags] = rmoutliers(freq_array);
+                [dur_array_filt,dur_flags] = rmoutliers(dur_array);
+                [init_array_filt,init_flags] = rmoutliers(init_array);
 
-                % burst dur
-                dur_array(i) = -1/R(1,1) * (1/ss_vec(1) - 1);
+                outlier_filter = freq_flags|dur_flags|init_flags;
+
+                % fraction that were outliers
+                compiledResults.outlier_frac(g) = mean(outlier_filter);
+
+                % save full unfiltered results
+                compiledResults.freq_results{g} = freq_array;
+                compiledResults.dur_results{g} = dur_array;
+                compiledResults.init_results{g} = init_array;
+                compiledResults.outlier_flags{g} = outlier_filter;
+
+                % calculate average and ste
+                compiledResults.init_vec_mean(g) = nanmean(init_array_filt)*60;
+                compiledResults.init_vec_ste(g) = nanstd(init_array_filt)*60;
+
+                compiledResults.freq_vec_mean(g) = nanmean(freq_array_filt)*60;
+                compiledResults.freq_vec_ste(g) = nanstd(freq_array_filt)*60;
+
+                compiledResults.dur_vec_mean(g) = nanmean(dur_array_filt)/60;
+                compiledResults.dur_vec_ste(g) = nanstd(dur_array_filt)/60;
+
+                compiledResults.fluo_mean(g) = nanmean(fluo_array(~outlier_filter));
+                compiledResults.fluo_ste(g) = nanstd(fluo_array(~outlier_filter));
                 
-                % fluorescence
-                fluo_array(i) = nanmean([inferenceResults(d_ids(i)).fluo_data{:}]);
-                
-                % basic inference outputs
-                A_array(:,:,i) = A;
-                R_array(:,:,i) = R;
-                r_array(:,i) = r;
-                sigma_array(i) = sqrt(inferenceResults(d_ids(i)).noise);
-                pi0_array(:,i) = sqrt(inferenceResults(d_ids(i)).pi0);
+                compiledResults.time_vec_mean(g) = nanmean(time_array(~outlier_filter));
+                compiledResults.time_vec_ste(g) = nanstd(time_array(~outlier_filter));
+
+                compiledResults.sigma_vec_mean(g) = nanmean(sigma_array(~outlier_filter));
+                compiledResults.sigma_vec_ste(g) = nanstd(sigma_array(~outlier_filter));
+
+                compiledResults.r_array_mean(:,g) = nanmean(r_array(:,~outlier_filter),2);
+                compiledResults.r_array_ste(:,g) = nanstd(r_array(:,~outlier_filter),[],2);
+
+                compiledResults.pi0_array_mean(:,g) = nanmean(pi0_array(:,~outlier_filter),2);
+                compiledResults.pi0_array_ste(:,g) = nanstd(pi0_array(:,~outlier_filter),[],2);
+
+                compiledResults.R_array_mean(:,:,g) = nanmean(R_array(:,:,~outlier_filter),3);
+                compiledResults.R_array_ste(:,:,g) = nanstd(R_array(:,:,~outlier_filter),[],3);
+
+                A_mean_raw = nanmean(A_array(:,:,~outlier_filter),3);             
+                compiledResults.A_array_mean(:,:,g) = A_mean_raw./sum(A_mean_raw);
+                compiledResults.A_array_ste(:,:,g) = nanstd(A_array(:,:,~outlier_filter),[],3)./sum(A_mean_raw);
+
+                % basic outputs
+                compiledResults.A_results{g} = A_array;
+                compiledResults.R_results{g} = R_array;
+                compiledResults.r_results{g} = r_array;
+                compiledResults.pi0_results{g} = pi0_array;
+                compiledResults.sigma_results{g} = sigma_array;
+                compiledResults.skippedFlag(g) = false;
             end
-            
-            compiledResults.particle_ids{g} = unique(particle_ids_temp);
-            
-            % check for outliers
-            [freq_array_filt,freq_flags] = rmoutliers(freq_array);
-            [dur_array_filt,dur_flags] = rmoutliers(dur_array);
-            [init_array_filt,init_flags] = rmoutliers(init_array);
-            
-            outlier_filter = freq_flags|dur_flags|init_flags;
-            
-            % fraction that were outliers
-            compiledResults.outlier_frac(g) = mean(outlier_filter);
-            
-            % save full unfiltered results
-            compiledResults.freq_results{g} = freq_array;
-            compiledResults.dur_results{g} = dur_array;
-            compiledResults.init_results{g} = init_array;
-            compiledResults.outlier_flags{g} = outlier_filter;
-            
-            % calculate average and ste
-            compiledResults.init_vec_mean(g) = nanmean(init_array_filt)*60;
-            compiledResults.init_vec_ste(g) = nanstd(init_array_filt)*60;
-
-            compiledResults.freq_vec_mean(g) = nanmean(freq_array_filt)*60;
-            compiledResults.freq_vec_ste(g) = nanstd(freq_array_filt)*60;
-
-            compiledResults.dur_vec_mean(g) = nanmean(dur_array_filt)/60;
-            compiledResults.dur_vec_ste(g) = nanstd(dur_array_filt)/60;
-            
-            compiledResults.fluo_mean(g) = nanmean(fluo_array(~outlier_filter));
-            compiledResults.fluo_ste(g) = nanstd(fluo_array(~outlier_filter));
-            
-            compiledResults.sigma_vec_mean(g) = nanmean(sigma_array(~outlier_filter));
-            compiledResults.sigma_vec_ste(g) = nanstd(sigma_array(~outlier_filter));
-            
-            compiledResults.r_array_mean(:,g) = nanmean(r_array(:,~outlier_filter),2);
-            compiledResults.r_array_ste(:,g) = nanstd(r_array(:,~outlier_filter),[],2);
-            
-            compiledResults.pi0_array_mean(:,g) = nanmean(pi0_array(:,~outlier_filter),2);
-            compiledResults.pi0_array_ste(:,g) = nanstd(pi0_array(:,~outlier_filter),[],2);
-            
-            compiledResults.R_array_mean(:,:,g) = nanmean(R_array(:,:,~outlier_filter),3);
-            compiledResults.R_array_ste(:,:,g) = nanstd(R_array(:,:,~outlier_filter),[],3);
-            
-            A_mean_raw = nanmean(A_array(:,:,~outlier_filter),3);             
-            compiledResults.A_array_mean(:,:,g) = A_mean_raw./sum(A_mean_raw);
-            compiledResults.A_array_ste(:,:,g) = nanstd(A_array(:,:,~outlier_filter),[],3)./sum(A_mean_raw);
-            
-            % basic outputs
-            compiledResults.A_results{g} = A_array;
-            compiledResults.R_results{g} = R_array;
-            compiledResults.r_results{g} = r_array;
-            compiledResults.pi0_results{g} = pi0_array;
-            compiledResults.sigma_results{g} = sigma_array;
         end  
 
         % save

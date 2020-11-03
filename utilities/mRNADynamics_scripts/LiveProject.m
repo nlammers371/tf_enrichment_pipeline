@@ -64,7 +64,7 @@ classdef LiveProject
             end
             
             % check progress within enrichment pipeline
-            this.hasTracesCompiled = exist([this.dataPath 'nucleus_struct.mat'],'file');
+            this.hasTracesCompiled = exist([this.dataPath 'spot_struct.mat'],'file');
             this.hasLocalProteinSampled = exist([this.dataPath 'spot_struct_protein.mat'],'file');
             
             

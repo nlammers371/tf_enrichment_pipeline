@@ -39,7 +39,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   % generate directory    
   outSuffix =  ['cpHMM_results' filesep 'w' num2str(inferenceOptions.nSteps) '_K' num2str(inferenceOptions.nStates) '_p' ...
     num2str(inferenceOptions.ProteinBinFlag) '_ap' num2str(length(inferenceOptions.apBins)-1) ...
-    '_t' num2str(length(inferenceOptions.timeBins)-1) '_' fluoSuffix addSuffix filesep]; 
+    '_t' num2str(length(inferenceOptions.timeBins)) '_' fluoSuffix addSuffix filesep]; 
   
 
   % set write path
@@ -60,7 +60,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   save([outDir 'inferenceOptions.mat'],'inferenceOptions');
   
   % iterate through designated groups
-  for t = 1:length(indexInfo.indexVecUnique)      
+  for t = randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false)    
       % find subset of eligible traces
       iter_filter = indexInfo.indexList == indexInfo.indexVecUnique(t);
       timeBin = indexInfo.time_group_vec(t);

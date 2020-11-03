@@ -3,7 +3,7 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null'};%,'EveWT'};
+projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
 
 % Set basic plotting parameters
 xVar = 'fluo';

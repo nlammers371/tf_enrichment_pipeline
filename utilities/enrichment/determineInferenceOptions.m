@@ -62,7 +62,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
     inferenceOptions.maxWorkers = 24;
   else
     myCluster = parcluster('local');
-    inferenceOptions.maxWorkers = ceil(myCluster.NumWorkers/2);
+    inferenceOptions.maxWorkers = 24;%ceil(myCluster.NumWorkers/2);
   end
   
   % assign binary flags to indicate wheter space or time groupings are used
@@ -82,7 +82,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
     if inferenceOptions.savioFlag
         inferenceOptions.nBoots = 1; % will run multiple instances on savio
     else  
-        inferenceOptions.nBoots = 5;
+        inferenceOptions.nBoots = 10;
     end
   end
   
