@@ -437,9 +437,11 @@ for i = 1:numel(spot_struct)
 %             else
 %                 vec = referenceVec;
 %             end                 
-            if ~isempty(referenceTime)
+            if length(referenceTime)>1
                 % Interpolate to standardize spacing        
                 spot_struct(i).([interpFields{j} 'Interp']) = interp1(referenceTime,referenceVec,timeInterp);
+            elseif length(referenceTime)==1
+                spot_struct(i).([interpFields{j} 'Interp']) = referenceVec;
             else
                 spot_struct(i).([interpFields{j} 'Interp']) = NaN(size(timeInterp));
             end              
