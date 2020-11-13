@@ -430,15 +430,19 @@ for i = 1:numel(spot_struct)
             % interpolate remaining NaNs    
             queryPoints = timeVec(isnan(vec));
             referenceTime = timeVec(~isnan(vec));
-            referenceFluo = vec(~isnan(vec));
-            if ~isempty(queryPoints)
-                newF = interp1(referenceTime,referenceFluo,queryPoints);  % NL: this is a little weird but leaving for now
-                vec(ismember(timeVec,queryPoints)) = newF;   
+            referenceVec = vec(~isnan(vec));
+%             if ~isempty(queryPoints)
+%                 newF = interp1(referenceTime,referenceVec,queryPoints);  % NL: this is a little weird but leaving for now
+%                 vec(ismember(timeVec,queryPoints)) = newF;   
+%             else
+%                 vec = referenceVec;
+%             end                 
+            if ~isempty(referenceTime)
+                % Interpolate to standardize spacing        
+                spot_struct(i).([interpFields{j} 'Interp']) = interp1(referenceTime,referenceVec,timeInterp);
             else
-                vec = referenceFluo;
-            end                 
-            % Interpolate to standardize spacing        
-            spot_struct(i).([interpFields{j} 'Interp']) = interp1(timeVec,vec,timeInterp);
+                spot_struct(i).([interpFields{j} 'Interp']) = NaN(size(timeInterp));
+            end              
         end
     else
         timeInterp = NaN;
