@@ -23,7 +23,7 @@ inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac = 1302/6444;
 
 % other info
-inferenceInfo.AdditionalGroupingVariable = 'ectopicFlag';%'Stripe'
+inferenceInfo.AdditionalGroupingVariable = 'Stripe';
 inferenceInfo.SampleSize = 2500;
 inferenceInfo.useQCFlag = false;
 
