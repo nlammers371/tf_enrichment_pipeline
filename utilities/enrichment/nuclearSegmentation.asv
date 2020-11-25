@@ -95,17 +95,16 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       % get protein channel       
       stackPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',currentFrame) '_ch0' num2str(proteinChannel) '.tif'];
       protein_stack = imreadStack2(stackPath, yDim, xDim, zDim+2);      
-      protein_stack = protein_stack(:,:,2:end-1);
-      
-      his = getHisMat(currExperiment);
-      im = his(:, :, currentFrame);
+      protein_stack = protein_stack(:,:,2:end-1);            
 
       
       
-      if segmentationMethod == 1
-          nc_ref_frame = generateNuclearMask(protein_stack, nucleus_neighborhood_size, smoothing_kernel_size, xDim, yDim,...
-              nc_y_vec, nc_x_vec, PixelSize);
-      elseif segmentationMethod == 2
+      if segmentationMethod == 1 % default method
+            nc_ref_frame = generateNuclearMask(protein_stack, nucleus_neighborhood_size, smoothing_kernel_size, xDim, yDim,...
+                nc_y_vec, nc_x_vec, PixelSize);
+      elseif segmentationMethod == 2 % Armando's method
+            his = getHisMat(currExperiment);
+            im = his(:, :, currentFrame);
             nc_ref_frame = kSnakeCircles(im,...
                 PixelSize, 'fitEllipses', false, 'shouldWatershed', false);
       end
@@ -166,7 +165,7 @@ end
 
 
 function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_size, smoothing_kernel_size,...
-    xDim, yDim, nc_y_vec, nc_x_vec, PixelSize, varargin)
+      xDim, yDim, nc_y_vec, nc_x_vec, PixelSize, varargin)
 
       protein_stack = nuclearImage;
       
@@ -200,7 +199,7 @@ function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_si
       end        
       
       % label regions
-      se = strel('disk',3);
+      se = strel('disk',max([1,round(3*.1/PixelSize)]));
       seBig = strel('disk',4);
       
       nc_frame_mask = imerode(logical(protein_bin_clean),se);     
@@ -223,8 +222,11 @@ function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_si
 %             zeroFilter = zeroFilter |((logical(nc_ref_frame_raw).*mask)>0 | (maskBig&~mask));
             nc_ref_frame_raw(mask) = j;%nc_master_vec_u(nc_bin_ids);
 %             nc_ref_frame_raw(zeroFilter) = 0;
+%           else
+%             error('wtf')
           end
       end       
+
       nc_ref_frame_raw(boundarymask(nc_ref_frame_raw)) = 0;
       nc_ref_frame = nc_ref_frame_raw;%imdilate(nc_ref_frame_raw,se);
       

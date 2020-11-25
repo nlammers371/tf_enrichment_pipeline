@@ -126,7 +126,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               handleSegmentationOptions(RefStruct,segmentNuclei);
 
     
-    if segmentNuclei
+    if true%segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
           nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod);      
@@ -142,7 +142,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
              
     h = waitbar(0,'Generating control spots...');        
     NIter = size(SetFrameArray,1);
-    for i = 1:NIter%size(SetFrameArray,1)  
+    for i = 75%1:NIter%size(SetFrameArray,1)  
         waitbar(i/NIter,h)                       
         
         NewSetFlag = 1;

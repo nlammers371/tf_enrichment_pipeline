@@ -95,17 +95,16 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       % get protein channel       
       stackPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',currentFrame) '_ch0' num2str(proteinChannel) '.tif'];
       protein_stack = imreadStack2(stackPath, yDim, xDim, zDim+2);      
-      protein_stack = protein_stack(:,:,2:end-1);
-      
-      his = getHisMat(currExperiment);
-      im = his(:, :, currentFrame);
+      protein_stack = protein_stack(:,:,2:end-1);            
 
       
       
-      if segmentationMethod == 1
-      nc_ref_frame = generateNuclearMask(protein_stack, nucleus_neighborhood_size, smoothing_kernel_size, xDim, yDim,...
-          nc_y_vec, nc_x_vec, PixelSize);
-      elseif segmentationMethod == 2
+      if segmentationMethod == 1 % default method
+            nc_ref_frame = generateNuclearMask(protein_stack, nucleus_neighborhood_size, smoothing_kernel_size, xDim, yDim,...
+                nc_y_vec, nc_x_vec, PixelSize);
+      elseif segmentationMethod == 2 % Armando's method
+            his = getHisMat(currExperiment);
+            im = his(:, :, currentFrame);
             nc_ref_frame = kSnakeCircles(im,...
                 PixelSize, 'fitEllipses', false, 'shouldWatershed', false);
       end
@@ -200,10 +199,11 @@ function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_si
       end        
       
       % label regions
-      se = strel('disk',3);
-      seBig = strel('disk',4);
+      seDim = max([1,round(3*.1/PixelSize)]);
+      se = strel('disk',seDim);
+      seBig = strel('disk',seDim+1);
       
-      nc_frame_mask = imerode(logical(protein_bin_clean),se);     
+      nc_frame_mask = logical(protein_bin_clean);%imerode(logical(protein_bin_clean),se);     
       
       % frame info
       nc_lin_indices = sub2ind(size(protein_bin_clean),nc_y_vec,nc_x_vec);
@@ -217,7 +217,7 @@ function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_si
           mask = poly2mask(hull_points(:,1),hull_points(:,2),yDim,xDim);   
           nc_bin_ids = mask(nc_lin_indices);
           if sum(nc_bin_ids) == 1 % enforce unique spot-nucleus-assignment
-            mask = imdilate(mask,seBig);
+%             mask = imdilate(mask,seBig);
 %             maskBig = imdilate(mask,seSmall);
             % if there are overlapping pixels, set these to zero
 %             zeroFilter = zeroFilter |((logical(nc_ref_frame_raw).*mask)>0 | (maskBig&~mask));
@@ -228,7 +228,7 @@ function nuclearMask = generateNuclearMask(nuclearImage, nucleus_neighborhood_si
           end
       end       
 
-      nc_ref_frame_raw(boundarymask(nc_ref_frame_raw)) = 0;
+%       nc_ref_frame_raw(boundarymask(nc_ref_frame_raw)) = 0;
       nc_ref_frame = nc_ref_frame_raw;%imdilate(nc_ref_frame_raw,se);
       
       nuclearMask = nc_ref_frame;
