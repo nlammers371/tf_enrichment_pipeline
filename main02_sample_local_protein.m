@@ -39,14 +39,21 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     z_sigma_um = 0.6; % um
     ignoreQC = false;
     write_snip_flag = false; %NL: what does this do?
+    NumWorkers = [];
+    segmentationMethod = 1;
+    overwriteSegmentation = false;
 
     %% %%%%%%%%%%%%%%%%%%%%%%% Check for optional inputs %%%%%%%%%%%%%%%%%%%%%%
-    for i = 1:(numel(varargin)-1)  
-        if i ~= numel(varargin)        
-            eval([varargin{i} '=varargin{i+1};']);                
-        end    
-    end
-    parDefaultFlag = ~exist('NumWorkers');
+    
+        %options must be specified as name, value pairs. unpredictable errors will
+        %occur, otherwise.
+        for i = 1:2:(numel(varargin)-1)
+            if i ~= numel(varargin)
+                eval([varargin{i} '=varargin{i+1};']);
+            end
+        end
+        
+        parDefaultFlag = isempty(NumWorkers);
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Save key sampling parameters %%%%%%%%%%%%%%%%%%%
     proteinSamplingInfo = struct;
@@ -118,12 +125,13 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     [segmentNuclei, segmentIndices] = ...
               handleSegmentationOptions(RefStruct,segmentNuclei);
 
+    
     if segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod);      
         else
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, []);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, [], segmentationMethod);      
         end
     end
 
@@ -156,7 +164,8 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         samplingInfo = performNucleusQC(samplingInfo);        
 
         j_pass = 1; % counter to track absolute position in iteration
-        for j = samplingInfo.frame_set_indices        
+        for j = samplingInfo.frame_set_indices   
+          
             % get indexing info         
             samplingInfo.spotIndex = RefStruct.particle_index_ref(j);
             samplingInfo.spotSubIndex = RefStruct.particle_subindex_ref(j);
@@ -191,7 +200,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               findEdgeControlWrapper(...
                 samplingInfo,nucleus_mask,x_index,y_index,nucleus_mask_id);
             
-            %% %%%% Find serialized control ocation %%%%%%%%%%%%%%%%%%%%%%%
+            %% %%%% Find serialized control location %%%%%%%%%%%%%%%%%%%%%%%
             % This is the bit that cannot be easily parallelized
             [spot_struct_protein(samplingInfo.spotIndex).serial_null_edge_dist_vec(samplingInfo.spotSubIndex),...
              spot_struct_protein(samplingInfo.spotIndex).serial_null_x_vec(samplingInfo.spotSubIndex),...
@@ -278,7 +287,6 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
             samplingSubInfo.spotSubIndex = RefStruct.particle_subindex_ref(j);
 
             % get location info
-
             samplingSubInfo.x_spot_full = RefStruct.spot_x_ref(j);
             samplingSubInfo.x_index = min([samplingInfo.xDim max([1 round(samplingSubInfo.x_spot_full)])]);
             samplingSubInfo.y_spot_full = RefStruct.spot_y_ref(j);
@@ -303,12 +311,12 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
                 
                 nucleus_mask_3D_dummy = true(size(samplingInfo.protein_stack)); 
                 
-                % still sample protein near locus in this case
+                % still sample protein near locus in this case                
                 SamplingResults(i).spot_protein_vec(j_pass) = ...
                   sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
                   samplingSubInfo.x_spot_full,samplingSubInfo.y_spot_full,...
                   samplingSubInfo.z_spot_full,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_dummy);
-
+                
                 SamplingResults(i).spot_mcp_vec(j_pass) = ...
                   sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
                   samplingSubInfo.x_spot_full,samplingSubInfo.y_spot_full,...

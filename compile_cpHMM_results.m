@@ -3,18 +3,18 @@ clear
 close all
 addpath(genpath('utilities'))
 
-% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20200807_WT', '20200807_opto_chronic'};
-resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
+projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
+% projectNameCell = {'20200807_WT', '20200807_opto_chronic'};
+% resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};
 
     % get path to results
-    if exist(resultsRoot,'var')
+    if ~exist('resultsRoot','var')
         liveProject = LiveProject(projectName);
-        resultsDir = [liveProject.dataPath filesep 'cpHMM_results' filesep];
+        resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     else
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end

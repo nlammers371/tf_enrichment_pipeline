@@ -29,8 +29,12 @@ function samplingInfo = performNucleusQC(samplingInfo)
   % generate lookup table
   nucleus_stats = regionprops(samplingInfo.nc_ref_frame==1,'Centroid');
   nucleus_centers = vertcat(nucleus_stats.Centroid);
-  nc_x_vec = nucleus_centers(:,1)';%RefStruct.nc_x_ref(FrameSetFilter);
-  nc_y_vec = nucleus_centers(:,2)';%RefStruct.nc_y_ref(FrameSetFilter);  
+  nc_x_vec = [];
+  nc_y_vec = [];
+  if ~isempty(nucleus_centers)
+      nc_x_vec = nucleus_centers(:,1)';%RefStruct.nc_x_ref(FrameSetFilter);
+      nc_y_vec = nucleus_centers(:,2)';%RefStruct.nc_y_ref(FrameSetFilter);  
+  end
   x_dist_mat = repmat(nc_x_vec,numel(nc_x_vec),1)-repmat(nc_x_vec',1,numel(nc_x_vec));
   y_dist_mat = repmat(nc_y_vec,numel(nc_y_vec),1)-repmat(nc_y_vec',1,numel(nc_y_vec));
   

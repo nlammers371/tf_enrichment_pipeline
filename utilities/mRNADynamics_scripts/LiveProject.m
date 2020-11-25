@@ -176,7 +176,10 @@ classdef LiveProject
             
             for k = 1:numValidProjects
                 SpotSegmetation = [this.includedExperiments{k}.resultsFolder 'Spots3DToken.mat'];
-                has3DSpotInfo(k) = exist(SpotSegmetation, 'file')~=0;
+                if exist(SpotSegmetation, 'file')~=0
+                    load(SpotSegmetation,'Spots3DToken');
+                    has3DSpotInfo(k) = Spots3DToken >= 738110;
+                end
             end
             
         end
