@@ -162,10 +162,10 @@ for i = 1:numExperiments
         anaphaseFrames(ncRefVec==ncIndex(n)) = find(ncVec==ncIndex(n),1);
       end
     end
-    ncIndices = find(ncRefVec>=firstNC);
+    ncIndices = find(ncRefVec>=firstNC&~isnan(anaphaseFrames'));
     ncStartFrameVec = anaphaseFrames(ncIndices)';
     ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]); 
-    ncStartFrameVec(end+1) = framesRaw(end);
+    ncStartFrameVec(end+1) = framesRaw(end)+1;
     firstTime = timeRaw(min(ncStartFrameVec));
         
     % initialize structure to store nucleus and particle info
@@ -178,14 +178,13 @@ for i = 1:numExperiments
     % iterate through nuclear cycles
     for ncInd = 1:length(ncStartFrameVec)-1
         firstNCFrame = ncStartFrameVec(ncInd);%max([1, processedData.(['nc' num2str(firstNC)])]);      
-        lastNCFrame = ncStartFrameVec(end);
+        lastNCFrame = ncStartFrameVec(ncInd+1)-1;
 
         % filter reference vectors
         framesNC = framesRaw(firstNCFrame:lastNCFrame); 
         tracesNC = tracesRaw(firstNCFrame:lastNCFrame,:);
         timeNC = timeRaw(firstNCFrame:lastNCFrame);    
-        timeNC = timeNC -firstTime; %normalize to start of first nc
-
+        timeNC = timeNC - firstTime; %normalize to start of first nc
 
         %%%%%%%%%%%%%%%%%%%% Compile nucleus schnitz info %%%%%%%%%%%%%%%%%%%%%
 
@@ -201,7 +200,7 @@ for i = 1:numExperiments
                 % Add info that's the same for all schnitzcells in this
                 % experiment
                 compiledSchnitzCells(nucleusCounter).setID = setID;                                                
-                compiledSchnitzCells(nucleusCounter).nc = ncIndices(ncInd);
+                compiledSchnitzCells(nucleusCounter).nc = ncRefVec(ncIndices(ncInd));
 
                 % Initialize particle fields--will be set to particle values 
                 % for nuclei with matching particle
@@ -249,7 +248,7 @@ for i = 1:numExperiments
     
         % Index vector to cross-ref w/ particles            
         schnitzIndex = [compiledSchnitzCells.nucleusID];          
-   
+        
         % Iterate through traces
         for j = 1:size(tracesNC,2)  
             % Raw fluo trace
