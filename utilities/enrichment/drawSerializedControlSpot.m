@@ -64,6 +64,10 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = ...
       end
   else
       warning('Unable to draw serial control spot. Check nucleus segmentation, and "minEdgeSep" and "minSampSep" parameters')
+      qc_flag = 0;
+      new_edge_dist = NaN;
+      new_serial_x = NaN;
+      new_serial_y = NaN;
   end
   
   % record info

@@ -41,11 +41,14 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     write_snip_flag = false; %NL: what does this do?
 
     %% %%%%%%%%%%%%%%%%%%%%%%% Check for optional inputs %%%%%%%%%%%%%%%%%%%%%%
-    for i = 1:(numel(varargin)-1)  
-        if i ~= numel(varargin)        
-            eval([varargin{i} '=varargin{i+1};']);                
-        end    
-    end
+    
+        %options must be specified as name, value pairs. unpredictable errors will
+        %occur, otherwise.
+        for i = 1:2:(numel(varargin)-1)
+            if i ~= numel(varargin)
+                eval([varargin{i} '=varargin{i+1};']);
+            end
+        end
     parDefaultFlag = ~exist('NumWorkers');
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Save key sampling parameters %%%%%%%%%%%%%%%%%%%
@@ -303,12 +306,12 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
                 
                 nucleus_mask_3D_dummy = true(size(samplingInfo.protein_stack)); 
                 
-                % still sample protein near locus in this case
+                % still sample protein near locus in this case                
                 SamplingResults(i).spot_protein_vec(j_pass) = ...
                   sample_protein_3D(samplingInfo,samplingInfo.protein_stack,...
                   samplingSubInfo.x_spot_full,samplingSubInfo.y_spot_full,...
                   samplingSubInfo.z_spot_full,samplingInfo.xy_sigma,samplingInfo.z_sigma,nucleus_mask_3D_dummy);
-
+                
                 SamplingResults(i).spot_mcp_vec(j_pass) = ...
                   sample_protein_3D(samplingInfo,samplingInfo.mcp_stack,...
                   samplingSubInfo.x_spot_full,samplingSubInfo.y_spot_full,...

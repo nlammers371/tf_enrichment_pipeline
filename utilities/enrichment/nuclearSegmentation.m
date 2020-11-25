@@ -9,8 +9,8 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
     parpool;
   end
   
-  %% %%%%%%%%%%%%%%%%% Make nulceus indexing vectors %%%%%%%%%%%%%%%%%%%%%%
-  % construct a few indexing vectors using the full set of nulceus data
+  %% %%%%%%%%%%%%%%%%% Make nucleus indexing vectors %%%%%%%%%%%%%%%%%%%%%%
+  % construct a few indexing vectors using the full set of nucleus data
   % (spot or no spot)
   nucleus_set_ref = [];
   nucleus_frame_ref = [];
