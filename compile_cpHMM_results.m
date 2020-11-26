@@ -44,7 +44,7 @@ for p = 1:length(projectNameCell)
         for i = 1:numel(inf_files)
           try
               load([resultsPath inf_files(i).name])
-              if ~output.skip_flag
+              if ~output.skip_flag && all(~isnan(output.A))
                   fn_list = fieldnames(output);
                   for f = 1:numel(fn_list)
                       inferenceResults(iter).(fn_list{f}) = output.(fn_list{f});
@@ -156,7 +156,7 @@ for p = 1:length(projectNameCell)
                         R = out.R_out;     
                     end
                     [V,D] = eig(R);
-                    [~,di] = max(diag(D));
+                    [~,di] = max(real(diag(D)));
                     ss_vec = V(:,di) / sum(V(:,di));
 
                     % generate 2 state initiation rates
