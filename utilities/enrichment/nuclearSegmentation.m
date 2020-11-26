@@ -42,7 +42,7 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
   % initialize arrays to store segmentation info
   nucleus_frame_cell = cell(1,length(segmentIndices));
   spot_frame_cell = cell(1,length(segmentIndices));
-%   for w = 1:length(segmentIndices)
+
   parfor w = 1:length(segmentIndices)
       i = segmentIndices(w);
       currentSetID = RefStruct.set_frame_array(i,1);
