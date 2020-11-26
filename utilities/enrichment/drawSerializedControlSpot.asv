@@ -51,9 +51,7 @@ function [new_edge_dist, new_serial_x, new_serial_y,qc_flag] = ...
         if any(wt_vec>0)
             if length(sample_index_vec)>1
                 new_index = randsample(sample_index_vec,1,true,wt_vec);
-            else
-                new_index = sample_index_vec;
-            end
+            els
             new_serial_x = x_pos_vec(new_index);
             new_serial_y = y_pos_vec(new_index);
             new_edge_dist = nc_edge_dist_vec(new_index);  

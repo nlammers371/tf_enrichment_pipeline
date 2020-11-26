@@ -166,17 +166,18 @@ for i = 1:numExperiments
     ncStartFrameVec = anaphaseFrames(ncIndices)';
     ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]); 
     ncStartFrameVec(end+1) = framesRaw(end)+1;
-    firstTime = timeRaw(min(ncStartFrameVec));
-        
-    % initialize structure to store nucleus and particle info
-    compiledSchnitzCells = struct;
-    
-    nucleusCounter = 1;    %counter to ensure no empty spaces in the compiledSchnitzCells
-                    %struct if some schnitzcells have no frames in the
-                    %desired nuclear cycle
+    firstTime = timeRaw(min(ncStartFrameVec));            
     
     % iterate through nuclear cycles
     for ncInd = 1:length(ncStartFrameVec)-1
+      
+        % initialize structure to store nucleus and particle info
+        compiledSchnitzCells = struct;
+
+        nucleusCounter = 1;    %counter to ensure no empty spaces in the compiledSchnitzCells
+                        %struct if some schnitzcells have no frames in the
+                        %desired nuclear cycle
+      
         firstNCFrame = ncStartFrameVec(ncInd);%max([1, processedData.(['nc' num2str(firstNC)])]);      
         lastNCFrame = ncStartFrameVec(ncInd+1)-1;
 
@@ -187,7 +188,7 @@ for i = 1:numExperiments
         timeNC = timeNC - firstTime; %normalize to start of first nc
 
         %%%%%%%%%%%%%%%%%%%% Compile nucleus schnitz info %%%%%%%%%%%%%%%%%%%%%
-
+      
         for s = 1:length(schnitzcells)
             schnitzFrames = schnitzcells(s).frames;
 
@@ -333,7 +334,7 @@ for i = 1:numExperiments
             % make filters
             ncSpotFilter1 = ismember(rawNucleusFrames,rawParticleFrames);
             ncSpotFilter2 = ismember(rawParticleFrames,rawNucleusFrames);
-            
+                    
             % add offset info
             compiledSchnitzCells(ncIndex).fluoOffset(ncSpotFilter1) = compiledParticles(j).Off(ncSpotFilter2);
             % x, y, and z info                                
@@ -351,7 +352,7 @@ for i = 1:numExperiments
                 compiledSchnitzCells(ncIndex).fluo3D(ncSpotFilter1) = compiledParticles(j).Fluo3DRaw(ncSpotFilter2);
             end
             if DetrendedZFlag
-              compiledSchnitzCells(ncIndex).zPosParticleDetrended(ncSpotFilter1) = compiledParticles(j).zPosDetrended(ncSpotFilter2);            
+                compiledSchnitzCells(ncIndex).zPosParticleDetrended(ncSpotFilter1) = compiledParticles(j).zPosDetrended(ncSpotFilter2);            
             end            
             % add qc info
             compiledSchnitzCells(ncIndex).N = nDP;
