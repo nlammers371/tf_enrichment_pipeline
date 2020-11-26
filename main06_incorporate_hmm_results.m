@@ -50,13 +50,13 @@ end
 % summaries for all non-empty inference sub-directory
 infDirList = dir([resultsDir 'w*']);% get list of all inference subdirectories. By default, we'll generate
    
-for traceInd = 1:length(infDirList)
+for trace_i = 1:length(infDirList)
   
     % get path to results
-    resultsPath = [infDirList(traceInd).folder filesep];
+    resultsPath = [infDirList(trace_i).folder filesep];
     
     % load inference options
-    load([resultsPath infDirList(traceInd).name filesep 'inferenceOptions.mat'])
+    load([resultsPath infDirList(trace_i).name filesep 'inferenceOptions.mat'])
     if length(fieldnames(inferenceOptions))==1
         inferenceOptions = inferenceOptions.inferenceOptions;
     end
@@ -70,7 +70,7 @@ for traceInd = 1:length(infDirList)
     maxDT = 1.2*Tres; % maximum distance from observed data point
     
     % load compiled inference files
-    load([resultsPath 'compiledResults_' infDirList(traceInd).name '.mat'],'compiledResults');
+    load([resultsPath 'compiledResults_' infDirList(trace_i).name '.mat'],'compiledResults');
     
     % load corresponding trace structure
     if ~inferenceOptions.ProteinBinFlag
@@ -86,9 +86,9 @@ for traceInd = 1:length(infDirList)
 
     % check for existence of fit structure
     trace_fit_flag = 1;
-    inf_files = dir([resultsPath infDirList(traceInd).name filesep 'hmm_results*.mat']);
-    if exist([resultsPath 'singleTraceFits_' infDirList(traceInd).name '.mat']) > 0
-        fit_props = dir([resultsPath 'singleTraceFits_' infDirList(traceInd).name '.mat']);
+    inf_files = dir([resultsPath infDirList(trace_i).name filesep 'hmm_results*.mat']);
+    if exist([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat']) > 0
+        fit_props = dir([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat']);
         fit_date = datenum(fit_props(1).date);
         hmm_date = datenum(inf_files(1).date);
         if fit_date > hmm_date
@@ -104,12 +104,12 @@ for traceInd = 1:length(infDirList)
         singleTraceFits = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
                   analysis_traces, trace_particle_index, nWorkersMax, resultsPath);        
     else
-        load([resultsPath 'singleTraceFits_' infDirList(traceInd).name '.mat'],'singleTraceFits')
+        load([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat'],'singleTraceFits')
     end
   
     % generate longform dataset
     if makeLongFormSet        
-        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(traceInd).name);
+        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(trace_i).name);
     end
 
 end
@@ -128,205 +128,120 @@ end
 
 %%% now combine with protein data and raw traces
 disp('building input/output dataset...')
-hmm_input_output = [];
-for traceInd = 1:length(singleTraceFits)
+
+% first combine HMM and raw fluoresence trace data points
+hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits);
+
+% next, incorporate local enrichment fields (if they exist)
+if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
+    load([resultsRoot filesep 'spot_struct_protein.mat'],'spot_protein_struct')
+    fitParticleVec = [singleTraceFits.particleID];
+    traceParticleVec = [spot_struct_protein.particleID];
     
-    viterbi_fits = singleTraceFits(traceInd).viterbi_fits;
-    inference_id_vec = singleTraceFits(traceInd).inference_id_vec;
-    inference_particles = singleTraceFits(traceInd).particle_index;
-    
-    fit_trace_indices = find(ismember(trace_particle_index,inference_particles));
-    for i = fit_trace_indices
-        % initialize temporary structure to store results
-        ParticleID = trace_particle_index(i);   
-        traceIndex = find(inference_particles==ParticleID);
-        if isempty(traceIndex)
-          error('uh oh')
-        end
-        temp = struct;
-        % extract relevant vectors from protein struct    
-        % these quantities have not been interpolated
-        if fluo_dim == 3   
-            ff_pt = analysis_traces(i).fluo3D;
-            master_fluo = analysis_traces(i).fluo3D_interp;            
-        elseif fluo_dim == 2
-            ff_pt = analysis_traces(i).fluo;
-            master_fluo = analysis_traces(i).fluo_interp;            
-        end        
-        if protein_dim == 3
-            sp_pt = analysis_traces(i).spot_protein_vec_3d;
-            sr_pt = analysis_traces(i).serial_null_protein_vec_3d; 
-        elseif protein_dim == 2
-            sp_pt = analysis_traces(i).spot_protein_vec;
-            sr_pt = analysis_traces(i).serial_null_protein_vec; 
-        end
-        mcp_pt = analysis_traces(i).spot_mcp_vec;         
-        nn_pt = analysis_traces(i).edge_null_protein_vec;
-        mf_pt_mf = analysis_traces(i).mf_null_protein_vec;          
-        tt_pt = analysis_traces(i).time;
-
-        x_pt = analysis_traces(i).xPosParticle;  
-        y_pt = analysis_traces(i).yPosParticle;  
-        ap_pt = analysis_traces(i).APPosParticle;  
-
-
-        if sum(~isnan(mf_pt_mf)) > minDP && sum(~isnan(sr_pt)) > minDP && sum(~isnan(sp_pt)) > minDP              
-            % extract interpolated fluorescence and time vectors
-            master_time = analysis_traces(i).time_interp;
-
-            % check for mismatch between analysis_traces and
-            % analysis_traces...this is due to a dumb mistake on my
-            % part
-            time_vec_orig = analysis_traces(trace_particle_index_orig==ParticleID).time_interp;
-            if ~isequal(master_time,time_vec_orig)
-              master_time = time_vec_orig;
-              analysis_traces(i).time_interp = master_time;
-
-              master_fluo = analysis_traces(trace_particle_index_orig==ParticleID).fluo_interp;
-              analysis_traces(i).fluo_interp = master_fluo;
+    for trace_i = 1:length(hmm_input_output)
+          
+        % basic indexing info
+        ParticleID = hmm_input_output(trace_i);   
+        fitIndex = find(fitParticleVec==ParticleID);
+        traceIndex = find(traceParticleVec==ParticleID);
+  
+        % extract time vectors
+        timeFrom = analysis_traces(traceIndex).time;
+        timeTo = hmm_input_output(traceIndex).time;
+        
+        % interpolate protein vectors to match cpHMM spacing
+        interpFields = {'spot_protein_vec','serial_null_protein_vec', 'edge_null_protein_vec', 'nuclear_protein_vec',...
+          'spot_mcp_vec'};
+        for field_i = 1:length(interpFields)
+            vecRaw = spot_struct_protein(traceIndex).(interpFields{field_i});
+            nanFT = ~isnan(vec);
+            if sum(nanFT) > 1
+                hmm_input_output(trace_i).(interpFields{field_i}) = interp1(timeFrom(nanFT), vecRaw(nanFT), timeTo);
+            elseif sum(nanFT) == 1
+                vecTo = NaN(size(timeTo));
+                [~,mi] = min(abs(timeTo-timeFrom(nanFT)));
+                vecTo(mi) = vec(nanFT);
+                hmm_input_output(trace_i).(interpFields{field_i}) = vecTo;
+            else
+                hmm_input_output(trace_i).(interpFields{field_i}) = NaN(size(timeTo));
             end
-            % extract position vectors (used for selecting nearest neighbor)
-            x_nc = double(analysis_traces(i).xPos);
-            y_nc = double(analysis_traces(i).yPos);
-            temp.xPosMean = nanmean(x_nc(~isnan(ff_pt)));
-            temp.yPosMean = nanmean(y_nc(~isnan(ff_pt)));
-
-            % record time, space, and fluo vars
-            start_i = find(~isnan(master_fluo),1);
-            stop_i = find(~isnan(master_fluo),1,'last');
-            temp.time = master_time(start_i:stop_i);
-            temp.fluo = master_fluo(start_i:stop_i);   
-            temp.fluo_raw = ff_pt;      
-
-            % extract useful HMM inference parameters             
-            inference_id = inference_id_vec(traceIndex); % inference id
-            [r,ri] = sort(inference_results(inference_id).r); % enforce rank ordering of states
-            z = exp(soft_fits{traceIndex});    
-            temp.z_mat = z(ri,:)';    
-            temp.r_mat = z(ri,:)'.*r';
-            temp.r_inf = r';
-            temp.r_vec = sum(temp.r_mat,2)';
-            [~,z_vec] = max(temp.z_mat,[],2);
-            temp.z_vec = z_vec; 
-            if length(z_vec)~=length(temp.fluo)
-              error('goddammit')
-            end
-            % extract viterbi fits
-            temp.z_viterbi = viterbi_fits(traceIndex).z_viterbi;
-            temp.f_viterbi = viterbi_fits(traceIndex).fluo_viterbi;
-
-            % make predicted fluo vec (for consistency checks)
-            fluo_hmm = conv(temp.r_vec,alpha_kernel);
-            temp.fluo_hmm = fluo_hmm(1:numel(temp.r_vec));        
-
-            % checks using mcp channel to ensure that we are correctly matching
-            % particles and time frames
-            temp.mcp_check = interp1(tt_pt(~isnan(mcp_pt)),mcp_pt(~isnan(mcp_pt)),temp.time);
-            temp.fluo_check = interp1(tt_pt(~isnan(ff_pt)),ff_pt(~isnan(ff_pt)),temp.time);
-
-            % record raw data vectors
-            temp.spot_protein_raw = sp_pt;        
-            temp.mf_protein_raw = mf_pt_mf;
-            temp.null_protein_raw = nn_pt;
-            temp.serial_protein_raw = sr_pt;  
-            temp.time_raw = tt_pt;  
-            temp.xPos_raw = x_nc;
-            temp.yPos_raw = y_nc;
-
-            % interpolate protein information such that it coincides with HMM
-            % inference results    
-            temp.spot_protein = interp1(tt_pt(~isnan(sp_pt)),sp_pt(~isnan(sp_pt)),temp.time);                    
-            temp.serial_protein = interp1(tt_pt(~isnan(sr_pt)),sr_pt(~isnan(sr_pt)),temp.time);            
-            temp.null_protein = interp1(tt_pt(~isnan(nn_pt)),nn_pt(~isnan(nn_pt)),temp.time);
-            temp.mf_protein = interp1(tt_pt(~isnan(mf_pt_mf)),mf_pt_mf(~isnan(mf_pt_mf)),temp.time);
-
-            % interpolate position info
-            temp.xPos = interp1(tt_pt(~isnan(x_nc)),x_nc(~isnan(x_nc)),temp.time);        
-            temp.yPos = interp1(tt_pt(~isnan(y_nc)),y_nc(~isnan(y_nc)),temp.time);
-
-            temp.xPosParticle = interp1(tt_pt(~isnan(x_pt)),x_pt(~isnan(x_pt)),temp.time);        
-            temp.yPosParticle = interp1(tt_pt(~isnan(y_pt)),y_pt(~isnan(y_pt)),temp.time);
-            temp.apPosParticle = interp1(tt_pt(~isnan(ap_pt)),ap_pt(~isnan(ap_pt)),temp.time);
-            % generate flag var indicating interpolated obs that are too far from 
-            % true points
-            input_times = tt_pt(~isnan(sp_pt));
-            dt_vec_gap = NaN(size(temp.time));
-            for t = 1:numel(dt_vec_gap)
-                dt_vec_gap(t) = min(abs(temp.time(t)-input_times));   
-            end
-            temp.dt_filter_gap = dt_vec_gap > maxDT;            
-            % record general info for later use
-            temp.ParticleID = ParticleID; 
-            temp.Tres = Tres;
-            temp.maxDT = maxDT;
-            temp.InferenceID = traceInd;    
-            hmm_input_output  = [hmm_input_output temp];
         end
-        % increment
-%         iter = iter + 1;
+                                             
+        % generate flag var indicating interpolated obs that are too far from 
+        % true points
+        input_times = timeFrom(~isnan(hmm_input_output(trace_i).spot_protein_vec));
+        dt_vec_gap = NaN(size(hmm_input_output(trace_i).time));
+        for t = 1:numel(dt_vec_gap)
+            dt_vec_gap(t) = min(abs(hmm_input_output(trace_i).time(t)-input_times));   
+        end
+        hmm_input_output(trace_i).dt_filter_gap = dt_vec_gap > maxDT;            
+        % record general info for later use        
+        hmm_input_output(trace_i).Tres = Tres;
+        hmm_input_output(trace_i).maxDT = maxDT;
+        hmm_input_output(trace_i).InferenceID = fitIndex;            
+        hmm_input_output(trace_i).rawSpotStructIndex = traceIndex;            
+        
     end
+
+    % find nearest neighbor particles
+    % use name nearest neighbor for each bootstrap instance
+%     n_unique = numel(hmm_input_output) / n_boots;%numel(inference_results);
+%     start_time_vec = NaN(1,n_unique);
+%     stop_time_vec = NaN(1,n_unique);
+%     set_vec = NaN(1,n_unique);
+%     for i = 1:n_unique
+%         dt_flag = hmm_input_output(i).dt_filter_gap;
+%         t_vec = hmm_input_output(i).time(~dt_flag);
+%         start_time_vec(i) = min(t_vec);
+%         stop_time_vec(i) = max(t_vec);
+%         set_vec(i) = floor(hmm_input_output(i).ParticleID);
+%     end
+% 
+%     % xy nearest neighbor calculations
+%     dist_mat_x = pdist2([hmm_input_output(1:n_unique).xPosMean]',[hmm_input_output(1:n_unique).xPosMean]');
+%     dist_mat_y = pdist2([hmm_input_output(1:n_unique).yPosMean]',[hmm_input_output(1:n_unique).yPosMean]');
+%     dist_mat_r = sqrt(dist_mat_x.^2 + dist_mat_y.^2);
+% 
+%     % now find closest match for each nucleus
+%     for i = 1:n_unique
+%         % require that mat trace is (1) from same set, (2) starts and ends
+%         % within 3 min of locus trace
+%         setID = set_vec(i);  
+%         option_filter = ((start_time_vec-start_time_vec(i)) <= 3*60) & ...
+%             ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;        
+% 
+%         %%% Spatial Nearest Neighbor   
+%         time_i = hmm_input_output(i).time;
+%         dist_vec = dist_mat_r(i,:);               
+%         dist_vec(~option_filter) = NaN;
+%         dist_vec(i) = NaN; % remove self
+%         [best_r, best_ind_dist] = nanmin(dist_vec);
+%         % record vales 
+%         time_swap_dist = hmm_input_output(best_ind_dist).time;       
+%         % fill
+%         swap_ft = ismember(time_swap_dist,time_i);
+%         target_ft = ismember(time_i,time_swap_dist);
+%         s_pt_dist = NaN(size(time_i));
+%         s_pt_dist(target_ft) = hmm_input_output(best_ind_dist).spot_protein(swap_ft);    
+%         mf_pt_dist = NaN(size(time_i));
+%         mf_pt_dist(target_ft) = hmm_input_output(best_ind_dist).mf_protein(swap_ft);    
+%         r_fluo_dist = NaN(size(time_i));
+%         r_fluo_dist(target_ft) = hmm_input_output(best_ind_dist).r_vec(swap_ft);
+%         dt_filter_dist = true(size(time_i));
+%         dt_filter_dist(target_ft) = hmm_input_output(best_ind_dist).dt_filter_gap(swap_ft);
+% 
+%         % assign to ALL copies
+%         for ind = i:n_unique:length(hmm_input_output)
+%     %         ind = (inf-1)*n_unique + i;
+%             % record dist
+%             hmm_input_output(ind).nn_best_r = best_r;
+%             hmm_input_output(ind).dist_swap_ind = best_ind_dist;
+%             hmm_input_output(ind).dist_swap_spot_protein = s_pt_dist;
+%             hmm_input_output(ind).dist_swap_mf_protein = mf_pt_dist;
+%             hmm_input_output(ind).dist_swap_hmm = r_fluo_dist;
+%             hmm_input_output(ind).dist_swap_dt_filter_gap = dt_filter_dist;
+%         end
+%     end
 end
-
-% find nearest neighbor particles
-% use name nearest neighbor for each bootstrap instance
-n_unique = numel(hmm_input_output) / n_boots;%numel(inference_results);
-start_time_vec = NaN(1,n_unique);
-stop_time_vec = NaN(1,n_unique);
-set_vec = NaN(1,n_unique);
-for i = 1:n_unique
-    dt_flag = hmm_input_output(i).dt_filter_gap;
-    t_vec = hmm_input_output(i).time(~dt_flag);
-    start_time_vec(i) = min(t_vec);
-    stop_time_vec(i) = max(t_vec);
-    set_vec(i) = floor(hmm_input_output(i).ParticleID);
-end
-
-% xy nearest neighbor calculations
-dist_mat_x = pdist2([hmm_input_output(1:n_unique).xPosMean]',[hmm_input_output(1:n_unique).xPosMean]');
-dist_mat_y = pdist2([hmm_input_output(1:n_unique).yPosMean]',[hmm_input_output(1:n_unique).yPosMean]');
-dist_mat_r = sqrt(dist_mat_x.^2 + dist_mat_y.^2);
-
-% now find closest match for each nucleus
-for i = 1:n_unique
-    % require that mat trace is (1) from same set, (2) starts and ends
-    % within 3 min of locus trace
-    setID = set_vec(i);  
-    option_filter = ((start_time_vec-start_time_vec(i)) <= 3*60) & ...
-        ((stop_time_vec-stop_time_vec(i)) >= -3*60) & set_vec==setID;        
-
-    %%% Spatial Nearest Neighbor   
-    time_i = hmm_input_output(i).time;
-    dist_vec = dist_mat_r(i,:);               
-    dist_vec(~option_filter) = NaN;
-    dist_vec(i) = NaN; % remove self
-    [best_r, best_ind_dist] = nanmin(dist_vec);
-    % record vales 
-    time_swap_dist = hmm_input_output(best_ind_dist).time;       
-    % fill
-    swap_ft = ismember(time_swap_dist,time_i);
-    target_ft = ismember(time_i,time_swap_dist);
-    s_pt_dist = NaN(size(time_i));
-    s_pt_dist(target_ft) = hmm_input_output(best_ind_dist).spot_protein(swap_ft);    
-    mf_pt_dist = NaN(size(time_i));
-    mf_pt_dist(target_ft) = hmm_input_output(best_ind_dist).mf_protein(swap_ft);    
-    r_fluo_dist = NaN(size(time_i));
-    r_fluo_dist(target_ft) = hmm_input_output(best_ind_dist).r_vec(swap_ft);
-    dt_filter_dist = true(size(time_i));
-    dt_filter_dist(target_ft) = hmm_input_output(best_ind_dist).dt_filter_gap(swap_ft);
-
-    % assign to ALL copies
-    for ind = i:n_unique:length(hmm_input_output)
-%         ind = (inf-1)*n_unique + i;
-        % record dist
-        hmm_input_output(ind).nn_best_r = best_r;
-        hmm_input_output(ind).dist_swap_ind = best_ind_dist;
-        hmm_input_output(ind).dist_swap_spot_protein = s_pt_dist;
-        hmm_input_output(ind).dist_swap_mf_protein = mf_pt_dist;
-        hmm_input_output(ind).dist_swap_hmm = r_fluo_dist;
-        hmm_input_output(ind).dist_swap_dt_filter_gap = dt_filter_dist;
-    end
-end
-
 % save results
 save([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(nSteps) '_f' num2str(fluo_dim)  'D_p' num2str(protein_dim) 'D.mat'],'hmm_input_output')
-end
