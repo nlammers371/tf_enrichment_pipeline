@@ -270,9 +270,8 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         
         % reset zDim parameter to ensure consistency
         if samplingInfo.zDim ~= sum(padding_flags_mcp)
-            samplingInfo.zDim = sum(padding_flags_mcp);
-            [samplingInfo.x_ref,samplingInfo.y_ref,samplingInfo.z_ref] = meshgrid(1:samplingInfo.xDim,1:samplingInfo.yDim,1:samplingInfo.zDim);
-        end
+          
+        
         % perform QC and generate lookup table of inter-nucleus distances
         samplingInfo = performNucleusQC(samplingInfo);           
 
