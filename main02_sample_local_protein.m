@@ -126,7 +126,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               handleSegmentationOptions(RefStruct,segmentNuclei);
 
     
-    if true%segmentNuclei
+    if segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
           nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod);      
@@ -142,7 +142,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
              
     h = waitbar(0,'Generating control spots...');        
     NIter = size(SetFrameArray,1);
-    for i = 75%1:NIter%size(SetFrameArray,1)  
+    for i = 1:NIter%size(SetFrameArray,1)  
         waitbar(i/NIter,h)                       
         
         NewSetFlag = 1;
@@ -242,7 +242,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     p = 1;
     
     tic
-    for i = 1:NIter%size(SetFrameArray,1)
+    parfor i = 1:NIter%size(SetFrameArray,1)
         % generate structure to keep track of sampling info
         samplingInfo = struct; 
         
@@ -270,7 +270,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
         
         % reset zDim parameter to ensure consistency
         if samplingInfo.zDim ~= sum(padding_flags_mcp)
-            samplingInfo.zDim = sum(padding_flags_mcp);
+            samplingInfo.zDim = sum(~padding_flags_mcp);
             [samplingInfo.x_ref,samplingInfo.y_ref,samplingInfo.z_ref] = meshgrid(1:samplingInfo.xDim,1:samplingInfo.yDim,1:samplingInfo.zDim);
         end
         % perform QC and generate lookup table of inter-nucleus distances
