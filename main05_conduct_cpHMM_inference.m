@@ -33,7 +33,7 @@ customProjectFlag = exist('customProjectPath','var');
 if savioFlag && ~manualInferenceInfo
   inferenceDir = '~/dat/tf_enrichment/inferenceDirectory/';
 elseif ~manualInferenceInfo
-  liveProject = LiveProject(projectNameCell{1});
+  liveProject = LiveEnrichmentProject(projectNameCell{1});
   slashes = regexp(liveProject.dataPath,'/|\');
   dataDir = liveProject.dataPath(1:slashes(end-1));
   inferenceDir = [dataDir 'inferenceDirectory' filesep];

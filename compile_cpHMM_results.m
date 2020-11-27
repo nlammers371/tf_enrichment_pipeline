@@ -13,7 +13,7 @@ for p = 1:length(projectNameCell)
 
     % get path to results
     if ~exist('resultsRoot','var')
-        liveProject = LiveProject(projectName);
+        liveProject = LiveEnrichmentProject(projectName);
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     else
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
