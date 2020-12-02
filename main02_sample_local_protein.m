@@ -44,16 +44,16 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     overwriteSegmentation = false;
 
     %% %%%%%%%%%%%%%%%%%%%%%%% Check for optional inputs %%%%%%%%%%%%%%%%%%%%%%
-    
-        %options must be specified as name, value pairs. unpredictable errors will
-        %occur, otherwise.
-        for i = 1:2:(numel(varargin)-1)
-            if i ~= numel(varargin)
-                eval([varargin{i} '=varargin{i+1};']);
-            end
+
+    %options must be specified as name, value pairs. unpredictable errors will
+    %occur, otherwise.
+    for i = 1:2:(numel(varargin)-1)
+        if i ~= numel(varargin)
+            eval([varargin{i} '=varargin{i+1};']);
         end
-        
-        parDefaultFlag = isempty(NumWorkers);
+    end
+
+    parDefaultFlag = isempty(NumWorkers);
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Save key sampling parameters %%%%%%%%%%%%%%%%%%%
     proteinSamplingInfo = struct;
@@ -126,7 +126,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               handleSegmentationOptions(RefStruct,segmentNuclei);
 
     
-    if true%segmentNuclei
+    if segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
           nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod);      
