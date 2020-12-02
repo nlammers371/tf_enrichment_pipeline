@@ -235,11 +235,13 @@ for i = 1:numExperiments
                 if numel(unique(compiledSchnitzCells(nucleusCounter).time))~=numel(compiledSchnitzCells(nucleusCounter).time)
                     error(['Non-unique time values. Check FrameInfo for Prefix: ' currExperiment.Prefix])
                 end
-
+                % initialize nucleus qc flag
+                compiledSchnitzCells(nucleusCounter).missingNucleusFrames = 0; 
+                
                 % Add sister spot fields
                 compiledSchnitzCells(nucleusCounter).sisterIndex = NaN;
                 compiledSchnitzCells(nucleusCounter).sisterParticleID = NaN; 
-
+            
                 % increment counter to ensure no empty spaces in the 
                 % compiledSchnitzCells struct if some schnitzcells have no 
                 % frames in the desired nuclear cycle
@@ -318,14 +320,15 @@ for i = 1:numExperiments
             % Find overlap between nucleus and trace
             rawNucleusFrames = compiledSchnitzCells(ncIndex).frames;         
             spotFilter = ismember(rawNucleusFrames,traceFramesFull); 
-
-            compiledSchnitzCells(ncIndex).spotFrames = spotFilter;
+            
+            compiledSchnitzCells(ncIndex).spotFrames = spotFilter;            
             if sum(spotFilter) < length(traceFramesFull)            
-                error(['Inconsistent particle and nucleus frames for Prefix: ' currExperiment.Prefix])  
+                warning(['Inconsistent particle and nucleus frames for Prefix: ' currExperiment.Prefix ' .Flagging...'])  
+                compiledSchnitzCells(ncIndex).missingNucleusFrames = 1;
             end
             
             % record fluorescence info             
-            compiledSchnitzCells(ncIndex).fluo(spotFilter) = traceFull; 
+            compiledSchnitzCells(ncIndex).fluo(spotFilter) = traceFull(ismember(traceFramesFull,rawNucleusFrames)); 
                         
             % Find intersection btw full frame range and CP frames        
             rawParticleFrames = compiledParticles(j).Frame;

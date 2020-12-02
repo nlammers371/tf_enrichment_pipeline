@@ -1,4 +1,4 @@
-classdef LiveProject
+classdef LiveEnrichmentProject
     %liveProject Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -22,6 +22,7 @@ classdef LiveProject
         
         hasAPInfo = [];        
         has3DSpotInfo = [];
+        hasNucleusProbabilityMaps = [];
         hasProteinInfo = [];
         
         hasTracesCompiled = [];
@@ -43,7 +44,7 @@ classdef LiveProject
         %% Constructors
         
         
-        function this = LiveProject(Project)
+        function this = LiveEnrichmentProject(Project)
             %liveProject Construct an instance of this class
             %   Detailed explanation goes here
             this.Project = Project;
@@ -55,7 +56,7 @@ classdef LiveProject
             this.dataPath = [dropboxFolder(1:slashes(end)) 'ProcessedEnrichmentData' filesep Project filesep];
             
             for i = 1:length(this.includedExperimentNames)
-                this.includedExperiments{i} = LiveExperiment(this.includedExperimentNames{i});
+                this.includedExperiments{i} = LiveEnrichmentExperiment(this.includedExperimentNames{i});
                 isUnhealthy = this.includedExperiments{i}.isUnhealthy;
                 if ~isnan(isUnhealthy) && isUnhealthy
                     this.unhealthyNames = [ this.unhealthyNames,...

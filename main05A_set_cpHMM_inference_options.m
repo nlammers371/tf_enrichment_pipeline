@@ -29,7 +29,7 @@ inferenceInfo.SampleSize = 2500;
 inferenceInfo.useQCFlag = false;
 
 % Get basic project info and determing file paths
-liveProject = LiveProject(inferenceInfo.projectNameCell{1});
+liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
 
 % save
 slashes = regexp(liveProject.dataPath,'/|\');

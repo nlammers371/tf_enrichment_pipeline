@@ -5,7 +5,7 @@ function [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasPr
 cleanUpmRNADynamics;
        
 % Determine key project characteristics
-liveProject = LiveProject(projectName);
+liveProject = LiveEnrichmentProject(projectName);
 numExperiments = length(liveProject.includedExperimentNames);
 
 % Make the output filepath
