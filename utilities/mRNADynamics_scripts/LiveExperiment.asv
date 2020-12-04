@@ -1,4 +1,4 @@
-classdef LiveExperiment
+classdef LiveEnrichmentExperiment
     %LivemRNAExperiment object to organize data related to a live imaging
     %experiment
     
@@ -53,6 +53,7 @@ classdef LiveExperiment
         hasRawStacks = false;
         hasMovieMatFile = false;
         hasHisMatFile = false;
+        hasHisProbFiles = false;
         hasEllipsesFile = false;
         
         hasChannelsFile = false;
@@ -98,7 +99,7 @@ classdef LiveExperiment
         
         %%Constructors
         
-        function this = LiveExperiment(Prefix)
+        function this = LiveEnrichmentExperiment(Prefix)
             %livemRNAExperiment Construct an instance of this class
             
             this.Prefix = Prefix;
