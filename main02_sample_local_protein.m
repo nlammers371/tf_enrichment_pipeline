@@ -71,7 +71,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     
     %% %%%%%%%%%%%%%%%%%%%%%%% Get project info %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    [liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+    [liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo, hasNucleusProbFiles] = headerFunction(projectName);
     if ~hasProteinInfo
       warning('No input protein info associated with this project. Aborting protein sampling')
       return
@@ -129,9 +129,9 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     if segmentNuclei
 %         disp('segmenting nuclei...')   
         if ~parDefaultFlag
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, NumWorkers, segmentationMethod, hasNucleusProbFiles);      
         else
-          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, [], segmentationMethod);      
+          nuclearSegmentation(liveProject, RefStruct, segmentIndices, spot_struct, [], segmentationMethod, hasNucleusProbFiles);      
         end
     end
 
