@@ -19,4 +19,4 @@ dataName = [liveProject.dataPath 'spot_struct.mat']; % names for compiled elipse
 hasAPInfo = all(liveProject.hasAPInfo);
 has3DSpotInfo = all(liveProject.has3DSpotInfo);
 hasProteinInfo = all(liveProject.hasProteinInfo);
-hasNucleusProbFiles = all(liveProject.hasHisProbFiles);
+hasNucleusProbFiles = all(liveProject.hasNucleusProbabilityMaps);

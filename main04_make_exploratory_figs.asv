@@ -28,13 +28,10 @@ mkdir(FigurePath);
 %     end    
 % end
 
-%% %%%%%%%% Load  data sets to analyze and extract experiment info %%%%%%%%
-
 % Load analysis data
-load([liveProject.dataPath 'spot_protein_struct.mat'], 'spot_protein_struct');
+load([DataPath 'nucleus_struct_protein.mat'], 'nucleus_struct_protein');
 snip_files = matfile([DataPath 'snip_data.mat']);
 load([DataPath 'snip_data.mat']);
-
 % extract protein, gene, fluorophore info
 prt_dash = strfind(protein_string,'-');
 protein_name = protein_string(1:prt_dash-1);
