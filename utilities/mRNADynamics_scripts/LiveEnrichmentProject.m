@@ -55,7 +55,7 @@ classdef LiveEnrichmentProject
             
             slashes = regexp(dropboxFolder,'/|\');
             this.dataPath = [dropboxFolder(1:slashes(end)) 'ProcessedEnrichmentData' filesep Project filesep];
-            this.figurePath = [dropboxFolder(1:slashes(end)) 'LocalEnrichmentFigures' filesep 'PipelineOutput' Project filesep];
+            this.figurePath = [dropboxFolder(1:slashes(end)) 'LocalEnrichmentFigures' filesep 'PipelineOutput' filesep Project filesep];
             
             for i = 1:length(this.includedExperimentNames)
                 this.includedExperiments{i} = LiveEnrichmentExperiment(this.includedExperimentNames{i});
