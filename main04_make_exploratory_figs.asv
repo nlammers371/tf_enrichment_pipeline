@@ -179,8 +179,8 @@ for n = 1:NBoots
     s_ids = randsample(index_vec,length(index_vec),true);
     pt_spot = nanmean(spot_protein_snips(:,:,s_ids),3);
     pt_null = nanmean(edge_control_protein_snips(:,:,s_ids),3);
-    for r = 1:length(dist_plot_axis)
-        r_weights = exp(-.5*((r_ref-dist_plot_axis(r))/r_sigma).^2);
+    for r = 1:length(dist_index)
+        r_weights = exp(-.5*((r_ref-dist_index(r))/r_sigma).^2);
         r_spot_mat(n,r) = nansum(pt_spot(:).*r_weights(:)) ./ nansum(r_weights(:));
         r_control_mat(n,r) = nansum(pt_null(:).*r_weights(:)) ./ nansum(r_weights(:));
     end
@@ -202,9 +202,9 @@ cm2 = cMapHeat;
 r_fig = figure;
 r_ax = gca;
 hold on
-e = errorbar(dist_plot_axis,r_control_mean / r_control_mean(1),r_control_ste / r_control_mean(1),'Color','black','LineWidth',1.75);
+e = errorbar(dist_index,r_control_mean / r_control_mean(1),r_control_ste / r_control_mean(1),'Color','black','LineWidth',1.75);
 e.CapSize = 0;
-e = errorbar(dist_plot_axis,r_spot_mean / r_control_mean(1),r_spot_ste / r_control_mean(1),'Color',cm2(35,:),'LineWidth',1.75);
+e = errorbar(dist_index,r_spot_mean / r_control_mean(1),r_spot_ste / r_control_mean(1),'Color',cm2(35,:),'LineWidth',1.75);
 e.CapSize = 0;
 grid off
 r_ax.XLabel.String = 'radius (\mu m)';

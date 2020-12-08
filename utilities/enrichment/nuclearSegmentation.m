@@ -94,7 +94,6 @@ function nuclearSegmentation(liveProject, RefStruct, segmentIndices, nucleus_str
       smoothing_kernel_size = round(1 ./ PixelSize); % size of gaussian smoothing kernel 
 
       % get protein channel       
-      if
       stackPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',currentFrame) '_ch0' num2str(proteinChannel) '.tif'];
       segment_stack = imreadStack2(stackPath, yDim, xDim, zDim+2);      
       segment_stack = segment_stack(:,:,2:end-1);            
