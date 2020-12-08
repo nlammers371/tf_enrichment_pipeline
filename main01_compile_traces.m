@@ -114,7 +114,7 @@ spot_struct = [];
 h = waitbar(0,'Compiling data ...');
 for i = 1:numExperiments
     
-    waitbar(i/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
+    waitbar((i-1)/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
     
     setID = i;
     currExperiment = liveProject.includedExperiments{i};
@@ -364,6 +364,8 @@ for i = 1:numExperiments
         end      
         spot_struct = [spot_struct  compiledSchnitzCells];
     end
+    
+    waitbar(i/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
 end
 close(h)
 
@@ -398,7 +400,7 @@ interpGrid = 0:tresInterp:60*60;
 fluo_scale = prctile([spot_struct.fluo],97.5);
 big_blip_thresh = fluo_scale;
 
-for i = 1:numel(spot_struct)
+for i = 1:length(spot_struct)
     timeVec = spot_struct(i).time;
     fluoVec = spot_struct(i).fluo;
     startIndex = find(~isnan(fluoVec),1);
@@ -457,6 +459,7 @@ for i = 1:numel(spot_struct)
     end
     spot_struct(i).timeInterp = timeInterp;
     spot_struct(i).tresInterp = tresInterp;
+        
 end
 
 % save

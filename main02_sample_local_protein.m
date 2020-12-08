@@ -30,7 +30,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     max_nucleus_radius_um = 4;
     max_dist_nearest_neighbor_um = 2.5*max_nucleus_radius_um;
     segmentNuclei = 0;
-    use3DSpotInfo = 1;
+    use3DSpotInfo = 0;
 %     NumWorkers = 24;
     % PSF info for 3D sampling
     use_psf_fit_dims = false; % NL: currently no supported
