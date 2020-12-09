@@ -14,7 +14,7 @@ end
 
 DistLim = 0.8; % min distance from edge permitted (um)
 NBoots = 100; % number of bootstrap samples to use for estimating SE
-cMapHeat = flipud(brewermap([],'Spectral'));
+cMapHeat = 'viridis';%flipud(brewermap([],'Spectral'));
 lbRaw = [];
 ubRaw = [];
 lbFold = [];
@@ -84,18 +84,20 @@ nucleus_protein_vec_dist = nucleus_protein_vec_dist(dist_vec>=DistLim);
 %% %%%%%%%%%%%%%%%%%%%%%%%%% Generate snip stacks %%%%%%%%%%%%%%%%%%%%%%%%%
 
 [spot_protein_snips, spot_mcp_snips, edge_control_protein_snips, edge_control_mcp_snips] = ...
-                                      generateProteinSnips(snip_data, dist_vec>=DistLim);
+                                      generateProteinSnips(snip_data, ~isnan(null_protein_vec)&dist_vec>=DistLim);
 
 % take average
 spot_protein_snip_mean = nanmean(spot_protein_snips,3);
-null_protein_snip_mean = nanmean(edge_control_protein_snips,3);
+edge_control_protein_snip_mean = nanmean(edge_control_protein_snips,3);
+edge_control_mcp_snip_mean = nanmean(edge_control_mcp_snips,3);
+spot_mcp_snip_mean = nanmean(spot_mcp_snips,3);
 
 
 % Plot heatmaps
 visibleOn = true;
 spot_protein_snip_mean_title = [inputString ' at ' 'Target Locus'];
 spot_protein_snip_mean_ylabel = [inputString ' concentration (au)'];
-spot_protein_snip_heatmap = makeHeatmapPlots(spot_protein_snip_mean, ...
+[spot_protein_snip_heatmap, ubRaw, lbRaw] = makeHeatmapPlots(spot_protein_snip_mean, ...
     visibleOn, spot_protein_snip_mean_title, spot_protein_snip_mean_ylabel,...
     cMapHeat,PixelSize,lbRaw,ubRaw);
   
@@ -104,7 +106,7 @@ saveas(spot_protein_snip_heatmap, [FigurePath 'mean_pt_snippet_spot' '.pdf']);
 
 null_protein_snip_mean_title = [inputString ' at Control Locus'];
 null_protein_snip_mean_ylabel = [inputString ' concentration (au)'];
-null_protein_snip_heatmap = makeHeatmapPlots(null_protein_snip_mean, ...
+null_protein_snip_heatmap = makeHeatmapPlots(edge_control_protein_snip_mean, ...
     visibleOn, null_protein_snip_mean_title, null_protein_snip_mean_ylabel,...
     cMapHeat,PixelSize,lbRaw,ubRaw);
 saveas(null_protein_snip_heatmap,[FigurePath 'mean_pt_snippet_null' '.png']);
@@ -112,7 +114,7 @@ saveas(null_protein_snip_heatmap, [FigurePath 'mean_pt_snippet_null' '.pdf']);
 
 
 % Make fold diff image
-rel_protein_snip_mean = (spot_protein_snip_mean) ./ null_protein_snip_mean;
+rel_protein_snip_mean = (spot_protein_snip_mean) ./ edge_control_protein_snip_mean;
 % caxis([lb ub])
 rel_protein_snip_mean_title = ['Relative ' inputString ' Enrichment at Target Locus'];
 rel_protein_snip_mean_clabel = [inputString ' fold enrichment'];
@@ -123,7 +125,7 @@ saveas(rel_protein_snip_heatmap,[FigurePath 'mean_pt_snippet_rel' '.png']);
 saveas(rel_protein_snip_heatmap, [FigurePath 'mean_pt_snippet_rel' '.pdf']);
 
 % Make absolute diff image
-absDiff_protein_snip_mean = (spot_protein_snip_mean) - null_protein_snip_mean;
+absDiff_protein_snip_mean = (spot_protein_snip_mean) - edge_control_protein_snip_mean;
 % sumEnrichedProtein = sum(sum(absDiff_protein_snip_mean));
 % disp(['Total additional protein (au) at locus (sum of all pixels of absolute different between spot and null snips)' num2str(sumEnrichedProtein)])
 % caxis([lb ub])
@@ -137,19 +139,17 @@ saveas(absDiff_protein_snip_heatmap,[FigurePath 'mean_pt_snippet_absDiff' '.png'
 saveas(absDiff_protein_snip_heatmap, [FigurePath 'mean_pt_snippet_absDiff' '.pdf']);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%MS2 spot fluorescence %%%%%%%%%%%%%%%%%%%%%%%%%
-null_mean_fluo = nanmean(edge_control_mcp_snips,3);
-spot_mean_fluo = nanmean(spot_mcp_snips,3);
 
 % Plot MS2 spot heatmaps
 spot_mean_fluo_title = [outputString ' Intensity at Active Locus'];
 null_mean_fluo_title = [outputString ' Intensity at Control Locus'];
 mean_fluo_clabel = ['MS2 intensity (au)'];
-spot_mean_fluo_heatmap = makeHeatmapPlots(spot_mean_fluo, visibleOn, ...
+spot_mean_fluo_heatmap = makeHeatmapPlots(spot_mcp_snip_mean, visibleOn, ...
     spot_mean_fluo_title, mean_fluo_clabel,cMapHeat,PixelSize,lbRaw,ubRaw);
 saveas(spot_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_spot' '.png']);
 saveas(spot_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_spot' '.pdf']);
 
-edge_control_mean_fluo_heatmap = makeHeatmapPlots(null_mean_fluo, visibleOn, ...
+edge_control_mean_fluo_heatmap = makeHeatmapPlots(edge_control_mcp_snip_mean, visibleOn, ...
     null_mean_fluo_title, mean_fluo_clabel, cMapHeat,PixelSize,lbRaw,ubRaw);
 saveas(edge_control_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_null' '.png']);
 saveas(edge_control_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_null' '.pdf']);
@@ -163,20 +163,20 @@ snip_size = size(spot_protein_snips,1);
 r_ref = sqrt((x_ref - ceil(snip_size/2)).^2 + (y_ref - ceil(snip_size/2)).^2)*PixelSize;
 dist_index = unique(r_ref);
 % generate smoothly interpolated axis for plot
-dist_plot_axis = linspace(dist_index(1),dist_index(end),length(dist_index));
+dist_plot_axis = linspace(dist_index(1),dist_index(end),50);
 
 % indexing vector for sampling
 index_vec = 1:size(edge_control_protein_snips,3);
 
 % define scale for moving average
 r_sigma = PixelSize;
-
+maxBootSize = 5e3;
 % initialize profile arrays
 r_spot_mat = NaN(NBoots,numel(dist_plot_axis));
 r_control_mat = NaN(NBoots,numel(dist_plot_axis));
 
 for n = 1:NBoots
-    s_ids = randsample(index_vec,length(index_vec),true);
+    s_ids = randsample(index_vec,min([maxBootSize length(index_vec)]),true);
     pt_spot = nanmean(spot_protein_snips(:,:,s_ids),3);
     pt_null = nanmean(edge_control_protein_snips(:,:,s_ids),3);
     for r = 1:length(dist_plot_axis)
@@ -198,13 +198,14 @@ r_control_ste = nanstd(r_control_mat);
 % writetable(radial_table,[DataPath 'radial_profile_data.csv'])
 
 % make figure
-cm2 = cMapHeat;
+cm2 = brewermap([],'Set2');
+
 r_fig = figure;
 r_ax = gca;
 hold on
 e = errorbar(dist_plot_axis,r_control_mean / r_control_mean(1),r_control_ste / r_control_mean(1),'Color','black','LineWidth',1.75);
 e.CapSize = 0;
-e = errorbar(dist_plot_axis,r_spot_mean / r_control_mean(1),r_spot_ste / r_control_mean(1),'Color',cm2(35,:),'LineWidth',1.75);
+e = errorbar(dist_plot_axis,r_spot_mean / r_control_mean(1),r_spot_ste / r_control_mean(1),'Color',cm2(3,:),'LineWidth',1.75);
 e.CapSize = 0;
 grid off
 r_ax.XLabel.String = 'radius (\mu m)';

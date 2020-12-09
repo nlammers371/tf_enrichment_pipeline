@@ -37,8 +37,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     xy_sigma_um = 0.25;% um 
     xy_sigma_nuclear_um = 1.5;
     z_sigma_um = 0.6; % um
-    ignoreQC = false;
-    write_snip_flag = false; %NL: what does this do?
+    ignoreQC = true;    
     NumWorkers = [];
     segmentationMethod = 1;
     overwriteSegmentation = false;
@@ -242,7 +241,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     p = 1;
     
     tic
-    parfor i = 1:NIter%size(SetFrameArray,1)
+    for i = 1:NIter%size(SetFrameArray,1)
         % generate structure to keep track of sampling info
         samplingInfo = struct; 
         
@@ -343,7 +342,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
               sample_protein_3D(samplingSubInfo,samplingSubInfo.protein_stack,...
               samplingSubInfo.x_spot,samplingSubInfo.y_spot,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...
               samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
-           
+                    
             SamplingResults(i).spot_mcp_vec(j_pass) = ...              
               sample_protein_3D(samplingSubInfo,samplingSubInfo.mcp_stack,...
               samplingSubInfo.x_spot,samplingSubInfo.y_spot,samplingSubInfo.z_spot,samplingInfo.xy_sigma,...

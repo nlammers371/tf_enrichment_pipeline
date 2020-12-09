@@ -21,8 +21,8 @@ edge_control_protein_snips_mixed = NaN(size(spot_protein_snips_dist));
 spot_mcp_snips_mixed = NaN(size(spot_protein_snips_dist));
 edge_control_mcp_snips_mixed = NaN(size(spot_protein_snips_dist));
 for i = 1:size(spot_protein_snips_dist,3)
-    h = ceil(rand()*2);
-    v = ceil(rand()*2);
+    h = 1;%ceil(rand()*2);
+    v = 1;%ceil(rand()*2);
     
     spot_protein_snips_mixed(:,:,i) = spot_protein_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
     edge_control_protein_snips_mixed(:,:,i) = edge_control_protein_snips_dist(inv_mat(:,v),inv_mat(:,h),i);
