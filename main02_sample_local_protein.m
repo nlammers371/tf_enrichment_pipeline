@@ -241,7 +241,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     p = 1;
     
     tic
-    for i = 1:NIter%size(SetFrameArray,1)
+    parfor i = 1:NIter%size(SetFrameArray,1)
         % generate structure to keep track of sampling info
         samplingInfo = struct; 
         

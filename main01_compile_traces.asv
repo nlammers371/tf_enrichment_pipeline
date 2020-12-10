@@ -506,7 +506,7 @@ for i = 1:length(spot_struct)
             if length(referenceTime)>1
                 % Interpolate to standardize spacing        
                 spot_struct(i).([interpFields{j} 'Interp']) = interp1(referenceTime,referenceVec,timeInterp);
-            elseif length(referenceTime)==1 && referenceTime >= timeInterp(1) && referenceTime <= timeInterp(end)
+            elseif length(referenceTime)==1 vecTo = NaN(size(size(timeInterp)))
                 vecTo = NaN(size(timeInterp));
                 [~,mi] = min(abs(referenceTime-timeInterp));
                 vecTo(mi) = referenceVec;
@@ -514,7 +514,10 @@ for i = 1:length(spot_struct)
             else
                 spot_struct(i).([interpFields{j} 'Interp']) = NaN(size(timeInterp));
             end              
-        end    
+        end
+        if length(spot_struct(i).rawNCProteinInterp)~=length(timeInterp)
+          error('wtf')
+        end
     else
         timeInterp = NaN;
         for  j = 1:numel(interpFields)

@@ -66,8 +66,10 @@ end
 % intensity binning
 if inferenceInfo.FluoBinFlag
   options(end+1:end+2) = {'intensityBinVar','fluo'};
+  options(end+1:end+2) = {'FluoBinFlag',1};
 elseif inferenceInfo.ProteinBinFlag
-  options(end+1:end+2) = {'intensityBinVar','nuclear_protein_vec'};  
+  options(end+1:end+2) = {'intensityBinVar','rawNCProteinInterp'};  
+  options(end+1:end+2) = {'ProteinBinFlag',1};
 end
 
 % additional grouping options
