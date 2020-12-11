@@ -33,10 +33,10 @@ function spot_struct_protein = mapToSpotStructure(spot_struct_protein,SamplingRe
       nan_ft = ~isnan(vec);
       if sum(nan_ft)>1
           spot_struct_protein(i).([interp_fields{j} 'Interp']) = interp1(timeRaw(nan_ft),vec(nan_ft),timeInterp);
-      elseif sum(nan_ft)==1
-          spot_struct_protein(i).([interp_fields{j} 'Interp']) = vec(nan_ft);
+%       elseif sum(nan_ft)==1
+%           spot_struct_protein(i).([interp_fields{j} 'Interp']) = vec(nan_ft);
       else
-          spot_struct_protein(i).([interp_fields{j} 'Interp']) = timeInterp;
+          spot_struct_protein(i).([interp_fields{j} 'Interp']) = NaN(size(timeInterp));
       end
     end
   end

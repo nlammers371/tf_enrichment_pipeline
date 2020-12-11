@@ -183,7 +183,7 @@ classdef LiveEnrichmentExperiment
             this.Channel2 = Channel2{1};
             this.Channel3 = Channel3{1};
                        
-            [this.xDmim, this.yDim, this.pixelSize_nm, this.zStep_um, this.snippetSize_px,...
+            [this.xDim, this.yDim, this.pixelSize_nm, this.zStep_um, this.snippetSize_px,...
                 this.nFrames, this.zDim, this.nDigits] = getFrameInfoParams(getFrameInfo(this));
             this.pixelSize_um = this.pixelSize_nm/1000;
       

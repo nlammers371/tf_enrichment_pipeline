@@ -60,10 +60,12 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   save([outDir 'inferenceOptions.mat'],'inferenceOptions');
   
   % iterate through designated groups
-  for t = randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false)    
+  for t = randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false)  
+    
       % find subset of eligible traces
       iter_filter = indexInfo.indexList == indexInfo.indexVecUnique(t);
       timeBin = indexInfo.time_group_vec(t);
+      
       % iterate through bootstraps
       for b = 1:inferenceOptions.nBoots
 
