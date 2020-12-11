@@ -4,7 +4,7 @@ clear
 close all
 
 % set basic paths
-% DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\';
+DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\';
 DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
 project = '20200807_WT';
 % project = '20200807_opto_chronic';
