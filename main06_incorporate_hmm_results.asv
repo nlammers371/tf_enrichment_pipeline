@@ -116,7 +116,7 @@ for inf_i = 1%:length(infDirList)
     trace_fit_flag_ss = 1;
     inf_files = dir([resultsPath infDirList(inf_i).name filesep 'hmm_results*.mat']);
     if exist([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat']) > 0
-        fit_props = dir([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat']);
+        fit_props = dir([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat']);
         fit_date = datenum(fit_props(1).date);
         hmm_date = datenum(inf_files(1).date);
         if fit_date > hmm_date
@@ -130,7 +130,8 @@ for inf_i = 1%:length(infDirList)
     else
         load([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat'],'singleTraceFits')
     end
-
+  %         local_em_outputs = local_em_MS2_reduced_memory (fluo_values, ...
+%                                 v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
     % generate longform dataset
     if false%makeLongFormSet        
         resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFitsViterbi, resultsPath, infDirList(inf_i).name);

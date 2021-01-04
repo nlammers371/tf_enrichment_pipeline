@@ -14,6 +14,7 @@ projectName_cell = {targetProjectName controlProjectName};% targetProjectOrig};
 % load data
 master_struct = struct;
 for i = 1:length(projectName_cell)
+  
   % set write paths
   liveProject = LiveEnrichmentProject(projectName_cell{i});
   resultsRoot = [liveProject.dataPath filesep];
@@ -60,11 +61,15 @@ for i = 1:length(master_struct)
 
   % target
   master_struct(i).burst_rise_spot_array = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_delta_array = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_delta_vec = NaN(nBoots,n_col);
   master_struct(i).burst_rise_virt_array = NaN(nBoots,n_col);
   master_struct(i).burst_rise_hmm_array = NaN(nBoots,n_col);
   
   % random
   master_struct(i).burst_rise_spot_rand_array = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_delta_rand_array = NaN(nBoots,n_col);
+  master_struct(i).burst_rise_delta_rand_vec = NaN(nBoots,1);
   master_struct(i).burst_rise_virt_rand_array = NaN(nBoots,n_col);
   master_struct(i).burst_rise_hmm_rand_array = NaN(nBoots,n_col);
   
@@ -74,17 +79,23 @@ for i = 1:length(master_struct)
       % draw random subsample for qualifying events
       s_ids_target = randsample(sample_options,numel(sample_options),true);    
       master_struct(i).burst_rise_hmm_array(n,:) = nanmean(master_struct(i).hmm_array(s_ids_target,:));
-      master_struct(i).burst_rise_spot_array(n,:) = nanmean(master_struct(i).spot_array_dm(s_ids_target,:));
+      master_struct(i).burst_rise_spot_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_target,:));
       master_struct(i).burst_rise_nucleus(n,:) = nanmean(nanmean(master_struct(i).nucleus_array(s_ids_target,:)));
-      master_struct(i).burst_rise_virt_array(n,:) = nanmean(master_struct(i).virtual_array_dm(s_ids_target,:));    
-      master_struct(i).burst_rise_delta_array(n,:) = nanmean(master_struct(i).spot_array_dm(s_ids_target,:)-master_struct(i).virtual_array_dm(s_ids_target,:));    
+      master_struct(i).burst_rise_virt_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_target,:));    
+      
+      delta_array = master_struct(i).spot_array_dm(s_ids_target,:)-master_struct(i).virtual_array_dm(s_ids_target,:);
+      master_struct(i).burst_rise_delta_array(n,:) = nanmean(delta_array);    
+      master_struct(i).burst_rise_delta_vec(n) = nanmean(nanmean(delta_array(:,window_size+1:window_size+3),2)-nanmean(delta_array(:,window_size-2:window_size),2));    
       
       % as a control draw random subsample from all events
       s_ids_random = randsample(1:length(master_struct(i).lead_dur_vec),length(sample_options),true);    
       master_struct(i).burst_rise_hmm_rand_array(n,:) = nanmean(master_struct(i).hmm_array(s_ids_random,:));
-      master_struct(i).burst_rise_spot_rand_array(n,:) = nanmean(master_struct(i).spot_array_dm(s_ids_random,:));      
-      master_struct(i).burst_rise_virt_rand_array(n,:) = nanmean(master_struct(i).virtual_array_dm(s_ids_random,:));     
-      master_struct(i).burst_rise_delta_rand_array(n,:) = nanmean(master_struct(i).spot_array_dm(s_ids_random,:)-master_struct(i).virtual_array_dm(s_ids_random,:));
+      master_struct(i).burst_rise_spot_rand_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_random,:));      
+      master_struct(i).burst_rise_virt_rand_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_random,:));     
+      
+      delta_array_rand = master_struct(i).spot_array_dm(s_ids_random,:)-master_struct(i).virtual_array_dm(s_ids_random,:);
+      master_struct(i).burst_rise_delta_rand_array(n,:) = nanmean(delta_array_rand);
+      master_struct(i).burst_rise_delta_rand_vec(n) = nanmean(nanmean(delta_array_rand(:,window_size+1:window_size+3),2)-nanmean(delta_array_rand(:,window_size-2:window_size),2));    
   end
 
   % HMM trends
@@ -92,6 +103,7 @@ for i = 1:length(master_struct)
   % actual events
   master_struct(i).burst_rise_hmm_mean = nanmean(master_struct(i).burst_rise_hmm_array);
   master_struct(i).burst_rise_hmm_ste = nanstd(master_struct(i).burst_rise_hmm_array);
+  
   % randomized events
   master_struct(i).burst_rise_hmm_rand_mean = nanmean(master_struct(i).burst_rise_hmm_rand_array);
   master_struct(i).burst_rise_hmm_rand_ste = nanstd(master_struct(i).burst_rise_hmm_rand_array);
@@ -106,6 +118,8 @@ for i = 1:length(master_struct)
 
   master_struct(i).burst_rise_delta_mean = nanmean(master_struct(i).burst_rise_delta_array);
   master_struct(i).burst_rise_delta_ste = nanstd(master_struct(i).burst_rise_delta_array);
+  master_struct(i).br_delta_ub = master_struct(i).burst_rise_delta_mean + master_struct(i).burst_rise_delta_ste;
+  master_struct(i).br_delta_lb = master_struct(i).burst_rise_delta_mean - master_struct(i).burst_rise_delta_ste;
   
   % random events
   master_struct(i).burst_rise_spot_rand_mean = nanmean(master_struct(i).burst_rise_spot_rand_array);
@@ -136,15 +150,14 @@ end
 %% make figure
 close all
 
-cmap1 = brewermap([],'Set2');
-
 basic_surge_fig = figure;
+cmap1 = brewermap([],'Set2');
 
 % snail activity
 yyaxis right
 plot(time_axis,master_struct(1).burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-% ylim([.1 1.5])
+ylim([-2 20])
 % set(gca,'ytick',.1:.2:1.1)
 ax = gca;
 ax.YColor = 'black';
@@ -154,16 +167,17 @@ yyaxis left
 hold on
 
 % bio control
-p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean-master_struct(2).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
-ylabel('relative Dl concentration (au)')
+fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(5,:),'LineWidth',2);
+ylabel('de-trended Dl concentration (au)')
 
 % locus
-p2 = errorbar(time_axis,master_struct(1).burst_rise_spot_mean-master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 
-% locus
-p1 = plot(time_axis,master_struct(1).burst_rise_spot_rand_mean-master_struct(1).burst_rise_virt_rand_mean,'-','Color',cmap1(1,:),'LineWidth',2);
-
-
+% locus (randomized)
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
 
 % ylim([-20 25])
 % set(gca,'ytick',-20:5:25)
@@ -171,31 +185,32 @@ ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel('offset (minutes)')
-legend([p1 p2 p3],'Dl at {\it snail} locus (random events)','Dl at {\it snail} locus (burst events)', 'Dl at {\it hbP2P}', 'Location','southwest');
-%%
+legend([p2 p3 p1],'Dl at {\it snail} locus', 'Dl at {\it hbP2P}','virtual spot', 'Location','southwest');
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
-ylim([-.05 .07])
+% ylim([-.05 .07])
 set(gca,    'Box','off',...
             'Color',[228,221,209]/255,...            
             'TickLength',[0.02,0.05])    
 basic_surge_fig.Color = 'white';        
 basic_surge_fig.InvertHardcopy = 'off';
 % save
-saveas(basic_surge_fig,[FigPath 'snail_w_hbP2P_control.tif'])
-saveas(basic_surge_fig,[FigPath 'snail_w_hbP2P_control.pdf'])
+saveas(basic_surge_fig,[FigurePath 'snail_w_hbP2P_control.tif'])
+saveas(basic_surge_fig,[FigurePath 'snail_w_hbP2P_control.pdf'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compare to original results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-burst_comparison = figure;
+delta_surge_fig = figure;
+cmap1 = brewermap([],'Set2');
+
 % snail activity
 yyaxis right
 plot(time_axis,master_struct(1).burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
 ylabel('snail transcription (au)')
-% ylim([.1 1.1])
+ylim([-2 20])
 % set(gca,'ytick',.1:.2:1.1)
 ax = gca;
 ax.YColor = 'black';
@@ -204,22 +219,17 @@ ax.YColor = 'black';
 yyaxis left
 hold on
 
-% % virtual control
-% fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],...
-%   cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
-% plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+% bio control
+fill([time_axis fliplr(time_axis)],[master_struct(2).br_delta_ub fliplr(master_struct(2).br_delta_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p3 = plot(time_axis,master_struct(2).burst_rise_delta_mean,'-','Color',cmap1(5,:),'LineWidth',2);
+ylabel('relative Dl concentration (au)')
 
 % locus
-fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
-p1 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
-ylabel('relative Dl concentration (au)')
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_delta_ub fliplr(master_struct(1).br_delta_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,master_struct(1).burst_rise_delta_mean,'-','Color',cmap1(2,:),'LineWidth',2);
 
-% original result
-fill([time_axis fliplr(time_axis)],[master_struct(3).br_spot_ub fliplr(master_struct(3).br_spot_lb)],brighten(cmap1(2,:),-0.5),'FaceAlpha',.5,'EdgeAlpha',0)
-p2 = plot(time_axis,master_struct(3).burst_rise_spot_mean,'-','Color',brighten(cmap1(2,:),-0.5),'LineWidth',2);
-ylabel('relative Dl concentration (au)')
-
-p = plot(0,0);
+% % locus (randomized)
+% p1 = plot(time_axis,master_struct(1).burst_rise_spot_rand_mean,'-','Color',cmap1(1,:),'LineWidth',2);
 
 % ylim([-20 25])
 % set(gca,'ytick',-20:5:25)
@@ -227,17 +237,16 @@ ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel('offset (minutes)')
-legend([p1 p2],'Dl at {\it snail} (new)','Dl at {\it snail} (original)', 'Location','northwest');
-
+legend([p2 p3],'Dl at {\it snail} locus', 'Dl at {\it hbP2P}', 'Location','southwest');
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));
-ylim([-.05 .1])
+% ylim([-.05 .07])
 set(gca,    'Box','off',...
             'Color',[228,221,209]/255,...            
             'TickLength',[0.02,0.05])    
-burst_comparison.Color = 'white';        
-burst_comparison.InvertHardcopy = 'off';
+delta_surge_fig.Color = 'white';        
+delta_surge_fig.InvertHardcopy = 'off';
 % save
-saveas(burst_comparison,[FigPath 'burst_comparison.tif'])
-saveas(burst_comparison,[FigPath 'burst_comparison.pdf'])
+saveas(delta_surge_fig,[FigurePath 'dl_delta_snail_w_hbP2P_control.tif'])
+saveas(delta_surge_fig,[FigurePath 'dl_delta_snail_w_hbP2P_control.pdf'])
