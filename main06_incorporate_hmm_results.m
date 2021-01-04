@@ -19,7 +19,7 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function main06_incorporate_hmm_results(projectName,varargin)
+function hmm_input_output = main06_incorporate_hmm_results(projectName,varargin)
 
 close all
 addpath(genpath('utilities'))
@@ -50,14 +50,17 @@ end
 % get list of all inference subdirectories. By default, we'll generate
 % summaries for all non-empty inference sub-directory
 infDirList = dir([resultsDir 'w*']); % get list of all inference subdirectories. By default, we'll generate
-   
-for trace_i = 1:length(infDirList)
+if length(length(infDirList)) > 1
+    warning('Multiple inference directories found. This script will currently only process the first directory in the list')
+end
+
+for inf_i = 1%:length(infDirList)
   
     % get path to results
-    resultsPath = [infDirList(trace_i).folder filesep];
+    resultsPath = [infDirList(inf_i).folder filesep];
     
     % load inference options
-    load([resultsPath infDirList(trace_i).name filesep 'inferenceOptions.mat'])
+    load([resultsPath infDirList(inf_i).name filesep 'inferenceOptions.mat'])
     if length(fieldnames(inferenceOptions))==1
         inferenceOptions = inferenceOptions.inferenceOptions;
     end
@@ -71,7 +74,7 @@ for trace_i = 1:length(infDirList)
     maxDT = 1.2*Tres; % maximum distance from observed data point
     
     % load compiled inference files
-    load([resultsPath 'compiledResults_' infDirList(trace_i).name '.mat'],'compiledResults');
+    load([resultsPath 'compiledResults_' infDirList(inf_i).name '.mat'],'compiledResults');
     
     % load corresponding trace structure
     if ~inferenceOptions.ProteinBinFlag
@@ -87,9 +90,9 @@ for trace_i = 1:length(infDirList)
 
     % check for existence of fit structure
     trace_fit_flag = 1;
-    inf_files = dir([resultsPath infDirList(trace_i).name filesep 'hmm_results*.mat']);
-    if exist([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat']) > 0
-        fit_props = dir([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat']);
+    inf_files = dir([resultsPath infDirList(inf_i).name filesep 'hmm_results*.mat']);
+    if exist([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat']) > 0
+        fit_props = dir([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat']);
         fit_date = datenum(fit_props(1).date);
         hmm_date = datenum(inf_files(1).date);
         if fit_date > hmm_date
@@ -103,14 +106,14 @@ for trace_i = 1:length(infDirList)
     % perform viterbi trace decoding if necessary
     if trace_fit_flag    
         singleTraceFits = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
-                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(trace_i).name);        
+                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
     else
-        load([resultsPath 'singleTraceFits_' infDirList(trace_i).name '.mat'],'singleTraceFits')
+        load([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat'],'singleTraceFits')
     end
   
     % generate longform dataset
     if false%makeLongFormSet        
-        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(trace_i).name);
+        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(inf_i).name);
     end
 
 end
@@ -144,6 +147,9 @@ if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
         % basic indexing info
         ParticleID = hmm_input_output(trace_i).particleID(1);   
         fitIndex = find(fitParticleVec==ParticleID);
+        if isempty(fitIndex)
+            fitIndex = NaN;
+        end
         traceIndex = find(traceParticleVec==ParticleID);
   
         % extract time vectors
@@ -187,6 +193,9 @@ if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
         
     end
 end  
+
+% remove traces with not cpHMM fit info 
+hmm_input_output = hmm_input_output(~isnan([hmm_input_output.InferenceID]));
 
 % save results
 save([resultsDir 'hmm_input_output.mat'],'hmm_input_output')

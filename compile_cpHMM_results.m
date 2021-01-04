@@ -3,8 +3,8 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-% projectNameCell = {'20200807_WT', '20200807_opto_chronic'};
+% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
+projectNameCell = {'2xDl-Ven_hbP2P-mCh'};%{'2xDl-Ven_snaBAC-mCh'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)

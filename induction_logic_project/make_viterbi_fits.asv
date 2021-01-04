@@ -18,7 +18,6 @@ resultsRoot = 'S:\Nick\Dropbox\InductionLogic';
 resultsDir = [resultsRoot filesep project filesep 'cpHMM_results' filesep];
 
 infResultList = dir([resultsDir 'compiledResults*']);
-error('need to add logic to allow for different inference groups')
 
 % iterate through the directories and compile the results
 for inf = 1:length(infResultList)
@@ -61,24 +60,26 @@ for inf = 1:length(infResultList)
           for j = 1:numel(fnames)
               viterbi_fits(f).(fnames{j}) = viterbi_out.(fnames{j});
           end
-          
           viterbi_fits(f).fluo_exp = spot_struct_protein(fit_indices(f)).fluoInterp;
-          viterbi_fits(f).time = spot_struct_protein(fit_indices(f)).timeInterp;
-          viterbi_fits(f).protein = spot_struct_protein(fit_indices(f)).nuclear_protein_vecInterp;
-          
-          viterbi_fits(f).traceID = repelem(f,length(viterbi_fits(f).protein));
         end
         viterbi_master(g).viterbi_fits = viterbi_fits;
         viterbi_master(g).inferenceOptions = compiledResults.inferenceOptions;
-        viterbi_master(g).groupID = groupID_index(g);               
+        viterbi_master(g).groupID = groupID_index(g);
         
+        % create longform dataset if appropriate
+        trace_id_vec = [];
+        protein_vec = [];
+        time_vec = [];
+        for f = fit_indices
+            trace_id_vec = [trace_id_vec repelem(f,length(spot_struct_protein(f).fluoInterp))];
+            protein_vec = [protein_vec spot_struct_protein(f).nuclear_protein_vecInterp];
+            time_vec = [time_vec spot_struct_protein(f).timeInterp];
+        end
+        
+        longTable = [time_vec', [viterbi_fits.fluo_exp]', [viterbi_fits.fluo_viterbi]', [viterbi_fits.z_viterbi]'
         
     end
-    longArray = [double(trace_id_vec') double(time_vec'/60), double([viterbi_fits.fluo_exp]'), ...
-        double([viterbi_fits.fluo_viterbi]'), double(([viterbi_fits.z_viterbi]'-1)>0) double(protein_vec')];
-    longTable = array2table(longArray,'VariableNames',{'trace_id','time','spot_intensity','inferred_spot_intensity','inferred_promoter_state','protein_intensity'});
-
-    writetable(longTable,[infResultList(inf).folder filesep infResultList(inf).name '_longform.csv'])
+    
 end
 % make output data table
 for f = 1:length(fit_indices)

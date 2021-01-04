@@ -37,7 +37,7 @@ for e = 1
   divFactor = 10^ceil(log10(size(raw_array,2)));
   
   if length(ProteinFileList)>=e
-      raw_protein_table = readtable([DataPath ProteinFileList(e).name]);
+      raw_protein_table = readtable([DataPath ProteinFile(w).name]);
       raw_protein_array = raw_protein_table{:,:};
       % It looks like there are 10 spot frames for every protein frame
       proteinFrames = 1:10:length(time_vec);
@@ -46,8 +46,8 @@ for e = 1
     
   for i = 1:size(raw_array,2)
     if any(raw_array(:,i))
-%         spot_struct(i_pass).fluoFull = raw_array(:,i)';
-%         spot_struct(i_pass).timeFull = time_vec;
+        spot_struct(i_pass).fluoFull = raw_array(:,i)';
+        spot_struct(i_pass).timeFull = time_vec;
 
         % generate find first and last nonzero entry
         first_i = 1;%find(raw_array(:,i)'~=0,1);
@@ -59,7 +59,7 @@ for e = 1
         
         if length(ProteinFileList)>=e
           spot_struct_protein(i_pass).nuclear_protein_vecInterp = raw_protein_array_interp(first_i:last_i,i)';
-          spot_struct_protein(i_pass).nuclear_protein_vec = spot_struct_protein(i_pass).nuclear_protein_vecInterp;
+          spot_struct_protein(i_pass).nuclear_protein_vec = spot_struct(i_pass).nuclear_protein_vecInterp;
           spot_struct_protein(i_pass).nuclear_protein_vec(spot_struct_protein(i_pass).nuclear_protein_vec==0) = NaN; %NL: this mimics our formatting          
         end
         spot_struct(i_pass).timeInterp = time_vec(first_i:last_i);
@@ -71,16 +71,7 @@ for e = 1
         spot_struct(i_pass).particleID = e + i/divFactor;
         spot_struct(i_pass).alpha_frac = alpha_frac;
         spot_struct(i_pass).Tres = dT;
-        spot_struct(i_pass).TraceQCFlag = sum(spot_struct(i_pass).fluoInterp>0)>20;
-        spot_struct(i_pass).FrameQCFlags = repelem(spot_struct(i_pass).TraceQCFlag,length(spot_struct(i_pass).fluo));
-        
-        % add fields to protein structure
-        if length(ProteinFileList)>=e
-            fNames = fieldnames(spot_struct);
-            for f = 1:length(fNames)
-                spot_struct_protein(i_pass).(fNames{f}) = spot_struct(i_pass).(fNames{f});
-            end
-        end
+        spot_struct(i_pass).qcFlag = sum(spot_struct(i_pass).fluoFull>0)>20;
         i_pass = i_pass + 1;
     end    
   end
@@ -88,6 +79,3 @@ end
 
 % save
 save([DataPath 'spot_struct.mat'],'spot_struct')
-if ~isempty(ProteinFileList)
-    save([DataPath 'spot_struct_protein.mat'],'spot_struct_protein')
-end    

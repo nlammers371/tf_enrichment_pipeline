@@ -44,7 +44,6 @@ function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleT
     
     % add previously interpolated fields
     prevInterpFields = {'fluoInterp','APPosParticleInterp'};
-    newInterpNames = {'fluo','APPosParticle'};
     for a = 1:length(analysis_traces)
         time1 = analysis_traces(a).timeInterp;
         time2 = analysis_traces_interp(a).time;            
@@ -57,14 +56,14 @@ function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleT
             vecNew = NaN(size(time2));
             vecOrig = analysis_traces(a).(prevInterpFields{k});
             vecNew(toFilter) = vecOrig(fromFilter);
-            analysis_traces_interp(a).(newInterpNames{k}) = vecNew;
+            analysis_traces_interp(a).(prevInterpFields{k}) = vecNew;
         end
     end
 
     % lastly, add new fields from viterbi fits
     fit_particles = [singleTraceFits.particleID];
     fitFields = {'z_viterbi','v_viterbi','fluo_viterbi'};
-    newNames = {'promoter_state','initiation_rate','predicted_fluo'};
+    newNames = {'promoter_state','init_vec'predicted_fluo'};
     for a = 1:length(analysis_traces_interp)
         fitIndex = find(fit_particles==analysis_traces(a).particleID);
 

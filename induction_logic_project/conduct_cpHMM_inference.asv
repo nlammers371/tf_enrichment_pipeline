@@ -19,7 +19,7 @@ projectNameCell = {'20201117'};
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
-inferenceInfo.timeBins = {[0 Inf]};
+inferenceInfo.timeBins = {[5*30 41*30],[0 Inf]};
 % window_size = 15*60;
 % infStartTimes = 5*30:300:85*30;
 % inferenceInfo.timeBins = cell(size(infStartTimes));
