@@ -144,7 +144,7 @@ spot_array_dm = NaN(n_entries,2*window_size+1);
 virtual_array_dm = NaN(n_entries,2*window_size+1);    
 
 % detrended arrays
-swap_hmm_array_dt = NaN(n_entries,2*window_size+1);
+% swap_hmm_array_dt = NaN(n_entries,2*window_size+1);
 spot_array_dt = NaN(n_entries,2*window_size+1);
 % swap_array_dt = NaN(n_entries,2*window_size+1);
 mf_array = NaN(n_entries,2*window_size+1);

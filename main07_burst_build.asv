@@ -144,7 +144,7 @@ spot_array_dm = NaN(n_entries,2*window_size+1);
 virtual_array_dm = NaN(n_entries,2*window_size+1);    
 
 % detrended arrays
-swap_hmm_array_dt = NaN(n_entries,2*window_size+1);
+% swap_hmm_array_dt = NaN(n_entries,2*window_size+1);
 spot_array_dt = NaN(n_entries,2*window_size+1);
 % swap_array_dt = NaN(n_entries,2*window_size+1);
 mf_array = NaN(n_entries,2*window_size+1);
@@ -170,7 +170,7 @@ particle_iter_list = [];
 iter = 1;       
 for j = 1:numel(hmm_input_output)
     % core ID vectors
-    ParticleID = hmm_input_output(j).particleID;
+    ParticleID = hmm_input_output(j).particleID(1);
     particle_iter_list = [particle_iter_list ParticleID];
     ParticleSubID = sum(particle_iter_list==ParticleID);
     time = hmm_input_output(j).time;
@@ -266,7 +266,7 @@ for j = 1:numel(hmm_input_output)
 
             % save other info
             nucleus_protein_vec(iter) = nanmean(nucleus_fragment);
-            particle_id_vec(iter) = ParticleID;
+            particle_id_vec(iter) = ParticleID(1);
             particle_sub_id_vec(iter) = ParticleSubID;
             center_time_vec(iter) = time(id);
             lag_dur_vec(iter) = z_dur_lag_vec_full(id);
@@ -311,5 +311,6 @@ results_struct.lead_dur_vec = lead_dur_vec;
 results_struct.lag_size_vec = lag_size_vec;
 results_struct.lead_size_vec = lead_size_vec;
 results_struct.feature_sign_vec = feature_sign_vec;
+
 % save
-save([DataPath 'hmm_input_output_results_w' num2str(w) '_K' num2str(K) '_f' num2str(fluo_dim) 'D_p' num2str(protein_dim) 'D.mat'],'results_struct')
+save([resultsDir 'hmm_input_output_results.mat'],'results_struct')
