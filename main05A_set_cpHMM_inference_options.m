@@ -25,7 +25,7 @@ inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
 inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-inferenceInfo.SampleSize = 3000;
+inferenceInfo.SampleSize = 4500;
 inferenceInfo.useQCFlag = true;
 
 % Get basic project info and determing file paths

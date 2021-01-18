@@ -1,5 +1,5 @@
-function singleTraceFits = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
-                              analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infName)
+function singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
+                                      analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infName)
 
                           
     % get basic inference characteristics
@@ -7,13 +7,13 @@ function singleTraceFits = performSingleTraceFitsSoft(compiledResults, inference
     nSteps = inferenceOptions.nSteps;
     alpha = inferenceOptions.alpha;
     Tres = inferenceOptions.Tres;
-    
+    eps = 1e-4;
     % get grouping vectors
     groupID_vec = compiledResults.groupID_index;
     groupParticles = compiledResults.particle_ids;
 
     % initialize trace structure
-    singleTraceFits = struct; 
+    singleTraceFitsSS = struct; 
 
 %     % initialize random number generator
 %     rng(random_seed);
@@ -66,36 +66,37 @@ function singleTraceFits = performSingleTraceFitsSoft(compiledResults, inference
             end       
 %                 disp('conducting viterbi trace fits...')
 
-            v_fits = struct;
-            for f = 1:length(fluo_values)
+            soft_fits = struct;
+            r_vec = compiledResults.r_array_mean(:,g);
+            parfor f = 1:length(fluo_values)
     %             waitbar(f/numel(fluo_values),h);
 %                 viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, nStates, nSteps, alpha);
-                local_em_outputs = local_em_MS2_reduced_memory (fluo_values{f}, ...
-                                v', sigma, pi0_log, A_log, K, w, alpha, 1, eps);
-                fnames = fieldnames(viterbi_out);
-                for fn = 1:numel(fnames)
-                    v_fits(f).(fnames{fn}) = viterbi_out.(fnames{fn});
-                end        
+                local_em_outputs = local_em_MS2_reduced_memory (fluo_values(f), ...
+                                v', sigma, pi0_log, A_log, nStates, nSteps, alpha, 1, eps);
+                
+                soft_fits(f).state_prob_array = exp(local_em_outputs.soft_struct.p_z_log_soft{1});
+                soft_fits(f).transition_prob_array = exp(local_em_outputs.soft_struct.p_zz_log_soft{1});
+                soft_fits(f).r = r_vec;
             end
 
             % map back to trace fit structure               
             for f = 1:length(fluo_values)                    
-                fnames = fieldnames(v_fits(f));
+                fnames = fieldnames(soft_fits(f));
                 for fn = 1:numel(fnames)
-                    singleTraceFits(nextIndex).(fnames{fn}) = v_fits(f).(fnames{fn});
+                    singleTraceFitsSS(nextIndex).(fnames{fn}) = soft_fits(f).(fnames{fn});
                 end 
                 % add additional info
-                singleTraceFits(nextIndex).time = analysis_traces(fit_trace_indices(f)).timeInterp;
-                singleTraceFits(nextIndex).fluo_exp = fluo_values{f};
-                singleTraceFits(nextIndex).particleID = fit_trace_particles(f);
-                singleTraceFits(nextIndex).groupID = groupID_vec(g);
-                singleTraceFits(nextIndex).bootID = j;
-                singleTraceFits(nextIndex).infID = infID;
+                singleTraceFitsSS(nextIndex).time = analysis_traces(fit_trace_indices(f)).timeInterp;
+                singleTraceFitsSS(nextIndex).fluo_exp = fluo_values{f};
+                singleTraceFitsSS(nextIndex).particleID = fit_trace_particles(f);
+                singleTraceFitsSS(nextIndex).groupID = groupID_vec(g);
+                singleTraceFitsSS(nextIndex).bootID = j;
+                singleTraceFitsSS(nextIndex).infID = infID;
                 if isfield(analysis_traces,'APPosParticleInterp')
-                    singleTraceFits(nextIndex).APPos = analysis_traces(fit_trace_indices(f)).APPosParticleInterp;
+                    singleTraceFitsSS(nextIndex).APPos = analysis_traces(fit_trace_indices(f)).APPosParticleInterp;
                 end
 
-                nextIndex = length(singleTraceFits) + 1;
+                nextIndex = length(singleTraceFitsSS) + 1;
             end                
 
         end   
@@ -103,4 +104,4 @@ function singleTraceFits = performSingleTraceFitsSoft(compiledResults, inference
     end
     delete(wb);
     
-    save([resultsPath 'singleTraceFits_' infName '.mat'],'singleTraceFits')
+    save([resultsPath 'singleTraceFitsSS_' infName '.mat'],'singleTraceFitsSS')

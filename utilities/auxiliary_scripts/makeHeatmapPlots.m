@@ -5,7 +5,7 @@ function [heatmap_fig, ub, lb] = makeHeatmapPlots(Image, VisibleOn, Title, CLabe
         lb = round(prctile(Image(:),2),1);
     end
     if isempty(ub)
-        ub = round(prctile(Image(:),98),1);
+        ub = max([round(prctile(Image(:),98),1) 1.1]);
     end
     if VisibleOn
         heatmap_fig = figure;

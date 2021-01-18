@@ -34,9 +34,9 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
 %     NumWorkers = 24;
     % PSF info for 3D sampling
     use_psf_fit_dims = false; % NL: currently no supported
-    xy_sigma_um = 0.25;% um 
+    xy_sigma_um = 0.2;% um 
     xy_sigma_nuclear_um = 1.5;
-    z_sigma_um = 0.6; % um
+    z_sigma_um = 0.4; % um
     ignoreQC = true;    
     NumWorkers = [];
     segmentationMethod = 1;
