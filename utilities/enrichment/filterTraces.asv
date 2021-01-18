@@ -4,7 +4,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   % Supported grouping variables include: time, APPositionParticle, and nuclear_protein_vec
     
   % apply QC filter calculated in main01
-  analysis_traces = analysis_traces(~isnan([analysis_traces.TraceQCFlag]));
+  analysis_traces = analysis_traces(~isnan[analysis_traces.TraceQCFlag]==1);
   
   if inferenceOptions.ProteinBinFlag && inferenceOptions.FluoBinFlag  
     error('Protein and spot fluorescence binning are mutually exclusive inference options')
