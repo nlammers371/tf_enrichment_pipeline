@@ -211,9 +211,11 @@ grid off
 r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
-title(['Radial Concentration Profile (' inputString ')'])
+% title(['Radial Concentration Profile (' inputString ')'])
 r_ax.XLim = [0 1.2];
-StandardFigure(e,r_ax);
+r_ax.YLim = [.95 1.25];
+StandardFigure([],r_ax);
+set(gca,'ytick',0.95:0.05:1.25)
 % r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigurePath '_radial_enrichment.png'])
 

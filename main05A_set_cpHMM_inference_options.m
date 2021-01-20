@@ -9,14 +9,14 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'2xDl-Ven_snaBAC-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
-inferenceInfo.ProteinBinFlag = 1;
+inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
 inferenceInfo.timeBins = {[0 Inf]}; % should be longer than 15min
-inferenceInfo.apBins = [0 Inf];
+inferenceInfo.apBins = linspace(20,45,6);
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; % number of states in system
@@ -25,7 +25,7 @@ inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
 inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-inferenceInfo.SampleSize = 3000;
+inferenceInfo.SampleSize = 4500;
 inferenceInfo.useQCFlag = true;
 
 % Get basic project info and determing file paths

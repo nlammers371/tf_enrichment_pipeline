@@ -105,7 +105,7 @@ for inf_i = 1%:length(infDirList)
     
     % perform viterbi trace decoding if necessary
     if trace_fit_flag_viterbi
-        singleTraceFitsViterbi = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
+        singleTraceFits = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
                   analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
     else
         load([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat'],'singleTraceFits')
@@ -125,15 +125,15 @@ for inf_i = 1%:length(infDirList)
     end
     
     if trace_fit_flag_ss
-        singleTraceFitsSS = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
+        singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
                   analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
     else
-        load([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat'],'singleTraceFits')
+        load([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat'],'singleTraceFitsSS')
     end
 
     % generate longform dataset
     if false%makeLongFormSet        
-        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFitsViterbi, resultsPath, infDirList(inf_i).name);
+        resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(inf_i).name);
     end
 
 end
@@ -154,12 +154,12 @@ end
 disp('building input/output dataset...')
 
 % first combine HMM and raw fluoresence trace data points
-hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFitsViterbi);
+hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS);
 
 % next, incorporate local enrichment fields (if they exist)
 if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
     load([resultsRoot filesep 'spot_struct_protein.mat'],'spot_struct_protein')
-    fitParticleVec = [singleTraceFitsViterbi.particleID];
+    fitParticleVec = [singleTraceFits.particleID];
     traceParticleVec = [spot_struct_protein.particleID];
     
     for trace_i = 1:length(hmm_input_output)

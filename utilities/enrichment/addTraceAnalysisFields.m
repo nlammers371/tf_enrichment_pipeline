@@ -1,4 +1,4 @@
-function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleTraceFits)
+function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleTraceFitsViterbi,singleTraceFitsSS)
 
     % restrict to traces with spot info
     analysis_traces = analysis_traces(~isnan([analysis_traces.particleID]));
@@ -62,31 +62,43 @@ function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleT
     end
 
     % lastly, add new fields from viterbi fits
-    fit_particles = [singleTraceFits.particleID];
-    fitFields = {'z_viterbi','v_viterbi','fluo_viterbi'};
+    fit_particles = [singleTraceFitsViterbi.particleID];
+    nStates = length(singleTraceFitsSS(1).r);
+    vFitFields = {'z_viterbi','v_viterbi','fluo_viterbi'};
     newNames = {'promoter_state','initiation_rate','predicted_fluo'};
     for a = 1:length(analysis_traces_interp)
-        fitIndex = find(fit_particles==analysis_traces(a).particleID);
+        % add viterbi and soft fit info
+        fitIndexViterbi = find(fit_particles==analysis_traces(a).particleID);
 
         refTime = analysis_traces_interp(a).time;
 
-        if ~isempty(fitIndex)
+        if ~isempty(fitIndexViterbi)
             analysis_traces(a).hasHMMInfo = 1;
-            fitTime = singleTraceFits(fitIndex).time;
+            fitTime = singleTraceFitsViterbi(fitIndexViterbi).time;
             toFilter = ismember(refTime,fitTime);
+            toFilterTr = ismember(refTime(1:end-1),fitTime);
             if ~all(ismember(fitTime,refTime))
               error('issue with time cross-referencing')
             end
-            for f = 1:length(fitFields)
+            % viterbi fields
+            for f = 1:length(vFitFields)
                 vecNew = NaN(size(refTime));
-                vecFit = singleTraceFits(fitIndex).(fitFields{f});
+                vecFit = singleTraceFitsViterbi(fitIndexViterbi).(vFitFields{f});
                 vecNew(toFilter) = vecFit;
                 analysis_traces_interp(a).(newNames{f}) = vecNew;
             end
-
+            
+            % soft fit fields
+            analysis_traces_interp(a).state_prob_array = NaN(length(refTime),nStates);
+            analysis_traces_interp(a).state_prob_array(toFilter,:) = singleTraceFitsSS(fitIndexViterbi).state_prob_array';
+            
+            analysis_traces_interp(a).transition_prob_array = NaN(nStates,nStates,length(refTime)-1);
+            analysis_traces_interp(a).transition_prob_array(:,:,toFilterTr) = singleTraceFitsSS(fitIndexViterbi).transition_prob_array;
+            
+            analysis_traces_interp(a).r_vec_soft = analysis_traces_interp(a).state_prob_array*singleTraceFitsSS(fitIndexViterbi).r;
         else
             analysis_traces(a).hasHMMInfo = 0;
-            for f = 1:length(fitFields)                    
+            for f = 1:length(vFitFields)                    
                 analysis_traces_interp(a).(newNames{f}) = NaN(size(refTime));
             end
         end
