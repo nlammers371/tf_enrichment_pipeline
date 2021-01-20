@@ -5,7 +5,7 @@ function main04_make_exploratory_figs(projectName, varargin)
 close all force
 addpath(genpath('utilities'))
 
-[liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo, hasNucleusProbFiles] = headerFunction(projectName);
+[liveProject, ~, ~, ~, ~, hasProteinInfo, ~] = headerFunction(projectName);
 
 if ~hasProteinInfo
   warning('No input protein info associated with this project. Aborting protein sampling')

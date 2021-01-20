@@ -1,5 +1,14 @@
+clear 
+close all
 
+% set project paths
+Bcd_GFP_project_name = 'Bcd-GFP_hbP2P-mCh';
+liveProjectGFP = LiveProject(Bcd_GFP_project_name);
 
+Bcd_Venus_project_name = 'Bcd-Venus';
+liveProjectVenus = LiveProject(Bcd_GFP_project_name);
+
+[liveProject, ~, ~, ~, ~, hasProteinInfo, ~] = headerFunction(projectName);
 % load absolute Bcd concentration data from Gregor 2007
 bcd_abs_path = 'E:\Nick\LivemRNA\Dropbox (Personal)\processedenrichmentdata\absolute_calibration\GregorData2007\';
 bkg_data = readtable([bcd_abs_path 'Gregor2007Black.csv']);
@@ -13,8 +22,7 @@ close all
 addpath('../utilities/')
 % define basic path variables
 DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
-Bcd_GFP_project = 'Bcd-GFP_hbP2P-mCh';
-Bcd_Venus_project = 'Bcd-Venus';
+
 
 
 [RawResultsRoot, ~, ~] =   header_function(DropboxFolder, Bcd_GFP_project);
