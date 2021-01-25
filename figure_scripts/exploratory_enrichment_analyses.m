@@ -5,14 +5,26 @@ close all
 addpath(genpath('../utilities'));
 
 % set ID variables
-targetProjectName = 'Bcd-GFP_hbP2P-mCh';%'2xDl-Ven_snaBAC-mCh';
-controlProjectName = 'Bcd-GFP_snaBAC-mCh';%'2xDl-Ven_hbP2P-mCh';
+targetProjectName = '2xDl-Ven_snaBAC-mCh';%'Bcd-GFP_hbP2P-mCh';
+controlProjectName = '2xDl-Ven_hbP2P-mCh';%'Bcd-GFP_snaBAC-mCh';
+
+venusFlag = contains(targetProjectName,'Ven');
+
+proteinString = 'Dl';
+proteinStringLong = 'Dorsal';
+
+if contains(targetProjectName,'Bcd')
+    proteinString = 'Bcd';
+    proteinStringLong = 'Bicoid';
+end
 
 projectName_cell = {targetProjectName controlProjectName};% targetProjectOrig};
 
-
+% load absolute calibration info
+load("C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\absolute_calibration\calibration_info.mat")
+%%
 % load data
-master_input_output = cell(1,2);
+master_protein_info = cell(1,2);
 master_protein = cell(1,2);
 for i = 1:length(projectName_cell)
   
@@ -22,9 +34,9 @@ for i = 1:length(projectName_cell)
   resultsDir = [resultsRoot 'cpHMM_results' filesep];
   
   % load data
-%   load([resultsDir 'hmm_input_output.mat'])  
-%   master_input_output{i} = hmm_input_output;
-%   clear hmm_input_output;
+  load([resultsRoot 'proteinSamplingInfo.mat'])  
+  master_protein_info{i} = proteinSamplingInfo;
+  clear proteinSamplingInfo;
   
   load([resultsRoot 'spot_struct_protein.mat'])  
   master_protein{i} = spot_struct_protein;
@@ -35,6 +47,20 @@ for i = 1:length(projectName_cell)
       FigurePath = [liveProject.figurePath 'input_output' filesep];
       mkdir(FigurePath)
   end
+end
+
+% calculate the volume of the Gaussian integration kernel
+samplingXY_um = master_protein_info{1}.xy_sigma_um;
+samplingZ_um = master_protein_info{1}.z_sigma_um;
+samplingKernelVolume_um = ((2*pi)^1.5*samplingXY_um^2*samplingZ_um);
+samplingKernelVolume_px = samplingKernelVolume_um./calibration_info.VoxelSize;
+
+if venusFlag
+    calFactorAbs = calibration_info.venus_au_per_molecule;
+    calFactorNM = calibration_info.venus_au_per_nM;
+else
+    calFactorAbs = calibration_info.gfp_au_per_molecule;
+    calFactorNM = calibration_info.gfp_au_per_nM;
 end
 
 %% %%%%%%%%%%%%%%%%% Plot local enrichment vs nuclear Dl %%%%%%%%%%%%%%%%%%
@@ -64,7 +90,7 @@ control_delta_vec = control_spot_protein_vec - control_ctrl_protein_vec;
 
 % create bins
 protein_bins = linspace(prctile([target_nuclear_protein_vec(~target_dist_flags)],1),prctile([target_nuclear_protein_vec(~target_dist_flags)],99),n_bins + 1);
-protein_bins_plot = protein_bins(1:end-1) + diff(protein_bins)/2;
+
 % initialize bootstrap arrays
 target_delta_array = NaN(n_boots,n_bins);
 control_delta_array = NaN(n_boots,n_bins);
@@ -93,6 +119,15 @@ end
 %% make figures
 close all
 
+protein_bins_plot = protein_bins(1:end-1) + diff(protein_bins)/2;
+protein_bins_plot = protein_bins_plot/calFactorNM;
+%%%% Enrichment vs. nuclear concentration
+mean_enrichment_target_vec = nanmean(target_delta_array)*samplingKernelVolume_px/calFactorAbs;
+se_enrichment_target_vec = nanstd(target_delta_array)*samplingKernelVolume_px/calFactorAbs;
+
+mean_enrichment_control_vec = nanmean(control_delta_array)*samplingKernelVolume_px/calFactorAbs;
+se_enrichment_control_vec = nanstd(control_delta_array)*samplingKernelVolume_px/calFactorAbs;
+
 e_fig1 = figure;
 
 cmap1 = brewermap([],'Set2');
@@ -100,20 +135,20 @@ hold on
 
 plot([-.01+protein_bins_plot(1) .01+protein_bins_plot(end)],zeros(1,2),'--k')
 
-e1 = errorbar(protein_bins_plot,nanmean(target_delta_array),nanstd(target_delta_array),'-','Color','k');
+e1 = errorbar(protein_bins_plot,mean_enrichment_target_vec, se_enrichment_target_vec,'-','Color','k');
 e1.CapSize = 0;
-s1 = scatter(protein_bins_plot,nanmean(target_delta_array),'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColor','k');
+s1 = scatter(protein_bins_plot,mean_enrichment_target_vec,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColor','k');
 
-e2 = errorbar(protein_bins_plot,nanmean(control_delta_array),nanstd(control_delta_array),'-','Color','k');
+e2 = errorbar(protein_bins_plot, mean_enrichment_control_vec, se_enrichment_control_vec,'-','Color','k');
 e2.CapSize = 0;
-s2 = scatter(protein_bins_plot,nanmean(control_delta_array),'MarkerFaceColor',cmap1(5,:),'MarkerEdgeColor','k');
+s2 = scatter(protein_bins_plot,mean_enrichment_control_vec,'MarkerFaceColor',cmap1(5,:),'MarkerEdgeColor','k');
 
 
 ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
-xlabel('nuclear [Dl] (au)')
-ylabel('Dl enrichment (au)')
+xlabel(['nuclear [' proteinString '] (nM)'])
+ylabel(['number of extra ' proteinString ' at the locus'])
 legend([s1 s2],'{\it snail} locus', '{\it hbP2P} locus', 'Location','southwest');
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 
@@ -127,7 +162,7 @@ e_fig1.InvertHardcopy = 'off';
 saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.tif'])
 saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.pdf'])
       
-
+%%
 
 e_fig2 = figure;
 hold on
@@ -259,22 +294,22 @@ n_lags = 15;
 cov_type = 'coeff';
 
 % target locus
-target_local_vs_r = NaN(length(master_input_output{1}),2*n_lags+1);
-target_ctrl_vs_r = NaN(length(master_input_output{1}),2*n_lags+1);
-target_local_vs_f = NaN(length(master_input_output{1}),2*n_lags+1);
-target_ctrl_vs_f = NaN(length(master_input_output{1}),2*n_lags+1);
+target_local_vs_r = NaN(length(master_protein_info{1}),2*n_lags+1);
+target_ctrl_vs_r = NaN(length(master_protein_info{1}),2*n_lags+1);
+target_local_vs_f = NaN(length(master_protein_info{1}),2*n_lags+1);
+target_ctrl_vs_f = NaN(length(master_protein_info{1}),2*n_lags+1);
 
-target_f_vs_f = NaN(length(master_input_output{1}),2*n_lags+1);
+target_f_vs_f = NaN(length(master_protein_info{1}),2*n_lags+1);
 
 iter = 1;
-for i = 1:length(master_input_output{1})
+for i = 1:length(master_protein_info{1})
     % extract vectors
-    target_qc_flags = master_input_output{1}(i).dt_filter_gap;
-    target_ctrl_protein_vec = master_input_output{1}(i).serial_null_protein_vec;
-    target_spot_protein_vec = master_input_output{1}(i).spot_protein_vec;
+    target_qc_flags = master_protein_info{1}(i).dt_filter_gap;
+    target_ctrl_protein_vec = master_protein_info{1}(i).serial_null_protein_vec;
+    target_spot_protein_vec = master_protein_info{1}(i).spot_protein_vec;
 %     target_nuclear_protein_vec = [master_input_output{1}.nuclear_protein_vec];
-    target_fluo_vec = master_input_output{1}(i).fluo;
-    target_r_vec = master_input_output{1}(i).r_vec_soft';
+    target_fluo_vec = master_protein_info{1}(i).fluo;
+    target_r_vec = master_protein_info{1}(i).r_vec_soft';
     
     % find contiguous segments that are sufficiently long to use for xcov
     % calculation
@@ -295,16 +330,16 @@ for i = 1:length(master_input_output{1})
 end
 
 % target locus
-control_local_vs_r = NaN(length(master_input_output{2}),2*n_lags+1);
-control_local_vs_f = NaN(length(master_input_output{2}),2*n_lags+1);
+control_local_vs_r = NaN(length(master_protein_info{2}),2*n_lags+1);
+control_local_vs_f = NaN(length(master_protein_info{2}),2*n_lags+1);
 
 iter = 1;
-for i = 1:length(master_input_output{2})
+for i = 1:length(master_protein_info{2})
     % extract vectors
-    control_qc_flags = master_input_output{2}(i).dt_filter_gap;    
-    control_spot_protein_vec = master_input_output{2}(i).spot_protein_vec;
-    control_fluo_vec = master_input_output{2}(i).fluo;
-    control_r_vec = master_input_output{2}(i).r_vec_soft;
+    control_qc_flags = master_protein_info{2}(i).dt_filter_gap;    
+    control_spot_protein_vec = master_protein_info{2}(i).spot_protein_vec;
+    control_fluo_vec = master_protein_info{2}(i).fluo;
+    control_r_vec = master_protein_info{2}(i).r_vec_soft;
     
     % find contiguous segments that are sufficiently long to use for xcov
     % calculation
