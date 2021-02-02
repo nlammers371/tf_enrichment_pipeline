@@ -5,8 +5,8 @@ close all
 addpath(genpath('../utilities'));
 
 % set ID variables
-targetProjectName = 'Bcd-GFP_hbP2P-mCh';%'2xDl-Ven_snaBAC-mCh';
-controlProjectName = 'Bcd-GFP_snaBAC-mCh';%'2xDl-Ven_hbP2P-mCh';
+targetProjectName = '2xDl-Ven_snaBAC-mCh';%'Bcd-GFP_hbP2P-mCh';
+controlProjectName = '2xDl-Ven_hbP2P-mCh';%'Bcd-GFP_snaBAC-mCh';
 
 projectName_cell = {targetProjectName controlProjectName};% targetProjectOrig};
 
@@ -128,7 +128,7 @@ saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.tif'])
 saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.pdf'])
       
 
-
+%%
 e_fig2 = figure;
 hold on
 

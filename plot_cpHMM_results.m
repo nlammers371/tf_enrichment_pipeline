@@ -3,7 +3,7 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveS1Null','EveGtSL','EveGtSL-S1Null','EveWT'};
+projectNameCell = {'2xDl-Ven_snaBAC-mCh'};
 
 % Set basic plotting parameters
 xVar = 'fluo';
@@ -23,7 +23,7 @@ for p = 1:length(projectNameCell)
     projectName = projectNameCell{p};
 
     % get path to results
-    liveProject = LiveProject(projectName);
+    liveProject = LiveEnrichmentProject(projectName);
     resultsDir = [liveProject.dataPath filesep 'cpHMM_results' filesep];
     
     % make figure directory
@@ -75,13 +75,13 @@ for p = 1:length(projectNameCell)
         hold on
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            e = errorbar(compiledResults.fluo_mean(ind_list),compiledResults.init_vec_mean(ind_list),compiledResults.init_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
+            e = errorbar(compiledResults.protein_intensity_vec(ind_list),compiledResults.init_vec_mean(ind_list),compiledResults.init_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
             e.CapSize = 0;
         end
         s = [];
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            s(i) = scatter(compiledResults.fluo_mean(ind_list),compiledResults.init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');
+            s(i) = scatter(compiledResults.protein_intensity_vec(ind_list),compiledResults.init_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');
             if lgd_flag
               lgd_str(i) = {[lgd_prefix num2str(newVarArray(i,gpIndex))]};
             end
@@ -89,14 +89,14 @@ for p = 1:length(projectNameCell)
         grid on
 %         xlim(x_lim)
         % ylim([50 95])
-        xlabel('MS2 spot intensity (au)') % NL: need to make this dynamic
+        xlabel('average Dorsal concentration (au) (au)') % NL: need to make this dynamic
         ylabel('burst amplitude (au/min)')
         if lgd_flag
             legend(s,lgd_str{:},'Location','southeast')
         end
         title(['Burst Amplitude (r): ' projectName])
         set(gca,'Fontsize',14)
-        ylim(init_lims);
+%         ylim(init_lims);
 %         StandardFigure([],gca)
         box on
         saveas(r_trend,[figureDir, 'burst_amp_' additionalVar '.tif'])
@@ -108,23 +108,23 @@ for p = 1:length(projectNameCell)
         hold on
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            e = errorbar(compiledResults.fluo_mean(ind_list),compiledResults.dur_vec_mean(ind_list),compiledResults.dur_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
+            e = errorbar(compiledResults.protein_intensity_vec(ind_list),compiledResults.dur_vec_mean(ind_list),compiledResults.dur_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
             e.CapSize = 0;
         end
         s = [];
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            s(i) = scatter(compiledResults.fluo_mean(ind_list),compiledResults.dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');   
+            s(i) = scatter(compiledResults.protein_intensity_vec(ind_list),compiledResults.dur_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');   
         end        
         grid on
         title(['Burst Duration (1/k_{off}): ' projectName])
-        xlabel('MS2 spot intensity (au)') % NL: need to make this dynamic
+        xlabel('average Dorsal concentration (au) (au)') % NL: need to make this dynamic
         ylabel('burst duration (min)')
         if lgd_flag
             legend(s,lgd_str{:},'Location','southeast')
         end
         
-        ylim(dur_lims);
+%         ylim(dur_lims);
         set(gca,'Fontsize',14)
 %         StandardFigure([],gca)
         box on
@@ -138,24 +138,24 @@ for p = 1:length(projectNameCell)
         hold on
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            e = errorbar(compiledResults.fluo_mean(ind_list),compiledResults.freq_vec_mean(ind_list),compiledResults.freq_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
+            e = errorbar(compiledResults.protein_intensity_vec(ind_list),compiledResults.freq_vec_mean(ind_list),compiledResults.freq_vec_ste(ind_list),'o','Color','black','LineWidth',1);          
             e.CapSize = 0;
         end
         s = [];
         for i = 1:size(newVarArray,1)
             ind_list = find(indexList==i);
-            s(i) = scatter(compiledResults.fluo_mean(ind_list),compiledResults.freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');   
+            s(i) = scatter(compiledResults.protein_intensity_vec(ind_list),compiledResults.freq_vec_mean(ind_list),MarkerSize,'o','MarkerFaceColor',hm_cm(i+1,:),'MarkerEdgeColor','black');   
         end        
         grid on
         title(['Burst Frequency (k_{on}): ' projectName])
-        xlabel('MS2 spot intensity (au)') % NL: need to make this dynamic
+        xlabel('average Dorsal concentration (au) (au)') % NL: need to make this dynamic
         ylabel('burst frequency (1/min)')
         if lgd_flag
             legend(s,lgd_str{:},'Location','southeast')
         end        
 %         StandardFigure([],gca)
         set(gca,'Fontsize',14)
-        ylim(freq_lims)
+%         ylim(freq_lims)
         box on
         
         saveas(freq_trend,[figureDir,'burst_freq_' additionalVar '.tif']);
