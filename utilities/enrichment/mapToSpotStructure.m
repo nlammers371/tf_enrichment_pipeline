@@ -1,6 +1,8 @@
 function spot_struct_protein = mapToSpotStructure(spot_struct_protein,SamplingResults,RefStruct,SetFrameArray)
+
   disp('mapping parallelized data back to main data structure...')
   SampledFields = fieldnames(SamplingResults);
+  
   for i = 1:size(SetFrameArray,1)
     
       % read basic info from set_frame array

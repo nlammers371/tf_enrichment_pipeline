@@ -4,7 +4,7 @@ clear
 close all
 
 
-projectList = {'opto_knirps_WT'}; % Cell array containing all projects you wish to process
+projectList = {'2xDl-Ven_snaBAC-mCh'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
@@ -12,110 +12,29 @@ for p = 1:length(projectList)
   % get liveProject object
   liveProject = LiveEnrichmentProject(projectList{p});
   
-  % load compiled traces data
+  % load compiled traces dataot
+  disp('Loading spot structure...')
   load([liveProject.dataPath filesep 'spot_struct_protein.mat']);
   
-  % initialize grouping variables
+  % load AP map file
+  disp('load AP map file here...')
+  
+  % initialize grouping variables and add new position
   for i = 1:length(spot_struct_protein)
-    spot_struct_protein(i).APPosParticleInterpOrig = spot_struct_protein(i).APPosParticle; % rename native AP variable
-    spot_struct_protein(i).APPosParticle = NaN(size(spot_struct_protein(i).xPosParticle));
-    spot_struct_protein(i).StripeVec = NaN(size(spot_struct_protein(i).xPosParticle));
-    spot_struct_protein(i).ectopicFlag = NaN;
-    spot_struct_protein(i).Stripe = NaN;
+    spot_struct_protein(i).APPosParticleInterpOrig = spot_struct_protein(i).APPosParticleInterp; % rename native AP variable
+    spot_struct_protein(i).APPosParticleInterp = NaN(size(spot_struct_protein(i).xPosParticle));
+    
+    xPosVec = spot_struct_protein(i).xPosParticleInterp
   end
   
   % generate reference vector of setIDS
   setIDVec = [spot_struct_protein.setID];
   particleIDVec = [spot_struct_protein.particleID];
+    
+  % save
+  save([liveProject.dataPath filesep 'spot_struct_protein.mat'],'spot_struct_protein');
+  save([liveProject.dataPath filesep 'customDataOptions.mat'],'customDataOptions');
   
-  if liveProject.hasTracesCompiled
-      % pull normalized AP positions from custom-segmented data sets
-      numExperiments = length(liveProject.includedExperiments);
-      resultsDir = liveProject.includedExperiments{1}.userResultsFolder;
-      customDataPath = [resultsDir filesep customDataFolders{p} filesep];
-
-      % iterate through each individual experiment
-      for e = 1:numExperiments
-        currExperiment = liveProject.includedExperiments{e};
-
-        % dearch for corresponding custom data file
-        customFile = dir([customDataPath filesep '*' currExperiment.Prefix '*']);
-        if length(customFile) == 1
-          % load custom file
-          load([customFile.folder filesep customFile.name]);
-          if iscell(CompiledParticles)
-            CompiledParticles = CompiledParticles{1};
-          end
-          origParticleList = [CompiledParticles.OriginalParticle];
-          % get list of indices in combined data set that correspond to this
-          % embryo
-          expIndices = find(setIDVec==e & ~isnan(particleIDVec));
-          particleIDs = particleIDVec(expIndices);
-          % now loop through each particle
-          for ind = expIndices
-            % cross reference with custom set
-            ParticleID = spot_struct_protein(ind).particleID;
-
-            originalParticle = round(ParticleID * 1e4 - e*1e4);          
-
-            % cross reference frames and particle position
-            frameFilterTo = ismember(spot_struct_protein(ind).frames,CompiledParticles(origParticleList==originalParticle).Frame);
-            frameFilterFrom = ismember(CompiledParticles(origParticleList==originalParticle).Frame,spot_struct_protein(ind).frames);
-
-            % quick consistency check
-            if all(spot_struct_protein(ind).xPosParticle(frameFilterTo) == CompiledParticles(origParticleList==originalParticle).xPos(frameFilterFrom))
-              % assign            
-              if strcmp(projectList{p},'EveGtSL-S1Null')
-                spot_struct_protein(ind).APPosParticleNorm(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).APPos_Normalized(frameFilterFrom);
-              end                            
-              spot_struct_protein(ind).StripeVec(frameFilterTo) = CompiledParticles(origParticleList==originalParticle).Stripe(frameFilterFrom);
-            else
-              error('Problem with cross-referencing')
-            end
-          end
-        else
-          error(['Could not find custom file for Prefix: ' currExperiment.Prefix])
-        end    
-      end
-
-      % perform project-specific post-processing
-      endogenousRegions = endogenousGroups{p};
-      ectopicRegions = ectopicGroups{p};
-
-      for i = 1:length(spot_struct_protein)
-          if ~isnan(spot_struct_protein(i).particleID)
-              timeFilter = spot_struct_protein(i).time >= startTime;
-
-              spot_struct_protein(i).Stripe = mode(spot_struct_protein(i).StripeVec(timeFilter));
-              
-              if strcmp(projectList{p},'EveGtSL-S1Null')
-                meanAP = mean(spot_struct_protein(i).APPosParticleNorm(timeFilter));
-                % readjust boundary between 1.5 and 2
-                if meanAP <= 0.36 && spot_struct_protein(i).Stripe == 2
-                  spot_struct_protein(i).Stripe = 1.5;
-                elseif meanAP > 0.36 && spot_struct_protein(i).Stripe == 1.5
-                  spot_struct_protein(i).Stripe = 2;
-                end
-              end
-
-              % assign ectopic/endogenous status
-              if ismember(spot_struct_protein(i).Stripe,endogenousRegions)
-                spot_struct_protein(i).ectopicFlag = false;
-              elseif ismember(spot_struct_protein(i).Stripe,ectopicRegions) 
-                spot_struct_protein(i).ectopicFlag = true;
-              end
-          end
-      end
-      
-      % record data options
-      customDataOptions.endogenousRegions = endogenousRegions;
-      customDataOptions.ectopicRegions = ectopicRegions;
-      customDataOptions.startTime = startTime;
-
-      % save
-      save([liveProject.dataPath filesep 'spot_struct_protein.mat'],'spot_struct_protein');
-      save([liveProject.dataPath filesep 'customDataOptions.mat'],'customDataOptions');
-  end
   
   
 end
