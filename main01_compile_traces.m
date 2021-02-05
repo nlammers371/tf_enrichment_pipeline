@@ -386,9 +386,9 @@ end
 disp('interpolating data...')
 
 % generate interpolation fields
-interpFields = {'fluo'};
+interpFields = {'fluo','xPosParticle','yPosParticle','zPosParticle',};
 if has3DSpotInfo
-    interpFields(end+1) = {'fluo3D'};
+    interpFields(end+1:end+4) = {'fluo3D','xPosParticle3D','yPosParticle3D','zPosParticle3D'};
 end
 if hasAPInfo
     interpFields(end+1) = {'APPosParticle'};
