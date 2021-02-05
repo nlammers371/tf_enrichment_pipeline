@@ -8,8 +8,20 @@ addpath(genpath('../utilities'));
 targetProjectName = '2xDl-Ven_snaBAC-mCh';
 controlProjectName = '2xDl-Ven_hbP2P-mCh';
 
+venusFlag = contains(targetProjectName,'Ven');
+proteinString = 'Dl';
+proteinStringLong = 'Dorsal';
+
+if contains(targetProjectName,'Bcd')
+    proteinString = 'Bcd';
+    proteinStringLong = 'Bicoid';
+end
+
+
 projectName_cell = {targetProjectName controlProjectName};% targetProjectOrig};
 
+% get index of x axis
+load("C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\absolute_calibration\calibration_info.mat")
 
 % load data
 master_struct = struct;
@@ -19,7 +31,9 @@ for i = 1:length(projectName_cell)
   liveProject = LiveEnrichmentProject(projectName_cell{i});
   resultsRoot = [liveProject.dataPath filesep];
   resultsDir = [resultsRoot 'cpHMM_results' filesep];
-  
+  if i == 1
+      load([resultsRoot 'proteinSamplingInfo.mat'])
+  end
   % load data
   load([resultsDir 'hmm_input_output_results.mat'])
   fieldNames = fieldnames(results_struct);
@@ -35,7 +49,21 @@ for i = 1:length(projectName_cell)
   end
 end
 
+% calculate the volume of the Gaussian integration kernel
+samplingXY_um = proteinSamplingInfo.xy_sigma_um;
+samplingZ_um = proteinSamplingInfo.z_sigma_um;
+samplingKernelVolume_um = ((2*pi)^1.5*samplingXY_um^2*samplingZ_um);
+samplingKernelVolume_px = samplingKernelVolume_um./calibration_info.VoxelSize;
 
+if venusFlag
+    calFactorAbs = calibration_info.venus_au_per_molecule;
+    calFactorNM = calibration_info.venus_au_per_nM;
+else
+    calFactorAbs = calibration_info.gfp_au_per_molecule;
+    calFactorNM = calibration_info.gfp_au_per_nM;
+end
+
+%%
 Tres = 20; % seconds
 
 %  determine snip size
@@ -79,21 +107,21 @@ for i = 1:length(master_struct)
       % draw random subsample for qualifying events
       s_ids_target = randsample(sample_options,numel(sample_options),true);    
       master_struct(i).burst_rise_hmm_array(n,:) = nanmean(master_struct(i).hmm_array(s_ids_target,:));
-      master_struct(i).burst_rise_spot_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_target,:));
-      master_struct(i).burst_rise_nucleus(n,:) = nanmean(nanmean(master_struct(i).nucleus_array(s_ids_target,:)));
-      master_struct(i).burst_rise_virt_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_target,:));    
+      master_struct(i).burst_rise_spot_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_target,:)*samplingKernelVolume_px/calFactorAbs);
+      master_struct(i).burst_rise_nucleus(n,:) = nanmean(nanmean(master_struct(i).nucleus_array(s_ids_target,:)*samplingKernelVolume_px/calFactorAbs));
+      master_struct(i).burst_rise_virt_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_target,:)*samplingKernelVolume_px/calFactorAbs);    
       
-      delta_array = master_struct(i).spot_array_dm(s_ids_target,:)-master_struct(i).virtual_array_dm(s_ids_target,:);
+      delta_array = master_struct(i).spot_array_dm(s_ids_target,:)*samplingKernelVolume_px/calFactorAbs-master_struct(i).virtual_array_dm(s_ids_target,:)*samplingKernelVolume_px/calFactorAbs;
       master_struct(i).burst_rise_delta_array(n,:) = nanmean(delta_array);    
       master_struct(i).burst_rise_delta_vec(n) = nanmean(nanmean(delta_array(:,window_size+1:window_size+3),2)-nanmean(delta_array(:,window_size-2:window_size),2));    
       
       % as a control draw random subsample from all events
       s_ids_random = randsample(1:length(master_struct(i).lead_dur_vec),length(sample_options),true);    
       master_struct(i).burst_rise_hmm_rand_array(n,:) = nanmean(master_struct(i).hmm_array(s_ids_random,:));
-      master_struct(i).burst_rise_spot_rand_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_random,:));      
-      master_struct(i).burst_rise_virt_rand_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_random,:));     
+      master_struct(i).burst_rise_spot_rand_array(n,:) = nanmean(master_struct(i).spot_array_dt(s_ids_random,:)*samplingKernelVolume_px/calFactorAbs);      
+      master_struct(i).burst_rise_virt_rand_array(n,:) = nanmean(master_struct(i).virtual_array_dt(s_ids_random,:)*samplingKernelVolume_px/calFactorAbs);     
       
-      delta_array_rand = master_struct(i).spot_array_dm(s_ids_random,:)-master_struct(i).virtual_array_dm(s_ids_random,:);
+      delta_array_rand = master_struct(i).spot_array_dm(s_ids_random,:)*samplingKernelVolume_px/calFactorAbs-master_struct(i).virtual_array_dm(s_ids_random,:)*samplingKernelVolume_px/calFactorAbs;
       master_struct(i).burst_rise_delta_rand_array(n,:) = nanmean(delta_array_rand);
       master_struct(i).burst_rise_delta_rand_vec(n) = nanmean(nanmean(delta_array_rand(:,window_size+1:window_size+3),2)-nanmean(delta_array_rand(:,window_size-2:window_size),2));    
   end
@@ -149,6 +177,56 @@ end
 
 %% make figure
 close all
+basic_surge_fig = figure;
+cmap1 = brewermap([],'Set2');
+
+% snail activity
+yyaxis right
+plot(time_axis,master_struct(1).burst_rise_hmm_mean,'--','LineWidth',2,'Color','black');
+ylabel('snail transcription (au)')
+ylim([-2 20])
+% set(gca,'ytick',.1:.2:1.1)
+ax = gca;
+ax.YColor = 'black';
+
+% Dorsal activity
+yyaxis left
+hold on
+
+% bio control
+% fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
+% p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(5,:),'LineWidth',2);
+ylabel('extral Dl molecules')
+
+% locus
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p2 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:),'LineWidth',2);
+
+% locus (randomized)
+fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
+p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
+
+ylim([-1.5 2])
+% set(gca,'ytick',-20:5:25)
+ax = gca;
+ax.YColor = 'black';%cmap1(2,:);
+% grid on
+xlabel('offset (minutes)')
+legend([p2 p1],'Dl at {\it snail} locus', 'virtual spot', 'Location','southeast');
+set(gca,'Fontsize',14,'xtick',-4:2:4)
+chH = get(gca,'Children');
+set(gca,'Children',flipud(chH));
+% ylim([-.05 .07])
+set(gca,    'Box','off',...
+            'Color',[228,221,209]/255,...            
+            'TickLength',[0.02,0.05])    
+basic_surge_fig.Color = 'white';        
+basic_surge_fig.InvertHardcopy = 'off';
+% save
+saveas(basic_surge_fig,[FigurePath 'snail_w_virt_control.tif'])
+saveas(basic_surge_fig,[FigurePath 'snail_w_virt_control.pdf'])
+
+
 
 basic_surge_fig = figure;
 cmap1 = brewermap([],'Set2');
@@ -169,7 +247,7 @@ hold on
 % bio control
 fill([time_axis fliplr(time_axis)],[master_struct(2).br_spot_ub fliplr(master_struct(2).br_spot_lb)],cmap1(5,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p3 = plot(time_axis,master_struct(2).burst_rise_spot_mean,'-','Color',cmap1(5,:),'LineWidth',2);
-ylabel('de-trended Dl concentration (au)')
+ylabel('extral Dl molecules')
 
 % locus
 fill([time_axis fliplr(time_axis)],[master_struct(1).br_spot_ub fliplr(master_struct(1).br_spot_lb)],cmap1(2,:),'FaceAlpha',.5,'EdgeAlpha',0)
@@ -179,13 +257,13 @@ p2 = plot(time_axis,master_struct(1).burst_rise_spot_mean,'-','Color',cmap1(2,:)
 fill([time_axis fliplr(time_axis)],[master_struct(1).br_virt_ub fliplr(master_struct(1).br_virt_lb)],cmap1(3,:),'FaceAlpha',.5,'EdgeAlpha',0)
 p1 = plot(time_axis,master_struct(1).burst_rise_virt_mean,'-','Color',cmap1(3,:),'LineWidth',2);
 
-% ylim([-20 25])
+ylim([-1.5 2])
 % set(gca,'ytick',-20:5:25)
 ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel('offset (minutes)')
-legend([p2 p3 p1],'Dl at {\it snail} locus', 'Dl at {\it hbP2P}','virtual spot', 'Location','southwest');
+legend([p2 p3 p1],'Dl at {\it snail} locus', 'Dl at {\it hbP2P}','virtual spot', 'Location','southeast');
 set(gca,'Fontsize',14,'xtick',-4:2:4)
 chH = get(gca,'Children');
 set(gca,'Children',flipud(chH));

@@ -5,6 +5,8 @@ close all
 addpath(genpath('../utilities'));
 
 % set ID variables
+% targetProjectName = 'Bcd-GFP_hbP2P-mCh';
+% controlProjectName = 'Bcd-GFP_snaBAC-mCh';
 targetProjectName = '2xDl-Ven_snaBAC-mCh';%'Bcd-GFP_hbP2P-mCh';
 controlProjectName = '2xDl-Ven_hbP2P-mCh';%'Bcd-GFP_snaBAC-mCh';
 
@@ -34,7 +36,7 @@ for i = 1:length(projectName_cell)
   resultsDir = [resultsRoot 'cpHMM_results' filesep];
   
   % load data
-  load([resultsRoot 'proteinSamplingInfo.mat'])  
+    
   master_protein_info{i} = proteinSamplingInfo;
   clear proteinSamplingInfo;
   
@@ -74,14 +76,14 @@ n_bins = 25;
 n_boots = 100;
 
 % extract vectors
-target_dist_flags = [master_protein{1}.spot_edge_dist_vec]*PixelSize<0.8 | [master_protein{1}.time]< 900 | [master_protein{1}.time]>1200;
+target_dist_flags = [master_protein{1}.spot_edge_dist_vec]*PixelSize<0.8;% | [master_protein{1}.time]< 900 | [master_protein{1}.time]>1200;
 target_ctrl_protein_vec = [master_protein{1}.edge_null_protein_vec];
 target_spot_protein_vec = [master_protein{1}.spot_protein_vec];
 target_nuclear_protein_vec = [master_protein{1}.nuclear_protein_vec];
 target_fluo_vec = [master_protein{1}.fluo];
 target_delta_vec = target_spot_protein_vec - target_ctrl_protein_vec;
 
-control_dist_flags = [master_protein{2}.spot_edge_dist_vec]*PixelSize<0.8  | [master_protein{2}.time]< 900 & [master_protein{2}.time]>1200;
+control_dist_flags = [master_protein{2}.spot_edge_dist_vec]*PixelSize<0.8;%  | [master_protein{2}.time]< 900 & [master_protein{2}.time]>1200;
 control_ctrl_protein_vec = [master_protein{2}.edge_null_protein_vec];
 control_spot_protein_vec = [master_protein{2}.spot_protein_vec];
 control_nuclear_protein_vec = [master_protein{2}.nuclear_protein_vec];
@@ -121,6 +123,7 @@ close all
 
 protein_bins_plot = protein_bins(1:end-1) + diff(protein_bins)/2;
 protein_bins_plot = protein_bins_plot/calFactorNM;
+
 %%%% Enrichment vs. nuclear concentration
 mean_enrichment_target_vec = nanmean(target_delta_array)*samplingKernelVolume_px/calFactorAbs;
 se_enrichment_target_vec = nanstd(target_delta_array)*samplingKernelVolume_px/calFactorAbs;
@@ -148,10 +151,10 @@ ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
 xlabel(['nuclear [' proteinString '] (nM)'])
-ylabel(['number of extra ' proteinString ' at the locus'])
-legend([s1 s2],'{\it snail} locus', '{\it hbP2P} locus', 'Location','southwest');
-set(gca,'Fontsize',14,'xtick',-4:2:4)
-
+ylabel(['extra ' proteinString ' molecules at the locus'])
+legend([s1 s2],'{\it snail} locus (target)', '{\it hbP2P} locus (control)', 'Location','northwest');
+set(gca,'Fontsize',14)
+ylim([-1 10])
 xlim([protein_bins_plot(1)-.01 .01+protein_bins_plot(end)])
 set(gca,    'Box','off',...
             'Color',[228,221,209]/255,...            
@@ -159,10 +162,9 @@ set(gca,    'Box','off',...
 e_fig1.Color = 'white';        
 e_fig1.InvertHardcopy = 'off';
 % save
-saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.tif'])
-saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_dl.pdf'])
+saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_' proteinString '.tif'])
+saveas(e_fig1,[FigurePath 'enrichment_vs_nuclear_' proteinString '.pdf'])
       
-%%
 
 e_fig2 = figure;
 hold on
@@ -181,10 +183,10 @@ s2 = scatter(protein_bins_plot,nanmean(control_fluo_array),'MarkerFaceColor',cma
 ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
 % grid on
-xlabel('nuclear [Dl] (au)')
+xlabel(['nuclear [' proteinString '] (nM)'])
 ylabel('spot intensity (au)')
 legend([s1 s2],'{\it snail} locus', '{\it hbP2P} locus', 'Location','northwest');
-set(gca,'Fontsize',14,'xtick',-4:2:4)
+set(gca,'Fontsize',14)
 
 xlim([protein_bins_plot(1)-.01 .01+protein_bins_plot(end)])
 set(gca,    'Box','off',...
@@ -193,12 +195,12 @@ set(gca,    'Box','off',...
 e_fig2.Color = 'white';        
 e_fig2.InvertHardcopy = 'off';
 % save
-saveas(e_fig2,[FigurePath 'fluo_vs_nuclear_dl.tif'])
-saveas(e_fig2,[FigurePath 'fluo_vs_nuclear_dl.pdf'])
+saveas(e_fig2,[FigurePath 'fluo_vs_nuclear_' proteinString '.tif'])
+saveas(e_fig2,[FigurePath 'fluo_vs_nuclear_' proteinString '.pdf'])
 
 
-close all
-
+% close all
+%%
 e_fig3 = figure;
 hold on
 
@@ -206,31 +208,25 @@ hold on
 t_fluo_mean = nanmean(target_fluo_array);
 t_fluo_ub =  nanstd(target_fluo_array);
 t_fluo_lb = nanstd(target_fluo_array);
-t_delta_mean = nanmean(target_delta_array);
-t_delta_ub = nanstd(target_delta_array);
-t_delta_lb = nanstd(target_delta_array);
 
 c_fluo_mean = nanmean(control_fluo_array);
 c_fluo_ub = nanstd(control_fluo_array);
 c_fluo_lb = nanstd(control_fluo_array);
-c_delta_mean = nanmean(control_delta_array);
-c_delta_ub = nanstd(control_delta_array);
-c_delta_lb = nanstd(control_delta_array);
 
 
-e1 = errorbar(t_delta_mean,t_fluo_mean,t_fluo_lb,t_fluo_ub,t_delta_lb,t_delta_ub,'o','Color','k');
+e1 = errorbar(mean_enrichment_target_vec,t_fluo_mean,t_fluo_lb,t_fluo_ub, se_enrichment_target_vec,se_enrichment_target_vec,'o','Color','k');
 e1.CapSize = 0;
-s1 = scatter(t_delta_mean,t_fluo_mean,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColor','k');
+s1 = scatter(mean_enrichment_target_vec,t_fluo_mean,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColor','k');
 
-e2 = errorbar(c_delta_mean,c_fluo_mean,c_fluo_lb,c_fluo_ub,c_delta_lb,c_delta_ub,'o','Color','k');
+e2 = errorbar(mean_enrichment_control_vec,c_fluo_mean,c_fluo_lb,c_fluo_ub,se_enrichment_target_vec,se_enrichment_target_vec,'o','Color','k');
 e2.CapSize = 0;
-s2 = scatter(c_delta_mean,c_fluo_mean,'MarkerFaceColor',cmap1(5,:),'MarkerEdgeColor','k');
+s2 = scatter(mean_enrichment_control_vec,c_fluo_mean,'MarkerFaceColor',cmap1(5,:),'MarkerEdgeColor','k');
 
 ax = gca;
 ax.YColor = 'black';%cmap1(2,:);
-xlim([-.1 .35])
+xlim([-1 10])
 % grid on
-xlabel('Dl enrichment (au)')
+xlabel(['extra ' proteinString ' molecules at the locus'])
 ylabel('spot intensity (au)')
 legend([s1 s2],'{\it snail} locus', '{\it hbP2P} locus', 'Location','northwest');
 set(gca,'Fontsize',14)
@@ -249,7 +245,7 @@ e_fig4 = figure;
 hold on
 
 
-e1 = errorbar(t_delta_mean,t_fluo_mean,t_fluo_lb,t_fluo_ub,t_delta_lb,t_delta_ub,'o','Color','k');
+e1 = errorbar(t_delta_mean,t_fluo_mean,t_fluo_lb,t_fluo_ub,se_enrichment_target_vec,se_enrichment_target_vec,'o','Color','k');
 e1.CapSize = 0;
 s1 = scatter(t_delta_mean,t_fluo_mean,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColor','k');
 
