@@ -376,7 +376,7 @@ for i = 1:length(ap_cell)
 end
 %%
 
-for i = 1:length(ap_cell)
+for i = length(ap_cell)%1:length(ap_cell)
     ap_indices_iter = ap_cell{i};
     
     
@@ -386,9 +386,9 @@ for i = 1:length(ap_cell)
     colormap(cmap1)
     iter = 1;
     for a = ap_indices_iter
-        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0,'LineWidth',.5);
     %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
-        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
+        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),50,'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
         iter = iter + 1;
     end
     caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
@@ -522,12 +522,12 @@ for i = length(ap_cell)
         fit_Kd = mean(HM_points(:,iter));
         fit_profile = hill_fun([fit_Kd,fit_hill]);
         
-        plot(knirps_axis,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
+        plot(knirps_axis-fit_Kd,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
         
         
-        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+        errorbar(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
     %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
-        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
+        scatter(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
         
         
         iter = iter + 1;
@@ -542,7 +542,7 @@ for i = length(ap_cell)
     grid on
     set(gca,'FontSize',14)
     set(gca,'Color',[228,221,209]/255) 
-    xlim([1 11])
+%     xlim([1 11])
     ax = gca;
     ax.YAxis(1).Color = 'k';
     ax.XAxis(1).Color = 'k';
@@ -552,6 +552,56 @@ for i = length(ap_cell)
 
     saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_' num2str(i) '.png'])
     saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_' num2str(i) '.pdf'])
+end
+
+%%
+
+for i = length(ap_cell)
+    ap_indices_iter = ap_cell{i};
+    
+    
+    ap_knirps_fig = figure;
+    hold on
+    cmap1 = flipud(brewermap(length(ap_indices),'PrGn'));
+    colormap(cmap1)
+    iter = 1;
+    for a = ap_indices_iter
+        
+        % add fit profile
+        fit_hill = mean(hill_coefficients(:,iter));
+        fit_Kd = mean(HM_points(:,iter));
+        fit_profile = hill_fun([fit_Kd,fit_hill]);
+        
+        plot(knirps_axis-fit_Kd,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
+        
+        
+        errorbar(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
+        scatter(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
+        
+        
+        iter = iter + 1;
+    end
+    caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
+    h = colorbar;
+
+    xlabel('relative [Knirps] (au)');
+    ylabel('fraction of {\it eve} loci still on');
+    ylabel(h,'AP position')
+
+    grid on
+    set(gca,'FontSize',14)
+    set(gca,'Color',[228,221,209]/255) 
+    xlim([-7 7])
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+
+    ap_knirps_fig.InvertHardcopy = 'off';
+    set(gcf,'color','w'); 
+
+    saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_rel_' num2str(i) '.png'])
+    saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_rel_' num2str(i) '.pdf'])
 end
 
 %%
