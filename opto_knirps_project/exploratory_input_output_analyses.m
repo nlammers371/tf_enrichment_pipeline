@@ -7,7 +7,7 @@ liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
-load([resultsRoot 'spot_struct.mat'])
+load([resultsRoot 'spot_struct_corrected.mat'])
 FigurePath = [liveProject.figurePath 'input_output' filesep];
 mkdir(FigurePath)
 
@@ -101,7 +101,7 @@ end
 %% Look at mean vectors
 nBoots = 100;
 
-ap_bins = linspace(0.49,0.76,28);
+ap_bins = linspace(-0.12,0.12,21);
 ap_groups = discretize(ap_vec_long,ap_bins); 
 ap_groups_mean = discretize(mean_ap,ap_bins); 
 ap_groups_off = discretize(off_ap,ap_bins); 
@@ -144,9 +144,9 @@ bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
 
 ap_axis = 100*(ap_bins(1:end-1) + diff(ap_bins)/2);
-ap_filter = ap_axis>=55 & ap_axis <=67;
+ap_filter = ap_axis>=-6 & ap_axis <=4.5;
 ap_indices = find(ap_filter);
-ap_axis = ap_axis - 61;
+%ap_axis = ap_axis - 61;
 % fraction on
 fraction_on_fig = figure;
 hold on
@@ -272,10 +272,13 @@ for t = 1:length(time_bins)
         end
     end
 end
-  
+ 
 %% Generate predicted mRNA
 % generate decay kernel
 close all
+
+% which time to plot for knirps
+time_plot = 19;
 
 eve_half_life = 7;
 eve_decay_kernel = exp(-time_bins'/eve_half_life/60);
@@ -302,7 +305,7 @@ hold on
 
 yyaxis left
 % f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(end,:)*1e-5 zeros(size(knirps_time_array_mean(end,:)))],k_green);
-plot(ap_axis,knirps_time_array_mean(end,:)*1e-5,'Color','k','LineWidth',3)
+plot(ap_axis,knirps_time_array_mean(time_plot,:)*1e-5,'Color','k','LineWidth',3)
 % f.FaceAlpha = 0.2;
 ylabel('[Knirps] (au)');
 set(gca,'YColor',k_green)
@@ -332,7 +335,8 @@ saveas(mRNA_fig,[FigurePath 'mRNA_fig.png'])
 saveas(mRNA_fig,[FigurePath 'mRNA_fig.pdf'])
 
 %% make plots
-ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:9) ap_indices(1:end)};
+ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:end)}; %ap_indices(1:9) ap_indices(1:end)};
+%ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:9) ap_indices(1:end)};
 close all
 knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
 knirps_axis = knirps_axis*1e-5;

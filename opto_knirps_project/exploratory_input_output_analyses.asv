@@ -7,7 +7,7 @@ liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
-load([resultsRoot 'spot_struct.mat'])
+load([resultsRoot 'spot_struct_corrected.mat'])
 FigurePath = [liveProject.figurePath 'input_output' filesep];
 mkdir(FigurePath)
 
@@ -101,7 +101,7 @@ end
 %% Look at mean vectors
 nBoots = 100;
 
-ap_bins = linspace(0.49,0.76,28);
+ap_bins = linspace(-0.12,0.12,25);
 ap_groups = discretize(ap_vec_long,ap_bins); 
 ap_groups_mean = discretize(mean_ap,ap_bins); 
 ap_groups_off = discretize(off_ap,ap_bins); 
@@ -144,9 +144,9 @@ bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
 
 ap_axis = 100*(ap_bins(1:end-1) + diff(ap_bins)/2);
-ap_filter = ap_axis>=55 & ap_axis <=67;
+ap_filter = ap_axis>=-5 & ap_axis <=4;
 ap_indices = find(ap_filter);
-ap_axis = ap_axis - 61;
+%ap_axis = ap_axis - 61;
 % fraction on
 fraction_on_fig = figure;
 hold on
@@ -272,10 +272,13 @@ for t = 1:length(time_bins)
         end
     end
 end
-  
+ 
 %% Generate predicted mRNA
 % generate decay kernel
 close all
+
+% which time to plot for knirps
+time_plot = 19;
 
 eve_half_life = 7;
 eve_decay_kernel = exp(-time_bins'/eve_half_life/60);
@@ -301,14 +304,19 @@ mRNA_fig = figure;
 hold on
 
 yyaxis left
-f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(end,:)*1e-5 zeros(size(knirps_time_array_mean(end,:)))],k_green);
-f.FaceAlpha = 0.2;
+% f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(end,:)*1e-5 zeros(size(knirps_time_array_mean(end,:)))],k_green);
+plot(ap_axis,knirps_time_array_mean(time_plot,:)*1e-5,'Color','k','LineWidth',3)
+% f.FaceAlpha = 0.2;
 ylabel('[Knirps] (au)');
 set(gca,'YColor',k_green)
 
 yyaxis right
-errorbar(ap_axis,predicted_eve_profile_mean(end,:)*1e-5,predicted_eve_profile_ste(end,:)*1e-5,'Color','k','CapSize',0);
-s = scatter(ap_axis,predicted_eve_profile_mean(end,:)*1e-5,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
+% errorbar(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),predicted_eve_profile_ste(end,:)*1e-5,'Color',mRNA_red,'CapSize',0);
+% plot(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),'Color',brighten(mRNA_red,0),'LineWidth',1.5) % NL: applying mild smoothing since this is illustrative (not quantitative)
+% s = scatter(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.5;
 set(gca,'YColor',mRNA_red)
 xlabel('AP position (% embryo length)');
 ylabel('accumulated {\it eve} mRNA (au)');
@@ -327,7 +335,8 @@ saveas(mRNA_fig,[FigurePath 'mRNA_fig.png'])
 saveas(mRNA_fig,[FigurePath 'mRNA_fig.pdf'])
 
 %% make plots
-ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:9) ap_indices(1:end)};
+ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:end)}; %ap_indices(1:9) ap_indices(1:end)};
+%ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:9) ap_indices(1:end)};
 close all
 knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
 knirps_axis = knirps_axis*1e-5;
@@ -371,19 +380,19 @@ for i = 1:length(ap_cell)
 end
 %%
 
-for i = 1:length(ap_cell)
+for i = length(ap_cell)%1:length(ap_cell)
     ap_indices_iter = ap_cell{i};
     
     
     ap_knirps_fig = figure;
     hold on
-    cmap1 = flipud(brewermap(length(ap_indices),'RdBu'));
+    cmap1 = flipud(brewermap(length(ap_indices),'PrGn'));
     colormap(cmap1)
     iter = 1;
     for a = ap_indices_iter
-        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0,'LineWidth',.5);
     %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
-        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
+        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),50,'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
         iter = iter + 1;
     end
     caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
@@ -471,7 +480,7 @@ end
 
 %% fit simple hill function to each ap position
 
-nBoots = 10;
+nBoots = 100;
 % fit curves to each ap position and compare the parameters
 hill_coefficients = NaN(nBoots,length(ap_indices));
 HM_points = NaN(nBoots,length(ap_indices));
@@ -501,24 +510,30 @@ delete(wb);
 hill_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_axis.^x(2));
 
 
-for i = 1:length(ap_cell)
+for i = length(ap_cell)
     ap_indices_iter = ap_cell{i};
     
     
     ap_knirps_fig = figure;
     hold on
-    cmap1 = flipud(brewermap(length(ap_indices),'RdBu'));
+    cmap1 = flipud(brewermap(length(ap_indices),'PrGn'));
     colormap(cmap1)
     iter = 1;
     for a = ap_indices_iter
-        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
-    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
-        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
         
         % add fit profile
         fit_hill = mean(hill_coefficients(:,iter));
         fit_Kd = mean(HM_points(:,iter));
-        fit_profile = hill_fun([test_k,fit_hill]);
+        fit_profile = hill_fun([fit_Kd,fit_hill]);
+        
+        plot(knirps_axis-fit_Kd,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
+        
+        
+        errorbar(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
+        scatter(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
+        
+        
         iter = iter + 1;
     end
     caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
@@ -531,7 +546,7 @@ for i = 1:length(ap_cell)
     grid on
     set(gca,'FontSize',14)
     set(gca,'Color',[228,221,209]/255) 
-    xlim([1 11])
+%     xlim([1 11])
     ax = gca;
     ax.YAxis(1).Color = 'k';
     ax.XAxis(1).Color = 'k';
@@ -541,6 +556,56 @@ for i = 1:length(ap_cell)
 
     saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_' num2str(i) '.png'])
     saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_' num2str(i) '.pdf'])
+end
+
+%%
+
+for i = length(ap_cell)
+    ap_indices_iter = ap_cell{i};
+    
+    
+    ap_knirps_fig = figure;
+    hold on
+    cmap1 = flipud(brewermap(length(ap_indices),'PrGn'));
+    colormap(cmap1)
+    iter = 1;
+    for a = ap_indices_iter
+        
+        % add fit profile
+        fit_hill = mean(hill_coefficients(:,iter));
+        fit_Kd = mean(HM_points(:,iter));
+        fit_profile = hill_fun([fit_Kd,fit_hill]);
+        
+        plot(knirps_axis-fit_Kd,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
+        
+        
+        errorbar(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
+        scatter(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
+        
+        
+        iter = iter + 1;
+    end
+    caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
+    h = colorbar;
+
+    xlabel('relative [Knirps] (au)');
+    ylabel('fraction of {\it eve} loci still on');
+    ylabel(h,'AP position')
+
+    grid on
+    set(gca,'FontSize',14)
+    set(gca,'Color',[228,221,209]/255) 
+    xlim([-7 7])
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+
+    ap_knirps_fig.InvertHardcopy = 'off';
+    set(gcf,'color','w'); 
+
+    saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_rel_' num2str(i) '.png'])
+    saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_rel_' num2str(i) '.pdf'])
 end
 
 %%
