@@ -13,6 +13,14 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   % generate stripped down data structure
   trace_struct_filtered = struct;
   
+  for i = 1:length(analysis_traces)
+      time = analysis_traces(i).timeInterp;
+      if ~isfield(inferenceOptions,'Tres') && length(time)>=2
+          inferenceOptions.Tres = time(2)-time(1);
+          break
+      end
+  end
+    
   i_pass = 1;
   for i = 1:length(analysis_traces)    
       if inferenceOptions.fluo3DFlag
@@ -20,10 +28,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
       else
           fluo = analysis_traces(i).fluoInterp;
       end
-      time = analysis_traces(i).timeInterp;    
-      if ~isfield(inferenceOptions,'Tres') && length(time)>=2
-        inferenceOptions.Tres = time(2)-time(1);
-      end
+      time = analysis_traces(i).timeInterp;          
       fluo_raw = analysis_traces(i).fluo;
       time_raw = analysis_traces(i).time;
       
