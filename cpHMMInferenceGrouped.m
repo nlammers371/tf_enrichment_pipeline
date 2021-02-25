@@ -60,7 +60,8 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   save([outDir 'inferenceOptions.mat'],'inferenceOptions');
   
   % iterate through designated groups
-  for t = randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false)  
+  inferenceIDVecShuffled =  randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false);
+  for t = inferenceIDVecShuffled
     
       % find subset of eligible traces
       iter_filter = indexInfo.indexList == indexInfo.indexVecUnique(t);
@@ -218,9 +219,10 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
           % save
           out_file = [outDir fName_sub rand_string];          
           save([out_file '.mat'], 'output');           
-      end  
+      end 
+      
       if ~inferenceOptions.savioFlag
-        waitbar(t/length(indexInfo.indexVecUnique),h)
+        waitbar(t/length(inferenceIDVecShuffled),h)
       end
   end
   if ~inferenceOptions.savioFlag
