@@ -101,7 +101,7 @@ end
 %% Look at mean vectors
 nBoots = 100;
 
-ap_bins = linspace(-0.12,0.12,21);
+ap_bins = linspace(-0.12,0.12,25);
 ap_groups = discretize(ap_vec_long,ap_bins); 
 ap_groups_mean = discretize(mean_ap,ap_bins); 
 ap_groups_off = discretize(off_ap,ap_bins); 
@@ -144,7 +144,7 @@ bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
 
 ap_axis = 100*(ap_bins(1:end-1) + diff(ap_bins)/2);
-ap_filter = ap_axis>=-6 & ap_axis <=4.5;
+ap_filter = ap_axis>=-5 & ap_axis <=4;
 ap_indices = find(ap_filter);
 %ap_axis = ap_axis - 61;
 % fraction on
@@ -343,23 +343,19 @@ knirps_axis = knirps_axis*1e-5;
 time_axis = time_bins(1:end-1) + diff(time_bins)/2;
 time_axis = time_axis/60;
 
-cmap_bin_num = 100;
 
 for i = 1:length(ap_cell)
     ap_indices_iter = ap_cell{i};
   
     ap_time_fig = figure;
     hold on
-    %cmap1 = brewermap(length(ap_indices),'blues');
-    cmap1 = brewermap(cmap_bin_num,'blues');
+    cmap1 = brewermap(length(ap_indices),'blues');
     colormap(cmap1)
-    %iter = 1;
+    iter = 1;
     for a = ap_indices_iter
         errorbar(time_axis,frac_on_time_array_mean(:,a),frac_on_time_array_ste(:,a),'Color','k','CapSize',0);
-        %scatter(time_axis,frac_on_time_array_mean(:,a),'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
-        cmap_bin = round((ap_axis(a)-ap_axis(ap_indices(1)))*(cmap_bin_num-1)/(ap_axis(ap_indices(end))-ap_axis(ap_indices(1))))+1;
-        scatter(time_axis,frac_on_time_array_mean(:,a),'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k')
-        %iter = iter + 1;
+        scatter(time_axis,frac_on_time_array_mean(:,a),'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
+        iter = iter + 1;
     end
     caxis([ap_axis(ap_indices(1)) ap_axis(ap_indices(end))])
     h = colorbar;
@@ -386,7 +382,8 @@ end
 
 for i = length(ap_cell)%1:length(ap_cell)
     ap_indices_iter = ap_cell{i};
-      
+    
+    
     ap_knirps_fig = figure;
     hold on
     cmap1 = flipud(brewermap(length(ap_indices),'PrGn'));
@@ -447,9 +444,9 @@ end
 % ylabel('fraction of {\it eve} loci still on');
 % ylabel(h,'AP position')
 % 
-% %grid on
+% grid on
 % set(gca,'FontSize',14)
-% %set(gca,'Color',[228,221,209]/255) 
+% set(gca,'Color',[228,221,209]/255) 
 % xlim([2 12])
 % ax = gca;
 % ax.YAxis(1).Color = 'k';
@@ -457,7 +454,8 @@ end
 % 
 % ap_knirps_fig.InvertHardcopy = 'off';
 % set(gcf,'color','w'); 
-% 
+
+% %%
 % caxis(100*[ap_bins(ap_indices(1)),ap_bins(ap_indices(end))])
 % h = colorbar;
 % 
@@ -465,9 +463,9 @@ end
 % ylabel('fraction of {\it eve} loci still on');
 % ylabel(h,'AP position')
 % 
-% %grid on
+% grid on
 % set(gca,'FontSize',14)
-% %set(gca,'Color',[228,221,209]/255) 
+% set(gca,'Color',[228,221,209]/255) 
 % xlim([0 10])
 % ax = gca;
 % ax.YAxis(1).Color = 'k';
@@ -476,8 +474,8 @@ end
 % ap_knirps_fig.InvertHardcopy = 'off';
 % set(gcf,'color','w'); 
 %     
-% saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_v2.png'])
-% saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_v2.pdf'])
+% saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps.png'])
+% saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps.pdf'])
 
 
 %% fit simple hill function to each ap position
@@ -529,7 +527,6 @@ for i = length(ap_cell)
         fit_profile = hill_fun([fit_Kd,fit_hill]);
         
         plot(knirps_axis-fit_Kd,fit_profile,'Color',[cmap1(iter,:) .5],'LineWidth',1.5)
-  
         
         
         errorbar(knirps_axis-fit_Kd,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
@@ -548,7 +545,7 @@ for i = length(ap_cell)
 
     grid on
     set(gca,'FontSize',14)
-    %set(gca,'Color',[228,221,209]/255) 
+    set(gca,'Color',[228,221,209]/255) 
 %     xlim([1 11])
     ax = gca;
     ax.YAxis(1).Color = 'k';
@@ -604,7 +601,7 @@ for i = length(ap_cell)
     ax.YAxis(1).Color = 'k';
     ax.XAxis(1).Color = 'k';
 
-    %ap_knirps_fig.InvertHardcopy = 'off';
+    ap_knirps_fig.InvertHardcopy = 'off';
     set(gcf,'color','w'); 
 
     saveas(ap_knirps_fig,[FigurePath 'fraction_on_vs_knirps_fit_rel_' num2str(i) '.png'])

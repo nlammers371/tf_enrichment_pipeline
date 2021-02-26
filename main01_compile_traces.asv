@@ -403,17 +403,13 @@ end
 
 % calculate interpolation time
 %%
-% sample true experimental res times
 dt_vec_full = [];
-multi_step_traces = find([spot_struct.N]>2);
-for i = randsample(multi_step_traces,min([50,length(multi_step_traces)]),false)
+multi_step_traces = find([sp
+for i = randsample(1:length(spot_struct),min([50,length(spot_struct)]),false)
     t_vec = spot_struct(i).time;
     dt_vec_full = [dt_vec_full diff(t_vec)];
 end
-
-% calculate rounded dt
-dt_round = floor(median(dt_vec_full)/5)*5;
-tresInterp = max([tresInterpFloor,dt_round]);
+%%
 interpGrid = 0:tresInterp:60*60;
 
 % use 95th percentile of fluorescence values to set scale for flagging 

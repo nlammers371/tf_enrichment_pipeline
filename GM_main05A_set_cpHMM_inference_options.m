@@ -9,18 +9,22 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'Rbp1-GFP_eveBAC-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2-25C'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-inferenceInfo.timeBins = {[0 60*15],[10*60 60*25]}; % should be longer than 15min
-inferenceInfo.apBins = linspace(.3,.5,10);%linspace(-.2,.2,10);
+timeBins = cell(1, 8);
+for i = 1:length(timeBins)
+    timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
+end
+inferenceInfo.timeBins = timeBins; % should be longer than 15min
+inferenceInfo.apBins = linspace(15, 50, 15);%linspace(-.2,.2,10);
 
 % set core model specs
-inferenceInfo.modelSpecs.nStates = 3; % number of states in system
-inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
+inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
+inferenceInfo.modelSpecs.nSteps = 4; % 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
