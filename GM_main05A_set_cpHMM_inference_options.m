@@ -16,14 +16,14 @@ inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
 timeBins = cell(1, 8);
-for i = 1:8
+for i = 1:length(timeBins)
     timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
 end
 inferenceInfo.timeBins = timeBins; % should be longer than 15min
 inferenceInfo.apBins = linspace(15, 50, 15);%linspace(-.2,.2,10);
 
 % set core model specs
-inferenceInfo.modelSpecs.nStates = 2; %3; % number of states in system
+inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
 inferenceInfo.modelSpecs.nSteps = 4; % 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 

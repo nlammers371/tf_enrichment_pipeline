@@ -13,7 +13,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.intensityBinVar = '';
   inferenceOptions.FluoBinFlag = 0;
   inferenceOptions.SampleSize = 5000;
-  inferenceOptions.maxWorkers = 24;  
+  inferenceOptions.maxWorkers = 20;  
   
   %% Core inference options (these generally remain fixed)
   inferenceOptions.n_localEM = 25; % set num local runs
