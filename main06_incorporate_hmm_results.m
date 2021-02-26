@@ -23,7 +23,7 @@ function hmm_input_output = main06_incorporate_hmm_results(projectName,varargin)
 
 close all
 addpath(genpath('utilities'))
-
+skipViterbiFitFlag = 0;
 makeLongFormSet = 0;
 myCluster = parcluster('local');
 nWorkersMax = ceil(myCluster.NumWorkers/2);
@@ -106,7 +106,7 @@ for inf_i = 1%:length(infDirList)
     % perform viterbi trace decoding if necessary
     if trace_fit_flag_viterbi
         singleTraceFits = performSingleTraceFits(compiledResults, inferenceOptions, bootstrap_flag, ...
-                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
+                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name, skipViterbiFitFlag);        
     else
         load([resultsPath 'singleTraceFits_' infDirList(inf_i).name '.mat'],'singleTraceFits')
     end
@@ -138,23 +138,12 @@ for inf_i = 1%:length(infDirList)
 
 end
 
-% generate alpha kernel for estimating predicted HMM fluroescence
-alpha_kernel = NaN(1,nSteps);
-for i = 1:nSteps
-    if i < alpha
-        alpha_kernel(i) = ((i-1) / alpha  + .5 * 1/alpha )*Tres;
-    elseif i > alpha && (i-1) < alpha
-        alpha_kernel(i) = Tres*(1 - .5*(alpha-i+1)*(1-(i-1)/alpha));
-    else
-        alpha_kernel(i) = Tres;
-    end
-end
 
 %%% now combine with protein data and raw traces
 disp('building input/output dataset...')
 
 % first combine HMM and raw fluoresence trace data points
-hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS);
+hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS,inferenceOptions);
 
 % next, incorporate local enrichment fields (if they exist)
 if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')

@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'Bcd-GFP_hbP2P-mCh'};
+projectNameCell = {'Rbp1-GFP_eveBAC-mCh'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
