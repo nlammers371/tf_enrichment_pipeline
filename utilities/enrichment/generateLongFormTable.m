@@ -4,10 +4,6 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
     % generate longform dataset interpolated to regular time grid
     keepFields = {'xPosNucleus','yPosNucleus','xPosParticle','yPosParticle','ncID','particleID','qcFlag'};
     extendFlags = [0 0 0 0 1 1 1];
-    if isfield(analysis_traces,'APPosParticleNorm')
-        keepFields(end+1) = {'APPosParticleNorm'};
-        extendFlags(end+1) = 0;
-    end
 
 
     analysis_traces_interp = struct;
@@ -16,7 +12,7 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
     for a = 1:length(analysis_traces)
         analysis_traces_interp(a).time = timeGrid(timeGrid>=analysis_traces(a).time(1)&timeGrid<=analysis_traces(a).time(end));
     end
-
+    
     % now, interpolate/extend selected fields
     for a = 1:length(analysis_traces)
         timeRaw = analysis_traces(a).time;
@@ -59,6 +55,11 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
         end
     end
 
+    if isfield(analysis_traces,'APPosParticleNorm')
+        for a = 1:length(analysis_traces)
+            analysis_traces_interp(a).APPosNorm = analysis_traces(a).APPosParticleNorm;
+        end
+    end
     % lastly, add new fields from viterbi fits
     fit_particles = [singleTraceFits.particleID];
     fitFields = {'z_viterbi','fluo_viterbi'};
@@ -101,21 +102,21 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
 
     % try to infer normalized nucleus AP by building model of norm AP
     % assignment
-    setVec = floor(resultsTable.ncID);
-    setIndex = unique(setVec(~isnan(setVec)));
-    resultsTable.apPosNormNucleus = NaN(size(setVec));
-    for s = 2
-        setFilter = setVec==setIndex(s);
-        % build linear model
-        apNormTrue = resultsTable.APPosParticleNorm(setFilter)';
-        inputs = [resultsTable.xPosParticle(setFilter) resultsTable.yPosParticle(setFilter) ...
-                  resultsTable.time(setFilter)];
-        apModel = fitlm(inputs, apNormTrue);
-        % use model to make normalized nucleus position variable
-        nucleusInputs = [resultsTable.xPosNucleus(setFilter) resultsTable.yPosNucleus(setFilter) ...
-                  resultsTable.time(setFilter)];
-        resultsTable.apPosNormNucleus(setFilter) = predict(apModel,nucleusInputs);                    
-    end
+%     setVec = floor(resultsTable.ncID);
+%     setIndex = unique(setVec(~isnan(setVec)));
+%     resultsTable.apPosNormNucleus = NaN(size(setVec));
+%     for s = 2
+%         setFilter = setVec==setIndex(s);
+%         % build linear model
+%         apNormTrue = resultsTable.APPosParticleNorm(setFilter)';
+%         inputs = [resultsTable.xPosParticle(setFilter) resultsTable.yPosParticle(setFilter) ...
+%                   resultsTable.time(setFilter)];
+%         apModel = fitlm(inputs, apNormTrue);
+%         % use model to make normalized nucleus position variable
+%         nucleusInputs = [resultsTable.xPosNucleus(setFilter) resultsTable.yPosNucleus(setFilter) ...
+%                   resultsTable.time(setFilter)];
+%         resultsTable.apPosNormNucleus(setFilter) = predict(apModel,nucleusInputs);                    
+%     end
     % save
     disp('saving...')
     writetable(resultsTable,[resultsPath 'singleTraceFits_' infName '_longform.csv'])
