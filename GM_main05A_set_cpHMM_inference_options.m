@@ -14,6 +14,7 @@ inferenceInfo.projectNameCell = {'hbBAC-MS2-25C'}; % {'2xDl-Ven_hbP2P-mCh'};
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
+inferenceOptions.fluo3DFlag = 1;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
 timeBins = cell(1, 8);
 for i = 1:length(timeBins)
