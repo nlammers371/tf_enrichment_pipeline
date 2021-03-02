@@ -9,7 +9,7 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'hbBAC-MS2-20C'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2-22_5C'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
@@ -41,7 +41,16 @@ slashes = regexp(liveProject.dataPath,'/|\');
 dataDir = liveProject.dataPath(1:slashes(end-1));
 inferenceDir = [dataDir 'inferenceDirectory' filesep];
 mkdir(inferenceDir)
-save([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')
+inferenceDir2 = [inferenceDir, inferenceInfo.projectNameCell{1}, filesep];
+mkdir(inferenceDir2)
+ProjectParamsString = ['w', num2str(inferenceInfo.modelSpecs.nSteps), '_K', ...
+    num2str(inferenceInfo.modelSpecs.nStates),'_p', num2str(inferenceInfo.ProteinBinFlag),...
+    '_ap', num2str(length(inferenceInfo.apBins)-1),'_t', num2str(length(inferenceInfo.timeBins))];
+
+inferenceDir3 = [inferenceDir2, ProjectParamsString, filesep];
+mkdir(inferenceDir3)
+save([inferenceDir3 'inferenceInfo.mat'],'inferenceInfo')
+
 
 % copy bash file to inference directory
-copyfile('run_cpHMM.sh',[inferenceDir 'run_cpHMM.sh'])
+copyfile('GM_run_cpHMM.sh',[inferenceDir3 'run_cpHMM.sh'])
