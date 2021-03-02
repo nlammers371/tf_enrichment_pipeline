@@ -32,7 +32,7 @@ bootstrap_flag = 0;
 n_bootstraps = 1;
 
 % check for optional inputs
-for i = 1:2:(numel(varargin))  
+for i = 1:(numel(varargin)-1)  
     if i ~= numel(varargin)        
         eval([varargin{i} '=varargin{i+1};']);                
     end    
@@ -55,7 +55,7 @@ if length(length(infDirList)) > 1
     warning('Multiple inference directories found. This script will currently only process the first directory in the list')
 end
 
-for inf_i = 1:length(infDirList)
+for inf_i = 1%:length(infDirList)
   
     % get path to results
     resultsPath = [infDirList(inf_i).folder filesep];
@@ -125,14 +125,14 @@ for inf_i = 1:length(infDirList)
         end
     end
     
-    if ~skipSSFitFlag
-        if trace_fit_flag_ss
-            singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
-                      analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
-        else
-            load([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat'],'singleTraceFitsSS')
-        end
+    if ~
+    if trace_fit_flag_ss
+        singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
+                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
+    else
+        load([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat'],'singleTraceFitsSS')
     end
+
     % generate longform dataset
     if makeLongFormSet        
         resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(inf_i).name);
@@ -141,15 +141,14 @@ for inf_i = 1:length(infDirList)
 end
 
 
+%%% now combine with protein data and raw traces
+disp('building input/output dataset...')
+
+% first combine HMM and raw fluoresence trace data points
+hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS,inferenceOptions);
 
 % next, incorporate local enrichment fields (if they exist)
 if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
-    %%% now combine with protein data and raw traces
-    disp('building input/output dataset...')
-
-    % first combine HMM and raw fluoresence trace data points
-    hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS,inferenceOptions);
-
     load([resultsRoot filesep 'spot_struct_protein.mat'],'spot_struct_protein')
     fitParticleVec = [singleTraceFits.particleID];
     traceParticleVec = [spot_struct_protein.particleID];
@@ -204,12 +203,10 @@ if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
         hmm_input_output(trace_i).rawSpotStructIndex = traceIndex;            
         
     end
-    
-    % remove traces with not cpHMM fit info 
-    hmm_input_output = hmm_input_output(~isnan([hmm_input_output.InferenceID]));
-
-    % save results
-    save([resultsDir 'hmm_input_output.mat'],'hmm_input_output')
 end  
 
+% remove traces with not cpHMM fit info 
+hmm_input_output = hmm_input_output(~isnan([hmm_input_output.InferenceID]));
 
+% save results
+save([resultsDir 'hmm_input_output.mat'],'hmm_input_output')

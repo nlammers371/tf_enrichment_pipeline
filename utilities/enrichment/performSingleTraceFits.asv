@@ -81,15 +81,12 @@ function singleTraceFits = performSingleTraceFits(compiledResults, inferenceOpti
             else
                 for f = 1:length(fluo_values)
         %             waitbar(f/numel(fluo_values),h);
-%                     viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, nStates, nSteps, alpha);
+                    viterbi_out = viterbi (fluo_values{f}, v', sigma, pi0_log,A_log, nStates, nSteps, alpha);
                     fnames = [{'z_viterbi'   },  {'v_viterbi'   },   {'fluo_viterbi'},  {'logL'        }];
 %                      fieldnames(viterbi_out);
                     for fn = 1:numel(fnames)
                       if ~strcmpi(fnames{fn},'logL')
-                        v_fits(f).(fnames{fn}) = NaN(1,length(fluo_values{f}));
-                      else
-                        v_fits(f).(fnames{fn}) = NaN;
-                      end
+                        v_fits(f).(fnames{fn}) = NaNviterbi_out.(fnames{fn});
                     end        
                 end
             end

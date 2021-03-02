@@ -1,5 +1,22 @@
-function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleTraceFitsViterbi,singleTraceFitsSS)
+function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleTraceFitsViterbi,singleTraceFitsSS,inferenceOptions)
 
+
+    % generate alpha kernel for estimating predicted HMM fluroescence
+    nSteps = inferenceOptions.nSteps;
+    alpha =inferenceOptions.alpha;
+    Tres = inferenceOptions.Tres;
+    
+    alpha_kernel = NaN(1,nSteps);
+    for i = 1:nSteps
+        if i < alpha
+            alpha_kernel(i) = ((i-1) / alpha  + .5 * 1/alpha )*Tres;
+        elseif i > alpha && (i-1) < alpha
+            alpha_kernel(i) = Tres*(1 - .5*(alpha-i+1)*(1-(i-1)/alpha));
+        else
+            alpha_kernel(i) = Tres;
+        end
+    end
+    
     % restrict to traces with spot info
     analysis_traces = analysis_traces(~isnan([analysis_traces.particleID]));
     
@@ -43,8 +60,14 @@ function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleT
     end
     
     % add previously interpolated fields
-    prevInterpFields = {'fluoInterp','APPosParticleInterp'};
-    newInterpNames = {'fluo','APPosParticle'};
+    if isfield(analysis_traces,'APPosParticleInterp')
+        prevInterpFields = {'fluoInterp','APPosParticleInterp'};
+        newInterpNames = {'fluo','APPosParticle'};
+    else
+        prevInterpFields = {'fluoInterp'};
+        newInterpNames = {'fluo'};
+    end
+    
     for a = 1:length(analysis_traces)
         time1 = analysis_traces(a).timeInterp;
         time2 = analysis_traces_interp(a).time;            
@@ -96,6 +119,16 @@ function analysis_traces_interp = addTraceAnalysisFields(analysis_traces,singleT
             analysis_traces_interp(a).transition_prob_array(:,:,toFilterTr) = singleTraceFitsSS(fitIndexViterbi).transition_prob_array;
             
             analysis_traces_interp(a).r_vec_soft = analysis_traces_interp(a).state_prob_array*singleTraceFitsSS(fitIndexViterbi).r;
+            
+            % get predicted fluo
+            fluo_pd_MS2 = conv(alpha_kernel, analysis_traces_interp(a).r_vec_soft,'Full');
+            analysis_traces_interp(a).fluo_pd_MS2 = fluo_pd_MS2(1:end-nSteps+1);
+            
+            full_kernel = Tres*ones(size(alpha_kernel));
+            fluo_pd_full = conv(full_kernel, analysis_traces_interp(a).r_vec_soft,'Full');
+            analysis_traces_interp(a).fluo_pd_full = fluo_pd_full(1:end-nSteps+1);
+            
+            
         else
             analysis_traces(a).hasHMMInfo = 0;
             for f = 1:length(vFitFields)                    

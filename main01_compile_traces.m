@@ -220,7 +220,7 @@ for i = 1:numExperiments
                 y = schnitzcells(s).ceny;
                 compiledSchnitzCells(nucleusCounter).xPosNucleus = x(ncFilter);
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
-                if hasAPInfo
+                if hasAPInfo && isfield(schnitzcells,'APpos')
                     compiledSchnitzCells(nucleusCounter).apPosNucleus =  schnitzcells(s).APpos(ncFilter);
                 end
 

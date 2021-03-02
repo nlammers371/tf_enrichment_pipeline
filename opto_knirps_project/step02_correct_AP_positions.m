@@ -28,7 +28,7 @@ for p = 1:length(projectList)
   for i = 1:length(spot_struct_protein)
     % rename fields
     spot_struct_protein(i).APPosParticleInterpOrig = spot_struct_protein(i).APPosParticleInterp; % rename native AP variable
-    spot_struct_protein(i).APPosParticleInterp = NaN(size(spot_struct_protein(i).xPosParticle));
+    spot_struct_protein(i).APPosParticleInterp = NaN(size(spot_struct_protein(i).xPosParticleInterp));
     % extract position info
     xPosVec = spot_struct_protein(i).xPosParticleInterp;
     yPosVec = spot_struct_protein(i).yPosParticleInterp;
@@ -49,7 +49,7 @@ for p = 1:length(projectList)
   for i = 1:length(spot_struct)
     % rename fields
     spot_struct(i).APPosParticleInterpOrig = spot_struct(i).APPosParticleInterp; % rename native AP variable
-    spot_struct(i).APPosParticleInterp = NaN(size(spot_struct(i).xPosParticle));
+    spot_struct(i).APPosParticleInterp = NaN(size(spot_struct(i).xPosParticleInterp));
     
     spot_struct(i).apPosNucleuspOrig = spot_struct(i).apPosNucleus; % rename native AP variable
     spot_struct(i).apPosNucleus = NaN(size(spot_struct(i).xPosNucleus));
