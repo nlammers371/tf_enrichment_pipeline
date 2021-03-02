@@ -9,7 +9,7 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'hbBAC-MS2-25C'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2-20C'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
@@ -25,7 +25,7 @@ inferenceInfo.apBins = linspace(15, 50, 15);%linspace(-.2,.2,10);
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
-inferenceInfo.modelSpecs.nSteps = 4; % 7; % number of steps to traverse gene
+inferenceInfo.modelSpecs.nSteps = 7; % 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
