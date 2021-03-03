@@ -9,14 +9,14 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'hbBAC-MS2-20C'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2-20C'}; %hbBAC-MS2-20C'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
-inferenceOptions.fluo3DFlag = 1;
+inferenceInfo.fluo3DFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-timeBins = cell(1, 8);
+timeBins = cell(1, 13);
 for i = 1:length(timeBins)
     timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
 end
@@ -46,6 +46,9 @@ mkdir(inferenceDir2)
 ProjectParamsString = ['w', num2str(inferenceInfo.modelSpecs.nSteps), '_K', ...
     num2str(inferenceInfo.modelSpecs.nStates),'_p', num2str(inferenceInfo.ProteinBinFlag),...
     '_ap', num2str(length(inferenceInfo.apBins)-1),'_t', num2str(length(inferenceInfo.timeBins))];
+if inferenceInfo.fluo3DFlag == 1
+    ProjectParamsString = [ProjectParamsString,'_f3d'];
+end
 
 inferenceDir3 = [inferenceDir2, ProjectParamsString, filesep];
 mkdir(inferenceDir3)

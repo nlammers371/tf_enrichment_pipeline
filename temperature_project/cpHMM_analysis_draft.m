@@ -1,8 +1,8 @@
 clear 
 close all
 
-load("S:\Gabriella\Dropbox\ProcessedEnrichmentData\hbBAC-MS2-25C\cpHMM_results\compiledResults_w7_K3_p0_ap14_t8_f2D.mat")
-FigurePath = 'S:\Gabriella\Dropbox\ProcessedEnrichmentData\hbBAC-MS2-25C\cpHMM_results\figures\w7_K3_p0_ap14_t8\';
+load("S:\Gabriella\Dropbox\ProcessedEnrichmentData\hbBAC-MS2-20C\cpHMM_results\compiledResults_w7_K3_p0_ap9_t8_f2D.mat")
+FigurePath = 'S:\Gabriella\Dropbox\ProcessedEnrichmentData\hbBAC-MS2-20C\cpHMM_results\figures\w7_K3_p0_ap9_t8\';
 mkdir(FigurePath);
 
 
