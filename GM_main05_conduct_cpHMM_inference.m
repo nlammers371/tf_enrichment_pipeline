@@ -1,5 +1,5 @@
 % Script to call primary cpHMM wrapper function
-function GM_main05_conduct_cpHMM_inference(varargin)
+function GM_main05_conduct_cpHMM_inference(inferenceDir, varargin)
 % MUST BE SUBMITTED FROM THE DIRECTORY CONTAINING run_cpHMM.sh TO WORK
 close all
 warning('off','all') %Shut off Warnings
@@ -29,15 +29,19 @@ end
 manualInferenceInfo = exist('inferenceInfo','var');
 customProjectFlag = exist('customProjectPath','var');
 
+
+% GM 3/1/21: commented this out to be able to submit multiple simultaneous
+% jobs
 % get path to inference files
-if savioFlag && ~manualInferenceInfo
-  inferenceDir = pwd;
-elseif ~manualInferenceInfo
-  liveProject = LiveEnrichmentProject(projectNameCell{1});
-  slashes = regexp(liveProject.dataPath,'/|\');
-  dataDir = liveProject.dataPath(1:slashes(end-1));
-  inferenceDir = [dataDir 'inferenceDirectory' filesep];
-end
+
+% if savioFlag && ~manualInferenceInfo
+%   inferenceDir = pwd;
+% elseif ~manualInferenceInfo
+%   liveProject = LiveEnrichmentProject(projectNameCell{1});
+%   slashes = regexp(liveProject.dataPath,'/|\');
+%   dataDir = liveProject.dataPath(1:slashes(end-1));
+%   inferenceDir = [dataDir 'inferenceDirectory' filesep];
+% end
 
 if ~manualInferenceInfo
     % load dataset with inference info

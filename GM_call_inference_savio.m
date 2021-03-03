@@ -2,8 +2,10 @@
 clear 
 close all
 
+inferenceDir = pwd;
+inferenceDir = [inferenceDir, filesep];
 % move to inference directory
 cd('~/repos/tf_enrichment_pipeline/');
 
 % call the inference function
-GM_main05_conduct_cpHMM_inference;
+GM_main05_conduct_cpHMM_inference(inferenceDir);
