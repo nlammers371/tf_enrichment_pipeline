@@ -40,7 +40,7 @@ grid on
 xlabel('AP position')
 ylabel('burst duration (minutes)')
 set(gca,'Fontsize',14)
-xlim([25 47.5])
+xlim([20 47.5])
 
 saveas(dur_fig,[FigurePath 'burst_duration.png'])
 
@@ -67,7 +67,7 @@ grid on
 xlabel('AP position')
 ylabel('burst duration (minutes)')
 set(gca,'Fontsize',14)
-xlim([25 47.5])
+xlim([20 47.5])
 
 saveas(dur_fig,[FigurePath 'burst_duration.png'])
 
@@ -94,7 +94,7 @@ grid on
 xlabel('AP position')
 ylabel('burst frequency (1/min)')
 set(gca,'Fontsize',14)
-xlim([25 47.5])
+xlim([20 47.5])
 
 saveas(freq_fig,[FigurePath 'burst_frequency.png'])
 
@@ -121,6 +121,6 @@ grid on
 xlabel('AP position')
 ylabel('initiation rate (au/min)')
 set(gca,'Fontsize',14)
-xlim([25 47.5])
+xlim([20 47.5])
 
 saveas(init_fig,[FigurePath 'burst_initiation.png'])

@@ -21,7 +21,7 @@ for i = 1:length(timeBins)
     timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
 end
 inferenceInfo.timeBins = timeBins; % should be longer than 15min
-inferenceInfo.apBins = linspace(15, 50, 15);%linspace(-.2,.2,10);
+inferenceInfo.apBins = linspace(22.5, 45, 10);%linspace(-.2,.2,10);
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
