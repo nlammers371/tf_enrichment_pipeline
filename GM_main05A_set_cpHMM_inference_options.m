@@ -9,7 +9,7 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'hbBAC-MS2-22_5C'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'hbBAC-MS2-20C'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
