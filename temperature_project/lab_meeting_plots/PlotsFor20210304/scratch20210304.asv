@@ -68,7 +68,7 @@ ResultsPaths7 = { 'hbBAC-MS2-25C\cpHMM_results\compiledResults_w7_K3_p0_ap9_t8_f
     'hbBAC-MS2-25C\cpHMM_results\compiledResults_w4_K3_p0_ap9_t8_f2D.mat'};
 outdir7 = 'S:\Gabriella\Dropbox\ProcessedEnrichmentData\GMPlots20210304\hbBAC-MS2-25C-allweights\V7\';
 
-GenerateStandardPlots(ResultsPaths7, outdir7)
+GenerateStandardPlots(ResultsPaths7)
 GenerateProjectSubplots(ResultsPaths7, outdir7)
 
 %%
@@ -103,9 +103,9 @@ ResultsPaths9 = {'hbBAC-MS2-27_5C\NC13\cpHMM_results\compiledResults_w7_K3_p0_ap
     'hbBAC-MS2-17_5C\NC13\cpHMM_results\compiledResults_w7_K3_p0_ap9_t1_f2D.mat'};
 outdir9 = 'S:\Gabriella\Dropbox\ProcessedEnrichmentData\GMPlots20210304\hbBAC-MS2-AllTemps\NC13_w7\';
 
-GenerateStandardPlots(ResultsPaths9, outdir9)
-GenerateAPSubplots(ResultsPaths9, outdir9)
-GenerateProjectSubplots(ResultsPaths9, outdir9)
+GenerateStandardPlots(ResultsPaths7, outdir9)
+GenerateAPSubplots(ResultsPaths7, outdir7)
+GenerateProjectSubplots(ResultsPaths7, outdir7)
 
 
 

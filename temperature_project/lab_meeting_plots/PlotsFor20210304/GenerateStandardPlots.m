@@ -1,5 +1,9 @@
-function GenerateStandardPlots(ResultsPaths)
+function GenerateStandardPlots(ResultsPaths, outdir)
 
+
+if ~exist(outdir, 'dir')
+    mkdir(outdir)
+end
 %%
 close all
 
@@ -48,7 +52,7 @@ for SetIndex = 1:NumSets
         cmap = flipud(brewermap(max(IncludedTimeBins),'Spectral'));
         
     else
-       cmap = flipud(brewermap(2,'Spectral')); 
+        cmap = flipud(brewermap(2,'Spectral'));
     end
     colormap(cmap);
     hold on
@@ -65,7 +69,7 @@ for SetIndex = 1:NumSets
         
         
         errorbar(x,y,y_err,'Color','k','Capsize',0)
-        hold on 
+        hold on
         scatter(x,y,'MarkerFaceColor',cmap(t,:),'MarkerEdgeColor','k')
     end
     ax = gca;
@@ -76,7 +80,7 @@ for SetIndex = 1:NumSets
         h.TickLabels = CompiledParameters.TimeVector(IncludedTimeBins);
         ylabel(h,'time cohort (minutes into nc14)')
     end
-   
+    
     grid on
     xlabel('AP position')
     ylabel('burst duration (minutes)')
@@ -85,14 +89,14 @@ for SetIndex = 1:NumSets
     title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C, Cycle ',num2str(CompiledParameters.NC(SetIndex)) ]);
     if UseSharedYAxis
         ylim([DurYmin, DurYmax])
-
+        
     else
         ax = gca;
         newylim = get(ax, 'ylim');
         newylim(1) = DurYmin;
         set(ax, 'ylim', newylim);
     end
-        
+    
     if UseSharedYAxis
         saveas(dur_fig,[fig_path, 'burst_duration_sharedy.png'])
     else
@@ -128,7 +132,7 @@ for SetIndex = 1:NumSets
         h = colorbar;
         h.Ticks = 1:max(IncludedTimeBins);
         h.TickLabels = CompiledParameters.TimeVector(IncludedTimeBins);
-
+        
         ylabel(h,'time cohort (minutes into nc14)')
     end
     grid on
@@ -136,17 +140,17 @@ for SetIndex = 1:NumSets
     ylabel('burst frequency (1/min)')
     set(gca,'Fontsize',14)
     xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
-     title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C, Cycle ',num2str(CompiledParameters.NC(SetIndex)) ]);
+    title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C, Cycle ',num2str(CompiledParameters.NC(SetIndex)) ]);
     if UseSharedYAxisFrequency
         ylim([FreqYmin, FreqYmax])
-
+        
     else
         ax = gca;
         newylim = get(ax, 'ylim');
         newylim(1) = FreqYmin;
         set(ax, 'ylim', newylim);
     end
-        
+    
     if UseSharedYAxisFrequency
         saveas(freq_fig,[fig_path, 'burst_frequency_sharedy.png'])
     else
@@ -193,14 +197,14 @@ for SetIndex = 1:NumSets
     title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C, Cycle ',num2str(CompiledParameters.NC(SetIndex)) ]);
     if UseSharedYAxisInit
         ylim([InitYmin, InitYmax])
-
+        
     else
         ax = gca;
         newylim = get(ax, 'ylim');
         newylim(1) = InitYmin;
         set(ax, 'ylim', newylim);
     end
-        
+    
     if UseSharedYAxisInit
         saveas(init_fig,[fig_path, 'burst_initiation_sharedy.png'])
     else
@@ -208,3 +212,173 @@ for SetIndex = 1:NumSets
     end
     
 end
+
+%%
+
+
+close all
+
+if all(CompiledParameters.nTimebins == 1) & length(CompiledParameters.nTimebins)  > 1
+    t = 1;
+    temperatures = sort(unique(CompiledParameters.SetTemperatures));
+    fig_path = outdir;
+    dur_fig = figure;
+    cmap = flipud(brewermap(length(temperatures),'Spectral'));
+    colormap(cmap);
+    hold on
+    for SetIndex = 1:NumSets
+        t_index = find(round(temperatures, 2) == round(CompiledParameters.SetTemperatures(SetIndex), 2));
+        
+        
+        if all(isnan(CompiledParameters.Durations(SetIndex, t, :)))
+            continue
+        end
+        
+        apbin_ids = ~isnan(CompiledParameters.Durations(SetIndex, t, :));
+        x = APbins(apbin_ids);
+        y = squeeze(CompiledParameters.Durations(SetIndex, t, apbin_ids)).';
+        y_err = squeeze(CompiledParameters.DurationsStdErr(SetIndex, t, apbin_ids)).';
+        
+        
+        errorbar(x,y,y_err,'Color','k','Capsize',0)
+        hold on
+        scatter(x,y,'MarkerFaceColor',cmap(t_index,:),'MarkerEdgeColor','k')
+    end
+    ax = gca;
+
+        set(ax, 'Clim', [1, length(temperatures)])
+        h = colorbar;
+        h.Ticks = 1:length(temperatures);
+        h.TickLabels = temperatures;
+        ylabel(h,' Temperature (°C)')
+ 
+    
+    grid on
+    xlabel('AP position')
+    ylabel('burst duration (minutes)')
+    set(gca,'Fontsize',14)
+    xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
+    
+    if UseSharedYAxis
+        ylim([DurYmin, DurYmax])
+        
+    else
+        ax = gca;
+        newylim = get(ax, 'ylim');
+        newylim(1) = DurYmin;
+        set(ax, 'ylim', newylim);
+    end
+    hold off
+    
+    if UseSharedYAxis
+        saveas(dur_fig,[outdir, 'burst_duration_sharedy.png'])
+    else
+        saveas(dur_fig,[outdir, 'burst_duration.png'])
+    end
+    
+    freq_fig = figure(2);
+    cmap = flipud(brewermap(length(temperatures),'Spectral'));
+    colormap(cmap);
+    hold on
+    for SetIndex = 1:NumSets
+        t_index = find(round(temperatures, 2) == round(CompiledParameters.SetTemperatures(SetIndex), 2));
+        
+        
+        if all(isnan(CompiledParameters.Durations(SetIndex, t, :)))
+            continue
+        end
+        
+        apbin_ids = ~isnan(CompiledParameters.Frequencies(SetIndex, t, :));
+        x = APbins(apbin_ids);
+        y = squeeze(CompiledParameters.Frequencies(SetIndex, t, apbin_ids)).';
+        y_err = squeeze(CompiledParameters.FrequenciesStdErr(SetIndex, t, apbin_ids)).';
+        
+        
+        errorbar(x,y,y_err,'Color','k','Capsize',0)
+        hold on
+        scatter(x,y,'MarkerFaceColor',cmap(t_index,:),'MarkerEdgeColor','k')
+    end
+    ax = gca;
+
+        set(ax, 'Clim', [1, length(temperatures)])
+        h = colorbar;
+        h.Ticks = 1:length(temperatures);
+        h.TickLabels = temperatures;
+        ylabel(h,' Temperature (°C)')
+ 
+    
+    grid on
+    xlabel('AP position')
+    ylabel('burst frequency (1/min)')
+    set(gca,'Fontsize',14)
+    xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
+    
+    if UseSharedYAxis
+        ylim([FreqYmin, FreqYmax])
+        
+    else
+        ax = gca;
+        newylim = get(ax, 'ylim');
+        newylim(1) = FreqYmin;
+        set(ax, 'ylim', newylim);
+    end
+    
+    hold off
+    saveas(freq_fig,[outdir, 'all_temps_burst_frequency.png'])
+    
+    init_fig = figure(3);
+    cmap = flipud(brewermap(length(temperatures),'Spectral'));
+    colormap(cmap);
+    hold on
+    for SetIndex = 1:NumSets
+        t_index = find(round(temperatures, 2) == round(CompiledParameters.SetTemperatures(SetIndex), 2));
+        
+        
+        if all(isnan(CompiledParameters.Durations(SetIndex, t, :)))
+            continue
+        end
+        
+        apbin_ids = ~isnan(CompiledParameters.InitiationRates(SetIndex, t, :));
+        x = APbins(apbin_ids);
+        y = squeeze(CompiledParameters.InitiationRates(SetIndex, t, apbin_ids)).';
+        y_err = squeeze(CompiledParameters.InitiationRatesStdErr(SetIndex, t, apbin_ids)).';
+        
+        
+        errorbar(x,y,y_err,'Color','k','Capsize',0)
+        hold on
+        scatter(x,y,'MarkerFaceColor',cmap(t_index,:),'MarkerEdgeColor','k')
+    end
+    ax = gca;
+
+        set(ax, 'Clim', [1, length(temperatures)])
+        h = colorbar;
+        h.Ticks = 1:length(temperatures);
+        h.TickLabels = temperatures;
+        ylabel(h,' Temperature (°C)')
+ 
+    
+    grid on
+    xlabel('AP position')
+    ylabel('initiation rate (au/min)')
+    set(gca,'Fontsize',14)
+    xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
+    
+    if UseSharedYAxis
+        ylim([InitYmin, InitYmax])
+        
+    else
+        ax = gca;
+        newylim = get(ax, 'ylim');
+        newylim(1) = InitYmin;
+        set(ax, 'ylim', newylim);
+    end
+    
+
+    saveas(init_fig,[outdir, 'all_temps_burst_initiation.png'])
+    
+end
+
+
+
+
+
