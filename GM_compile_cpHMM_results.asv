@@ -4,10 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'hbBAC-MS2-27_5C/NC13', 'hbBAC-MS2-25C/NC13', ...
-    'hbBAC-MS2-22_5C/NC13', 'hbBAC-MS2-17_5C/NC13',...
-     'hbBAC-MS2-27_5C', 'hbBAC-MS2-25C',...
-    'hbBAC-MS2-22_5C', 'hbBAC-MS2-17_5C','hbBAC-MS2-20C','hbBAC-MS2-20C/NC13'};
+projectNameCell = {'hbBAC-MS2-20C', 'hbBAC-MS2-27_5C', };
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)

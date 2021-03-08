@@ -16,6 +16,8 @@ function spot_struct = main01_compile_traces(projectName,varargin)
 % firstNC: script defaults to taking only nc14 traces. If you want
 %          earlier traces, pass 'firstNC', followed by desired nuclear 
 %          cycle number
+% NC: allows specification of singleNC
+% filename
 %
 % other: script allows any default variable to be set using format:
 %       "VariableNameString", VariableValue
@@ -72,6 +74,7 @@ close all force
 addpath(genpath('utilities'));
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
+lastNC = 14;
 minDP = 14;     % what is this for?
 pctSparsity = 50;   % 
 twoSpotFlag = contains(projectName, '2spot');
@@ -92,6 +95,13 @@ for i = 1:numel(varargin)
                 firstNC = varargin{i+1};
             else
                 error(['The ''firstNC'' option must be followed by an integer from 9 to 14, inclusive. Default firstNC is ' num2str(firstNC) '.']) 
+            end
+        elseif strcmpi(varargin{i}, 'NC')
+            if  i < numel(varargin) && isnumeric(varargin{i+1}) && (9 <= varargin{i+1} && varargin{i+1} <= 14)
+                lastNC = varargin{i+1};
+                firstNC = varargin{i+1};
+            else
+                error(['The ''NC'' option must be followed by an integer from 9 to 14, inclusive. Default NC is ' num2str(firstNC) '.']) 
             end
         elseif strcmpi(varargin{i}, 'projectName')
             error('Pipeline currently does not support alternate names for projects (otehr than what is on the data status tab)')
@@ -163,7 +173,7 @@ for i = 1:numExperiments
         anaphaseFrames(ncRefVec==ncIndex(n)) = find(ncVec==ncIndex(n),1);
       end
     end
-    ncIndices = find(ncRefVec>=firstNC&~isnan(anaphaseFrames'));
+    ncIndices = find(ncRefVec>=firstNC&ncRefVec<=lastNC&~isnan(anaphaseFrames'));
     ncStartFrameVec = anaphaseFrames(ncIndices)';
     ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]); 
     ncStartFrameVec(end+1) = framesRaw(end)+1;
@@ -220,7 +230,7 @@ for i = 1:numExperiments
                 y = schnitzcells(s).ceny;
                 compiledSchnitzCells(nucleusCounter).xPosNucleus = x(ncFilter);
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
-                if hasAPInfo
+                if hasAPInfo && isfield(schnitzcells,'APpos')
                     compiledSchnitzCells(nucleusCounter).apPosNucleus =  schnitzcells(s).APpos(ncFilter);
                 end
 
@@ -288,7 +298,8 @@ for i = 1:numExperiments
             % trace-nucleus mapping may be many-to-1
             ncIndex = find(schnitzIndex==schnitz);  
             if length(ncIndex) ~= 1
-                error(['Problem with particle-nucleus crossreference for Prefix: ' currExperiment.Prefix])          
+                continue
+                warning(['Problem with particle-nucleus crossreference for Prefix: ' currExperiment.Prefix])          
             end 
 
             % Identifier variable                        
@@ -403,13 +414,17 @@ end
 
 % calculate interpolation time
 %%
+% sample true experimental res times
 dt_vec_full = [];
-multi_step_traces = find([sp
-for i = randsample(1:length(spot_struct),min([50,length(spot_struct)]),false)
+multi_step_traces = find([spot_struct.N]>2);
+for i = randsample(multi_step_traces,min([50,length(multi_step_traces)]),false)
     t_vec = spot_struct(i).time;
     dt_vec_full = [dt_vec_full diff(t_vec)];
 end
-%%
+
+% calculate rounded dt
+dt_round = floor(median(dt_vec_full)/5)*5;
+tresInterp = max([tresInterpFloor,dt_round]);
 interpGrid = 0:tresInterp:60*60;
 
 % use 95th percentile of fluorescence values to set scale for flagging 
@@ -537,7 +552,13 @@ for i = 1:length(spot_struct)
     spot_struct(i).tresInterp = tresInterp;
         
 end
-
+if lastNC ~= 14
+    dataName = strrep(dataName, '\spot_struct.mat', [f '-NC', num2str(lastNC),'\spot_struct.mat']);
+    outpath = fileparts(dataName);
+    if ~exist(outpath, 'dir')
+        mkdir(outpath)
+    end
+end
 % save
 save(dataName ,'spot_struct') 
 

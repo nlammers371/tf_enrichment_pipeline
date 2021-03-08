@@ -2,27 +2,53 @@
 % Script to conduct HMM inference
 %
 % ARGUMENTS
-% project: master ID variable 
+% singleTraceFitsDir: master ID variable 
 %
-% wInf: memory used for inference
+% wInf: memory used for inference (GM 3/8/21: This option seems to be
+% deprecated)
 %
-% KInf: number of states used for inference
+% KInf: number of states used for inference (GM 3/8/21: This option seems to be
+% deprecated)
 %
 % OPTIONS
 % dropboxFolder: Path to data folder where you wish to save
 %                pipeline-generated data sets and figures. If this
 %                var is not specified, output will be saved one level
 %                above git repo in the folder structure
+% 
+% savioFlag: if running on savio change number of cores
+%
+% inferenceModel: specifies an inference model to use 
 %
 % controlProject: specifies a project to use as an external control
 %
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results(projectName,varargin)
+function hmm_input_output = GM_main06_incorporate_hmm_results(singleTraceFitsDir,varargin)
 
 close all
+warning('off', 'all')
 addpath(genpath('utilities'))
+
+currentDir = pwd;
+savioFlag = 0;
+if contains(currentDir, 'global/')
+    savioFlag = 1;
+end
+
+
+% process other options
+for i = (1+~savioFlag):2:(numel(varargin)-1)  
+    if i ~= numel(varargin)        
+        eval([varargin{i} '=varargin{i+1};']);                
+    end    
+end
+
+load([singleTraceFitsDir 'singleTraceFitInfo.mat'],'singleTraceFitInfo')
+
+
+
 skipViterbiFitFlag = 0;
 skipSSFitFlag = 0;
 makeLongFormSet = 0;
@@ -30,19 +56,46 @@ myCluster = parcluster('local');
 nWorkersMax = ceil(myCluster.NumWorkers/2);
 bootstrap_flag = 0;
 n_bootstraps = 1;
+inferenceModel = '';
+savioFlag = false;
 
 % check for optional inputs
-for i = 1:(numel(varargin)-1)  
+for i = 1:2:(numel(varargin))  
     if i ~= numel(varargin)        
         eval([varargin{i} '=varargin{i+1};']);                
     end    
 end
 
+if savioFlag
+   nWorkersMax = myCluster.NumWorkers; 
+end
+    
+
 % get path to results
-if ~exist('resultsRoot','var')
-    liveProject = LiveEnrichmentProject(projectName);
-    resultsRoot = [liveProject.dataPath filesep];
-    resultsDir = [resultsRoot 'cpHMM_results' filesep];
+if ~exist('resultsRoot','var') % GM made some edits to allow for using subdirectories within project folders
+    if contains(projectName(end), '/') | contains(projectName(end), '\')
+        projectName = projectName(1:end-1);
+    end
+    
+    if ~contains(projectName, '/') & ~contains(projectName, '\')
+        liveProject = LiveEnrichmentProject(projectName);
+    else
+        liveProject = LiveEnrichmentProject(fileparts(projectName));
+    end
+    
+    if  ~contains(projectName, '/') & ~contains(projectName, '\')
+        resultsRoot = [liveProject.dataPath filesep];
+        resultsDir = [resultsRoot 'cpHMM_results' filesep];
+    else
+        if contains(liveProject.dataPath(end), '/') | contains(liveProject.dataPath(end), '\')
+            dataPath = liveProject.dataPath(1:end-1);
+        else
+            dataPath = liveProject.dataPath;
+        end
+        resultsRoot = [(fileparts(dataPath)) filesep projectName filesep];
+        resultsDir = [ results Root 'cpHMM_results' filesep];
+    end
+    
 else
     resultsRoot = [resultsRoot filesep projectName filesep];
     resultsDir = [resultsRoot filesep 'cpHMM_results' filesep];
@@ -50,12 +103,17 @@ end
 
 % get list of all inference subdirectories. By default, we'll generate
 % summaries for all non-empty inference sub-directory
-infDirList = dir([resultsDir 'w*']); % get list of all inference subdirectories. By default, we'll generate
+if isempty(inferenceModel)
+    infDirList = dir([resultsDir 'w*']); % get list of all inference subdirectories. By default, we'll generate
+else
+    infDirList = dir([resultsDir inferenceModel '*']); 
+end
+    
 if length(length(infDirList)) > 1
     warning('Multiple inference directories found. This script will currently only process the first directory in the list')
 end
 
-for inf_i = 1%:length(infDirList)
+for inf_i = 1:length(infDirList)
   
     % get path to results
     resultsPath = [infDirList(inf_i).folder filesep];
@@ -125,14 +183,14 @@ for inf_i = 1%:length(infDirList)
         end
     end
     
-    if ~
-    if trace_fit_flag_ss
-        singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
-                  analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
-    else
-        load([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat'],'singleTraceFitsSS')
+    if ~skipSSFitFlag
+        if trace_fit_flag_ss
+            singleTraceFitsSS = performSingleTraceFitsSoft(compiledResults, inferenceOptions, bootstrap_flag, ...
+                      analysis_traces, trace_particle_index, nWorkersMax, resultsPath, infDirList(inf_i).name);        
+        else
+            load([resultsPath 'singleTraceFitsSS_' infDirList(inf_i).name '.mat'],'singleTraceFitsSS')
+        end
     end
-
     % generate longform dataset
     if makeLongFormSet        
         resultsTable = generateLongFormTable(analysis_traces, timeGrid, singleTraceFits, resultsPath, infDirList(inf_i).name);
@@ -141,14 +199,15 @@ for inf_i = 1%:length(infDirList)
 end
 
 
-%%% now combine with protein data and raw traces
-disp('building input/output dataset...')
-
-% first combine HMM and raw fluoresence trace data points
-hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS,inferenceOptions);
 
 % next, incorporate local enrichment fields (if they exist)
 if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
+    %%% now combine with protein data and raw traces
+    disp('building input/output dataset...')
+
+    % first combine HMM and raw fluoresence trace data points
+    hmm_input_output = addTraceAnalysisFields(analysis_traces,singleTraceFits,singleTraceFitsSS,inferenceOptions);
+
     load([resultsRoot filesep 'spot_struct_protein.mat'],'spot_struct_protein')
     fitParticleVec = [singleTraceFits.particleID];
     traceParticleVec = [spot_struct_protein.particleID];
@@ -203,10 +262,12 @@ if exist([resultsRoot filesep 'spot_struct_protein.mat'],'file')
         hmm_input_output(trace_i).rawSpotStructIndex = traceIndex;            
         
     end
+    
+    % remove traces with not cpHMM fit info 
+    hmm_input_output = hmm_input_output(~isnan([hmm_input_output.InferenceID]));
+
+    % save results
+    save([resultsDir 'hmm_input_output.mat'],'hmm_input_output')
 end  
 
-% remove traces with not cpHMM fit info 
-hmm_input_output = hmm_input_output(~isnan([hmm_input_output.InferenceID]));
 
-% save results
-save([resultsDir 'hmm_input_output.mat'],'hmm_input_output')

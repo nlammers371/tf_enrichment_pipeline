@@ -37,4 +37,4 @@ module load matlab
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
 
 ## Call the inference function
-matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/GM_call_inference_savio.m
+matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/call_singleTraceFits_savio.m

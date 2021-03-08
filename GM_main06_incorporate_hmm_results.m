@@ -2,7 +2,7 @@
 % Script to conduct HMM inference
 %
 % ARGUMENTS
-% project: master ID variable 
+% singleTraceFitsDir: master ID variable 
 %
 % wInf: memory used for inference (GM 3/8/21: This option seems to be
 % deprecated)
@@ -25,31 +25,47 @@
 % OUTPUT: hmm_input_output, structure containing vectors of protein and MS2
 % intensities, along with corresponding HMM-decoded activity trajectories
 
-function hmm_input_output = main06_incorporate_hmm_results(projectName,varargin)
+function hmm_input_output = GM_main06_incorporate_hmm_results(singleTraceFitsDir,varargin)
 
 close all
+warning('off', 'all')
 addpath(genpath('utilities'))
-skipViterbiFitFlag = 0;
-skipSSFitFlag = 0;
-makeLongFormSet = 0;
-myCluster = parcluster('local');
-nWorkersMax = ceil(myCluster.NumWorkers/2);
-bootstrap_flag = 0;
-n_bootstraps = 1;
-inferenceModel = '';
-savioFlag = false;
 
-% check for optional inputs
-for i = 1:2:(numel(varargin))  
+currentDir = pwd;
+savioFlag = 0;
+if contains(currentDir, 'global/')
+    savioFlag = 1;
+end
+
+
+% process other options
+for i = (1+~savioFlag):2:(numel(varargin)-1)  
     if i ~= numel(varargin)        
         eval([varargin{i} '=varargin{i+1};']);                
     end    
 end
 
-if savioFlag
-   nWorkersMax = myCluster.NumWorkers; 
+load([singleTraceFitsDir 'singleTraceFitInfo.mat'],'singleTraceFitInfo')
+
+
+projectName = singleTraceFitInfo.projectNameCell;
+inferenceModel = singleTraceFitInfo.inferenceModel;
+skipViterbiFitFlag = singleTraceFitInfo.skipViterbiFitFlag;
+skipSSFitFlag =  singleTraceFitInfo.skipViterbiFitFlag;
+makeLongFormSet = singleTraceFitInfo.makeLongFormSet;
+
+myCluster = parcluster('local');
+if ~savioFlag
+    nWorkersMax = ceil(myCluster.NumWorkers/2);
+else
+    nWorkersMax = myCluster.NumWorkers; 
 end
     
+bootstrap_flag = singleTraceFitInfo.bootstrap_flag;
+n_bootstraps = singleTraceFitInfo.n_bootstraps;
+
+
+
 
 % get path to results
 if ~exist('resultsRoot','var') % GM made some edits to allow for using subdirectories within project folders

@@ -49,7 +49,7 @@ if ~manualInferenceInfo
 end
 
 if savioFlag 
-  projectNameCell = inferenceInfo.projectNameCell;
+    projectNameCell = inferenceInfo.projectNameCell;
 end
 
 % set core model specs
