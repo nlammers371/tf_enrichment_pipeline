@@ -8,8 +8,8 @@ addpath(genpath('utilities'))
 
 singleTraceFitInfo = struct;
 
-ProjectName = 'hbBAC-MS2-25C';
-inferenceModel = 'w7_K3_p0_ap9_t8_f2D';
+ProjectName = 'hbBAC-MS2-20C';
+inferenceModel = 'w7_K3_p0_ap9_t10_f2D';
 
 singleTraceFitInfo.projectNameCell = {ProjectName};
 singleTraceFitInfo.inferenceModel = inferenceModel;
@@ -33,9 +33,9 @@ if contains(ProjectName(end), '/') | contains(ProjectName(end), '\')
 end
 
 if ~contains(ProjectName, '/') & ~contains(ProjectName, '\') 
-    liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
+    liveProject = LiveEnrichmentProject(singleTraceFitInfo.projectNameCell{1});
 else
-    liveProject = LiveEnrichmentProject(fileparts(inferenceInfo.projectNameCell{1}));
+    liveProject = LiveEnrichmentProject(fileparts(singleTraceFitInfo.projectNameCell{1}));
 end
 
 % save
@@ -46,12 +46,12 @@ mkdir(singleTraceFitDir)
 singleTraceFitDir2 = [singleTraceFitDir, ProjectName, filesep ];
 mkdir(singleTraceFitDir2)
 if ~isempty(singleTraceFitInfo.inferenceModel)
-    
+    singleTraceFitDir2 = [singleTraceFitDir2 singleTraceFitInfo.inferenceModel filesep];
+end
 
-inferenceDir3 = [inferenceDir2, ProjectParamsString, filesep];
-mkdir(inferenceDir3)
-save([inferenceDir3 'inferenceInfo.mat'],'inferenceInfo')
+mkdir(singleTraceFitDir2)
+save([singleTraceFitDir2 'singleTraceFitInfo.mat'],'singleTraceFitInfo')
 
 
 % copy bash file to inference directory
-copyfile('GM_run_cpHMM.sh',[inferenceDir3 'run_cpHMM.sh'])
+copyfile('GM_run_singleTraceFits.sh',[singleTraceFitDir2 'run_singleTraceFits.sh'])

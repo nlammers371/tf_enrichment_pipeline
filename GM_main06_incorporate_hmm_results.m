@@ -72,25 +72,11 @@ if ~exist('resultsRoot','var') % GM made some edits to allow for using subdirect
     if contains(projectName(end), '/') | contains(projectName(end), '\')
         projectName = projectName(1:end-1);
     end
-    
-    if ~contains(projectName, '/') & ~contains(projectName, '\')
-        liveProject = LiveEnrichmentProject(projectName);
-    else
-        liveProject = LiveEnrichmentProject(fileparts(projectName));
-    end
-    
-    if  ~contains(projectName, '/') & ~contains(projectName, '\')
-        resultsRoot = [liveProject.dataPath filesep];
-        resultsDir = [resultsRoot 'cpHMM_results' filesep];
-    else
-        if contains(liveProject.dataPath(end), '/') | contains(liveProject.dataPath(end), '\')
-            dataPath = liveProject.dataPath(1:end-1);
-        else
-            dataPath = liveProject.dataPath;
-        end
-        resultsRoot = [(fileparts(dataPath)) filesep projectName filesep];
-        resultsDir = [ results Root 'cpHMM_results' filesep];
-    end
+ 
+    [~, resultsRoot] = getDataPaths(true, projectName);
+    resultsDir = [resultsRoot 'cpHMM_results' filesep];
+
+  
     
 else
     resultsRoot = [resultsRoot filesep projectName filesep];

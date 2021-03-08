@@ -8,8 +8,8 @@ addpath(genpath('utilities'))
 
 singleTraceFitInfo = struct;
 
-ProjectName = 'hbBAC-MS2-25C';
-inferenceModel = 'w7_K3_p0_ap9_t8_f2D';
+ProjectName = 'hbBAC-MS2-27_5C/NC13';
+inferenceModel = 'w7_K3_p0_ap9_t1_f2D';
 
 singleTraceFitInfo.projectNameCell = {ProjectName};
 singleTraceFitInfo.inferenceModel = inferenceModel;
@@ -37,7 +37,8 @@ if ~contains(ProjectName, '/') & ~contains(ProjectName, '\')
 else
     liveProject = LiveEnrichmentProject(fileparts(singleTraceFitInfo.projectNameCell{1}));
 end
-
+singleTraceFitInfo.resultsDir = '';
+singleTraceFitInfo.resultsRoot = ''; 
 % save
 slashes = regexp(liveProject.dataPath,'/|\');
 dataDir = liveProject.dataPath(1:slashes(end-1));
