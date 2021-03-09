@@ -52,11 +52,17 @@ if savioFlag
     projectNameCell = inferenceInfo.projectNameCell;
 end
 
+
 % set core model specs
 modelSpecs = inferenceInfo.modelSpecs;
 
 % generate options cell
 options = {'savioFlag',savioFlag,'SampleSize',inferenceInfo.SampleSize};
+if isfield(inferenceInfo, 'dt')
+    if ~isempty(inferenceInfo.dt)
+        options(end+1:end+2) = {'dt', inferenceInfo.dt};
+    end
+end
 if isfield(inferenceInfo,'apBins')
     options(end+1:end+2) = {'apBins',inferenceInfo.apBins};
 end
