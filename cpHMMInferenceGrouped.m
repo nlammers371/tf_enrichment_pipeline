@@ -46,13 +46,15 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   % generate directory    
   outSuffix =  ['cpHMM_results' filesep 'w' num2str(inferenceOptions.nSteps) '_K' num2str(inferenceOptions.nStates) '_p' ...
     num2str(inferenceOptions.ProteinBinFlag) '_ap' num2str(length(inferenceOptions.apBins)-1) ...
-    '_t' num2str(length(inferenceOptions.timeBins)) '_' fluoSuffix addSuffix filesep]; 
+    '_t' num2str(length(inferenceOptions.timeBins)) '_' fluoSuffix addSuffix]; 
 
   if isfield(inferenceOptions, 'dt')
       if ~isempty(inferenceOptions.dt)
           outSuffix = [outSuffix, '_dt', num2str(inferenceOptions.dt)];
       end
   end
+  
+  outSuffix = [outSuffix filesep];
   
 
   % set write path
