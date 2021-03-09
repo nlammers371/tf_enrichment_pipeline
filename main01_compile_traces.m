@@ -17,10 +17,12 @@ function spot_struct = main01_compile_traces(projectName,varargin)
 %          earlier traces, pass 'firstNC', followed by desired nuclear 
 %          cycle number
 % NC: allows specification of singleNC
-% filename
 %
 % other: script allows any default variable to be set using format:
 %       "VariableNameString", VariableValue
+% 
+% dt: specifies the time interval in seconds to be used for interpolated traces in spot_struct. 
+%   This allows for downsampling of traces. Added by GM 3/9/21.
 %
 % OUTPUT
 % spot_struct: compiled data set contain key nucleus and
@@ -424,6 +426,13 @@ end
 
 % calculate rounded dt
 dt_round = floor(median(dt_vec_full)/5)*5;
+if exist('dt', 'var')
+    if dt < dt_round
+        warning('Specified dt implies a higher time resolution than is used in the original data.')
+    end
+    dt_round = dt;
+end
+
 tresInterp = max([tresInterpFloor,dt_round]);
 interpGrid = 0:tresInterp:60*60;
 
@@ -552,13 +561,21 @@ for i = 1:length(spot_struct)
     spot_struct(i).tresInterp = tresInterp;
         
 end
+%%
+
+
 if lastNC ~= 14
-    dataName = strrep(dataName, '\spot_struct.mat', [filesep, 'NC', num2str(lastNC),'/spot_struct.mat']);
+    dataName = strrep(dataName, '\spot_struct.mat', [filesep, 'NC', num2str(lastNC),'\spot_struct.mat']);
     outpath = fileparts(dataName);
     if ~exist(outpath, 'dir')
         mkdir(outpath)
     end
 end
+
+if exist('dt', 'var')
+    dataName = strrep(dataName, '\spot_struct.mat', ['\spot_struct_dt', num2str(dt), '.mat']);  
+end
+
 % save
 save(dataName ,'spot_struct') 
 
