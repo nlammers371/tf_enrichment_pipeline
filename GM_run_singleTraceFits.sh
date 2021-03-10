@@ -24,8 +24,8 @@
 #SBATCH --time=4:00:00
 #
 
-## NL: This tells Savio to run 10 distinct instances of the job (essentially equivalent to "nBoots")
-#SBATCH -a 1-10
+## NL: This tells Savio to run 1 distinct instances of the job (essentially equivalent to "nBoots")
+#SBATCH -a 1
 
 ## Command(s) to run:
 module load matlab
@@ -37,4 +37,4 @@ module load matlab
 mkdir -p /global/scratch/$USER/$SLURM_JOB_ID
 
 ## Call the inference function
-matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/GM_call_inference_savio.m
+matlab -nodisplay -nodesktop < ~/repos/tf_enrichment_pipeline/call_singleTraceFits_savio.m

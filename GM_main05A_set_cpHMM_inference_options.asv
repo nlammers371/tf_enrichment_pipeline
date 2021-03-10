@@ -27,9 +27,9 @@ for i = 1:length(timeBins)
     timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
 end
 %inferenceInfo.timeBins = timeBins; % should be longer than 15min\
-inferenceInfo.timeBins = timeBins;
+inferenceInfo.timeBins = {[0 inf]};
 inferenceInfo.apBins = linspace(22.5, 45, 10);%linspace(-.2,.2,10);
-inferenceInfo.dt = 40; % leave empty to use default 
+inferenceInfo.dt = 40; 
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
@@ -62,14 +62,12 @@ mkdir(inferenceDir2)
 ProjectParamsString = ['w', num2str(inferenceInfo.modelSpecs.nSteps), '_K', ...
     num2str(inferenceInfo.modelSpecs.nStates),'_p', num2str(inferenceInfo.ProteinBinFlag),...
     '_ap', num2str(length(inferenceInfo.apBins)-1),'_t', num2str(length(inferenceInfo.timeBins))];
-if ~isempty(inferenceInfo.dt)
-     ProjectParamsString = [ProjectParamsString,'_dt', num2str(inferenceInfo.dt)];
-end
 if inferenceInfo.fluo3DFlag == 1
     ProjectParamsString = [ProjectParamsString,'_f3d'];
 end
 
-
+if ~isempty(inferencInfo.dt)
+    
 
 inferenceDir3 = [inferenceDir2, ProjectParamsString, filesep];
 mkdir(inferenceDir3)

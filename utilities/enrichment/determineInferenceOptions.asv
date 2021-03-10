@@ -35,7 +35,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   %% Binning variables
   inferenceOptions.timeBins = {[0 Inf]};
   inferenceOptions.apBins = [0 Inf];
-  inferenceOptions.dt = [];
+  inferenceOptions.dt = 
   
   % initialize optional grouping variable
   inferenceOptions.additionalGroupIDs = 1;

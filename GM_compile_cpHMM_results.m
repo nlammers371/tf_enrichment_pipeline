@@ -4,7 +4,10 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'hbBAC-MS2-25C'};
+projectNameCell = {'hbBAC-MS2-27_5C/NC13', 'hbBAC-MS2-25C/NC13', ...
+    'hbBAC-MS2-22_5C/NC13', 'hbBAC-MS2-17_5C/NC13',...
+     'hbBAC-MS2-27_5C', 'hbBAC-MS2-25C',...
+    'hbBAC-MS2-22_5C', 'hbBAC-MS2-17_5C','hbBAC-MS2-20C','hbBAC-MS2-20C/NC13'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
@@ -13,8 +16,26 @@ for p = 1:length(projectNameCell)
 
     % get path to results
     if ~exist('resultsRoot','var')
-        liveProject = LiveEnrichmentProject(projectName);
-        resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
+        if contains(projectName(end), '/') | contains(projectName(end), '\') 
+            projectName = projectName(1:end-1);
+        end
+        
+        if ~contains(projectName, '/') & ~contains(projectName, '\')
+            liveProject = LiveEnrichmentProject(projectName);
+        else
+            liveProject = LiveEnrichmentProject(fileparts(projectName));
+        end
+
+        if  ~contains(projectName, '/') & ~contains(projectName, '\')
+            resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
+        else
+            if contains(liveProject.dataPath(end), '/') | contains(liveProject.dataPath(end), '\') 
+                dataPath = liveProject.dataPath(1:end-1);
+            else
+                dataPath = liveProject.dataPath;
+            end
+            resultsDir = [(fileparts(dataPath)) filesep projectName filesep 'cpHMM_results' filesep];
+        end
     else
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
@@ -39,6 +60,9 @@ for p = 1:length(projectNameCell)
 
         % read in individual inference results
         inf_files = dir([resultsPath 'hmm_results*.mat']);
+        if isempty(inf_files)
+            continue 
+        end
         inferenceResults = struct;
         iter = 1;
         for i = 1:numel(inf_files)
