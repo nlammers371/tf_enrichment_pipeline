@@ -67,11 +67,11 @@ for inf_i = 1:length(infDirList)
     end
     
     % extract key inference parameters     
-    nStates = inferenceOptions.nStates;
-    nSteps = inferenceOptions.nSteps;
-    alpha = inferenceOptions.alpha;
+%     nStates = inferenceOptions.nStates;
+%     nSteps = inferenceOptions.nSteps;
+%     alpha = inferenceOptions.alpha;
     Tres = inferenceOptions.Tres;
-    timeGrid = 0:Tres:60*60;
+%     timeGrid = 0:Tres:60*60;
     maxDT = 1.2*Tres; % maximum distance from observed data point
     
     % load compiled inference files
