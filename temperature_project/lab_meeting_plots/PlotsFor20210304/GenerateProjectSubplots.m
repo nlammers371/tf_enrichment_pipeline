@@ -56,7 +56,7 @@ LegendSubplots = (1:SubplotDims(1))*SubplotDims(2);
 
 
 LegendWidth = 0.2;
-LegendXPosition = 0.78;
+LegendXPosition = 0.8;
 SubplotXBuffer = 0.05;
 SubplotYBuffer = 0.1;
 
@@ -137,7 +137,11 @@ for SetIndex = 1:NumSets
     set(DurFigAx{SetIndex} ,'Fontsize',14)
     xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
     %xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
-     title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C w', num2str(CompiledParameters.nSteps(SetIndex))]);
+     title({[CompiledParameters.ReporterLabels{SetIndex}, ' ',...
+         num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C'],...
+         ['w', num2str(CompiledParameters.nSteps(SetIndex)), ' dt ',...
+         num2str(CompiledParameters.dt(SetIndex)), ' t ',...
+         num2str(round(CompiledParameters.ElongationTimes(SetIndex), 2)), ' m']});
     newylim = get(DurFigAx{SetIndex}, 'ylim');
     newylim(1) = DurYmin;
     if newylim(2) > 15
@@ -264,7 +268,11 @@ for SetIndex = 1:NumSets
     set(FreqFigAx{SetIndex} ,'Fontsize',14)
     xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
     %xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
-    title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C w', num2str(CompiledParameters.nSteps(SetIndex))]);
+    title({[CompiledParameters.ReporterLabels{SetIndex}, ' ',...
+         num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C'],...
+         ['w', num2str(CompiledParameters.nSteps(SetIndex)), ' dt ',...
+         num2str(CompiledParameters.dt(SetIndex)), ' t ',...
+         num2str(round(CompiledParameters.ElongationTimes(SetIndex), 2)), ' m']});
     newylim = get(FreqFigAx{SetIndex}, 'ylim');
     newylim(1) = FreqYmin;
     if newylim(2) > 2
@@ -390,7 +398,11 @@ for SetIndex = 1:NumSets
     set(InitFigAx{SetIndex} ,'Fontsize',14)
     xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
     %xlim([(MinAPbin-2)*APResolution*100 (MaxAPbin)*APResolution*100])
-     title([CompiledParameters.ReporterLabels{SetIndex}, ' ', num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C w', num2str(CompiledParameters.nSteps(SetIndex))]);
+    title({[CompiledParameters.ReporterLabels{SetIndex}, ' ',...
+         num2str(CompiledParameters.SetTemperatures(SetIndex)), '°C'],...
+         ['w', num2str(CompiledParameters.nSteps(SetIndex)), ' dt ',...
+         num2str(CompiledParameters.dt(SetIndex)), ' t ',...
+         num2str(round(CompiledParameters.ElongationTimes(SetIndex), 2)), ' m']});
     newylim = get(InitFigAx{SetIndex}, 'ylim');
     newylim(1) = InitYmin;
    
