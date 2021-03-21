@@ -1,0 +1,35 @@
+clear
+close all
+clc
+
+%addpath(genpath('./lib'))
+
+%% try histogram for data from two sets
+
+load('data.mat')
+
+a = a(a<7);
+
+binNum = 13;
+binMax = 6;
+
+%edges1 = linspace(0,10,11); % bin for histogram
+%edges1 = linspace(0,15,16);
+edges1 = linspace(0,6,binNum);
+
+% fit gamma function
+[muhat,muci] = mle(a,'distribution','gamma'); % Generic function
+%[muhat,muci] = gamfit(a); % Distribution specific function
+
+x = 0:0.1:20;
+y1 = gampdf(x,muhat(1),muhat(2))/(binNum/binMax);
+%y2 = gamcdf(x,muhat(1),muhat(2));
+
+fig = figure(2);
+hold on
+histogram(a,edges1,'Normalization','probability')
+plot(x,y1)
+mean(a)
+
+xlim([0 7])
+xtitle()
