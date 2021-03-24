@@ -4,8 +4,8 @@ clear
 close all
 addpath('../utilities')
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-17_5h_v3';
-project = 'hbBAC-MS2-17_5C/NC13/';
+% project = 'Dl-Ven_snaBAC-mCh_v3';
+project = 'hbBAC-MS2-25C/NC13/';
 DropboxFolder =  'S:\Gabriella\Dropbox\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 
@@ -15,19 +15,19 @@ mkdir(FigPath)
 % K = 3;
 n_lags = 20;
 n_boots = 100;
-load([DataPath 'spot_struct.mat'])
+sload([DataPath 'spot_struct.mat'])
 %%
-qc_indices = find([spot_struct.TraceQCFlag]==1);
+qc_indices = find([nucleus_struct.qc_flag]==1);
 
 % load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 % compile traces into single array
-time_grid = unique([spot_struct.timeInterp]);
+time_grid = unique([spot_struct.time_interp]);
 time_grid = time_grid(~isnan(time_grid));
 trace_array = zeros(numel(time_grid),numel(qc_indices));
 for i = 1:numel(qc_indices)
     qc = qc_indices(i);
-    time = spot_struct(qc).timeInterp;
-    fluo = spot_struct(qc).fluoInterp;
+    time = spot_struct(qc).time_interp;
+    fluo = spot_struct(qc).fluo_interp;
     trace_array(ismember(time_grid,time),i) = fluo;
 end
 

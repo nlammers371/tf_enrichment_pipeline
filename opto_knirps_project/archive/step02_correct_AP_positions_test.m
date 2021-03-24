@@ -28,7 +28,7 @@ for p = 1:length(projectList)
   for i = 1:length(spot_struct_protein)
     % rename fields
     spot_struct_protein(i).APPosParticleInterpOrig = spot_struct_protein(i).APPosParticleInterp; % rename native AP variable
-    spot_struct_protein(i).APPosParticleInterp = NaN(size(spot_struct_protein(i).xPosParticle));
+    spot_struct_protein(i).APPosParticleInterp = NaN(size(spot_struct_protein(i).xPosParticleInterp));
     % extract position info
     xPosVec = spot_struct_protein(i).xPosParticleInterp;
     yPosVec = spot_struct_protein(i).yPosParticleInterp;
@@ -49,7 +49,7 @@ for p = 1:length(projectList)
   for i = 1:length(spot_struct)
     % rename fields
     spot_struct(i).APPosParticleInterpOrig = spot_struct(i).APPosParticleInterp; % rename native AP variable
-    spot_struct(i).APPosParticleInterp = NaN(size(spot_struct(i).xPosParticle));
+    spot_struct(i).APPosParticleInterp = NaN(size(spot_struct(i).xPosParticleInterp));
     
     spot_struct(i).apPosNucleuspOrig = spot_struct(i).apPosNucleus; % rename native AP variable
     spot_struct(i).apPosNucleus = NaN(size(spot_struct(i).xPosNucleus));
@@ -59,9 +59,8 @@ for p = 1:length(projectList)
     yPosVec = spot_struct(i).yPosParticleInterp;
     zPosVec = spot_struct(i).zPosParticleInterp;
     
-    xPosNucVec = spot_struct(i).xPosParticleInterp;
-    yPosNucVec = spot_struct(i).yPosParticleInterp;
-    zPosNucVec = spot_struct(i).zPosParticleInterp;
+    xPosNucVec = spot_struct(i).xPosNucleus;
+    yPosNucVec = spot_struct(i).yPosNucleus;
     
     expID = spot_struct(i).setID;
     
@@ -73,6 +72,16 @@ for p = 1:length(projectList)
             spot_struct(i).APPosParticleInterp(j) = ap_map(expID).APmap(round(yPosVec(j)),round(xPosVec(j)));
         end
     end
+    
+    for j = 1:length(xPosNucVec)    
+        %NL: do lookup here
+        if isnan(xPosNucVec)
+            spot_struct(i).apPosNucleus(j) = NaN;
+        else
+            spot_struct(i).apPosNucleus(j) = ap_map(expID).APmap(round(yPosNucVec(j)),round(xPosNucVec(j)));
+        end
+    end
+    
   end
   
   % save

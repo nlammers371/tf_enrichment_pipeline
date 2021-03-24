@@ -10,13 +10,20 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
 
   %% %%%%%%%%%%%%%%%%%%%%%% Load trace data set %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   if ~inferenceOptions.ProteinBinFlag
-    load([InputDataPath '/spot_struct.mat'],'spot_struct') % load data
+    if isempty(inferenceOptions.dt)
+        load([InputDataPath '/spot_struct.mat'],'spot_struct') % load data
+    else
+        load([InputDataPath '/spot_struct_dt',num2str(inferenceOptions.dt),'.mat'],'spot_struct') % load data
+    end
     analysis_traces = spot_struct;
     clear spot_struct
   else
+    if ~isempty(inferenceOptions.dt)
+        error('Flexible dt is not currently supported for Protein analysis.')
+    end
     load([InputDataPath '/spot_struct_protein.mat'],'spot_struct_protein') % load data
     analysis_traces = spot_struct_protein;
-    clear spot_struct_protein
+    clear spot_struct_prote in
   end
   
   % check for consistency
@@ -39,7 +46,15 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   % generate directory    
   outSuffix =  ['cpHMM_results' filesep 'w' num2str(inferenceOptions.nSteps) '_K' num2str(inferenceOptions.nStates) '_p' ...
     num2str(inferenceOptions.ProteinBinFlag) '_ap' num2str(length(inferenceOptions.apBins)-1) ...
-    '_t' num2str(length(inferenceOptions.timeBins)) '_' fluoSuffix addSuffix filesep]; 
+    '_t' num2str(length(inferenceOptions.timeBins)) '_' fluoSuffix addSuffix]; 
+
+  if isfield(inferenceOptions, 'dt')
+      if ~isempty(inferenceOptions.dt)
+          outSuffix = [outSuffix, '_dt', num2str(inferenceOptions.dt)];
+      end
+  end
+  
+  outSuffix = [outSuffix filesep];
   
 
   % set write path

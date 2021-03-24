@@ -15,7 +15,7 @@ inferenceInfo.projectNameCell = {'Rbp1-GFP_eveBAC-mCh'}; % {'2xDl-Ven_hbP2P-mCh'
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-inferenceInfo.timeBins = {[0 Inf]}; % should be longer than 15min
+inferenceInfo.timeBins = {[0 60*15],[10*60 60*25]}; % should be >= than 15min
 inferenceInfo.apBins = linspace(.3,.5,10);%linspace(-.2,.2,10);
 
 % set core model specs
