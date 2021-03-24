@@ -17,7 +17,11 @@ function spot_struct = truncateParticleFields(spot_struct,has3DSpotInfo,hasAPInf
       
       spot_struct(i).xPosNucleus = spot_struct(i).xPosNucleus(nanFilter);
       spot_struct(i).yPosNucleus = spot_struct(i).yPosNucleus(nanFilter);
-      spot_struct(i).rawNCPprotein = spot_struct(i).rawNCProtein(nanFilter);
+      try
+        spot_struct(i).rawNCPprotein = spot_struct(i).rawNCProtein(nanFilter);
+      catch
+        spot_struct(i).rawNCPprotein = NaN(size(spot_struct(i).yPosNucleus));
+      end
       
       spot_struct(i).FrameQCFlags = spot_struct(i).FrameQCFlags(nanFilter);
       

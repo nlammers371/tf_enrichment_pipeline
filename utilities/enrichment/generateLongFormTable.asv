@@ -10,7 +10,7 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
     end
     
     if isfield(analysis_traces,'ectopicFlag')
-        keepFields(end+1) = {'ectopicFlag'};
+        keepFields(end+1) = {'Stripe'};
         extendFlags(end+1) = 1;
     end
     
