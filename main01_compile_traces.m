@@ -367,9 +367,9 @@ for i = 1:numExperiments
             end
             % 3D info
             if has3DSpotInfo
-                compiledSchnitzCells(ncIndex).xPosParticle3D(ncSpotFilter1) = compiledParticles(j).xPosGauss3D(ncSpotFilter2);
-                compiledSchnitzCells(ncIndex).yPosParticle3D(ncSpotFilter1) = compiledParticles(j).yPosGauss3D(ncSpotFilter2);
-                compiledSchnitzCells(ncIndex).zPosParticle3D(ncSpotFilter1) = compiledParticles(j).zPosGauss3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).xPosParticle3D(ncSpotFilter1) = compiledParticles(j).xPos3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).yPosParticle3D(ncSpotFilter1) = compiledParticles(j).yPos3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).zPosParticle3D(ncSpotFilter1) = compiledParticles(j).zPos3D(ncSpotFilter2);
                 compiledSchnitzCells(ncIndex).fluo3D(ncSpotFilter1) = compiledParticles(j).Fluo3DRaw(ncSpotFilter2);
             end
             if DetrendedZFlag
