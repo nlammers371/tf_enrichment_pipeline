@@ -77,7 +77,7 @@ addpath(genpath('utilities'));
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
 lastNC = 14;
-minDP = 14;     % what is this for?
+minDP = 14;     % particles with fewer than minDP points will be flagged
 pctSparsity = 50;   %
 twoSpotFlag = contains(projectName, '2spot');
 minTime = 0*60; % take no fluorescence data prior to this point
@@ -179,6 +179,19 @@ for i = 1:numExperiments
     ncStartFrameVec = anaphaseFrames(ncIndices)';
     ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]);
     ncStartFrameVec(end+1) = framesRaw(end)+1;
+    if ncStartFrameVec(1) == 0 && ncStartFrameVec(2) > 1
+        ncStartFrameVec(1) = 1;
+    elseif ncStartFrameVec(1) == 0
+        firstInd = find(ncStartFrameVec);
+        if ncStartFrameVec(firstInd) == 1
+            ncStartFrameVec = ncStartFrameVec(firstInd:end);
+            ncIndices = ncIndices(firstInd:end);
+        else
+            ncStartFrameVec(firstInd-1) = 1;
+            ncStartFrameVec = ncStartFrameVec(firstInd-1:end);
+            ncIndices = ncIndices(firstInd-1:end);
+        end
+    end        
     firstTime = timeRaw(min(ncStartFrameVec));
     
     % iterate through nuclear cycles
