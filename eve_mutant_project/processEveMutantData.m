@@ -11,15 +11,15 @@ projectList = {'eveWT','EveGtSL','EveS1Null','EveGtSL-S1Null'};
 ectopicGroups = {[],[1.5 -1],[1.5 -1],[1.5 -1]};
 endogenousGroups = {1:3,1:3,2:3,2:3};
 customDataFolders = {'EveWT_CompiledParticles_segmented',...
-  'eveGt_Analysis2.0_Segmented\eveGtSL-CompiledParticles2.0',...
-  'eveS1Null_CompiledParticles_analysis',...
-  'CompiledParticles-eveGtSL-eS1_2.1'};
+                      'eveGt_Analysis2.0_Segmented\eveGtSL-CompiledParticles2.0',...
+                      'eveS1Null_CompiledParticles_analysis',...
+                      'CompiledParticles-eveGtSL-eS1_2.1'};
 
 
 
 
 % iterate through list of projects and generate required variables
-for p = 2%1:length(projectList)
+for p = 1:length(projectList)
   
   liveProject = LiveProject(projectList{p});
   

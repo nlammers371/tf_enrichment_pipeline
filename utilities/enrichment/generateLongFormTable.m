@@ -4,8 +4,16 @@ function resultsTable = generateLongFormTable(analysis_traces,timeGrid,singleTra
     % generate longform dataset interpolated to regular time grid
     keepFields = {'xPosNucleus','yPosNucleus','xPosParticle','yPosParticle','ncID','particleID','qcFlag'};
     extendFlags = [0 0 0 0 1 1 1];
-
-
+    if isfield(analysis_traces,'Stripe')
+        keepFields(end+1) = {'Stripe'};
+        extendFlags(end+1) = 1;
+    end
+    
+    if isfield(analysis_traces,'ectopicFlag')
+        keepFields(end+1) = {'ectopicFlag'};
+        extendFlags(end+1) = 1;
+    end
+    
     analysis_traces_interp = struct;
     
     % First, generate regularized time field

@@ -9,14 +9,14 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'Rbp1-GFP_eveBAC-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'Rbp1-GFP_hbMS2-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-inferenceInfo.timeBins = {[0 60*15],[10*60 60*25]}; % should be >= than 15min
-inferenceInfo.apBins = linspace(.3,.5,10);%linspace(-.2,.2,10);
+inferenceInfo.timeBins = {[0 60*60]}; % should be >= than 15min
+inferenceInfo.apBins = [-Inf,Inf];%linspace(-.2,.2,10);
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; % number of states in system
@@ -25,7 +25,7 @@ inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
 inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-inferenceInfo.SampleSize = 4500;
+inferenceInfo.SampleSize = 3000;
 inferenceInfo.useQCFlag = true;
 
 % Get basic project info and determing file paths

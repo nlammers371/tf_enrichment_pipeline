@@ -93,7 +93,7 @@ if length(length(infDirList)) > 1
     warning('Multiple inference directories found. This script will currently only process the first directory in the list')
 end
 
-for inf_i = 1:length(infDirList)
+for inf_i = 2%1:length(infDirList)
   
     % get path to results
     resultsPath = [infDirList(inf_i).folder filesep];

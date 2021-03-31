@@ -10,19 +10,52 @@ addpath(genpath('./lib'))
 % Specify the dataset to analyze
 
 % We need to specify the prefix of the project we wish to analyze
+
+%optokni_eve4+6_WT
 %Prefix = '2020-11-21-optoknirps_eve4_6_embryo5'; APflip = 1;
 %Prefix = '2020-11-22-optoknirps_eve4_6_embryo6'; APflip = 0;
 %Prefix = '2020-11-24-optoknirps_eve4_6_embryo7'; APflip = 0;
-Prefix = '2020-11-27-optoknirps_eve4_6_embryo8'; APflip = 1;
+%Prefix = '2020-11-27-optoknirps_eve4_6_embryo8'; APflip = 1;
+%avrInit = 30;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 38;
+
+%optokni_eveBAC_WT
+%Prefix = '2020-07-18-optoknirps_embryo1'; APflip = 0;
+%Prefix = '2020-07-19-optoknirps_embryo2'; APflip = 0;
+%Prefix = '2020-07-19-optoknirps_embryo3'; APflip = 1;
+%avrInit = 30;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 38;
+
+%optokni_eveBAC_on
+%Prefix = '2020-08-28-optoknirps_embryo5'; APflip = 1;
+%Prefix = '2020-08-28-optoknirps_embryo6'; APflip = 1;
+%Prefix = '2020-08-29-optoknirps_embryo8'; APflip = 1;
+%avrInit = 0;
+%avrFinal = 5;
+%analysisInit = 0;
+%analysisFinal = 20;
+
+%optokni_eve4+6_ON
+%Prefix = '2020-12-14-optoknirps_eve4_6_embryo9'; APflip = 1;
+%Prefix = '2020-12-16-optoknirps_eve4_6_embryo10'; APflip = 0;
+Prefix = '2020-12-18-optoknirps_eve4_6_embryo11'; APflip = 0;
+avrInit = 10;
+avrFinal = 15;
+analysisInit = 0;
+analysisFinal = 20;
 
 %% 
 % Initialize some parameters
 
-analysisInit = 0;
-analysisFinal = 38;
+%analysisInit = 0;
+%analysisFinal = 38;
 
-avrInit = 30;
-avrFinal = 35;
+%avrInit = 30;
+%avrFinal = 35;
 
 %avrInit = 20;
 %avrFinal = 25;
