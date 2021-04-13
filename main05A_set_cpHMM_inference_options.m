@@ -16,7 +16,7 @@ inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
 inferenceInfo.timeBins = {[0 60*60]}; % should be >= than 15min
-inferenceInfo.apBins = [-Inf,Inf];%linspace(-.2,.2,10);
+inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; % number of states in system
