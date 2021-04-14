@@ -3,11 +3,12 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-
+% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
+projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'};%};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
+    
     % set project to analyze 
     projectName = projectNameCell{p};
 
