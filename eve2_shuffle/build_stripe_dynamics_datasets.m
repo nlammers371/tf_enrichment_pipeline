@@ -27,7 +27,6 @@ hm_info_struct.legend_str = {'WT-MSE2','Neutral Sequence v1', 'Randomized v1','R
 hm_info_struct.legend_str_short = {'MSE2','NS v1', 'Rand v1','Rand v4'};
 hm_info_struct.projectNameCell = projectNameCell;
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Generate heatmaps showing the average activity over space and time
 
