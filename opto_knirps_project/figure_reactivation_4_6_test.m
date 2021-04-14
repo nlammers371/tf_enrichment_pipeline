@@ -27,9 +27,9 @@ time_on = 20.48;
 frame_on = 76;
 
 % Embryo 10
-embryo(2).expID = 2;
-embryo(2).time_on = 20.48;
-embryo(2).frame_on = 59;
+%embryo(2).expID = 2;
+%embryo(2).time_on = 20.48;
+%embryo(2).frame_on = 59;
 
 %expID = 2;
 %time_on = 20.48;
