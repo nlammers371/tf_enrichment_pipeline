@@ -76,7 +76,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
   
   % iterate through designated groups
   inferenceIDVecShuffled =  randsample(1:length(indexInfo.indexVecUnique),length(indexInfo.indexVecUnique),false);
-  for t = inferenceIDVecShuffled
+  for t = 2%inferenceIDVecShuffled
     
       % find subset of eligible traces
       iter_filter = indexInfo.indexList == indexInfo.indexVecUnique(t);

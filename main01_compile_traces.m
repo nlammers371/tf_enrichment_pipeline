@@ -125,6 +125,8 @@ spot_struct = [];
 
 % Add data from each experiment to the master structure
 h = waitbar(0,'Compiling data ...');
+nc_ap_flags = false(1,numExperiments);
+
 for i = 1:numExperiments
     
     waitbar((i-1)/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
@@ -182,7 +184,7 @@ for i = 1:numExperiments
     if ncStartFrameVec(1) == 0 && ncStartFrameVec(2) > 1
         ncStartFrameVec(1) = 1;
     elseif ncStartFrameVec(1) == 0
-        firstInd = find(ncStartFrameVec);
+        firstInd = find(ncStartFrameVec,1);
         if ncStartFrameVec(firstInd) == 1
             ncStartFrameVec = ncStartFrameVec(firstInd:end);
             ncIndices = ncIndices(firstInd:end);
@@ -214,7 +216,7 @@ for i = 1:numExperiments
         timeNC = timeNC - firstTime; %normalize to start of first nc
         
         %%%%%%%%%%%%%%%%%%%% Compile nucleus schnitz info %%%%%%%%%%%%%%%%%%%%%
-        
+        nc_ap_flags(i) = hasAPInfo && ~isfield(schnitzcells,'APpos');
         for s = 1:length(schnitzcells)
             schnitzFrames = schnitzcells(s).frames;
             
@@ -404,6 +406,19 @@ for i = 1:numExperiments
 end
 close(h)
 
+% add nucleus AP info if appropriate
+if any(nc_ap_flags)
+    for i=1:length(spot_struct)    
+        spot_struct(i).APPosNucleus = NaN(size(spot_struct(i).yPosNucleus));
+    end
+    set_vec = [spot_struct.setID];        
+    for i = 1:numExperiments
+        set_filter = set_vec==i;
+        currExperiment = liveProject.includedExperiments{i};
+        spot_struct(set_filter) = convertToFractionalEmbryoLength(currExperiment.Prefix,spot_struct(set_filter));
+    end
+end
+
 % add additional fields
 % NL: this does nothing at the moment, but leaving to preserve two-spot
 % compatibility
@@ -421,7 +436,7 @@ if has3DSpotInfo
     interpFields(end+1:end+4) = {'fluo3D','xPosParticle3D','yPosParticle3D','zPosParticle3D'};
 end
 if hasAPInfo
-    interpFields(end+1) = {'APPosParticle'};
+    interpFields(end+1:end+2) = {'APPosParticle','APPosNucleus'};
 end
 if hasProteinInfo
     interpFields(end+1) = {'rawNCProtein'};
