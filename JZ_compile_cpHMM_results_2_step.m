@@ -3,12 +3,7 @@ clear
 close all
 addpath(genpath('utilities'))
 
-% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-%projectNameCell = {'Rbp1-GFP_eveBAC-mCh'};
-%projectNameCell = {'optokni_eve4+6_WT'};
-%projectNameCell = {'optokni_eveBAC_WT'};
-projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-% resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
+projectNameCell = {'optokni_eveBAC_ON'};
 
 for p = 1:length(projectNameCell)
     % set project to analyze 
