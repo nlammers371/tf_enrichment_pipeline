@@ -214,7 +214,7 @@ fraction_on_info.param_labels = {'cumulative fraction ON','cumulative fraction O
 fraction_on_info.frac_dynamics_array = NaN(length(fraction_on_info.time_index)-1,length(hm_info_struct.project_id_vec),...
                                            length(fraction_on_info.param_cell));
 
-%%% loop through the embryos
+%% loop through the embryos
 iter_i = 1;
 for p = 1:length(master_struct)
   
