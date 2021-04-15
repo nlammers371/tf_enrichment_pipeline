@@ -3,6 +3,14 @@ clear
 close all
 addpath(genpath('utilities'))
 
+% get path
+baseProject = 'NSv1';
+liveProject = LiveEnrichmentProject(baseProject);
+% make output paths for data and figures
+slashesFig = strfind(liveProject.figurePath,'\');
+FigurePath = [liveProject.figurePath(1:slashesFig(end-1)) 'eve2_recon_analyses' filesep 'cpHMM' filesep];
+mkdir(FigurePath)
+
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
 projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'};%};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
@@ -18,13 +26,10 @@ for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};
 
-    % get path to results
-    if ~exist('resultsRoot','var')
-        liveProject = LiveEnrichmentProject(projectName);
-        resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
-    else
-        resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
-    end
+    % get path to results    
+    liveProject = LiveEnrichmentProject(projectName);
+    resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
+    
     % get list of all inference subdirectories. By default, we'll generate
     % summaries for all non-empty inference sub-directory
     infDir = dir([resultsDir 'w' num2str(w) '*']);
@@ -53,8 +58,9 @@ for p = 1:length(projectNameCell)
 end
     
 %% Make plots
+close all
 stripe_center_ind = 2;
-
+legend_str_short = {'MSE2','NS v1', 'Rand v1','Rand v4'};
 % initiation rate
 init_fig = figure;
 cmap1 = brewermap([],'Set2');
@@ -62,7 +68,7 @@ hold on
 
 % individual result scatters
 for p = 1:length(master_struct)
-    init_results = master_struct(p).compiledResults.init_results{stripe_center_ind}*60;    
+    init_results = master_struct(p).compiledResults.init_results{stripe_center_ind}*60 / 1e4;    
     outlier_flags = master_struct(p).compiledResults.outlier_flags{stripe_center_ind};
     scatter(repelem(p,sum(~outlier_flags)),init_results(~outlier_flags),50,...
                 'MarkerFaceColor',cmap1(p,:),'MarkerEdgeColor','k',...
@@ -71,13 +77,29 @@ end
 
 % means
 for p = 1:length(master_struct)
-    init_mean = master_struct(p).compiledResults.init_vec_mean(stripe_center_ind);    
+    init_mean = master_struct(p).compiledResults.init_vec_mean(stripe_center_ind) / 1e4;    
     scatter(p,init_mean,75,'s',...
                 'MarkerFaceColor',cmap1(p,:),'MarkerEdgeColor','k',...
                 'MarkerFaceAlpha',1,'MarkerEdgeAlpha',1);
 end
 
+ylabel('initiation rate (AU per minute)')
+% ylabel(y_label)
+set(gca,'Fontsize',14);
+grid on
+xlim([0.5 4.5])
+ylim([0 15])
+% legend(p,legend_str{:},'Location',loc_str{param_index})
 
+set(gca,'xtick',1:length(projectNameCell),'xticklabels',legend_str_short)
+xtickangle(-30) 
+set(gca,'Color',[228,221,209]/255) 
+
+init_fig.InvertHardcopy = 'off';
+set(gcf,'color','w');
+
+saveas(init_fig,[FigurePath 'init_scatter.png'])
+saveas(init_fig,[FigurePath 'init_scatter.pdf'])
 
 %% burst frequency
 freq_fig = figure;
@@ -101,6 +123,23 @@ for p = 1:length(master_struct)
                 'MarkerFaceAlpha',1,'MarkerEdgeAlpha',1);
 end
 
+ylabel('burst frequency (events per minute)')
+% ylabel(y_label)
+set(gca,'Fontsize',14);
+grid on
+xlim([0.5 4.5])
+% ylim([0 15])
+% legend(p,legend_str{:},'Location',loc_str{param_index})
+
+set(gca,'xtick',1:length(projectNameCell),'xticklabels',legend_str_short)
+xtickangle(-30) 
+set(gca,'Color',[228,221,209]/255) 
+ylim([0 1.5])
+freq_fig.InvertHardcopy = 'off';
+set(gcf,'color','w');
+
+saveas(freq_fig,[FigurePath 'freq_scatter.png'])
+saveas(freq_fig,[FigurePath 'freq_scatter.pdf'])
 
 %% burst duration
 dur_fig = figure;
@@ -124,4 +163,20 @@ for p = 1:length(master_struct)
                 'MarkerFaceAlpha',1,'MarkerEdgeAlpha',1);
 end
             
-            
+ylabel('burst duration (minutes)')
+% ylabel(y_label)
+set(gca,'Fontsize',14);
+grid on
+xlim([0.5 4.5])
+% ylim([0 15])
+% legend(p,legend_str{:},'Location',loc_str{param_index})
+
+set(gca,'xtick',1:length(projectNameCell),'xticklabels',legend_str_short)
+xtickangle(-30) 
+set(gca,'Color',[228,221,209]/255) 
+ylim([0 1.5])
+dur_fig.InvertHardcopy = 'off';
+set(gcf,'color','w');
+
+saveas(dur_fig,[FigurePath 'dur_scatter.png'])
+saveas(dur_fig,[FigurePath 'dur_scatter.pdf'])            
