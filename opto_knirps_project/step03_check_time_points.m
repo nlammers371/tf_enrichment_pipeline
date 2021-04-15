@@ -4,11 +4,12 @@ clear
 close all
 
 %projectList = {'optokni_eve4+6_WT'}; % Cell array containing all projects you wish to process
-projectList = {'optokni_eveBAC_ON'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_MCP-GFP_Homo'}; % Cell array containing all projects you wish to process
 
-apBins = linspace(-0.12,0.12,11);
+%apBins = linspace(-0.12,0.12,11);
+apBins = linspace(52.5,70,11);
 %timeRange = [7.5*60 37.5*60];
-timeRange = [0*60 60*60];
+timeRange = [0*60 50*60];
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
