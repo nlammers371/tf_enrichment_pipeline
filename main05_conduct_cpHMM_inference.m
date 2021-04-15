@@ -56,6 +56,9 @@ options = {'savioFlag',savioFlag,'SampleSize',inferenceInfo.SampleSize};
 if isfield(inferenceInfo,'apBins')
     options(end+1:end+2) = {'apBins',inferenceInfo.apBins};
 end
+if isfield(inferenceInfo,'n_localEM')
+    options(end+1:end+2) = {'n_localEM',inferenceInfo.n_localEM};
+end
 if isfield(inferenceInfo,'timeBins')
     options(end+1:end+2) = {'timeBins',inferenceInfo.timeBins};
 end

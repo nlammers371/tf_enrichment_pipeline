@@ -13,9 +13,9 @@ inferenceInfo.projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'}; % {'2xDl-Ven_
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
-inferenceInfo.FluoBinFlag = 0;ss
+inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-inferenceInfo.timeBins = {[0 60*60]}; % should be >= than 15min
+inferenceInfo.timeBins = {[0 45*60]}; % should be >= than 15min
 inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
 % set core model specs
@@ -27,6 +27,8 @@ inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 inferenceInfo.AdditionalGroupingVariable = 'stripeCenterFlag';%'Stripe'
 inferenceInfo.SampleSize = 3000;
 inferenceInfo.useQCFlag = true;
+
+inferenceInfo.n_localEM = 50;
 
 % Get basic project info and determing file paths
 liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});

@@ -42,11 +42,30 @@ addpath(genpath('./lib'))
 %optokni_eve4+6_ON
 %Prefix = '2020-12-14-optoknirps_eve4_6_embryo9'; APflip = 1;
 %Prefix = '2020-12-16-optoknirps_eve4_6_embryo10'; APflip = 0;
-Prefix = '2020-12-18-optoknirps_eve4_6_embryo11'; APflip = 0;
-avrInit = 10;
-avrFinal = 15;
+%Prefix = '2020-12-18-optoknirps_eve4_6_embryo11'; APflip = 0;
+%avrInit = 10;
+%avrFinal = 15;
+%analysisInit = 0;
+%analysisFinal = 20;
+
+%optokni_eve4+6_OFF
+Prefix = '2021-03-29-optoknirps_eve4_6_embryo13'; APflip = 0;
+avrInit = 15;
+avrFinal = 16;
 analysisInit = 0;
-analysisFinal = 20;
+analysisFinal = 15;
+
+%Prefix = '2021-03-31-optoknirps_eve4_6_embryo14'; APflip = 1;
+%avrInit = 25;
+%avrFinal = 26;
+%analysisInit = 0;
+%analysisFinal = 25;
+
+%Prefix = '2021-04-02-optoknirps_eve4_6_embryo16'; APflip = 0;
+%avrInit = 14;
+%avrFinal = 15;
+%analysisInit = 0;
+%analysisFinal = 15;
 
 %% 
 % Initialize some parameters
