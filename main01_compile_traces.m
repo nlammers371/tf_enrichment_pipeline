@@ -509,6 +509,7 @@ for i = 1:length(spot_struct)
         
         stopIndex = find(vecConvEndSmall>=sSize | vecConvEndBig>=ceil(bSize/2) & vecNans,1,'last');
     end
+    
     % update QC flags
     if ~isempty(startIndex) && ~isempty(stopIndex)
         spot_struct(i).FrameQCFlags(frameIndex<startIndex & vecNans) = false;

@@ -214,7 +214,7 @@ fraction_on_info.param_labels = {'cumulative fraction ON','cumulative fraction O
 fraction_on_info.frac_dynamics_array = NaN(length(fraction_on_info.time_index)-1,length(hm_info_struct.project_id_vec),...
                                            length(fraction_on_info.param_cell));
 
-%%% loop through the embryos
+%% loop through the embryos
 iter_i = 1;
 for p = 1:length(master_struct)
   
@@ -227,7 +227,8 @@ for p = 1:length(master_struct)
     for s = 1:length(set_index)
       
         % define average nucleus AP as the mean position from 15-25 minutes
-        set_indices = find(set_vec==set_index(s));
+        trace_qc_filter = isnan([spot_struct.TraceQCFlag]) | [spot_struct.TraceQCFlag]==1;
+        set_indices = find(set_vec==set_index(s)&trace_qc_filter);
         max_set_time = nanmax([spot_struct(set_indices).time])/60;
         max_set_index = find(max_set_time<fraction_on_info.time_index(1:end-1),1,'first');
         
@@ -250,11 +251,11 @@ for p = 1:length(master_struct)
                        
         % recenter
         ap_vec_norm = ap_vec - mean_stripe_ap;
-        stripe_center_filter = abs(ap_vec_norm) <= fraction_on_info.stripe_width & ap_steps > 10; 
+        stripe_center_filter = abs(ap_vec_norm) <= fraction_on_info.stripe_width & ap_steps > 10;         
         
         % extract relevant vectors        
-        spot_struct_filtered = spot_struct(set_vec==set_index(s));
-        spot_struct_filtered = spot_struct_filtered(stripe_center_filter);
+        spot_struct_filtered = spot_struct(set_vec==set_index(s)&trace_qc_filter);
+        spot_struct_filtered = spot_struct_filtered(stripe_center_filter);                
         
         % add flags to spot_struct
         iter_j = 1;
@@ -275,11 +276,11 @@ for p = 1:length(master_struct)
         for f = 1:size(fluo_on_array,2)
             time_vec = [spot_struct_filtered(f).time]/60;            
             fluo_vec = [spot_struct_filtered(f).fluo];         
-            if p == 3 && ismember(s,[1,3]) % NL: temporary fix for early FPs in rand1
-                fluo_vec(time_vec<10) = NaN;
-            else
-                fluo_vec(time_vec<5) = NaN;
-            end
+%             if p == 3 && ismember(s,[1,3]) % NL: temporary fix for early FPs in rand1
+%                 fluo_vec(time_vec<10) = NaN;
+%             else
+%                 fluo_vec(time_vec<5) = NaN;
+%             end
             % find first and last times active
             fluo_vec_bin = ~isnan(fluo_vec);
             si = find(fluo_vec_bin,1);
@@ -313,11 +314,16 @@ for p = 1:length(master_struct)
             mean_fluo_full = grpstats(fluo_full,time_indices,'mean');%accumarray(time_indices',fluo_full',[],@mean);
             mean_fluo_full_array(time_u,f) = mean_fluo_full;                       
             
-            if ~isempty(si) %&& ~all(isnan(spot_struct_filtered(f).fluoInterp))
+            if ~isempty(si) && all(isnan(spot_struct_filtered(f).fluoInterp))
+              if sum(~isnan(fluo_vec)) > 5
+                error('wtf')
+              end
+            end
+            if ~isempty(si)% && ~all(isnan(spot_struct_filtered(f).fluoInterp))
                 fluo_act = fluo_vec(si:fi);
                 time_act = time_vec(si:fi);
-%                 fluo_act2 = spot_struct_filtered(f).fluoInterp;
-%                 time_act2 = spot_struct_filtered(f).timeInterp/60;                
+%                 fluo_act = spot_struct_filtered(f).fluoInterp;
+%                 time_act = spot_struct_filtered(f).timeInterp/60;                
                 fluo_act(isnan(fluo_act)) = 0;
                         
                 if ~all(isnan(time_act))
@@ -407,16 +413,17 @@ fraction_on_info.mean_frac_array = mean_frac_array;
 fraction_on_info.std_frac_array = std_frac_array;
 
 
-% note that we must extrapolate for one WT MSE set to estimate HM point
+%% note that we must extrapolate for one WT MSE set to estimate HM point
 
 % Need to revisit this
-extrap_id = 4;
+extrap_ids = [2,4];
 fraction_on_info.frac_dynamics_array_ex = fraction_on_info.frac_dynamics_array;
-extrap_vec = fraction_on_info.frac_dynamics_array_ex(:,extrap_id,3);
-time_ex = time_axis(~isnan(extrap_vec));
-extrap_vec_out = interp1(time_ex,extrap_vec(~isnan(extrap_vec)),time_axis,'cubic','extrap');
-fraction_on_info.frac_dynamics_array_ex(:,extrap_id,3) = extrap_vec_out;
-
+for e = extrap_ids
+    extrap_vec = fraction_on_info.frac_dynamics_array_ex(:,e,3);
+    time_ex = time_axis(~isnan(extrap_vec));
+    extrap_vec_out = interp1(time_ex,extrap_vec(~isnan(extrap_vec)),time_axis,'linaer','extrap');
+    fraction_on_info.frac_dynamics_array_ex(:,e,3) = extrap_vec_out;
+end
 % now find 50% on and off times
 mean_on_50 = NaN(1,length(master_struct));
 on_50 = cell(1,length(master_struct));
