@@ -7,7 +7,7 @@ close all
 projectList = {'optokni_eve4+6_MCP-GFP_Homo'}; % Cell array containing all projects you wish to process
 
 %apBins = linspace(-0.12,0.12,11);
-apBins = linspace(52.5,70,11);
+apBins = linspace(55.5,67.5,9);
 %timeRange = [7.5*60 37.5*60];
 timeRange = [0*60 50*60];
 
