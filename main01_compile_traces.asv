@@ -542,7 +542,7 @@ for i = 1:length(spot_struct)
         first_ind = find(interpGrid>=timeVec(1),1);
         first_ind = max([1 first_ind-1]);
         last_ind = find(interpGrid<=timeVec(end),1,'last');
-        last_ind = min([length(interpGrid) last_ind+1]);
+        last_ind = max([length(interpGrid) last_ind+1]);
         timeInterp = interpGrid(first_ind:last_ind);
                 
         if isempty(timeInterp)
@@ -602,7 +602,7 @@ for i = 1:length(spot_struct)
         for  j = 1:numel(interpFields)
             spot_struct(i).([interpFields{j} 'Interp']) = NaN;
         end
-    end  
+    end
     spot_struct(i).timeInterp = timeInterp;
     spot_struct(i).tresInterp = tresInterp;    
 end
