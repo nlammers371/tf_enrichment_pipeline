@@ -251,7 +251,7 @@ for p = 1:length(master_struct)
         % recenter
         ap_vec_norm = ap_vec - mean_stripe_ap;
         stripe_center_filter = abs(ap_vec_norm) <= fraction_on_info.stripe_width & ap_steps > 10; 
-        
+        trace_qc_filter = [
         % extract relevant vectors        
         spot_struct_filtered = spot_struct(set_vec==set_index(s));
         spot_struct_filtered = spot_struct_filtered(stripe_center_filter);
@@ -275,11 +275,11 @@ for p = 1:length(master_struct)
         for f = 1:size(fluo_on_array,2)
             time_vec = [spot_struct_filtered(f).time]/60;            
             fluo_vec = [spot_struct_filtered(f).fluo];         
-            if p == 3 && ismember(s,[1,3]) % NL: temporary fix for early FPs in rand1
-                fluo_vec(time_vec<10) = NaN;
-            else
-                fluo_vec(time_vec<5) = NaN;
-            end
+%             if p == 3 && ismember(s,[1,3]) % NL: temporary fix for early FPs in rand1
+%                 fluo_vec(time_vec<10) = NaN;
+%             else
+%                 fluo_vec(time_vec<5) = NaN;
+%             end
             % find first and last times active
             fluo_vec_bin = ~isnan(fluo_vec);
             si = find(fluo_vec_bin,1);
@@ -313,12 +313,17 @@ for p = 1:length(master_struct)
             mean_fluo_full = grpstats(fluo_full,time_indices,'mean');%accumarray(time_indices',fluo_full',[],@mean);
             mean_fluo_full_array(time_u,f) = mean_fluo_full;                       
             
-            if ~isempty(si) %&& ~all(isnan(spot_struct_filtered(f).fluoInterp))
-                fluo_act = fluo_vec(si:fi);
-                time_act = time_vec(si:fi);
-%                 fluo_act2 = spot_struct_filtered(f).fluoInterp;
-%                 time_act2 = spot_struct_filtered(f).timeInterp/60;                
-                fluo_act(isnan(fluo_act)) = 0;
+            if ~isempty(si) && all(isnan(spot_struct_filtered(f).fluoInterp))
+              if sum(~isnan(fluo_vec)) > 5
+                error('wtf')
+              end
+            end
+            if ~isempty(si) && ~all(isnan(spot_struct_filtered(f).fluoInterp))
+%                 fluo_act = fluo_vec(si:fi);
+%                 time_act = time_vec(si:fi);
+                fluo_act = spot_struct_filtered(f).fluoInterp;
+                time_act = spot_struct_filtered(f).timeInterp/60;                
+%                 fluo_act(isnan(fluo_act)) = 0;
                         
                 if ~all(isnan(time_act))
                   

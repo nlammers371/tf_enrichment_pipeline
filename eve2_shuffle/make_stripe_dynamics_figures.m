@@ -24,7 +24,7 @@ end
 
 offset_mean_array = permute(nanmean(offset_dynamics_array,2),[1 3 2]);
 time_axis = time_index(1:end-1) + diff(time_index)/2;
-
+%%
 offset_fig = figure;
 hold on
 cmap1 = brewermap([],'Set2');
@@ -430,7 +430,7 @@ set(gcf,'color','w');
 saveas(fold_fig1,[FigurePath 'fold_fig1.png'])
 
 
-%% now make it relative
+% now make it relative
 fold_fig2 = figure;
 
 hold on
@@ -505,33 +505,6 @@ for i = 1:3
     % set(gca,'yscale','log')
     fold_fig_comp.InvertHardcopy = 'off';
     set(gcf,'color','w');
-    saveas(fold_fig_comp,[FigurePath 'fold_fig_comp' num2str(i) '.png'])
+%     saveas(fold_fig_comp,[FigurePath 'fold_fig_comp' num2str(i) '.png'])
 end    
-%%
-% bar(1:4,[log2(mean_fluo_mean'/mean_fluo_mean(norm_index)) log2(frac_on_mean'/frac_on_mean(norm_index))],'stacked')
 
-% scatter(1:4,full_mRNA_mean/full_mRNA_mean(norm_index))
-% % scatter(1:4,mean_fluo_mean.*frac_on_mean)
-% scatter(1:4,mean_fluo_mean/mean_fluo_mean(norm_index))
-% scatter(1:4,(frac_on_mean'/frac_on_mean(norm_index)))
-
-% bar(1:4,log2(mean_fluo_mean/mean_fluo_mean(norm_index)))
-% errorbar(1:4,full_mRNA_mean/full_mRNA_mean(norm_index),full_mRNA_ste/full_mRNA_mean(norm_index),'.','Color','k')  
-
-% hold on
-% % errorbar(1:4,mean_fluo_mean/mean_fluo_mean(3),mean_fluo_ste/mean_fluo_mean(3),'o')  
-% errorbar(1:4,frac_on_mean/frac_on_mean(3),frac_on_ste/frac_on_mean(3),'o')  
-%   scatter(1:4,frac_on_mean./frac_on_mean(3) .*mean_fluo_mean./mean_fluo_mean(3))  
-  
-  
-% figure;
-% scatter(1:14,fraction_on_info.frac_dynamics_array(t_index,:,4)/fraction_on_info.frac_dynamics_array(t_index,norm_ind,4))
-% hold on
-% scatter(1:14,fraction_on_info.frac_dynamics_array(t_index,:,5)/fraction_on_info.frac_dynamics_array(t_index,norm_ind,5))
-% scatter(1:14,fraction_on_info.frac_dynamics_array(t_index,:,6)/fraction_on_info.frac_dynamics_array(t_index,norm_ind,6))
-% scatter(1:14,(fraction_on_info.frac_dynamics_array(t_index,:,6).*fraction_on_info.frac_dynamics_array(t_index,:,5))/...
-%   (fraction_on_info.frac_dynamics_array(t_index,norm_ind,6)*fraction_on_info.frac_dynamics_array(t_index,norm_ind,5)))
-% 
-% figure;
-% scatter(fraction_on_info.frac_dynamics_array(t_index,:,5),...
-%         fraction_on_info.frac_dynamics_array(t_index,:,6))
