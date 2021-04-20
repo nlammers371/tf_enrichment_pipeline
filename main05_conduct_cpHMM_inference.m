@@ -83,7 +83,7 @@ end
 % randomly seeds random number generator
 rng('shuffle')
 
-for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
+for p = 1:length(projectNameCell)%randsample(1:length(projectNameCell),length(projectNameCell),false)
     
     if ~customProjectFlag
         % Get basic project info and determing file paths

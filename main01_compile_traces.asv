@@ -488,7 +488,6 @@ for i = 1:length(spot_struct)
     stopIndexRaw = find(vecNans,1,'last');
     nFramesRaw = stopIndexRaw-startIndexRaw+1;
     
-    % this is designed to get rid of blips at start and end of traces
     if length(fluoVec) > 1
         bSize = 8;
         kernelBig = ones(1,bSize);
@@ -543,7 +542,7 @@ for i = 1:length(spot_struct)
         first_ind = find(interpGrid>=timeVec(1),1);
         first_ind = max([1 first_ind-1]);
         last_ind = find(interpGrid<=timeVec(end),1,'last');
-        last_ind = min([length(interpGrid) last_ind+1]);
+        last_ind = max([length(interpGrid) last_ind+1]);
         timeInterp = interpGrid(first_ind:last_ind);
                 
         if isempty(timeInterp)
@@ -603,7 +602,7 @@ for i = 1:length(spot_struct)
         for  j = 1:numel(interpFields)
             spot_struct(i).([interpFields{j} 'Interp']) = NaN;
         end
-    end  
+    end
     spot_struct(i).timeInterp = timeInterp;
     spot_struct(i).tresInterp = tresInterp;    
 end
