@@ -124,6 +124,9 @@ function local_em_outputs = local_em_iid_reduced_memory (fluo_values, v, ...
             
             % calculation of the log of the F variable used in the
             % maximization of v
+            if fluo_lengths{i_tr} < w-1
+                continue
+            end
             log_F_terms = cell([K, 1]);
             for n = 1:K
                 log_F_terms{n} = repmat(log(F(n,:))', 1, ...
