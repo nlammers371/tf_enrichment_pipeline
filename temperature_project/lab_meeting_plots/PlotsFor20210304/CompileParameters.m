@@ -10,10 +10,8 @@ TimeBinWidth = 15;
 TimeBinSep = 5;
 
 NumSets = length(ResultsPaths);
-prefix_regex = 'hbBAC-MS2-(?<temperature>[0-9_]+)C\\cpHMM_results\\compiledResults_w(?<nSteps>[0-9]+)_K(?<nStates>[0-9]+)_p0_ap(?<nAPbins>[0-9]+)_t(?<nTimebins>[0-9]+)_f2D.mat';
-prefix_regex2 = 'hbBAC-MS2-(?<temperature>[0-9_]+)C\\NC(?<cycle>[0-9]+)\\cpHMM_results\\compiledResults_w(?<nSteps>[0-9]+)_K(?<nStates>[0-9]+)_p0_ap(?<nAPbins>[0-9]+)_t(?<nTimebins>[0-9]+)_f2D.mat';
-prefix_regex3 = 'HbMS2JB3\\cpHMM_results\\compiledResults_w(?<nSteps>[0-9]+)_K(?<nStates>[0-9]+)_p0_ap(?<nAPbins>[0-9]+)_t(?<nTimebins>[0-9]+)_f2D.mat';
-prefix_regex4 = 'HbMS2JB3\\NC(?<cycle>[0-9]+)\\cpHMM_results\\compiledResults_w(?<nSteps>[0-9]+)_K(?<nStates>[0-9]+)_p0_ap(?<nAPbins>[0-9]+)_t(?<nTimebins>[0-9]+)_f2D.mat';
+
+
 CompiledParameters = {};
 CompiledParameters.ResultsPaths = ResultsPaths;
 CompiledParameters.FigurePaths = ResultsPaths;
@@ -34,7 +32,10 @@ CompiledParameters.nSteps = NaN(1,NumSets);
 CompiledParameters.nStates = NaN(1,NumSets);
 CompiledParameters.nAPbins = NaN(1,NumSets);
 CompiledParameters.nTimebins = NaN(1,NumSets);
+CompiledParameters.FluoDims = NaN(1, NumSets);
+CompiledParameters.dt = NaN(1,NumSets);
 CompiledParameters.TimeAxes = cell(1, NumSets);
+CompiledParameters.ElongationTimes = NaN(1,NumSets);
 CompiledParameters.Durations = NaN(NumSets, NumTimeBins, NumAPbins);
 CompiledParameters.Frequencies = NaN(NumSets, NumTimeBins, NumAPbins);
 CompiledParameters.InitiationRates = NaN(NumSets, NumTimeBins, NumAPbins);
@@ -42,72 +43,77 @@ CompiledParameters.DurationsStdErr = NaN(NumSets, NumTimeBins, NumAPbins);
 CompiledParameters.FrequenciesStdErr = NaN(NumSets, NumTimeBins, NumAPbins);
 CompiledParameters.InitiationRatesStdErr = NaN(NumSets, NumTimeBins, NumAPbins);
 EnrichmentPath = 'S:\Gabriella\Dropbox\ProcessedEnrichmentData\';
+
+%%
+
+prefix_regex = '(?<projectDirInfo>[A-Za-z0-9\-_\\]+)\\cpHMM_results\\compiledResults_w(?<nSteps>[0-9]+)_K(?<nStates>[0-9]+)_p0_ap(?<nAPbins>[0-9]+)_t(?<nTimebins>[0-9]+)_f(?<FluoDim>[0-9]+)D(?<TimeRes>[a-z0-9._]+)';
+cycle_regex = '(?<projectInfo>[A-Za-z\-0-9_]+)\\NC(?<cycle>[0-9]+)';
+timeres_regex = '_dt(?<dt>[0-9]+).mat';
+projectInfo_regex = 'hbBAC-MS2-(?<temperature>[0-9_]+)C';
+
+
+%%
 for ResultIndex=1:NumSets
     results_path_split = regexp(ResultsPaths{ResultIndex}, prefix_regex, 'names');
-    results_path_split2 = regexp(ResultsPaths{ResultIndex}, prefix_regex2, 'names');
-    results_path_split3 = regexp(ResultsPaths{ResultIndex}, prefix_regex3, 'names');
-    results_path_split4 = regexp(ResultsPaths{ResultIndex}, prefix_regex4, 'names');
     if ~isempty(results_path_split)
-        CompiledParameters.ReporterLabels{ResultIndex} = 'hbBAC-MS2';
-        CompiledParameters.NC(ResultIndex) = 14;
-        figpath = [EnrichmentPath, 'hbBAC-MS2-', results_path_split.temperature,'C',filesep, 'cpHMM_results',...
-            filesep, 'figures', filesep, 'w', results_path_split.nSteps, '_K', results_path_split.nStates, '_p0_ap',...
-            results_path_split.nAPbins, '_t', results_path_split.nTimebins, filesep];
+        [fp1, fp2, fp3] = fileparts(ResultsPaths{ResultIndex});
+        figpath = [EnrichmentPath,  filesep, fp1, filesep, 'figures', filesep, fp2, filesep];
         if ~exist(figpath, 'dir')
             mkdir(figpath);
         end
         CompiledParameters.FigurePaths{ResultIndex} = figpath;
-        CompiledParameters.SetTemperatures(ResultIndex) = str2num(strrep(results_path_split.temperature, '_', '.'));
+        
+        cycle_split = regexp(results_path_split.projectDirInfo, cycle_regex, 'names');
+        if ~isempty(cycle_split)
+            CompiledParameters.NC(ResultIndex) = str2num(cycle_split.cycle);
+            proj_split_v1 = regexp(cycle_split.projectInfo, projectInfo_regex, 'names');
+            PotentialProjName = cycle_split.projectInfo;
+        else
+            CompiledParameters.NC(ResultIndex) = 14;
+            proj_split_v1 = regexp(results_path_split.projectDirInfo, projectInfo_regex, 'names');
+            PotentialProjName = results_path_split.projectDirInfo;
+        end
+        
+        if ~isempty(proj_split_v1)
+            CompiledParameters.ReporterLabels{ResultIndex} = 'hbBAC-MS2';
+            CompiledParameters.SetTemperatures(ResultIndex) = str2num(strrep(proj_split_v1.temperature, '_', '.'));
+        else
+            CompiledParameters.ReporterLabels{ResultIndex} = PotentialProjName;
+            CompiledParameters.SetTemperatures(ResultIndex) = 25;
+        end
+            
+        
+        
         CompiledParameters.nSteps(ResultIndex) = str2num(results_path_split.nSteps);
         CompiledParameters.nStates(ResultIndex) = str2num(results_path_split.nStates);
         CompiledParameters.nAPbins(ResultIndex) = str2num(results_path_split.nAPbins);
         CompiledParameters.nTimebins(ResultIndex) = str2num(results_path_split.nTimebins);
-    elseif ~isempty(results_path_split2)
-        CompiledParameters.ReporterLabels{ResultIndex} = 'hbBAC-MS2';
-        CompiledParameters.NC(ResultIndex) = str2num(results_path_split2.cycle);
-        figpath = [EnrichmentPath, 'hbBAC-MS2-', results_path_split2.temperature,'C',filesep,'NC', results_path_split2.cycle, filesep, 'cpHMM_results',...
-            filesep, 'figures', filesep, 'w', results_path_split2.nSteps, '_K', results_path_split2.nStates, '_p0_ap',...
-            results_path_split2.nAPbins, '_t', results_path_split2.nTimebins, filesep];
-        if ~exist(figpath, 'dir')
-            mkdir(figpath);
+        CompiledParameters.nTimebins(ResultIndex) = str2num(results_path_split.nTimebins);
+        CompiledParameters.FluoDims(ResultIndex) = str2num(results_path_split.FluoDim);
+        timeres_split = regexp(results_path_split.TimeRes, timeres_regex, 'names');
+        if ~isempty(timeres_split)
+            CompiledParameters.dt(ResultIndex) = str2num(timeres_split.dt);
+        else
+            datadir = strsplit(ResultsPaths{ResultIndex}, '\\cpHMM_results');
+            load([EnrichmentPath datadir{1} filesep 'spot_struct.mat']);
+            for i = 1:length(spot_struct)
+                if length(spot_struct(i).timeInterp) > 1
+                   if all(~isnan(spot_struct(i).timeInterp)) 
+                       CompiledParameters.dt(ResultIndex) = spot_struct(i).timeInterp(2)-spot_struct(i).timeInterp(1);
+                       break
+                   end
+                end
+                       
+            end
         end
-        CompiledParameters.FigurePaths{ResultIndex} = figpath;
-        CompiledParameters.SetTemperatures(ResultIndex) = str2num(strrep(results_path_split2.temperature, '_', '.'));
-        CompiledParameters.nSteps(ResultIndex) = str2num(results_path_split2.nSteps);
-        CompiledParameters.nStates(ResultIndex) = str2num(results_path_split2.nStates);
-        CompiledParameters.nAPbins(ResultIndex) = str2num(results_path_split2.nAPbins);
-        CompiledParameters.nTimebins(ResultIndex) = str2num(results_path_split2.nTimebins);
-    elseif ~isempty(results_path_split3)
-        CompiledParameters.ReporterLabels{ResultIndex} = 'Hb-MS2-JB3';
         
-        CompiledParameters.SetTemperatures(ResultIndex) = 25;
-        figpath = [EnrichmentPath, 'HbMS2JB3', filesep, 'cpHMM_results',...
-            filesep, 'figures', filesep, 'w', results_path_split3.nSteps, '_K', results_path_split3.nStates, '_p0_ap',...
-            results_path_split3.nAPbins, '_t', results_path_split3.nTimebins, filesep];
-        if ~exist(figpath, 'dir')
-            mkdir(figpath);
-        end
-        CompiledParameters.FigurePaths{ResultIndex} = figpath;
-        CompiledParameters.nSteps(ResultIndex) = str2num(results_path_split3.nSteps);
-        CompiledParameters.nStates(ResultIndex) = str2num(results_path_split3.nStates);
-        CompiledParameters.nAPbins(ResultIndex) = str2num(results_path_split3.nAPbins);
-        CompiledParameters.nTimebins(ResultIndex) = str2num(results_path_split3.nTimebins);
+        CompiledParameters.ElongationTimes(ResultIndex) = CompiledParameters.nSteps(ResultIndex)*CompiledParameters.dt(ResultIndex)/60;  
+        
+        
     else
-        CompiledParameters.ReporterLabels{ResultIndex} = 'Hb-MS2-JB3';
-        CompiledParameters.NC(ResultIndex) = str2num(results_path_split4.cycle);
-        CompiledParameters.SetTemperatures(ResultIndex) = 25;
-        figpath = [EnrichmentPath, 'HbMS2JB3', filesep,'NC', results_path_split4.cycle, filesep, 'cpHMM_results',...
-            filesep, 'figures', filesep, 'w', results_path_split4.nSteps, '_K', results_path_split4.nStates, '_p0_ap',...
-            results_path_split4.nAPbins, '_t', results_path_split4.nTimebins, filesep];
-        if ~exist(figpath, 'dir')
-            mkdir(figpath);
-        end
-        CompiledParameters.FigurePaths{ResultIndex} = figpath;
-        CompiledParameters.nSteps(ResultIndex) = str2num(results_path_split4.nSteps);
-        CompiledParameters.nStates(ResultIndex) = str2num(results_path_split4.nStates);
-        CompiledParameters.nAPbins(ResultIndex) = str2num(results_path_split4.nAPbins);
-        CompiledParameters.nTimebins(ResultIndex) = str2num(results_path_split4.nTimebins);
+        error('Inference Info path has unexpected format.')
     end
+    
     load([EnrichmentPath, ResultsPaths{ResultIndex}]);
     time_group_vec = compiledResults.timeGroupVec;
     time_group_index = unique(time_group_vec);

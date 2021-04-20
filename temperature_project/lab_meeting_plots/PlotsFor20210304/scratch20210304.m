@@ -108,7 +108,12 @@ GenerateAPSubplots(ResultsPaths9, outdir9)
 GenerateProjectSubplots(ResultsPaths9, outdir9)
 
 
+%%
 
+ResultsPaths = {'hbBAC-MS2-27_5C\cpHMM_results\compiledResults_w7_K3_p0_ap9_t8_f2D.mat',...
+    'hbBAC-MS2-27_5C\NC13\cpHMM_results\compiledResults_w7_K3_p0_ap9_t1_f2D.mat',...
+    'hbBAC-MS2-27_5C\cpHMM_results\compiledResults_w4_K3_p0_ap9_t8_f2D_dt40.mat',...
+    'hbBAC-MS2-27_5C\cpHMM_results\compiledResults_w5_K3_p0_ap9_t8_f2D_dt60.mat'};
 
 
 
