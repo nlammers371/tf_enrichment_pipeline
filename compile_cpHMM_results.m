@@ -3,11 +3,12 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-
+% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
+projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'};%};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
+    
     % set project to analyze 
     projectName = projectNameCell{p};
 
@@ -103,6 +104,7 @@ for p = 1:length(projectNameCell)
         compiledResults.A_results = cell(size(groupID_index));
         compiledResults.sigma_results = cell(size(groupID_index));
         compiledResults.pi0_results = cell(size(groupID_index));
+        compiledResults.logL_results = cell(size(groupID_index));
         compiledResults.outlier_flags = cell(size(groupID_index));
         
         % Pull grouping variable info
@@ -133,6 +135,7 @@ for p = 1:length(projectNameCell)
                 freq_array = NaN(size(d_ids));
                 dur_array = NaN(size(d_ids)); 
                 sigma_array = NaN(size(d_ids)); 
+                logL_array = NaN(size(d_ids)); 
                 outlier_array = NaN(size(d_ids)); 
                 R_array = NaN(nStates,nStates,length((d_ids)));
                 A_array = NaN(nStates,nStates,length((d_ids)));
@@ -180,6 +183,7 @@ for p = 1:length(projectNameCell)
                     R_array(:,:,i) = R;
                     r_array(:,i) = r;
                     sigma_array(i) = sqrt(inferenceResults(d_ids(i)).noise);
+                    logL_array(i) = inferenceResults(d_ids(i)).max_logL;
                     pi0_array(:,i) = sqrt(inferenceResults(d_ids(i)).pi0);
                 end
 
@@ -239,6 +243,7 @@ for p = 1:length(projectNameCell)
                 compiledResults.r_results{g} = r_array;
                 compiledResults.pi0_results{g} = pi0_array;
                 compiledResults.sigma_results{g} = sigma_array;
+                compiledResults.logL_results{g} = logL_array;
                 compiledResults.skippedFlag(g) = false;
             end
         end  

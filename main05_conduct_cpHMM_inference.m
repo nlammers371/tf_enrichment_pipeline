@@ -56,6 +56,9 @@ options = {'savioFlag',savioFlag,'SampleSize',inferenceInfo.SampleSize};
 if isfield(inferenceInfo,'apBins')
     options(end+1:end+2) = {'apBins',inferenceInfo.apBins};
 end
+if isfield(inferenceInfo,'n_localEM')
+    options(end+1:end+2) = {'n_localEM',inferenceInfo.n_localEM};
+end
 if isfield(inferenceInfo,'timeBins')
     options(end+1:end+2) = {'timeBins',inferenceInfo.timeBins};
 end
@@ -80,7 +83,7 @@ end
 % randomly seeds random number generator
 rng('shuffle')
 
-for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
+for p = 1:length(projectNameCell)%randsample(1:length(projectNameCell),length(projectNameCell),false)
     
     if ~customProjectFlag
         % Get basic project info and determing file paths

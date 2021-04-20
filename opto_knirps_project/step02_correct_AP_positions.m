@@ -3,7 +3,7 @@
 clear
 close all
 
-projectList = {'optokni_eve4+6_WT'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_OFF'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
@@ -13,8 +13,8 @@ for p = 1:length(projectList)
   
   % load compiled traces dataot
   disp('loading spot structure...')
-  load([liveProject.dataPath filesep 'spot_struct_protein.mat']);
   load([liveProject.dataPath filesep 'spot_struct.mat']);
+  load([liveProject.dataPath filesep 'spot_struct_protein.mat']);
   
   % load AP map file
   disp('load AP map file here...')

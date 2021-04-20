@@ -3,12 +3,7 @@ clear
 close all
 addpath(genpath('utilities'))
 
-% projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-%projectNameCell = {'Rbp1-GFP_eveBAC-mCh'};
-%projectNameCell = {'optokni_eve4+6_WT'};
-%projectNameCell = {'optokni_eveBAC_WT'};
 projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-% resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
     % set project to analyze 
@@ -23,7 +18,7 @@ for p = 1:length(projectNameCell)
     end
     % get list of all inference subdirectories. By default, we'll generate
     % summaries for all non-empty inference sub-directory
-    infDirList = dir([resultsDir 'w*']);
+    infDirList = dir([resultsDir 'w*_k2*']);
 
     % iterate through the directories and compile the results
     for inf = 1:length(infDirList)
@@ -154,25 +149,28 @@ for p = 1:length(projectNameCell)
 
                     % convert to transition rate matrix
                     R = logm(A) / Tres;
-                    if ~isreal(R) || sum(R(:)<0) > nStates
-                        out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
-                        R = out.R_out;     
-                    end
+                    % Jake:change
+                    %if ~isreal(R) || sum(R(:)<0) > nStates
+                    %    out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
+                    %    R = out.R_out;     
+                    %end
                     [V,D] = eig(R);
                     [~,di] = max(real(diag(D)));
                     ss_vec = V(:,di) / sum(V(:,di));
 
-                    % generate 2 state initiation rates
-                    init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
-                    if sum(r.*ss_vec) > 1.1*init_array(i)
-                        error('nontrivial "off" state initiation')
-                    end            
+                    % generate 2 state initiation rates (Jake change)
+                    init_array(i) = r(2);
+                    %init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
+                    %if sum(r.*ss_vec) > 1.1*init_array(i)
+                    %    error('nontrivial "off" state initiation')
+                    %end            
 
                     % burst freq
                     freq_array(i) = -R(1,1);
 
                     % burst dur
-                    dur_array(i) = -1/R(1,1) * (1/ss_vec(1) - 1);
+                    %dur_array(i) = -1/R(1,1) * (1/ss_vec(1) - 1);
+                    dur_array(i) = -1/R(2,2);
 
                     % fluorescence
                     fluo_array(i) = nanmean([inferenceResults(d_ids(i)).fluo_data{:}]);
@@ -187,11 +185,18 @@ for p = 1:length(projectNameCell)
                 end
 
                 compiledResults.particle_ids{g} = unique(particle_ids_temp);
-
+                
                 % check for outliers
-                [freq_array_filt,freq_flags] = rmoutliers(freq_array);
-                [dur_array_filt,dur_flags] = rmoutliers(dur_array);
-                [init_array_filt,init_flags] = rmoutliers(init_array);
+                %[freq_array_filt,freq_flags] = rmoutliers(freq_array);
+                %[dur_array_filt,dur_flags] = rmoutliers(dur_array);
+                %[init_array_filt,init_flags] = rmoutliers(init_array);
+                
+                freq_flags = abs(imag(freq_array))==0;
+                freq_array_filt = freq_array(freq_flags);
+                dur_flags = abs(imag(dur_array))==0;
+                dur_array_filt = dur_array(dur_flags);
+                init_flags = abs(imag(init_array))==0;
+                init_array_filt = init_array(init_flags);
 
                 outlier_filter = freq_flags|dur_flags|init_flags;
 

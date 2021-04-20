@@ -178,7 +178,7 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
               end
 
               %% Record output
-              [~, max_index] = max([local_struct_temp.logL]); % Get index of best result  
+              [maxL, max_index] = max([local_struct_temp.logL]); % Get index of best result  
 
               % Save parameters from most likely local run
               output.pi0 =local_struct_temp(max_index).pi0;                        
@@ -186,7 +186,9 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
               output.noise = local_struct_temp(max_index).noise;
               output.A = local_struct_temp(max_index).A(:);
               output.A_mat = local_struct_temp(max_index).A;  
-
+              output.max_logL = maxL;
+              output.logL_results = [local_struct_temp.logL];
+              
               % get soft-decoded structure
               output.soft_struct = local_struct_temp(max_index).soft_struct;                                                                     
 

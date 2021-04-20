@@ -77,7 +77,7 @@ addpath(genpath('utilities'));
 % Defaults
 firstNC = 14;   % first nuclear cycle to pull data from
 lastNC = 14;
-minDP = 14;     % what is this for?
+minDP = 14;     % particles with fewer than minDP points will be flagged
 pctSparsity = 50;   %
 twoSpotFlag = contains(projectName, '2spot');
 minTime = 0*60; % take no fluorescence data prior to this point
@@ -125,6 +125,8 @@ spot_struct = [];
 
 % Add data from each experiment to the master structure
 h = waitbar(0,'Compiling data ...');
+nc_ap_flags = false(1,numExperiments);
+
 for i = 1:numExperiments
     
     waitbar((i-1)/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
@@ -179,6 +181,19 @@ for i = 1:numExperiments
     ncStartFrameVec = anaphaseFrames(ncIndices)';
     ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]);
     ncStartFrameVec(end+1) = framesRaw(end)+1;
+    if ncStartFrameVec(1) == 0 && ncStartFrameVec(2) > 1
+        ncStartFrameVec(1) = 1;
+    elseif ncStartFrameVec(1) == 0
+        firstInd = find(ncStartFrameVec,1);
+        if ncStartFrameVec(firstInd) == 1
+            ncStartFrameVec = ncStartFrameVec(firstInd:end);
+            ncIndices = ncIndices(firstInd:end);
+        else
+            ncStartFrameVec(firstInd-1) = 1;
+            ncStartFrameVec = ncStartFrameVec(firstInd-1:end);
+            ncIndices = ncIndices(firstInd-1:end);
+        end
+    end        
     firstTime = timeRaw(min(ncStartFrameVec));
     
     % iterate through nuclear cycles
@@ -201,7 +216,7 @@ for i = 1:numExperiments
         timeNC = timeNC - firstTime; %normalize to start of first nc
         
         %%%%%%%%%%%%%%%%%%%% Compile nucleus schnitz info %%%%%%%%%%%%%%%%%%%%%
-        
+        nc_ap_flags(i) = hasAPInfo && ~isfield(schnitzcells,'APpos');
         for s = 1:length(schnitzcells)
             schnitzFrames = schnitzcells(s).frames;
             
@@ -367,9 +382,9 @@ for i = 1:numExperiments
             end
             % 3D info
             if has3DSpotInfo
-                compiledSchnitzCells(ncIndex).xPosParticle3D(ncSpotFilter1) = compiledParticles(j).xPosGauss3D(ncSpotFilter2);
-                compiledSchnitzCells(ncIndex).yPosParticle3D(ncSpotFilter1) = compiledParticles(j).yPosGauss3D(ncSpotFilter2);
-                compiledSchnitzCells(ncIndex).zPosParticle3D(ncSpotFilter1) = compiledParticles(j).zPosGauss3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).xPosParticle3D(ncSpotFilter1) = compiledParticles(j).xPos3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).yPosParticle3D(ncSpotFilter1) = compiledParticles(j).yPos3D(ncSpotFilter2);
+                compiledSchnitzCells(ncIndex).zPosParticle3D(ncSpotFilter1) = compiledParticles(j).zPos3D(ncSpotFilter2);
                 compiledSchnitzCells(ncIndex).fluo3D(ncSpotFilter1) = compiledParticles(j).Fluo3DRaw(ncSpotFilter2);
             end
             if DetrendedZFlag
@@ -391,6 +406,19 @@ for i = 1:numExperiments
 end
 close(h)
 
+% add nucleus AP info if appropriate
+if any(nc_ap_flags)
+    for i=1:length(spot_struct)    
+        spot_struct(i).APPosNucleus = NaN(size(spot_struct(i).yPosNucleus));
+    end
+    set_vec = [spot_struct.setID];        
+    for i = 1:numExperiments
+        set_filter = set_vec==i;
+        currExperiment = liveProject.includedExperiments{i};
+        spot_struct(set_filter) = convertToFractionalEmbryoLength(currExperiment.Prefix,spot_struct(set_filter));
+    end
+end
+
 % add additional fields
 % NL: this does nothing at the moment, but leaving to preserve two-spot
 % compatibility
@@ -408,7 +436,7 @@ if has3DSpotInfo
     interpFields(end+1:end+4) = {'fluo3D','xPosParticle3D','yPosParticle3D','zPosParticle3D'};
 end
 if hasAPInfo
-    interpFields(end+1) = {'APPosParticle'};
+    interpFields(end+1:end+2) = {'APPosParticle','APPosNucleus'};
 end
 if hasProteinInfo
     interpFields(end+1) = {'rawNCProtein'};
@@ -460,8 +488,9 @@ for i = 1:length(spot_struct)
     stopIndexRaw = find(vecNans,1,'last');
     nFramesRaw = stopIndexRaw-startIndexRaw+1;
     
+    % this is designed to get rid of blips at start and end of traces
     if length(fluoVec) > 1
-        bSize = 7;
+        bSize = 8;
         kernelBig = ones(1,bSize);
         sSize = 3;
         kernelSmall = ones(1,sSize);
@@ -473,14 +502,15 @@ for i = 1:length(spot_struct)
         vecConvStartBig = vecConvBig(bSize:end);
         vecConvStartSmall = vecConvSmall(sSize:end);
         
-        startIndex = find(vecConvStartSmall>=sSize | vecConvStartBig>=ceil(bSize/2) & vecNans,1);
+        startIndex = find(vecConvStartSmall>=sSize | vecConvStartBig>=floor(bSize/2.1) & vecNans,1);
         
         % generate ending flags
         vecConvEndBig = vecConvBig(1:end-bSize+1);
         vecConvEndSmall = vecConvSmall(1:end-sSize+1);
         
-        stopIndex = find(vecConvEndSmall>=sSize | vecConvEndBig>=ceil(bSize/2) & vecNans,1,'last');
+        stopIndex = find(vecConvEndSmall>=sSize | vecConvEndBig>=floor(bSize/2.1) & vecNans,1,'last');
     end
+
     % update QC flags
     if ~isempty(startIndex) && ~isempty(stopIndex)
         spot_struct(i).FrameQCFlags(frameIndex<startIndex & vecNans) = false;
@@ -502,12 +532,20 @@ for i = 1:length(spot_struct)
         spot_struct(i).nFramesTruncated = nFramesRaw;
         spot_struct(i).truncatedFlag = 1;
     end
+    
     % generate time reference vefctors for interpolation
     timeVec = spot_struct(i).time;
     timeVec = timeVec(startIndex:stopIndex);
     
     if length(timeVec)>1
-        timeInterp = interpGrid(interpGrid>=timeVec(1)&interpGrid<=timeVec(end));
+        
+        % add caps before and after
+        first_ind = find(interpGrid>=timeVec(1),1);
+        first_ind = max([1 first_ind-1]);
+        last_ind = find(interpGrid<=timeVec(end),1,'last');
+        last_ind = min([length(interpGrid) last_ind+1]);
+        timeInterp = interpGrid(first_ind:last_ind);
+                
         if isempty(timeInterp)
             timeInterp = NaN;
             for  j = 1:numel(interpFields)
@@ -547,7 +585,9 @@ for i = 1:length(spot_struct)
                 
                 if length(referenceTime)>1
                     % Interpolate to standardize spacing
-                    spot_struct(i).([interpFields{j} 'Interp']) = interp1(referenceTime,referenceVec,timeInterp);
+                    vec_i = interp1(referenceTime,referenceVec,timeInterp,'linear','extrap');
+                    vec_i(vec_i<0) = 0;
+                    spot_struct(i).([interpFields{j} 'Interp']) = vec_i;
                 elseif length(referenceTime)==1 && referenceTime >= timeInterp(1) && referenceTime <= timeInterp(end)
                     vecTo = NaN(size(timeInterp));
                     [~,mi] = min(abs(referenceTime-timeInterp));
@@ -563,10 +603,9 @@ for i = 1:length(spot_struct)
         for  j = 1:numel(interpFields)
             spot_struct(i).([interpFields{j} 'Interp']) = NaN;
         end
-    end
+    end  
     spot_struct(i).timeInterp = timeInterp;
-    spot_struct(i).tresInterp = tresInterp;
-    
+    spot_struct(i).tresInterp = tresInterp;    
 end
 %%
 
