@@ -174,9 +174,50 @@ xlim([0.5 4.5])
 set(gca,'xtick',1:length(projectNameCell),'xticklabels',legend_str_short)
 xtickangle(-30) 
 set(gca,'Color',[228,221,209]/255) 
-ylim([0 1.5])
+ylim([0.25 1.25])
 dur_fig.InvertHardcopy = 'off';
 set(gcf,'color','w');
 
 saveas(dur_fig,[FigurePath 'dur_scatter.png'])
-saveas(dur_fig,[FigurePath 'dur_scatter.pdf'])            
+saveas(dur_fig,[FigurePath 'dur_scatter.pdf'])      
+
+
+%%
+mean_f_fig = figure;
+cmap1 = brewermap([],'Set2');
+hold on
+
+% % individual result scatters
+% for p = 1:length(master_struct)
+%     fluo_results = master_struct(p).compiledResults.dur_results{stripe_center_ind}/60;    
+%     outlier_flags = master_struct(p).compiledResults.outlier_flags{stripe_center_ind};
+%     scatter(repelem(p,sum(~outlier_flags)),dur_results(~outlier_flags),50,...
+%                 'MarkerFaceColor',cmap1(p,:),'MarkerEdgeColor','k',...
+%                 'MarkerFaceAlpha',0.25,'MarkerEdgeAlpha',0.25);
+% end        
+
+% means
+for p = 1:length(master_struct)
+    fluo_mean = master_struct(p).compiledResults.fluo_mean(stripe_center_ind);    
+    scatter(p,fluo_mean,75,'s',...
+                'MarkerFaceColor',cmap1(p,:),'MarkerEdgeColor','k',...
+                'MarkerFaceAlpha',1,'MarkerEdgeAlpha',1);
+end
+            
+ylabel('spot fluorescence (au)')
+% ylabel(y_label)
+set(gca,'Fontsize',14);
+grid on
+xlim([0.5 4.5])
+% ylim([0 15])
+% legend(p,legend_str{:},'Location',loc_str{param_index})
+
+set(gca,'xtick',1:length(projectNameCell),'xticklabels',legend_str_short)
+xtickangle(-30) 
+set(gca,'Color',[228,221,209]/255) 
+% ylim([0 1.5])
+dur_fig.InvertHardcopy = 'off';
+set(gcf,'color','w');
+
+% saveas(dur_fig,[FigurePath 'dur_scatter.png'])
+% saveas(dur_fig,[FigurePath 'dur_scatter.pdf'])      
