@@ -488,6 +488,7 @@ for i = 1:length(spot_struct)
     stopIndexRaw = find(vecNans,1,'last');
     nFramesRaw = stopIndexRaw-startIndexRaw+1;
     
+    % this is designed to get rid of blips at start and end of traces
     if length(fluoVec) > 1
         bSize = 8;
         kernelBig = ones(1,bSize);

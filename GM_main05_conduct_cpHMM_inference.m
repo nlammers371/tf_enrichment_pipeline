@@ -91,7 +91,7 @@ end
 rng('shuffle')
 
 for p = randsample(1:length(projectNameCell),length(projectNameCell),false)
-    
+
     if ~customProjectFlag
         % Get basic project info and determing file paths
         [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});

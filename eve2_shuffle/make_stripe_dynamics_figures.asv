@@ -84,46 +84,17 @@ for p = 1:length(project_id_vec)
 end
 
 %% Make sample figure to illustrate stripe parameters
-close all
-p = 2;
+
+p = 1;
 time_index = 35;
 gauss_fun = @(x) x(1)*exp(-0.5*((x(2)-ap_axis)./x(3)).^2);
-gauss_params = fit_param_raw_array(time_index,:,p);
-gauss_params(3) = gauss_params(3)/2;
-gauss_pd = gauss_fun(gauss_params);
+gauss_pd = fit_param_raw_array(time_index,:,p);
 
-stripe_param_fig = figure;
+figure;
 hold on
-bar(ap_axis,full_dynamics_array(time_index,:,p),1,'FaceColor',cmap1(5,:),'EdgeAlpha',0.1,'FaceAlpha',0.5)
-plot(ap_axis,gauss_pd,'k','LineWidth',1.5)
-
-xlabel('AP postion (% embryo length)')
-ylabel('mRNA production rate (au)')
-set(gca,'Fontsize',14);
-legend('raw data','Gaussian fit')
-ylim([0 17e4])
-set(gca,'Color',[228,221,209]/255) 
-grid on
-stripe_param_fig.InvertHardcopy = 'off';
-set(gcf,'color','w');
-saveas(stripe_param_fig,[FigurePath 'stripe_param_fig.png'])
+plot(ap_axis,full_dynamics_array(t_index,:,p))
 
 
-stripe_param_raw = figure;
-hold on
-bar(ap_axis,full_dynamics_array(time_index,:,p),1,'FaceColor',cmap1(5,:),'EdgeAlpha',0.1,'FaceAlpha',0.5)
-% plot(ap_axis,gauss_pd,'k','LineWidth',1.5)
-
-xlabel('AP postion (% embryo length)')
-ylabel('mRNA production rate (au)')
-set(gca,'Fontsize',14);
-legend('raw data')
-ylim([0 17e4])
-set(gca,'Color',[228,221,209]/255) 
-grid on
-stripe_param_raw.InvertHardcopy = 'off';
-set(gcf,'color','w');
-saveas(stripe_param_raw,[FigurePath 'stripe_param_raw.png'])
 
 %% Make phase space scatters
 % load hm dataset
@@ -208,7 +179,7 @@ plot_indices = 1:4;
 param_name_cell = {'stripe_amplitude','stripe_center','stripe_width','stripe_coherence'};
 param_label_cell = {'stripe amplitude (AU)','stripe center (% embryo length)','stripe width (% embryo length)', 'deviation from Gaussian profile'};
 time_to_plot = time_axis(fit_indices);
-loc_str = {'northwest','southeast','northeast','northwest'};
+loc_str = {'northwest','southwest','northeast','northwest'};
 
 for param_index = plot_indices
     param_name = param_name_cell{param_index};
@@ -241,9 +212,6 @@ for param_index = plot_indices
     if param_index == 1
       ylim([0 16e4])
       xlim([10 45])
-    elseif param_index == 2
-      ylim([32 46])
-      xlim([10 40])
     else
       xlim([10 40])
     end

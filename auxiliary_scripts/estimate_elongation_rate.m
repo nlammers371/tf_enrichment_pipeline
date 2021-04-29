@@ -5,7 +5,7 @@ close all
 addpath('../utilities')
 % define core ID variables
 % project = 'Dl-Ven_snaBAC-17_5h_v3';
-project = 'hbBAC-MS2-17_5C/NC13/';
+project = 'hbBAC-MS2-17_5C\NC13\';
 DropboxFolder =  'S:\Gabriella\Dropbox\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 
@@ -15,7 +15,7 @@ mkdir(FigPath)
 % K = 3;
 n_lags = 20;
 n_boots = 100;
-load([DataPath 'spot_struct.mat'])
+load([DataPath 'spot_struct_dt80.mat'])
 %%
 qc_indices = find([spot_struct.TraceQCFlag]==1);
 
@@ -71,6 +71,6 @@ grid on
 xlabel('time delay (time steps)')
 ylabel('third derivative of ACF')
 set(gca,'Fontsize',12)
-ylim([-.01 .01])
+%ylim([-.01 .01])
 saveas(ddd_elongation_fig, [FigPath 'acf_ddd_plot.tif'])
 saveas(ddd_elongation_fig, [FigPath 'acf_ddd_plot.pdf'])

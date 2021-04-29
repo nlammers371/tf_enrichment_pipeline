@@ -214,7 +214,7 @@ fraction_on_info.param_labels = {'cumulative fraction ON','cumulative fraction O
 fraction_on_info.frac_dynamics_array = NaN(length(fraction_on_info.time_index)-1,length(hm_info_struct.project_id_vec),...
                                            length(fraction_on_info.param_cell));
 
-%% loop through the embryos
+% loop through the embryos
 iter_i = 1;
 for p = 1:length(master_struct)
   
@@ -314,18 +314,16 @@ for p = 1:length(master_struct)
             mean_fluo_full = grpstats(fluo_full,time_indices,'mean');%accumarray(time_indices',fluo_full',[],@mean);
             mean_fluo_full_array(time_u,f) = mean_fluo_full;                       
             
-            if ~isempty(si) && all(isnan(spot_struct_filtered(f).fluoInterp))
-              if sum(~isnan(fluo_vec)) > 5
-                error('wtf')
-              end
-            end
             if ~isempty(si)% && ~all(isnan(spot_struct_filtered(f).fluoInterp))
-                fluo_act = fluo_vec(si:fi);
-                time_act = time_vec(si:fi);
-%                 fluo_act = spot_struct_filtered(f).fluoInterp;
-%                 time_act = spot_struct_filtered(f).timeInterp/60;                
-                fluo_act(isnan(fluo_act)) = 0;
+%                 fluo_act = fluo_vec(si:fi);
+%                 time_act = time_vec(si:fi);
+                fluo_act = spot_struct_filtered(f).fluoInterp;
+                time_act = spot_struct_filtered(f).timeInterp/60;                
+%                 fluo_act(isnan(fluo_act)) = 0;
                         
+%                 if mean(fluo_act)*1.5 <= mean(fluo_act2) && ~ismember(f,[16 17 35 44]) && p>3
+%                   error('wtf')
+%                 end
                 if ~all(isnan(time_act))
                   
                     time_indices = discretize(time_act,fraction_on_info.time_index);
@@ -421,7 +419,7 @@ fraction_on_info.frac_dynamics_array_ex = fraction_on_info.frac_dynamics_array;
 for e = extrap_ids
     extrap_vec = fraction_on_info.frac_dynamics_array_ex(:,e,3);
     time_ex = time_axis(~isnan(extrap_vec));
-    extrap_vec_out = interp1(time_ex,extrap_vec(~isnan(extrap_vec)),time_axis,'linaer','extrap');
+    extrap_vec_out = interp1(time_ex,extrap_vec(~isnan(extrap_vec)),time_axis,'linear','extrap');
     fraction_on_info.frac_dynamics_array_ex(:,e,3) = extrap_vec_out;
 end
 % now find 50% on and off times
