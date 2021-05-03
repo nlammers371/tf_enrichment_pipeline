@@ -18,12 +18,12 @@ mkdir(FigurePath)
 
 % Embryo 10
 embryo(1).expID = 2;
-%embryo(1).time_on = 20.48;
+embryo(1).time_on = 20.48;
 embryo(1).frame_on = 59;
 
 % Embryo 11
 embryo(2).expID = 3;
-%embryo(3).time_on = 27.17;
+embryo(2).time_on = 27.17;
 embryo(2).frame_on = 94;
 
 % color to be used

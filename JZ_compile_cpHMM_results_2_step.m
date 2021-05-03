@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-
+%projectNameCell = {'optokni_eve4+6_WT'};
 for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -191,14 +191,19 @@ for p = 1:length(projectNameCell)
                 %[dur_array_filt,dur_flags] = rmoutliers(dur_array);
                 %[init_array_filt,init_flags] = rmoutliers(init_array);
                 
-                freq_flags = abs(imag(freq_array))==0;
-                freq_array_filt = freq_array(freq_flags);
-                dur_flags = abs(imag(dur_array))==0;
-                dur_array_filt = dur_array(dur_flags);
-                init_flags = abs(imag(init_array))==0;
-                init_array_filt = init_array(init_flags);
-
+                freq_flags = abs(imag(freq_array))>0;
+                dur_flags = abs(imag(dur_array))>0;
+                init_flags = abs(imag(init_array))>0;
+                
                 outlier_filter = freq_flags|dur_flags|init_flags;
+                
+                %freq_array_filt = freq_array(freq_flags);
+                %dur_array_filt = dur_array(dur_flags);
+                %init_array_filt = init_array(init_flags);
+                freq_array_filt = freq_array(~outlier_filter);
+                dur_array_filt = dur_array(~outlier_filter);
+                init_array_filt = init_array(~outlier_filter);
+
 
                 % fraction that were outliers
                 compiledResults.outlier_frac(g) = mean(outlier_filter);
