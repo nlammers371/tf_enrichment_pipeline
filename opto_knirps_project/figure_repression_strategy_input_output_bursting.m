@@ -846,7 +846,10 @@ saveas(ap_HM_fig,[FigurePath 'figure2_ap_vs_HM.pdf'])
 
 
 %% Figure 2: plot fraction_on vs knirps + hill equation fit (only for stripe center)
+% Also plot Knirps concentration when silencing happened
+
 %Look at long vectors and calculate fraction on for stripe center
+ap_bins_center = [-0.02 0.02];
 
 % Step 1: Calculate using long vectors
 hill_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_axis.^x(2));
@@ -866,8 +869,6 @@ frac_on_knirps_array_mean = NaN(length(knirps_bins)-1,length(ap_bins)-1);
 frac_on_knirps_array_ste = NaN(length(knirps_bins)-1,length(ap_bins)-1);
 
 % Step 2: fit simple hill function to each ap position
-
-ap_bins_center = [-0.02 0.02];
 ap_indices = length(ap_bins_center)-1;
 
 nBoots = 100;
@@ -912,7 +913,7 @@ for t = 1:length(knirps_bins)
     end
 end
 
-%% Step 3: plot the results
+% Step 3: plot the results
 
 tiled_fig = figure('Position', [200 200 425 600]);
 t = tiledlayout(2,1);
@@ -977,7 +978,8 @@ t.TileSpacing = 'compact';
 saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.png'])
 saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.pdf'])
 
-%%
+%% Figure: plot off time distribution
+
 f = figure;
 set(gca,'FontSize',14)
 h = histogram(off_time_long/60,16,'FaceColor',mRNA_red,'Normalization','probability');
@@ -1005,3 +1007,9 @@ t.TileSpacing = 'compact';
 
 %saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.png'])
 %saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.pdf'])
+
+
+%% Figure: plot off rate + mean transcription rate vs mRNA pattern
+
+
+

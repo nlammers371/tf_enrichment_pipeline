@@ -5,15 +5,14 @@ close all
 warning('off','all') %Shut off Warnings
 addpath(genpath('utilities'))
 
-
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
 %inferenceInfo.projectNameCell = {'Rbp1-GFP_eveBAC-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
-%inferenceInfo.projectNameCell = {'optokni_eveBAC_ON'};
-%inferenceInfo.projectNameCell = {'optokni_eveBAC_ON'};
-inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_OFF'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON'};
+inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
@@ -23,8 +22,18 @@ inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[7.5*60 37.5*60]}; % should be longer than 15min
 
 %optokni_eve4+6_MCP-GFP_Homo
-inferenceInfo.apBins = linspace(55,67.5,8);
+%inferenceInfo.apBins = linspace(55,67.5,6);
+%inferenceInfo.apBins = [55,67.5];
+%inferenceInfo.timeBins = {[0 50*60]};
+
+%optokni_eve4+6_MCP-GFP_Het
+inferenceInfo.apBins = linspace(55,67.5,5);
+%inferenceInfo.apBins = [55,67.5];
 inferenceInfo.timeBins = {[0 50*60]};
+
+%optokni_eve4+6_ON
+%inferenceInfo.timeBins = {[0*60 50*60]}; % should be longer than 15min
+%inferenceInfo.apBins = ([-0.12 0.12]);%linspace(-0.12,0.12,11);%linspace(-.2,.2,10);
 
 %optokni_eveBAC_WT
 %inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
@@ -45,7 +54,7 @@ inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
 inferenceInfo.SampleSize = 4500;
 inferenceInfo.useQCFlag = true;
 
-inferenceInfo.n_localEM = 75;
+inferenceInfo.n_localEM = 25;
 
 % Get basic project info and determing file paths
 liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});

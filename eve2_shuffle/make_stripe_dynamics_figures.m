@@ -84,6 +84,15 @@ for p = 1:length(project_id_vec)
 end
 
 %% Make sample figure to illustrate stripe parameters
+% load hm dataset
+load([DataPath 'stripe_param_struct.mat'],'stripe_param_struct')
+% read all fields into the workspace
+fnames = fieldnames(stripe_param_struct);
+for f = 1:length(fnames)
+    eval([fnames{f} ' = stripe_param_struct.(fnames{f});'])
+end
+
+
 close all
 p = 2;
 time_index = 35;
@@ -126,13 +135,6 @@ set(gcf,'color','w');
 saveas(stripe_param_raw,[FigurePath 'stripe_param_raw.png'])
 
 %% Make phase space scatters
-% load hm dataset
-load([DataPath 'stripe_param_struct.mat'],'stripe_param_struct')
-% read all fields into the workspace
-fnames = fieldnames(stripe_param_struct);
-for f = 1:length(fnames)
-    eval([fnames{f} ' = stripe_param_struct.(fnames{f});'])
-end
 
 
 close all
@@ -210,58 +212,70 @@ param_label_cell = {'stripe amplitude (AU)','stripe center (% embryo length)','s
 time_to_plot = time_axis(fit_indices);
 loc_str = {'northwest','southeast','northeast','northwest'};
 
-for param_index = plot_indices
-    param_name = param_name_cell{param_index};
-    y_label = param_label_cell{param_index}; 
-    
-    param_fig = figure;
-    hold on
-    cmap1 = brewermap([],'Set2');
-
-    p = [];
-    for m = 1:length(projectNameCell)
-        ub = mean_param_array(:,param_index,m)' + std_param_array(:,param_index,m)';
-        lb = mean_param_array(:,param_index,m)' - std_param_array(:,param_index,m)';
-        nf = ~isnan(ub);
-        % area plot for feasible range
-        ap = fill([time_to_plot(nf) fliplr(time_to_plot(nf))], [ub(nf) fliplr(lb(nf))], cmap1(m,:),'FaceAlpha',0.39,'EdgeAlpha',0.5);    
-        p(m) = plot(time_to_plot,mean_param_array(:,param_index,m)','Color',cmap1(m,:),'LineWidth',1.5);
-
-        % plot individual replicates
-        p_filter = find(project_id_vec == m);
-        emb_data = fit_param_raw_array(:,param_index,p_filter);
-        time_long = repmat(time_to_plot',1,1,sum(p_filter));
-        for em = 1:length(p_filter)
-            plot(time_long(:,:,em),emb_data(:,:,em),'--','Color',[cmap1(m,:) .3],'LineWidth',1.5);
-%             scatter(time_long(:,:,em),emb_data(:,:,em),20,...
-%               'MarkerFaceColor',cmap1(m,:),'MarkerEdgeColor','k',...
-%                 'MarkerFaceAlpha',.15,'MarkerEdgeAlpha',0.15)
-        end
-    end  
-    if param_index == 1
-      ylim([0 16e4])
-      xlim([10 45])
-    elseif param_index == 2
-      ylim([32 46])
-      xlim([10 40])
+for i = 1:2
+    if i == 1
+      save_suffix = 'no_reps';
     else
-      xlim([10 40])
+      save_suffix = 'reps';
     end
-    
-    xlabel('minutes into nc14')
-    ylabel(y_label)
-    set(gca,'Fontsize',14);
-    grid on
-    legend(p,legend_str{:},'Location',loc_str{param_index})
-        
-    set(gca,'Color',[228,221,209]/255) 
-          
-    param_fig.InvertHardcopy = 'off';
-    set(gcf,'color','w');
+    for param_index = plot_indices
+        param_name = param_name_cell{param_index};
+        y_label = param_label_cell{param_index}; 
 
-    saveas(param_fig,[FigurePath param_name '_v_time.png'])
+        param_fig = figure;
+        hold on
+        cmap1 = brewermap([],'Set2');
+
+        p = [];
+        for m = 1:length(projectNameCell)
+            ub = mean_param_array(:,param_index,m)' + std_param_array(:,param_index,m)';
+            lb = mean_param_array(:,param_index,m)' - std_param_array(:,param_index,m)';
+            nf = ~isnan(ub);
+            % area plot for feasible range
+            if i == 1
+                ap = fill([time_to_plot(nf) fliplr(time_to_plot(nf))], [ub(nf) fliplr(lb(nf))], cmap1(m,:),'FaceAlpha',0.25,'EdgeAlpha',0.3);    
+            else
+                ap = fill([time_to_plot(nf) fliplr(time_to_plot(nf))], [ub(nf) fliplr(lb(nf))], cmap1(m,:),'FaceAlpha',0.15,'EdgeAlpha',0.2); 
+            end
+            p(m) = plot(time_to_plot,mean_param_array(:,param_index,m)','Color',cmap1(m,:),'LineWidth',1.5);
+
+            % plot individual replicates
+            p_filter = find(project_id_vec == m);
+            emb_data = fit_param_raw_array(:,param_index,p_filter);
+            time_long = repmat(time_to_plot',1,1,sum(p_filter));
+            if i == 2
+                for em = 1:length(p_filter)
+                    plot(time_long(:,:,em),emb_data(:,:,em),'--','Color',[cmap1(m,:) .5],'LineWidth',1.5);
+        %             scatter(time_long(:,:,em),emb_data(:,:,em),20,...
+        %               'MarkerFaceColor',cmap1(m,:),'MarkerEdgeColor','k',...
+        %                 'MarkerFaceAlpha',.15,'MarkerEdgeAlpha',0.15)
+                end
+            end
+        end  
+        if param_index == 1
+          ylim([0 16e4])
+          xlim([10 45])
+        elseif param_index == 2
+          ylim([32 46])
+          xlim([10 40])
+        else
+          xlim([10 40])
+        end
+
+        xlabel('minutes into nc14')
+        ylabel(y_label)
+        set(gca,'Fontsize',14);
+        grid on
+        legend(p,legend_str{:},'Location',loc_str{param_index})
+
+        set(gca,'Color',[228,221,209]/255) 
+
+        param_fig.InvertHardcopy = 'off';
+        set(gcf,'color','w');
+
+        saveas(param_fig,[FigurePath param_name '_v_time_' save_suffix '.png'])
+    end
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %% Cumulative fraction ON/OFF
@@ -470,8 +484,8 @@ for i = 1:3
     
   fold_fig_comp = figure;
     
-    ppl_map = brewermap(8,'Purples');
-    ppl = ppl_map(5,:);
+    ppl_map = brewermap(8,'reds');
+    ppl = ppl_map(4,:);
     hold on
     for m = 1:length(projectNameCell)        
         bb = [];
