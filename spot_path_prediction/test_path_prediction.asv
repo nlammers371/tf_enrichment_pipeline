@@ -203,13 +203,13 @@ interpErrors = sqrt(sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,10:1
 prevErrors = sqrt(sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,12:13)).^2,2));
 
 
-close all
-err_bins = linspace(0,25);
-figure('Position',[100 100 512 512]);
-hold on
-histogram(interpErrors(dsIDVec==3),err_bins,'Normalization','probability')
-histogram(interpErrors(dsIDVec==2),err_bins,'Normalization','probability')
-histogram(interpErrors(dsIDVec==1),err_bins,'Normalization','probability')
+% close all
+% err_bins = linspace(0,25);
+% figure('Position',[100 100 512 512]);
+% hold on
+% histogram(interpErrors(dsIDVec==3),err_bins,'Normalization','probability')
+% histogram(interpErrors(dsIDVec==2),err_bins,'Normalization','probability')
+% histogram(interpErrors(dsIDVec==1),err_bins,'Normalization','probability')
 % histogram(kalmanErrors2,err_bins,'Normalization','probability')
 
 outlier_flags = interpErrors > 10 | prevErrors > 10 | kalmanErrors > 10;
@@ -248,5 +248,15 @@ ylabel('prediction error (\mu m)')
 grid on
 set(gca,'Fontsize',14)
 legend([s1 s2 s3],'previous position','linear interpolation','kalman filter','Location','southeast')
-xlim([5 35])
+xlim([0 50])
+ylim([0 0.7])
 saveas(err_fig,[FigurePath 'prediction_error_v_time_gap.png'])
+
+%%
+
+pd_ex = figure;
+s1 = scatter(tempArray(tempArray(:,7)==1,4),tempArray(tempArray(:,7)==1,5));
+hold on
+s2 = scatter(tempArray(tempArray(:,8)==1,4),tempArray(tempArray(:,8)==1,5),'x');
+plot(tempArray(:,8),tempArray(:,9),'-^')
+plot(tempArray(:,10),tempArray(:,11),'-.')

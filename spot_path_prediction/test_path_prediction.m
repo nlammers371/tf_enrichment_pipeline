@@ -251,3 +251,22 @@ legend([s1 s2 s3],'previous position','linear interpolation','kalman filter','Lo
 xlim([0 50])
 ylim([0 0.7])
 saveas(err_fig,[FigurePath 'prediction_error_v_time_gap.png'])
+
+%%
+close all
+
+pd_ex = figure;
+hold on
+% plot(tempArray(:,4),tempArray(:,5),'--','Color','k');
+s1 = scatter(tempArray(tempArray(:,6)==1,4),tempArray(tempArray(:,6)==1,5));
+s2 = scatter(tempArray(tempArray(:,7)==1,4),tempArray(tempArray(:,7)==1,5),'s');
+p1 = plot(tempArray(:,8),tempArray(:,9),'-^');
+% p2 = plot(tempArray(:,10),tempArray(:,11),'-s');
+
+grid on
+set(gca,'Fontsize',14)
+
+legend([s1 s2 p1],'observed spots','missed spots','kalman filter prediction','Location','southeast')
+xlabel('x position (pixels)')
+ylabel('y position (pixels)')
+saveas(pd_ex,[FigurePath 'example_plot.png'])
