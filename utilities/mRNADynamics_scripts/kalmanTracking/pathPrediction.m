@@ -1,12 +1,8 @@
-function ParticlesTemp = pathPrediction(ParticlesTemp, trackingInfo, kalmanOptions, refFrameFlags)
-
-    frameVec = ParticlesTemp.Frame;
-    MeasurementVec = [ParticlesTemp.xFit(refFrameFlags)' ParticlesTemp.yFit(refFrameFlags)'];
-    
+function ParticlesTemp = pathPrediction(ParticlesTemp, kalmanOptions)
+ 
     % generate sorted position info
-    framesFull = max([1,frameVec(1)-trackingInfo.nExtrapFrames]):min([trackingInfo.nFrames,frameVec(end)+trackingInfo.nExtrapFrames]);
-    posData = NaN(length(framesFull), length(kalmanOptions.measurementFields));
-    posData(ismember(framesFull,frameVec(refFrameFlags)),:) = MeasurementVec(:,1:2);       
+    FramesFull = ParticlesTemp.FramesFull;    
+    posData = [ParticlesTemp.xPos' ParticlesTemp.yPos'];          
 
     % perform forward-backward kalman filtering
     KFTrack1 = kalmanFilterFwd(posData,kalmanOptions);
@@ -21,7 +17,7 @@ function ParticlesTemp = pathPrediction(ParticlesTemp, trackingInfo, kalmanOptio
     KFTrack2 = kalmanFilterBkd(KFTrack2);  
         
     % Add inferred position info to structure
-    ParticlesTemp.framesFull = framesFull;
+    ParticlesTemp.framesFull = FramesFull;
     ParticlesTemp.logL = nanmean([KFTrack1.logL flipud(KFTrack2.logL)],2); 
     ParticlesTemp.logLMean = nanmean(ParticlesTemp.logL);
     ParticlesTemp.logLArray = nanmean(cat(3,KFTrack1.logLArray, flipud(KFTrack2.logLArray)),3); 
@@ -40,5 +36,5 @@ function ParticlesTemp = pathPrediction(ParticlesTemp, trackingInfo, kalmanOptio
 %         ParticlesTemp.zPosInf = ParticlesTemp.zPosDetrendedInf' + trackingInfo.zPosStage(framesFull);           
 
     % make filter for convenience
-    ParticlesTemp.obsFrameFilter = ismember(framesFull,frameVec);
+%     ParticlesTemp.obsFrameFilter = ismember(FramesFull,frameVec);
         
