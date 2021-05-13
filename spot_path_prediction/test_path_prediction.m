@@ -252,7 +252,7 @@ xlim([0 50])
 ylim([0 0.7])
 saveas(err_fig,[FigurePath 'prediction_error_v_time_gap.png'])
 
-%%
+
 close all
 
 pd_ex = figure;
