@@ -64,14 +64,14 @@ end
 %% Draw histograms
 
 % histogram parameters
-binNum = 40;
+binNum = 41;
 binMax = 12;
 edges = linspace(0,binMax,binNum);
 %edges = 0:1/3:8;
 
 x = off_on_waiting_time_vec*1/3;
 %a = a(a<2.6);
-x_fit = x(x<3.1);
+x_fit = x(x<3);
 
 % fit gamma function
 [muhat,muci] = mle(x_fit,'distribution','gamma'); % Generic function
@@ -81,17 +81,21 @@ xRange = 0:0.1:20;
 y1 = gampdf(xRange,muhat(1),muhat(2))/(binNum/binMax);
 %y2 = gamcdf(x,muhat(1),muhat(2));
 
-fig = figure(1);
+waiting_time_k_on_fig = figure(1);
 hold on
-histogram(x,edges, 'Normalization','probability')
+h = histogram(x,edges, 'Normalization','probability');
 h.FaceColor = mRNA_red;
 plot(xRange,y1,'LineWidth',3,'Color',mRNA_red)
+%mean(x_fit)
 mean(x_fit)
 
 xlim([0 8])
 xlabel('response time (min)')
 ylabel('probability')
 pbaspect([3 2 1])
+%ylim([0 0.26])
+
+saveas(waiting_time_k_on_fig,[FigurePath 'figure_waiting_time_k_on_hist.pdf'])
 
 %fig = figure(2);
 %hold on
@@ -108,3 +112,25 @@ pbaspect([3 2 1])
 
 %[a b] = mle(x,'pdf',@(x,lambda,a1,b1,a2,b2) lambda*gampdf(x,a1,b1) + (1-lambda)*gampdf(x,a2,b2),'start',[1 1 1 1 1],'LowerBound',[0.9 1 1 1 1],'UpperBound',[1 1.1 1.1 1.1 1.1]);
 
+
+%% Simulation based on distribution
+
+pd1 = makedist('Gamma','a',muhat(1),'b',muhat(2)); % bursting distribution
+pd2 = makedist('Exponential',1.8); % second reactivation step
+
+r1 = random(pd1,100000,1);
+r2 = random(pd2,100000,1);
+
+r_final = r1+r2;
+
+fig_pd1 = figure;
+histogram(r1,'Normalization','probability');
+xlim([0 8])
+
+fig_pd2 = figure;
+histogram(r2,'Normalization','probability');
+xlim([0 8])
+
+fig_pd_final = figure;
+histogram(r_final,'Normalization','probability');
+xlim([0 8])

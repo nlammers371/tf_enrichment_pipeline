@@ -7,7 +7,8 @@ addpath(genpath('utilities'))
 %projectNameCell = {'Rbp1-GFP_eveBAC-mCh'};
 %projectNameCell = {'optokni_eve4+6_ON'};
 %projectNameCell = {'optokni_eveBAC_WT'};
-projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
+projectNameCell = {'optokni_eve4+6_WT'};
+%projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)

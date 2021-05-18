@@ -3,6 +3,11 @@ close all
 
 addpath(genpath('./lib'))
 
+% knirps green
+k_green = brighten([38 142 75]/256,.4);
+color_green = [38 143 75]/256; % color from Jake
+mRNA_red = brighten([212 100 39]/256,.2);
+
 %% Initialization
 
 projectName = 'optokni_eve4+6_WT'; 
@@ -307,10 +312,6 @@ predicted_eve_profile_ste = nanstd(predicted_eve_profile_array,[],3);
 predicted_eve_profile_mean = predicted_eve_profile_mean(1:length(time_bins),:);
 predicted_eve_profile_ste = predicted_eve_profile_ste(1:length(time_bins),:);
 
-% knirps green
-k_green = brighten([38 142 75]/256,.4);
-color_green = [38 143 75]/256; % color from Jake
-mRNA_red = brighten([212 100 39]/256,.2);
 
 % mRNA profile plot
 mRNA_fig1 = figure;
@@ -1011,5 +1012,193 @@ t.TileSpacing = 'compact';
 
 %% Figure: plot off rate + mean transcription rate vs mRNA pattern
 
+% load inference results
+load([resultsRoot filesep 'cpHMM_results' filesep 'k2_temp' filesep 'compiledResults_w7_K2_p0_ap7_t1_f2D.mat']);
 
+burst_axis = (compiledResults.apBins(1:end-1)+ compiledResults.apBins(2:end))/2;
+burst_freq = compiledResults.freq_vec_mean;
+burst_freq_ste = compiledResults.freq_vec_ste;
+burst_dur = compiledResults.dur_vec_mean;
+burst_dur_ste = compiledResults.dur_vec_ste;
+burst_rate = compiledResults.init_vec_mean*1e-5;
+burst_rate_ste = compiledResults.init_vec_ste*1e-5;
+
+burst_dur_center = burst_dur(4);
+burst_rate_center = burst_rate(4);
+burst_freq_center = burst_freq(4);
+
+% which time to plot for knirps
+time_plot_2 = 27;
+
+% mRNA profile vs burst duration
+burst_dur_fig = figure;
+hold on
+
+yyaxis left
+
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.3;
+set(gca,'YColor',mRNA_red)
+ylabel('accumulated {\it eve} mRNA (au)');
+ylim([0 8])
+
+set(gca,'FontSize',14)
+
+yyaxis right
+errorbar(burst_axis*100,burst_dur/burst_dur_center,burst_dur_ste/burst_dur_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_dur/burst_dur_center,'-k')
+scatter(burst_axis*100,burst_dur/burst_dur_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+set(gca,'YColor',bl);
+ylabel(['burst duration (relative to center)'])
+ylim([0 2])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+
+% mRNA profile vs loading rate
+burst_loading_rate_fig = figure;
+hold on
+
+yyaxis left
+
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.3;
+set(gca,'YColor',mRNA_red)
+ylabel('accumulated {\it eve} mRNA (au)');
+ylim([0 8])
+
+set(gca,'FontSize',14)
+
+yyaxis right
+errorbar(burst_axis*100,burst_rate/burst_rate_center,burst_rate_ste/burst_rate_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_rate/burst_rate_center,'-k')
+scatter(burst_axis*100,burst_rate/burst_rate_center,50,'MarkerFaceColor',gr,'MarkerEdgeColor','k')
+set(gca,'YColor',gr);
+ylabel(['mRNA loading rate (relative to center)'])
+ylim([0 2])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+% mRNA profile vs burst frequency
+burst_freq_fig = figure;
+hold on
+
+yyaxis left
+
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.3;
+set(gca,'YColor',mRNA_red)
+ylabel('accumulated {\it eve} mRNA (au)');
+ylim([0 8])
+
+set(gca,'FontSize',14)
+
+yyaxis right
+errorbar(burst_axis*100,burst_freq,burst_freq_ste,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_freq,'-k')
+scatter(burst_axis*100,burst_freq,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+set(gca,'YColor',bl);
+ylabel(['burst frequency (1/min)'])
+ylim([0 4])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+saveas(burst_loading_rate_fig,[FigurePath 'figure_loading_rate_vs_ap_with_mRNA.pdf'])
+saveas(burst_freq_fig,[FigurePath 'figure_burst_freq_vs_ap_with_mRNA.pdf'])
+saveas(burst_dur_fig,[FigurePath 'figure_burst_dur_vs_ap_with_mRNA.pdf'])
+
+%% Figure: Plot k_on, k_off vs ap
+
+burst_k_off_mean = 1./compiledResults.dur_vec_mean;
+burst_k_off_ste = 1./(compiledResults.dur_vec_mean.^2).*compiledResults.dur_vec_ste;
+burst_k_off_center = 1/burst_dur_center;
+
+burst_k_on_mean = 1./compiledResults.freq_vec_mean;
+burst_k_on_ste = 1./(compiledResults.freq_vec_mean.^2).*compiledResults.freq_vec_ste;
+burst_k_on_center = 1/burst_freq_center;
+
+% k_off vs ap
+burst_k_off_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+errorbar(burst_axis*100,burst_k_off_mean/burst_k_off_center,burst_k_off_ste/burst_k_off_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_k_off_mean/burst_k_off_center,'-k')
+scatter(burst_axis*100,burst_k_off_mean/burst_k_off_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+%set(gca,'YColor',bl);
+ylabel(['k_{off} (relative to center)'])
+ylim([0 2])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+
+% k_on vs ap
+burst_k_on_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+errorbar(burst_axis*100,burst_k_on_mean/burst_k_on_center,burst_k_on_ste/burst_k_on_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_k_on_mean/burst_k_on_center,'-k')
+scatter(burst_axis*100,burst_k_on_mean/burst_k_on_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+%set(gca,'YColor',bl);
+ylabel(['k_{on} (relative to center)'])
+ylim([0 2])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+
+% loading rate vs ap
+burst_loading_rate_ap_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+errorbar(burst_axis*100,burst_rate/burst_rate_center,burst_rate_ste/burst_rate_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_rate/burst_rate_center,'-k')
+scatter(burst_axis*100,burst_rate/burst_rate_center,50,'MarkerFaceColor',gr,'MarkerEdgeColor','k')
+%set(gca,'YColor',gr);
+ylabel(['mRNA loading rate (relative to center)'])
+ylim([0 2])
+
+
+xlabel('AP position (% embryo length)');
+xlim([ap_axis(1) ap_axis(end)])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+
+saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap.pdf'])
+saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap.pdf'])
+saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
 
