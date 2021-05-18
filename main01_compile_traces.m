@@ -381,7 +381,7 @@ for i = 1:numExperiments
                 compiledSchnitzCells(ncIndex).APPosParticle(ncSpotFilter1) = compiledParticles(j).APposParticle(ncSpotFilter2)*100;
             end
             % 3D info
-            if has3DSpotInfo
+            if has3DSpotInfo & isfield(compiledParticles, 'xPos3D')
                 compiledSchnitzCells(ncIndex).xPosParticle3D(ncSpotFilter1) = compiledParticles(j).xPos3D(ncSpotFilter2);
                 compiledSchnitzCells(ncIndex).yPosParticle3D(ncSpotFilter1) = compiledParticles(j).yPos3D(ncSpotFilter2);
                 compiledSchnitzCells(ncIndex).zPosParticle3D(ncSpotFilter1) = compiledParticles(j).zPos3D(ncSpotFilter2);
@@ -553,6 +553,9 @@ for i = 1:length(spot_struct)
             end
         else
             for  j = 1:length(interpFields)
+                if ~isfield(spot_struct, interpFields{j})
+                    continue 
+                end
                 vec = spot_struct(i).(interpFields{j})(startIndex:stopIndex);
                 
                 % perform basic QC on fluorescence fields

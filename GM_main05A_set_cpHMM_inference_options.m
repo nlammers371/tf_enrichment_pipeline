@@ -8,7 +8,7 @@ addpath(genpath('utilities'))
 
 inferenceInfo = struct;
 
-ProjectName = 'hbBAC-MS2-17_5C';
+ProjectName = 'hbBAC-MS2-20C/NC13';
 
 inferenceInfo.projectNameCell = {ProjectName};
 
@@ -17,18 +17,20 @@ inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 inferenceInfo.fluo3DFlag = 0;
 %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-timeBins = cell(1, 18);
+timeBins = cell(1, 4);
 for i = 1:length(timeBins)
     timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
+    disp(['i = ' num2str(i), ', Bin Max: ', num2str(timeBins{i}(2)/60)])
+    %timeBins{i} = [((i-1)*5)*60, ((i-1)*5+15)*60];
 end
 %inferenceInfo.timeBins = timeBins; % should be longer than 15min\
 inferenceInfo.timeBins = timeBins;
 inferenceInfo.apBins = linspace(22.5, 45, 10);%linspace(-.2,.2,10);
-inferenceInfo.dt = 60; % leave empty [] to use default 
+inferenceInfo.dt = 35; % leave empty [] to use default 
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
-inferenceInfo.modelSpecs.nSteps = 5; % 7; % number of steps to traverse gene
+inferenceInfo.modelSpecs.nSteps = 8; % 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
