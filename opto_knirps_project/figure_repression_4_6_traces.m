@@ -19,17 +19,14 @@ mkdir(FigurePath)
 % Embryo 13
 embryo(1).expID = 1;
 embryo(1).frame_on = 16;
-embryo(1).time_on = 5.41981;
 
 % Embryo 14
 embryo(2).expID = 2;
 embryo(2).frame_on = 48;
-embryo(2).time_on = 16.9258;
 
-% Embryo 16
+% Embryo 14
 embryo(3).expID = 3;
 embryo(3).frame_on = 16;
-embryo(3).time_on = 5.43871;
 
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
@@ -206,7 +203,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
     xlim([-2.5 7])
-    ylim([2E5 9E5])
+    ylim([4E5 9E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
@@ -227,55 +224,58 @@ for i = 1:length(embryo)
 end
 
 
-%% Bursting data analysis
 
-% load inference results
-load([resultsRoot filesep 'cpHMM_results' filesep 'hmm_input_output.mat']);
+%% calculate silenced duration vs response time
 
-% color to be used
-k_green = brighten([38 142 75]/256,.4);
-color_green = [38 143 75]/256; % color from Jake
-mRNA_red = brighten([212 100 39]/256,.2);
-
-% set parameters
-ap_lim = 0.02;
-% histogram
-binNum = 17;
-binMax = 12;
-edges = linspace(0,binMax,binNum);
-analysis_range = 8;
-
-response_time = [];
-
-for i = 1:length(hmm_input_output)
-
-    time = hmm_input_output(i).time/60;
-    pState = hmm_input_output(i).promoter_state;
-    fluo = hmm_input_output(i).fluo;
-    predicted_fluo = hmm_input_output(i).predicted_fluo;
-    embryo_num = fix(hmm_input_output(i).ncID(1));
-    
-    ap_vec = hmm_input_output(i).APPosParticle;
-    mean_ap = nanmean(ap_vec);
-    
-    frame_before = find(time <= embryo(embryo_num).time_on);
-    frame_after = find(time>embryo(embryo_num).time_on);
-    
-    if (mean_ap > -ap_lim) && (mean_ap < ap_lim)
-    
-        if ~isempty(frame_before) && (pState(max(frame_before))>1)
-            last_on = intersect(find(pState>1,1,'last'),frame_after);
-            response_time_temp = time(last_on)-embryo(embryo_num).time_on + 1/3;
-            response_time = [response_time response_time_temp];
-        end
-        
-    end
-end
+response_time_final = response_time_full(data_filter_full==1);
+silence_time_final = silence_time_full(data_filter_full==1);
 
 
-% fit gamma function
+x = silence_time_final;
+y = response_time_final;
+filter = (x<analysis_range) & (y<analysis_range);
 
-a = response_time(response_time<=8);
+xFit = x(filter);
+yFit = y(filter);
+
+mdl = fitlm(xFit,yFit,'RobustOpts','on');
+%mdl = fitlm(x(filter),y(filter));
+b = mdl.Coefficients{1,1};
+k = mdl.Coefficients{2,1};
+%options = fitoptions('poly1');
+%options.Upper = [Inf -3];
+%mdl = fit(x(filter)',y(filter)','poly1',options);
+%k = mdl.p1;
+%b = mdl.p2;
+
+regMdl = regARIMA(0,0,0);
+regMdl.Distribution = struct('Name','t','DoF',3);
+%regMdl is a regARIMA model object. It is a template for estimation.
+
+%Estimate the regression model with ARIMA errors. Plot the regression line.
+estRegMdl = estimate(regMdl,yFit','X',xFit');
+
+
+xRange = linspace(0,20,1000);
+yResult = k*xRange + b;
+
+memory_fig = figure;
+%scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[234 194 100]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[115 142 193]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+hold on
+plot(xRange,yResult,'-','LineWidth',2)
+%plot(x,mdl)
+xlabel('silenced duration (min) before illumination');
+ylabel('response time (min)');
+xlim([0 analysis_range])
+ylim([0 analysis_range])
+pbaspect([2 3 1])
+saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
+
+
+%% fit gamma function
+
+a = response_time_final(response_time_final<=8);
 
 % fit gamma function
 [muhat,muci] = mle(a,'distribution','gamma'); % Generic function
@@ -291,98 +291,10 @@ h = histogram(a,edges,'Normalization','probability');
 h.FaceColor = mRNA_red;
 plot(x,y1,'LineWidth',3,'Color',mRNA_red)
 mean(a)
-mean(response_time)
 
 xlim([0 analysis_range])
 xlabel('response time (min)')
 ylabel('probability')
 pbaspect([3 2 1])
 
-saveas(response_time_fig,[FigurePath 'figure_repression_response_time_hist.pdf'])
-
-%%
-
-% TraceFig = figure;
-% yyaxis left
-% stairs(time,pState-1);
-% ylim([-0.1 2.1])
-% yyaxis right
-% plot(time,Fluo)
-% hold on
-% plot(time,predFluo)
-
-
-
-%% calculate silenced duration vs response time
-% 
-% response_time_final = response_time_full(data_filter_full==1);
-% silence_time_final = silence_time_full(data_filter_full==1);
-% 
-% 
-% x = silence_time_final;
-% y = response_time_final;
-% filter = (x<analysis_range) & (y<analysis_range);
-% 
-% xFit = x(filter);
-% yFit = y(filter);
-% 
-% mdl = fitlm(xFit,yFit,'RobustOpts','on');
-% %mdl = fitlm(x(filter),y(filter));
-% b = mdl.Coefficients{1,1};
-% k = mdl.Coefficients{2,1};
-% %options = fitoptions('poly1');
-% %options.Upper = [Inf -3];
-% %mdl = fit(x(filter)',y(filter)','poly1',options);
-% %k = mdl.p1;
-% %b = mdl.p2;
-% 
-% regMdl = regARIMA(0,0,0);
-% regMdl.Distribution = struct('Name','t','DoF',3);
-% %regMdl is a regARIMA model object. It is a template for estimation.
-% 
-% %Estimate the regression model with ARIMA errors. Plot the regression line.
-% estRegMdl = estimate(regMdl,yFit','X',xFit');
-% 
-% 
-% xRange = linspace(0,20,1000);
-% yResult = k*xRange + b;
-% 
-% memory_fig = figure;
-% %scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[234 194 100]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
-% scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[115 142 193]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
-% hold on
-% plot(xRange,yResult,'-','LineWidth',2)
-% %plot(x,mdl)
-% xlabel('silenced duration (min) before illumination');
-% ylabel('response time (min)');
-% xlim([0 analysis_range])
-% ylim([0 analysis_range])
-% pbaspect([2 3 1])
-% saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
-% 
-% 
-% %% fit gamma function
-% 
-% a = response_time_final(response_time_final<=8);
-% 
-% % fit gamma function
-% [muhat,muci] = mle(a,'distribution','gamma'); % Generic function
-% %[muhat,muci] = gamfit(a); % Distribution specific function
-% 
-% x = 0:0.1:20;
-% y1 = gampdf(x,muhat(1),muhat(2))/(binNum/binMax);
-% %y2 = gamcdf(x,muhat(1),muhat(2));
-% 
-% response_time_fig = figure;
-% hold on
-% h = histogram(a,edges,'Normalization','probability');
-% h.FaceColor = mRNA_red;
-% plot(x,y1,'LineWidth',3,'Color',mRNA_red)
-% mean(a)
-% 
-% xlim([0 analysis_range])
-% xlabel('response time (min)')
-% ylabel('probability')
-% pbaspect([3 2 1])
-% 
-% saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])
+saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])

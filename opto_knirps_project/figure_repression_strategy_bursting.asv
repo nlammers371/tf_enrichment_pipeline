@@ -3,11 +3,6 @@ close all
 
 addpath(genpath('./lib'))
 
-% knirps green
-k_green = brighten([38 142 75]/256,.4);
-color_green = [38 143 75]/256; % color from Jake
-mRNA_red = brighten([212 100 39]/256,.2);
-
 %% Initialization
 
 projectName = 'optokni_eve4+6_WT'; 
@@ -17,7 +12,7 @@ resultsRoot = [liveProject.dataPath filesep];
 
 % load data
 load([resultsRoot 'spot_struct.mat'])
-FigurePath = [liveProject.figurePath 'model_fitting' filesep];
+FigurePath = [liveProject.figurePath 'input_output' filesep];
 mkdir(FigurePath)
 
 % MS2 trace quality looks atrocious. Let's look at on and off times and the
@@ -288,6 +283,112 @@ for t = 1:length(time_bins)
         end
     end
 end
+
+%% Figure 2: Generate predicted mRNA
+% generate decay kernel
+close all
+
+% which time to plot for knirps
+time_plot_1 = 5;
+time_plot_2 = 27;
+
+eve_half_life = 7;
+eve_decay_kernel = exp(-time_bins'/eve_half_life/60);
+eve_decay_kernel = eve_decay_kernel / eve_decay_kernel(1);
+
+% replace missing values with zeros (Need to clean this up, should really
+% be some kind of interpolation)
+eve_time_array_full(isnan(eve_time_array_full)) = 0;
+
+predicted_eve_profile_array = convn(eve_decay_kernel,eve_time_array_full,'full');
+predicted_eve_profile_mean = nanmean(predicted_eve_profile_array,3);
+predicted_eve_profile_ste = nanstd(predicted_eve_profile_array,[],3);
+
+predicted_eve_profile_mean = predicted_eve_profile_mean(1:length(time_bins),:);
+predicted_eve_profile_ste = predicted_eve_profile_ste(1:length(time_bins),:);
+
+% knirps green
+k_green = brighten([38 142 75]/256,.4);
+color_green = [38 143 75]/256; % color from Jake
+mRNA_red = brighten([212 100 39]/256,.2);
+
+% mRNA profile plot
+mRNA_fig1 = figure;
+hold on
+
+yyaxis left
+f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(time_plot_1,:)*1e-5 zeros(size(knirps_time_array_mean(time_plot_1,:)))],color_green);
+%plot(ap_axis,knirps_time_array_mean(time_plot_1,:)*1e-5,'Color',color_green,'LineWidth',3)
+f.FaceAlpha = 0.5;
+ylabel('[Knirps] (au)');
+set(gca,'YColor',color_green)
+ylim([0 15])
+
+yyaxis right
+% errorbar(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),predicted_eve_profile_ste(end,:)*1e-5,'Color',mRNA_red,'CapSize',0);
+%plot(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_1,:)*1e-5,1),'Color',brighten(mRNA_red,0),'LineWidth',1.5) % NL: applying mild smoothing since this is illustrative (not quantitative)
+% s = scatter(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_1,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.5;
+set(gca,'YColor',mRNA_red)
+xlabel('AP position (% embryo length)');
+ylabel('accumulated {\it eve} mRNA (au)');
+ylim([0 7.5])
+
+
+%grid on
+set(gca,'FontSize',14)
+%set(gca,'Color',[228,221,209]/255) 
+% ylim([0.9 1.1])
+
+xlim([ap_axis(1) ap_axis(end)])
+mRNA_fig1.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([3 2 1])
+
+saveas(mRNA_fig1,[FigurePath 'figure2_mRNA_fig_time1.png'])
+saveas(mRNA_fig1,[FigurePath 'figure2_mRNA_fig_time1.pdf'])
+
+
+% mRNA profile plot
+mRNA_fig2 = figure;
+hold on
+
+yyaxis left
+f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(time_plot_2,:)*1e-5 zeros(size(knirps_time_array_mean(time_plot_1,:)))],color_green);
+%plot(ap_axis,knirps_time_array_mean(time_plot_2,:)*1e-5,'Color',color_green,'LineWidth',3)
+%s = scatter(ap_axis,knirps_time_array_mean(time_plot_2,:)*1e-5,50,'MarkerFaceColor',color_green,'MarkerEdgeColor','k');
+f.FaceAlpha = 0.5;
+ylabel('[Knirps] (au)');
+set(gca,'YColor',color_green)
+ylim([0 15])
+
+yyaxis right
+% errorbar(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),predicted_eve_profile_ste(end,:)*1e-5,'Color',mRNA_red,'CapSize',0);
+%plot(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1),'Color',brighten(mRNA_red,0),'LineWidth',1.5) % NL: applying mild smoothing since this is illustrative (not quantitative)
+%s = scatter(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1),50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
+eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
+f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
+f.FaceAlpha = 0.5;
+set(gca,'YColor',mRNA_red)
+xlabel('AP position (% embryo length)');
+ylabel('accumulated {\it eve} mRNA (au)');
+ylim([0 7.5])
+
+
+%grid on
+set(gca,'FontSize',14)
+%set(gca,'Color',[228,221,209]/255) 
+% ylim([0.9 1.1])
+
+xlim([ap_axis(1) ap_axis(end)])
+mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([3 2 1])
+
+saveas(mRNA_fig2,[FigurePath 'figure2_mRNA_fig_time2.png'])
+saveas(mRNA_fig2,[FigurePath 'figure2_mRNA_fig_time2.pdf'])
 
 %% Figure: plot mean fluorescence vs time (aligned by off time)
 
@@ -586,69 +687,326 @@ for i = length(ap_cell)%1:length(ap_cell)
     saveas(ap_knirps_fig,[FigurePath 'figure2_fraction_on_vs_knirps_' num2str(i) '.pdf'])
 end
 
-%% Plot distribution of locus
-
-close all;
+%% Figure 2: Combine simple hill function fit with input-output
+% Step 1: fit simple hill function to each ap position
 
 nBoots = 100;
+% fit curves to each ap position and compare the parameters
+hill_coefficients = NaN(nBoots,length(ap_indices));
+HM_points = NaN(nBoots,length(ap_indices));
+options = optimoptions('lsqnonlin','Display','off');
+
+wb = waitbar(0,'Conducting input-output fits...');
+iter = 1;
+for a = ap_indices
+    waitbar(iter/(length(ap_indices)),wb);
+    ap_window_filter = ap_groups==a & post_turn_on_flags & ~isnan(knirps_vec_long);
+    still_on_flags_knirps = ~post_turn_off_flags(ap_window_filter);
+    knirps_vec = double(knirps_vec_long(ap_window_filter))*1e-5;
+    
+    for n = 1:nBoots
+        boot_indices = randsample(1:length(knirps_vec),length(knirps_vec),true);
+        % define the objective function
+        objective_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_vec(boot_indices).^x(2)) - still_on_flags_knirps(boot_indices);
+        x = lsqnonlin(objective_fun,[1 1],[0 0],[Inf Inf],options);    
+        HM_points(n,iter) = x(1);
+        hill_coefficients(n,iter) = x(2);       
+    end
+    iter = iter + 1;
+end
+delete(wb);
+
+%% Step2: Add fits to plots
+hill_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_axis.^x(2));
+
+for i = length(ap_cell)
+    ap_indices_iter = ap_cell{i};
+    
+    ap_knirps_fig = figure;
+    hold on
+    cmap1 = flipud(brewermap(1.2*cmap_bin_num,'Spectral'));
+    %cmap1 = flipud(brewermap(1.2*cmap_bin_num,'RdYlGn'));
+    cmap1 = cmap1(0.10*cmap_bin_num:1.10*cmap_bin_num-1,:);
+    
+    colormap(cmap1)
+    iter = 1;
+    for a = ap_indices_iter
+        
+        % add fit profile
+        fit_hill = mean(hill_coefficients(:,iter));
+        fit_Kd = mean(HM_points(:,iter));
+        fit_profile = hill_fun([fit_Kd,fit_hill]);
+        
+        cmap_bin = round((ap_axis(a)-ap_axis(ap_indices(1)))*(cmap_bin_num-1)/(ap_axis(ap_indices(end))-ap_axis(ap_indices(1))))+1;
+        plot(knirps_axis,fit_profile,'Color',brighten(cmap1(cmap_bin,:),-0.5),'LineWidth',0.75)
+        %plot(knirps_axis,fit_profile,'Color','k','LineWidth',1)
+        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0);
+    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
+        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),[],'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1,'MarkerEdgeAlpha',1)
+        
+        iter = iter + 1;
+    end
+    caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
+    h = colorbar;
+
+    xlabel('[Knirps] (au)');
+    ylabel('fraction of {\it eve} loci still on');
+    ylabel(h,'AP position')
+
+    %grid on
+    set(gca,'FontSize',14)
+    %set(gca,'Color',[228,221,209]/255) 
+    xlim([2 11])
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+
+    ap_knirps_fig.InvertHardcopy = 'off';
+    set(gcf,'color','w'); 
+    
+    pbaspect([3 2 1])
+
+    saveas(ap_knirps_fig,[FigurePath 'figure2_fraction_on_vs_knirps_fit_' num2str(i) '.png'])
+    saveas(ap_knirps_fig,[FigurePath 'figure2_fraction_on_vs_knirps_fit_' num2str(i) '.pdf'])
+end
+
+%% Figure 2: Hill Coeff vs AP 
+
+ap_hill_fig = figure;
+hold on
+%cmap1 = brewermap([],'Set2');
+
+cmap1 = flipud(brewermap(1.2*cmap_bin_num,'Spectral'));
+%cmap1 = flipud(brewermap(1.2*cmap_bin_num,'RdYlGn'));
+cmap1 = cmap1(0.10*cmap_bin_num:1.10*cmap_bin_num-1,:);
+
+errorbar(ap_axis(ap_filter),nanmean(hill_coefficients),nanstd(hill_coefficients),'Color','k','CapSize',0);
+iter = 1;
+for i = ap_cell{1}
+    cmap_bin = round((ap_axis(i)-ap_axis(ap_indices(1)))*(cmap_bin_num-1)/(ap_axis(ap_indices(end))-ap_axis(ap_indices(1))))+1;
+    scatter(ap_axis(i),nanmean(hill_coefficients(:,iter)),75,'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k')
+    iter = iter + 1;
+end
+xlabel('AP position (% embryo length)');
+ylabel('response sharpness (hill coefficient)');
+
+%grid on
+set(gca,'FontSize',14)
+%set(gca,'Color',[228,221,209]/255) 
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+
+xlim([ap_axis(ap_indices(1))-0.5 ap_axis(ap_indices(end))+0.5])
+ylim([0 12])
+  
+ap_hill_fig.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+
+pbaspect([3 2 1])
+
+saveas(ap_hill_fig,[FigurePath 'figure2_ap_vs_hill.png'])
+saveas(ap_hill_fig,[FigurePath 'figure2_ap_vs_hill.pdf'])
+%% Figure 2: Kd vs AP
+
+ap_HM_fig = figure;
+hold on
+%cmap1 = brewermap([],'Set2');
+
+cmap1 = flipud(brewermap(1.2*cmap_bin_num,'Spectral'));
+%cmap1 = flipud(brewermap(1.2*cmap_bin_num,'RdYlGn'));
+cmap1 = cmap1(0.10*cmap_bin_num:1.10*cmap_bin_num-1,:);
+%cmap1 = brighten(cmap1,-0.5);
+
+errorbar(ap_axis(ap_filter),nanmean(HM_points),nanstd(HM_points),'Color','k','CapSize',0);
+iter = 1;
+for i = ap_cell{1}
+    cmap_bin = round((ap_axis(i)-ap_axis(ap_indices(1)))*(cmap_bin_num-1)/(ap_axis(ap_indices(end))-ap_axis(ap_indices(1))))+1;
+    scatter(ap_axis(i),nanmean(HM_points(:,iter)),75,'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k')
+    iter = iter + 1;
+end
+
+xlabel('AP position (% embryo length)');
+ylabel('half-max points (K_d)');
+
+%grid on
+set(gca,'FontSize',14)
+%set(gca,'Color',[228,221,209]/255) 
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+xlim([ap_axis(ap_indices(1))-0.5 ap_axis(ap_indices(end))+0.5])
+ap_HM_fig.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+
+pbaspect([3 2 1])
+
+saveas(ap_HM_fig,[FigurePath 'figure2_ap_vs_HM.png'])
+saveas(ap_HM_fig,[FigurePath 'figure2_ap_vs_HM.pdf'])
+
+
+%% Figure 2: plot fraction_on vs knirps + hill equation fit (only for stripe center)
+% Also plot Knirps concentration when silencing happened
+
+%Look at long vectors and calculate fraction on for stripe center
+ap_bins_center = [-0.02 0.02];
+
+% Step 1: Calculate using long vectors
+hill_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_axis.^x(2));
 
 knirps_offset = 2.5e5;%prctile(double(knirps_vec_long),1);
 knirps_vec_long = knirps_vec_long_raw - knirps_offset;
 
-nLinBins = 7;
-time_bins = linspace(5*60,35*60,nLinBins);
-fluo_bins = linspace(0,5E5,21);
+nLinBins = 31;
+knirps_bins = linspace(0,15e5,nLinBins);
+knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
+knirps_axis = knirps_axis*1e-5;
 
-fluo_cov_temp = zeros(nLinBins-1,1);
-fluo_mean_temp = zeros(nLinBins-1,1);
-fluo_std_temp = zeros(nLinBins-1,1);
-fluo_fano_temp = zeros(nLinBins-1,1);
+ap_groups = discretize(ap_vec_long,ap_bins_center);  
+knirps_groups = discretize(knirps_vec_long,knirps_bins); 
 
-knirps_mean_temp = zeros(nLinBins-1,1);
+frac_on_knirps_array_mean = NaN(length(knirps_bins)-1,length(ap_bins)-1);
+frac_on_knirps_array_ste = NaN(length(knirps_bins)-1,length(ap_bins)-1);
 
-time_groups = discretize(time_vec_long,time_bins);
+% Step 2: fit simple hill function to each ap position
+ap_indices = length(ap_bins_center)-1;
 
-for t = 1:length(time_bins)
-    time_window_filter = time_groups==t & (ap_groups>=10) & (ap_groups<=12) & post_turn_on_flags;
-    fluo_vec = fluo_raw_long(time_window_filter);
-    knirps_vec = knirps_vec_long(time_window_filter);
-    fluo_vec(isnan(fluo_vec)) = 0;
-    %fluo_vec = fluo_vec(~isnan(fluo_vec));
-    %fluo_vec = fluo_vec(fluo_vec>0);
+nBoots = 100;
+% fit curves to each ap position and compare the parameters
+hill_coefficients = NaN(nBoots,length(ap_indices));
+HM_points = NaN(nBoots,length(ap_indices));
+options = optimoptions('lsqnonlin','Display','off');
+
+wb = waitbar(0,'Conducting input-output fits...');
+iter = 1;
+for a = ap_indices
+    waitbar(iter/(length(ap_indices)),wb);
+    ap_window_filter = ap_groups==a & post_turn_on_flags & ~isnan(knirps_vec_long);
+    still_on_flags_knirps = ~post_turn_off_flags(ap_window_filter);
+    knirps_vec = double(knirps_vec_long(ap_window_filter))*1e-5;
     
-    if length(fluo_vec)>30
-        boot_samples_knirps = bootstrp(nBoots,@nanmean,knirps_vec);
-
-        fig = figure;
-        %histogram(boot_samples_fluo);
-        histogram(fluo_vec,fluo_bins,'Normalization','probability')
-        xlim([0 5E5])
-        ylim([0 0.4])
-        
-        fluo_mean_temp(t) = mean(fluo_vec);
-        fluo_std_temp(t) = std(fluo_vec);
-        fluo_cov_temp(t) = std(fluo_vec)/mean(fluo_vec);
-        fluo_fano_temp(t) = var(fluo_vec)/mean(fluo_vec);
-        
-        knirps_mean_temp(t) = nanmean(boot_samples_knirps);
-        
+    for n = 1:nBoots
+        boot_indices = randsample(1:length(knirps_vec),length(knirps_vec),true);
+        % define the objective function
+        objective_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + knirps_vec(boot_indices).^x(2)) - still_on_flags_knirps(boot_indices);
+        x = lsqnonlin(objective_fun,[1 1],[0 0],[Inf Inf],options);    
+        HM_points(n,iter) = x(1);
+        hill_coefficients(n,iter) = x(2);       
     end
-    
+    iter = iter + 1;
+end
+delete(wb);
+
+
+%Step 3: Plot the results
+
+for t = 1:length(knirps_bins)
+    for a = 1:length(ap_bins_center)
+                
+        knirps_window_filter = knirps_groups==t & ap_groups==a & post_turn_on_flags;
+        if sum(knirps_window_filter)>10
+            still_on_flags_knirps = ~post_turn_off_flags(knirps_window_filter);
+            boot_samples_knirps = bootstrp(nBoots,@mean,still_on_flags_knirps);
+            frac_on_knirps_array_mean(t,a) = mean(boot_samples_knirps);
+            frac_on_knirps_array_ste(t,a) = std(boot_samples_knirps);
+        end
+    end
 end
 
-fig = figure;
-plot(knirps_mean_temp,fluo_mean_temp)
-ylim([0 2E5])
+% Step 3: plot the results
 
-fig = figure;
-plot(knirps_mean_temp,fluo_std_temp)
-ylim([0 10E4])
+tiled_fig = figure('Position', [200 200 425 600]);
+t = tiledlayout(2,1);
 
-fig = figure;
-plot(knirps_mean_temp,fluo_cov_temp)
-%ylim([0 1])
+ax1 = nexttile(t);
+hold on
+for a = length(ap_bins_center)-1
+    
+    % add fit profile
+    fit_hill = mean(hill_coefficients(:,a));
+    fit_Kd = mean(HM_points(:,a));
+    fit_profile = hill_fun([fit_Kd,fit_hill]);
+    
+    plot(knirps_axis,fit_profile,'Color',brighten(color_green,-0.5),'LineWidth',1)
+    errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0,'LineWidth',.5);
+    %plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color','k');
 
-%fig = figure;
-%plot(knirps_mean_temp,fluo_fano_temp)
-%ylim([0 1])
+    scatter(knirps_axis,frac_on_knirps_array_mean(:,a),50,'MarkerFaceColor',color_green,'MarkerEdgeColor','k')
+end
 
+ylabel('fraction of cells transcribing');
+
+%grid on
+set(gca,'FontSize',14)
+%set(gca,'Color',[228,221,209]/255) 
+xlim([2 11])
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+
+set(gcf,'color','w'); 
+
+xlim([0 15])
+ylim([-0.1 1.1])
+xlabel('[Knirps] (au)');
+
+ax2 = nexttile(t);
+set(gca,'FontSize',14)
+h = histogram((off_knirps_long-knirps_offset)*1e-5,16,'FaceColor',mRNA_red,'Normalization','probability');
+
+% fit with gaussian
+edges = h.BinEdges;
+
+x = (edges(1:end-1)+edges(2:end))/2;
+y = h.Values;
+
+f = fit(x',y','gauss1');
+
+hold on
+plot(f)
+
+xlim([0 15])
+ylabel('fraction of silencing events')
+
+
+linkaxes([ax1,ax2],'x');
+xlabel(t,'[Knirps] (au)');
+t.TileSpacing = 'compact';
+
+%pbaspect([3 2 1])
+
+saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.png'])
+saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.pdf'])
+
+%% Figure: p
+
+f = figure;
+set(gca,'FontSize',14)
+h = histogram(off_time_long/60,16,'FaceColor',mRNA_red,'Normalization','probability');
+
+% fit with gaussian
+%edges = h.BinEdges;
+
+%x = (edges(1:end-1)+edges(2:end))/2;
+%y = h.Values;
+
+%f = fit(x',y','gauss1');
+
+%hold on
+%plot(f)
+
+xlim([0 40])
+ylabel('fraction of silencing events')
+
+
+linkaxes([ax1,ax2],'x');
+xlabel(t,'[Knirps] (au)');
+t.TileSpacing = 'compact';
+
+%pbaspect([3 2 1])
+
+%saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.png'])
+%saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.pdf'])
+
+
+%%
