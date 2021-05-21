@@ -22,14 +22,12 @@ inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.timeBins = {[0 50*60]};
 
 %optokni_eve4+6_MCP-GFP_Het
-%inferenceInfo.apBins = linspace(55,67.5,5);
-%inferenceInfo.timeBins = {[0 50*60]};
+inferenceInfo.apBins = linspace(55,67.5,5);
+inferenceInfo.timeBins = {[0 50*60]};
 
 %optokni_eveBAC_WT
 %inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
-inferenceInfo.timeBins = {[0 12.5*60],[12.5*60 25*60]};
 %inferenceInfo.apBins = linspace(-0.12,0.12,8);%linspace(-.2,.2,10);
-inferenceInfo.apBins = linspace(-0.08,0.12,7);
 %inferenceInfo.apBins = ([-0.12 0.12]);
 
 % set core model specs
