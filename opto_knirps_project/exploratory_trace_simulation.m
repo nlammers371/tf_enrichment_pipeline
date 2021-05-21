@@ -1,27 +1,57 @@
 % Experiment with sochastic simulations in which rates vary in time
-function temp_gillespie = synthetic_rate_gillespie_linear(seq_length,...
-            t_MS2, w, k_on_1,k_on_2,k_off_1,k_off_2, deltaT, r_1, r_2, noise, ...
-            pi0,t_shift,shift_width,granularity,z_flag)
+%% initialization
 
-%%% Simulation Parameters
+clear
+close all
+
+addpath(genpath('../utilities'));
+
+%% set simulation parameters
+w = 7; % number time steps to elongate gene
+alpha = 1.4; % MS2 rise time
+K = 2;
+r_emission = [0 1]; % loading rate for each 
+noise = 10; % noise level in gluoprescece
+%noise = 0; % noise level in gluoprescece
+pi0 =[1/3 1/3 1/3]; % initaial state PDF
+seq_length = 100;
+deltaT = 20; % time resolution
+z_flag = 0;
+granularity = 1;
+t_MS2 = 20;
 t_process = deltaT*seq_length; % length of simulation in seconds
 % arrival_rate = r_emission(2)./f_per_mRNA;
+
 t_ref = 0:granularity:t_process; % assuming that jump lengths are much shorter than obs time
 
-shift_start = t_shift - .5*shift_width;
-shift_stop = t_shift + .5*shift_width;
-if shift_start < 0 || shift_stop > t_process
-    error('incompatible shift width and midpoint parameters')
-end
-n_prior = sum(t_ref<shift_start);
-n_shift = sum(t_ref>=shift_start&t_ref<shift_stop);
-n_post = sum(t_ref>=shift_stop);
-k_on_ref = [repelem(k_on_1, n_prior)...
-            linspace(k_on_1,k_on_2,n_shift) repelem(k_on_2, n_post)];
-k_off_ref = [repelem(k_off_1,n_prior) ...
-            linspace(k_off_1,k_off_2,n_shift) repelem(k_off_2,n_post)];
-r_ref = [repelem(r_1,n_prior) ...
-            linspace(r_1,r_2,n_shift) repelem(r_2,n_post)];
+r_ref = 1*ones(size(t_ref));
+k_on_ref = 2/60*ones(size(t_ref));
+k_off_ref = 1/60*ones(size(t_ref));
+
+%k_on_1 = 1;
+%k_on_2 = 1;
+%k_off_1 = 2;
+%k_off_2 = 2;
+%r_1 = 1;
+%r_2 = 2; 
+%t_shift = 1000;
+%shift_width = 2000;
+
+%shift_start = t_shift - .5*shift_width;
+% shift_stop = t_shift + .5*shift_width;
+% if shift_start < 0 || shift_stop > t_process
+%     error('incompatible shift width and midpoint parameters')
+% end
+% n_prior = sum(t_ref<shift_start);
+% n_shift = sum(t_ref>=shift_start&t_ref<shift_stop);
+% n_post = sum(t_ref>=shift_stop);
+% k_on_ref = [repelem(k_on_1, n_prior)...
+%             linspace(k_on_1,k_on_2,n_shift) repelem(k_on_2, n_post)];
+% k_off_ref = [repelem(k_off_1,n_prior) ...
+%             linspace(k_off_1,k_off_2,n_shift) repelem(k_off_2,n_post)];
+% r_ref = [repelem(r_1,n_prior) ...
+%             linspace(r_1,r_2,n_shift) repelem(r_2,n_post)];
+
 
 %%% Make Initiation rate Array
 r_array = [zeros(length(r_ref),1) r_ref' 2*r_ref'];
@@ -40,7 +70,7 @@ R_array(1,3,:) = zeros(1,length(t_ref));
 R_array(2,3,:) = 2*k_off_ref;
 R_array(3,3,:) = -2*k_off_ref;
 
-%%% Simulations
+%% Simulations
 jump_times = [0];
 promoter_states = [randsample(1:3,1,true,pi0)];
 obs_time_grid = deltaT:deltaT:t_process;
@@ -126,3 +156,13 @@ temp_gillespie.t_ref = t_ref;
 temp_gillespie.k_on_ref = k_on_ref;
 temp_gillespie.k_off_ref = k_off_ref;
 temp_gillespie.r_ref = r_ref;
+
+%% plot results
+fig = figure;
+plot(temp_gillespie.fluo_MS2)
+
+%fig = figure;
+%plot(k_on_ref)
+%hold on
+%plot(k_off_ref)
+%plot(r_ref)
