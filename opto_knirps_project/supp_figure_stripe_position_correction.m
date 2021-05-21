@@ -92,7 +92,7 @@ for i = 1:size(schnitzcells,2)
     end
 end
 
-fig = figure(1);
+qCheckFig = figure;
 plot(X_pass,Y_pass,'o')
 hold on
 plot(X_fail,Y_fail,'o')
@@ -179,33 +179,7 @@ for i = 1:nucleiNum
     CompiledNucleiData(i).xcoordMean = mean(CompiledNucleiData(i).xcoord);
     CompiledNucleiData(i).ycoordMean = mean(CompiledNucleiData(i).ycoord);
 end
-%% 
-% Let's try to plot the data
 
-% xpos = processed_data(final_frame).xcoord;
-% ypos = processed_data(final_frame).ycoord;
-% 
-% % try to plot and test a bit...
-% pts = [xpos' ypos'];
-% 
-% fig = figure(2);
-% [v,c] = voronoin(double(pts));
-% 
-% for i = 1:length(c)
-%     if all(c{i}~=1)
-%     x = v(c{i},1);
-%     y = v(c{i},2);
-%     %a = processed_data(frame_plot).SpotFluo(i);
-%     a = processed_data(final_frame).NuclearFluo(i);
-%     patch(x,y,a);
-%     colorbar
-%     caxis([0 9E5])
-%     end
-% end
-% 
-% axis equal
-% xlim([0 768])
-% ylim([0 450])
 %% Part 4: Fit the protein average for a moving time window
 
 x_coord = zeros(length(schPass),1);
@@ -224,73 +198,18 @@ for i = 1:length(schPass)
     fluo(i) = mean(max(schnitzcells(sch_num).Fluo(index_s:index_f,:)));
 
 end
-%% 
-% Plot the average data
 
-% pts = [x_coord y_coord];
-% 
-% fig = figure;
-% [v,c] = voronoin(double(pts));
-% 
-% for i = 1:length(c)
-%     if all(c{i}~=1)
-%     x = v(c{i},1);
-%     y = v(c{i},2);
-%     %a = processed_data(frame_plot).SpotFluo(i);
-%     a = fluo(i);
-%     patch(x,y,a);
-%     colorbar
-%     caxis([0 9E5])
-%     end
-% end
-% 
-% axis equal
-% xlim([0 768])
-% ylim([0 450])
-%% 
-% Plot the nuclear concentration
-
-fig = figure;
-scatter3(x_coord,y_coord,fluo)
-%savefig(fig,[FigPath,'/protein_scatter.fig'])
-
-%sf1 = fit([x_coord,y_coord],fluo,'poly44');
-%sf1 = fit([x_coord,y_coord],fluo,'linearinterp');
-%sf1 = fit([x_coord,y_coord],fluo,'cubicinterp');
-%sf1 = fit([x_coord,y_coord],fluo,'lowess');    % do not work
-
-%sf1 = fit([x_coord,y_coord],fluo,'thinplateinterp');
-%sf1 = fit([x_coord,y_coord],fluo,'biharmonicinterp');
-%thinplateinterp
+%%
 
 sf1 = fit([x_coord,y_coord],fluo,'loess'); % good, local quadratic regression
 
-fig = figure;
+NuclearFitFig = figure;
 plot(sf1,[x_coord,y_coord],fluo);
-%savefig(fig,[FigPath,'/protein_scatter_fit.fig'])
-%% Draw contour lines
+xlabel('x position (pixels)')
+ylabel('y position (pixels)')
+zlabel('Knirps concentration (AU)')
+daspect([1 1 3000])
 
-% xlim = linspace(0,768,100);
-% ylim = linspace(0,450,100);
-% 
-% f  = @(x,y)sf1(x,y);
-% 
-% 
-% level = linspace(0,7E5,15);
-% %fcontour(f,'LevelStepMode','manual','LevelStep',1E5)
-% fcontour(f,[0 768 0 450],'LevelStep',0.25E5)
-% 
-% [X Y] = meshgrid(xlim,ylim);
-% F = f(X,Y);
-% 
-% [U,V] = gradient(F);
-% 
-% hold on
-% quiver(X,Y,U,V)
-% hold off
-% axis equal
-%% 
-% 
 %% Part 5: Calibrate AP position
 % Correction for the curvature
 % Try fitting the center line to quadratic function
@@ -339,14 +258,17 @@ wnlm2 = fitnlm(x_temp,y_temp,modelFun2,start2,'Weight',w);
 fig = figure;
 x_temp = [0 450];
 y_temp = [0 768];
-imagesc(x_temp,y_temp,ImFluo_rot);
+%imagesc(x_temp,y_temp,ImFluo_rot);
+imagesc(y_temp,x_temp,ImFluo_rot');
 xx = linspace(-200,650)';
 
-%plot stripe 3
-%line(xx,-predict(nlm3,xx),'linestyle','--','color','k','LineWidth',1.5);
-line(xx,predict(wnlm2,xx),'color','b','LineWidth',3)
-xlim([-200 650])
-ylim([0 768])
+%plot stripe
+line(predict(wnlm2,xx),xx,'color','b','LineWidth',3)
+ylim([0 450])
+xlim([0 768])
+xlabel('x position (pixels)')
+ylabel('y position (pixels)')
+axis equal
 % Calculate distance to the central curve
 
 % initialize a meshgrid and central curve
@@ -372,8 +294,6 @@ if APflip
     APmap = -APmap;
 end
 
-fig = figure;
-imagesc(APmap)
 % Correction for embryo length
 
 LoadAPDetPath = [DynamicsResultsFolder filesep Prefix filesep 'APDetection.mat'];
@@ -382,11 +302,20 @@ APDetData = load(LoadAPDetPath);
 APLength = sqrt(sum((APDetData.coordAZoom-APDetData.coordPZoom).^2));
 
 APmap = APmap/APLength;
-% Assign corrected AP positions
 
-%for i = 1:nucleiNum
-%    CompiledNucleiData(i).APPos = APmap(round(CompiledNucleiData(i).ycoordMean),round(CompiledNucleiData(i).xcoordMean));
-%end
+fig = figure;
+imagesc(y_temp,450-x_temp,APmap*100)
+xx = linspace(-200,650)';
+%plot stripe
+line(predict(wnlm2,xx),xx,'color','b','LineWidth',3)
 
-% save
-%  save(['ap_map' filesep Prefix '_APmap.mat'],'APmap');
+xlabel('x position (pixels)')
+ylabel('y position (pixels)')
+ylim([0 450])
+xlim([0 768])
+
+axis equal
+%lcolorbar('distance from center (% embryo length)')
+colorbar
+colormap(jet)
+caxis([-20 20])

@@ -6,25 +6,30 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
+projectName = 'optokni_eve4+6_OFF'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
 load([resultsRoot 'spot_struct.mat'])
-FigurePath = [liveProject.figurePath 'reactivation_dynamics' filesep];
+FigurePath = [liveProject.figurePath 'repression_dynamics' filesep];
 mkdir(FigurePath)
 
-% Embryo 10
-embryo(1).expID = 2;
-embryo(1).time_on = 20.48;
-embryo(1).frame_on = 59;
+% Embryo 13
+embryo(1).expID = 1;
+embryo(1).frame_on = 16;
+embryo(1).time_on = 5.41981;
 
-% Embryo 11
-embryo(2).expID = 3;
-embryo(2).time_on = 27.17;
-embryo(2).frame_on = 94;
+% Embryo 14
+embryo(2).expID = 2;
+embryo(2).frame_on = 48;
+embryo(2).time_on = 16.9258;
+
+% Embryo 16
+embryo(3).expID = 3;
+embryo(3).frame_on = 16;
+embryo(3).time_on = 5.43871;
 
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
@@ -33,8 +38,7 @@ mRNA_red = brighten([212 100 39]/256,.2);
 
 knirps_offset = 2.5e5;%prctile(double(knirps_vec_long),1);
 
-ap_lim = 0.02; % AP range for analysis, 0.02 seems to be a reasonable number
-%ap_lim - 0.02;
+ap_lim = 0.01; % AP range for analysis, 0.02 seems to be a reasonable number
 
 time_threshold = 1; %min
 %time_threshold = 1;
@@ -48,7 +52,8 @@ edges = linspace(0,binMax,binNum);
 %edges = linspace(0,6,9); % bin for histogram
 
 % temporary correction
-correction_factor = 1.4144;
+correction_factor = 1.5;
+%correction_factor = 1;
 
 % timerange to analyze for response time
 analysis_range = 8;
@@ -148,6 +153,9 @@ for i = 1:length(embryo)
     fluo_orig_long_binary(isnan(fluo_orig_long)) = 0;
     fluo_orig_long_binary(fluo_orig_long>0) = 1;
 
+    knirps_vec_mean = [];
+    knirps_vec_ste = [];
+    time_vec = [];
 
     for j = 1:length(time_bin)-1
 
@@ -173,14 +181,14 @@ for i = 1:length(embryo)
 
     time_vec_on = time_vec-time_vec(frame_on);
 
-    knirps_vec_mean(time_vec_on>=0) = knirps_vec_mean(time_vec_on>=0)/correction_factor;
+    knirps_vec_mean(time_vec_on<0) = knirps_vec_mean(time_vec_on<0)/correction_factor;
 
     % record the result for this embryo
     data_filter = (time_vec(last_on_long) <= time_vec(frame_on)-time_threshold);
     data_filter_full = [data_filter_full data_filter];
     
-    silence_time_full = [silence_time_full time_vec(frame_on)-time_vec(last_on_long)];
-    response_time_full = [response_time_full time_vec(first_on_long)-time_vec(frame_on)];
+    %silence_time_full = [silence_time_full time_vec(frame_on)-time_vec(last_on_long)];
+    %response_time_full = [response_time_full time_vec(first_on_long)-time_vec(frame_on)];
     
     
     temp_traj_fig  = figure('Position',[10 10 800 800]);
@@ -188,7 +196,7 @@ for i = 1:length(embryo)
     nexttile
     hold on
     %time_interp = min(time_vec_on):0.1:max(time_vec_on);
-    time_interp = -10:0.1:10;
+    time_interp = -5:0.1:10;
     frac_on_mean = movmean(frac_on,5);
     frac_on_interp = interp1(time_vec_on(~isnan(frac_on_mean)),frac_on_mean(~isnan(frac_on_mean)),time_interp,'spline');
     frac_on_interp = movmean(frac_on_interp,5);
@@ -197,8 +205,8 @@ for i = 1:length(embryo)
     errorbar(time_vec_on,knirps_vec_ste,'Color','k','CapSize',0);
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
-    xlim([-10 10])
-    ylim([4E5 8.5E5])
+    xlim([-2.5 7])
+    ylim([2E5 9E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
@@ -208,8 +216,8 @@ for i = 1:length(embryo)
     plot(time_vec_on,frac_on,'.')
     plot(time_interp,frac_on_interp,'-','LineWidth',2);
     scatter(time_vec_on,frac_on,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
-    xlim([-10 10])
-    ylim([0.1 1])
+    xlim([-2.5 7])
+    ylim([0 1])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['fraction of nuclei on'])
     pbaspect([3 2 1])
@@ -219,58 +227,55 @@ for i = 1:length(embryo)
 end
 
 
+%% Bursting data analysis
 
-%% calculate silenced duration vs response time
+% load inference results
+load([resultsRoot filesep 'cpHMM_results' filesep 'hmm_input_output.mat']);
 
-response_time_final = response_time_full(data_filter_full==1);
-silence_time_final = silence_time_full(data_filter_full==1);
+% color to be used
+k_green = brighten([38 142 75]/256,.4);
+color_green = [38 143 75]/256; % color from Jake
+mRNA_red = brighten([212 100 39]/256,.2);
 
+% set parameters
+ap_lim = 0.02;
+% histogram
+binNum = 17;
+binMax = 12;
+edges = linspace(0,binMax,binNum);
+analysis_range = 8;
 
-x = silence_time_final;
-y = response_time_final;
-filter = (x<analysis_range) & (y<analysis_range);
+response_time = [];
 
-xFit = x(filter);
-yFit = y(filter);
+for i = 1:length(hmm_input_output)
 
-mdl = fitlm(xFit,yFit,'RobustOpts','on');
-%mdl = fitlm(x(filter),y(filter));
-b = mdl.Coefficients{1,1};
-k = mdl.Coefficients{2,1};
-%options = fitoptions('poly1');
-%options.Upper = [Inf -3];
-%mdl = fit(x(filter)',y(filter)','poly1',options);
-%k = mdl.p1;
-%b = mdl.p2;
-
-regMdl = regARIMA(0,0,0);
-regMdl.Distribution = struct('Name','t','DoF',3);
-%regMdl is a regARIMA model object. It is a template for estimation.
-
-%Estimate the regression model with ARIMA errors. Plot the regression line.
-estRegMdl = estimate(regMdl,yFit','X',xFit');
-
-
-xRange = linspace(0,20,1000);
-yResult = k*xRange + b;
-
-memory_fig = figure;
-%scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[234 194 100]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
-scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[115 142 193]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
-hold on
-plot(xRange,yResult,'-','LineWidth',2)
-%plot(x,mdl)
-xlabel('silenced duration (min) before illumination');
-ylabel('response time (min)');
-xlim([0 analysis_range])
-ylim([0 analysis_range])
-pbaspect([2 3 1])
-saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
+    time = hmm_input_output(i).time/60;
+    pState = hmm_input_output(i).promoter_state;
+    fluo = hmm_input_output(i).fluo;
+    predicted_fluo = hmm_input_output(i).predicted_fluo;
+    embryo_num = fix(hmm_input_output(i).ncID(1));
+    
+    ap_vec = hmm_input_output(i).APPosParticle;
+    mean_ap = nanmean(ap_vec);
+    
+    frame_before = find(time <= embryo(embryo_num).time_on);
+    frame_after = find(time>embryo(embryo_num).time_on);
+    
+    if (mean_ap > -ap_lim) && (mean_ap < ap_lim)
+    
+        if ~isempty(frame_before) && (pState(max(frame_before))>1)
+            last_on = intersect(find(pState>1,1,'last'),frame_after);
+            response_time_temp = time(last_on)-embryo(embryo_num).time_on + 1/3;
+            response_time = [response_time response_time_temp];
+        end
+        
+    end
+end
 
 
-%% fit gamma function
+% fit gamma function
 
-a = response_time_final(response_time_final<=8);
+a = response_time(response_time<=8);
 
 % fit gamma function
 [muhat,muci] = mle(a,'distribution','gamma'); % Generic function
@@ -286,10 +291,102 @@ h = histogram(a,edges,'Normalization','probability');
 h.FaceColor = mRNA_red;
 plot(x,y1,'LineWidth',3,'Color',mRNA_red)
 mean(a)
+mean(response_time)
 
 xlim([0 analysis_range])
 xlabel('response time (min)')
 ylabel('probability')
 pbaspect([3 2 1])
 
-saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])
+saveas(response_time_fig,[FigurePath 'figure_repression_response_time_hist.pdf'])
+
+%% simulation
+
+
+
+%%
+
+% TraceFig = figure;
+% yyaxis left
+% stairs(time,pState-1);
+% ylim([-0.1 2.1])
+% yyaxis right
+% plot(time,Fluo)
+% hold on
+% plot(time,predFluo)
+
+
+
+%% calculate silenced duration vs response time
+% 
+% response_time_final = response_time_full(data_filter_full==1);
+% silence_time_final = silence_time_full(data_filter_full==1);
+% 
+% 
+% x = silence_time_final;
+% y = response_time_final;
+% filter = (x<analysis_range) & (y<analysis_range);
+% 
+% xFit = x(filter);
+% yFit = y(filter);
+% 
+% mdl = fitlm(xFit,yFit,'RobustOpts','on');
+% %mdl = fitlm(x(filter),y(filter));
+% b = mdl.Coefficients{1,1};
+% k = mdl.Coefficients{2,1};
+% %options = fitoptions('poly1');
+% %options.Upper = [Inf -3];
+% %mdl = fit(x(filter)',y(filter)','poly1',options);
+% %k = mdl.p1;
+% %b = mdl.p2;
+% 
+% regMdl = regARIMA(0,0,0);
+% regMdl.Distribution = struct('Name','t','DoF',3);
+% %regMdl is a regARIMA model object. It is a template for estimation.
+% 
+% %Estimate the regression model with ARIMA errors. Plot the regression line.
+% estRegMdl = estimate(regMdl,yFit','X',xFit');
+% 
+% 
+% xRange = linspace(0,20,1000);
+% yResult = k*xRange + b;
+% 
+% memory_fig = figure;
+% %scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[234 194 100]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+% scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[115 142 193]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+% hold on
+% plot(xRange,yResult,'-','LineWidth',2)
+% %plot(x,mdl)
+% xlabel('silenced duration (min) before illumination');
+% ylabel('response time (min)');
+% xlim([0 analysis_range])
+% ylim([0 analysis_range])
+% pbaspect([2 3 1])
+% saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
+% 
+% 
+% %% fit gamma function
+% 
+% a = response_time_final(response_time_final<=8);
+% 
+% % fit gamma function
+% [muhat,muci] = mle(a,'distribution','gamma'); % Generic function
+% %[muhat,muci] = gamfit(a); % Distribution specific function
+% 
+% x = 0:0.1:20;
+% y1 = gampdf(x,muhat(1),muhat(2))/(binNum/binMax);
+% %y2 = gamcdf(x,muhat(1),muhat(2));
+% 
+% response_time_fig = figure;
+% hold on
+% h = histogram(a,edges,'Normalization','probability');
+% h.FaceColor = mRNA_red;
+% plot(x,y1,'LineWidth',3,'Color',mRNA_red)
+% mean(a)
+% 
+% xlim([0 analysis_range])
+% xlabel('response time (min)')
+% ylabel('probability')
+% pbaspect([3 2 1])
+% 
+% saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])

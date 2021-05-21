@@ -11,6 +11,27 @@ addpath(genpath('./lib'))
 
 % We need to specify the prefix of the project we wish to analyze
 
+
+%optokni_eve4+6_ON_CONST
+%Prefix = '2021-05-13-optoknirps_eve4_6_embryo21'; APflip = 0;
+%Prefix = '2021-05-13-optoknirps_eve4_6_embryo22'; APflip = 0;
+%Prefix = '2021-05-14-optoknirps_eve4_6_embryo23'; APflip = 1;
+Prefix = '2021-05-15-optoknirps_eve4_6_embryo24'; APflip = 1;
+
+avrInit = 30;
+avrFinal = 35;
+analysisInit = 0;
+analysisFinal = 35;
+
+%optokni_eve4+6_ON
+%Prefix = '2021-05-08-optoknirps_eve4_6_embryo18'; APflip = 1;
+%Prefix = '2021-05-10-optoknirps_eve4_6_embryo19'; APflip = 1;
+%Prefix = '2021-05-10-optoknirps_eve4_6_embryo20'; APflip = 1;
+%avrInit = 30;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 35;
+
 %optokni_eve4+6_WT
 %Prefix = '2020-11-21-optoknirps_eve4_6_embryo5'; APflip = 1;
 %Prefix = '2020-11-22-optoknirps_eve4_6_embryo6'; APflip = 0;
@@ -49,11 +70,11 @@ addpath(genpath('./lib'))
 %analysisFinal = 20;
 
 %optokni_eve4+6_OFF
-Prefix = '2021-03-29-optoknirps_eve4_6_embryo13'; APflip = 0;
-avrInit = 15;
-avrFinal = 16;
-analysisInit = 0;
-analysisFinal = 15;
+%Prefix = '2021-03-29-optoknirps_eve4_6_embryo13'; APflip = 0;
+%avrInit = 15;
+%avrFinal = 16;
+%analysisInit = 0;
+%analysisFinal = 15;
 
 %Prefix = '2021-03-31-optoknirps_eve4_6_embryo14'; APflip = 1;
 %avrInit = 25;
