@@ -3,8 +3,10 @@ clear
 close all
 addpath(genpath('utilities'))
 
-projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
+%projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
 %projectNameCell = {'optokni_eve4+6_WT'};
+projectNameCell = {'optokni_eve4+6_ON_CONST'};
+
 for p = 1:length(projectNameCell)
     % set project to analyze 
     projectName = projectNameCell{p};

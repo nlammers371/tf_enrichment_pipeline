@@ -12,20 +12,26 @@ inferenceInfo = struct;
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
 inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
+
+%optokni_eve4+6_WT
+inferenceInfo.timeBins = {[0*60 30*60]}; % should be longer than 15min
+inferenceInfo.apBins = linspace(-0.12,0.12,8);%linspace(-.2,.2,10);
+%inferenceInfo.apBins = ([-0.12 0.12]);
 
 %optokni_eve4+6_MCP-GFP_Homo
 %inferenceInfo.apBins = linspace(55,67.5,7);
 %inferenceInfo.timeBins = {[0 50*60]};
 
 %optokni_eve4+6_MCP-GFP_Het
-inferenceInfo.apBins = linspace(55,67.5,5);
-inferenceInfo.timeBins = {[0 50*60]};
+%inferenceInfo.apBins = linspace(55,67.5,5);
+%inferenceInfo.timeBins = {[0 50*60]};
 
-%optokni_eveBAC_WT
+%optokni_eve4+6_WT
 %inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
 %inferenceInfo.apBins = linspace(-0.12,0.12,8);%linspace(-.2,.2,10);
 %inferenceInfo.apBins = ([-0.12 0.12]);
