@@ -151,12 +151,12 @@ spot_mean_fluo_title = [outputString ' Intensity at Active Locus'];
 null_mean_fluo_title = [outputString ' Intensity at Control Locus'];
 mean_fluo_clabel = ['MS2 intensity (au)'];
 spot_mean_fluo_heatmap = makeHeatmapPlots(spot_mcp_snip_mean, visibleOn, ...
-    spot_mean_fluo_title, mean_fluo_clabel,cMapHeat,PixelSize,lbRaw,ubRaw);
+    spot_mean_fluo_title, mean_fluo_clabel,cMapHeat,PixelSize,[],[]);
 saveas(spot_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_spot' '.png']);
 saveas(spot_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_spot' '.pdf']);
 
 edge_control_mean_fluo_heatmap = makeHeatmapPlots(edge_control_mcp_snip_mean, visibleOn, ...
-    null_mean_fluo_title, mean_fluo_clabel, cMapHeat,PixelSize,lbRaw,ubRaw);
+    null_mean_fluo_title, mean_fluo_clabel, cMapHeat,PixelSize,[],[]);
 saveas(edge_control_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_null' '.png']);
 saveas(edge_control_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_null' '.pdf']);
 
@@ -218,13 +218,33 @@ r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
 % title(['Radial Concentration Profile (' inputString ')'])
-r_ax.XLim = [0 1.2];
-r_ax.YLim = [.95 1.25];
+r_ax.XLim = [0 1];
+% r_ax.YLim = [.98 1.08];
 StandardFigure([],r_ax);
 set(gca,'ytick',0.95:0.05:1.25)
 % r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigurePath '_radial_enrichment.png'])
 
+[~,norm_ind] = min(abs(dist_plot_axis-1));
+norm_shift = r_control_mean)(1) / r_control_mean(norm_ind) 
+r_fig = figure;
+r_ax = gca;
+hold on
+e = errorbar(dist_plot_axis,r_control_mean / r_control_mean(norm_ind),r_control_ste / r_control_mean(norm_ind),'Color','black','LineWidth',1.75);
+e.CapSize = 0;
+e = errorbar(dist_plot_axis,r_spot_mean / r_spot_mean(norm_ind),r_spot_ste / r_spot_mean(norm_ind),'Color',cm2(3,:),'LineWidth',1.75);
+e.CapSize = 0;
+grid off
+r_ax.XLabel.String = 'radius (\mu m)';
+r_ax.YLabel.String ='relative enrichment';
+legend('control','active locus')
+% title(['Radial Concentration Profile (' inputString ')'])
+r_ax.XLim = [0 1];
+% r_ax.YLim = [.98 1.08];
+StandardFigure([],r_ax);
+set(gca,'ytick',0.95:0.05:1.25)
+% r_ax.YLim = [relEnrich_lb relEnrich_ub];
+saveas(r_fig, [FigurePath '_radial_enrichment_norm.png'])
 
 % %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
 % 

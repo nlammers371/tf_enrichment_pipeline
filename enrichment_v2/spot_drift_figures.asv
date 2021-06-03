@@ -33,7 +33,7 @@ close all
 frame_ind = 60;
 slice_ind_list = [3:5];
 
-for s = 1:length(slice_ind_list)
+for s = 1%:length(slice_ind_list)
     a_fig = figure;
     airy_snip = master_struct(1).snip_data(frame_ind).spot_protein_snips(:,:,slice_ind_list(s));
     imagesc(airy_snip)
@@ -49,32 +49,18 @@ for s = 1:length(slice_ind_list)
     saveas(a_fig,[FigurePath 'airy_980_slice_' num2str(s) '.png'])
 %     
     l_fig = figure;
-    conf_snip = master_struct(2).snip_data(frame_ind).spot_protein_snips(:,:,slice_ind_list(s));
-    imagesc(conf_snip)
+    conf_snip = master_struct(1).snip_data(frame_ind).spot_protein_snips(:,:,slice_ind_list(s));
+    imagesc(airy_snip)
     c = colorbar;
     ylabel('position (\mum)','FontSize',14)
     xlabel('position (\mum)','FontSize',14)
     ylabel(c,'Bcd-GFP concentration (AU)','FontSize',14)
-    xy_lim = (size(airy_snip,1) + 1) / 2 * master_struct(2).pixelSize; % um, calculated with center of center pixel as 0 
-    set(gca,'xtick',([-1.0 0 1.0] + xy_lim) ./ master_struct(2).pixelSize, ...
+    xy_lim = (size(airy_snip,1) + 1) / 2 * master_struct(1).pixelSize; % um, calculated with center of center pixel as 0 
+    set(gca,'xtick',([-1.0 0 1.0] + xy_lim) ./ master_struct(1).pixelSize, ...
             'xticklabel',[-1.0, 0, 1.0])
-    set(gca,'ytick',([-1.0 0 1.0] + xy_lim) ./ master_struct(2).pixelSize, ...
+    set(gca,'ytick',([-1.0 0 1.0] + xy_lim) ./ master_struct(1).pixelSize, ...
             'yticklabel',[-1.0, 0, 1.0])
     saveas(l_fig,[FigurePath 'conf_980_slice_' num2str(s) '.png'])
-
-    l_fig = figure;
-    conf_snip = imgaussfilt(master_struct(2).snip_data(frame_ind).spot_protein_snips(:,:,slice_ind_list(s)),1);
-    imagesc(conf_snip)
-    c = colorbar;
-    ylabel('position (\mum)','FontSize',14)
-    xlabel('position (\mum)','FontSize',14)
-    ylabel(c,'Bcd-GFP concentration (AU)','FontSize',14)
-    xy_lim = (size(airy_snip,1) + 1) / 2 * master_struct(2).pixelSize; % um, calculated with center of center pixel as 0 
-    set(gca,'xtick',([-1.0 0 1.0] + xy_lim) ./ master_struct(2).pixelSize, ...
-            'xticklabel',[-1.0, 0, 1.0])
-    set(gca,'ytick',([-1.0 0 1.0] + xy_lim) ./ master_struct(2).pixelSize, ...
-            'yticklabel',[-1.0, 0, 1.0])
-    saveas(l_fig,[FigurePath 'conf_980_slice_' num2str(s) '_sm.png'])
 end
 
 %%

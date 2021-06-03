@@ -3,10 +3,10 @@ function [heatmap_fig, ub, lb] = makeHeatmapPlots(Image, VisibleOn, Title, CLabe
 
     % infer boundaries if they are not specified
     if isempty(lb)
-        lb = round(prctile(Image(:),2),2);
+        lb = round(prctile(Image(:),1),2);
     end
     if isempty(ub)
-        ub = round(prctile(Image(:),98),2);
+        ub = round(prctile(Image(:),99),2);
     end
     if VisibleOn
         heatmap_fig = figure;
@@ -15,7 +15,7 @@ function [heatmap_fig, ub, lb] = makeHeatmapPlots(Image, VisibleOn, Title, CLabe
     end
     colormap(Colormap_heat)
     snippet_im = imagesc(Image);
-    title(Title)
+%     title(Title)
     caxis([lb ub])
     c = colorbar;
     c.Ticks = linspace(lb,ub,3);

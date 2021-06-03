@@ -218,13 +218,34 @@ r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
 % title(['Radial Concentration Profile (' inputString ')'])
-r_ax.XLim = [0 1.2];
-r_ax.YLim = [.98 1.08];
+r_ax.XLim = [0 1];
+% r_ax.YLim = [.98 1.08];
 StandardFigure([],r_ax);
-set(gca,'ytick',0.95:0.05:1.25)
+% set(gca,'ytick',0.95:0.05:1.25)
 % r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigurePath '_radial_enrichment.png'])
 
+[~,norm_ind] = min(abs(dist_plot_axis-1));
+norm_shift = r_control_mean(1) / r_control_mean(norm_ind) - 1;
+
+r_fig = figure;
+r_ax = gca;
+hold on
+e = errorbar(dist_plot_axis,r_control_mean / r_control_mean(norm_ind)-norm_shift,r_control_ste / r_control_mean(norm_ind),'Color','black','LineWidth',1.75);
+e.CapSize = 0;
+e = errorbar(dist_plot_axis,r_spot_mean / r_spot_mean(norm_ind)-norm_shift,r_spot_ste / r_spot_mean(norm_ind),'Color',cm2(3,:),'LineWidth',1.75);
+e.CapSize = 0;
+grid off
+r_ax.XLabel.String = 'radius (\mu m)';
+r_ax.YLabel.String ='relative enrichment';
+legend('control','active locus')
+% title(['Radial Concentration Profile (' inputString ')'])
+r_ax.XLim = [0 1];
+% r_ax.YLim = [.98 1.08];
+StandardFigure([],r_ax);
+% set(gca,'ytick',0.95:0.05:1.25)
+% r_ax.YLim = [relEnrich_lb relEnrich_ub];
+saveas(r_fig, [FigurePath '_radial_enrichment_norm.png'])
 
 % %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
 % 

@@ -2,7 +2,7 @@
 clear
 close all
 
-projectName = 'Bcd-GFP_hbMS2-mCh_AiryscanTest_';
+projectName = 'hbMS2-mCh_Airy_fast';
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];

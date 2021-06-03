@@ -613,19 +613,19 @@ end
 %%
 
 if sequentialSamplingFlag
-%     %% Look for signatures of z stack changes in the data
-%     setVec = [spot_struct.setID];
-%     setIndex = unique(setVec);
-%     for s = 1%:length(setIndex)
-%         zVecLong = [spot_struct(setVec==setIndex(s)).zPosParticle];
-%         frameVecLong = [spot_struct(setVec==setIndex(s)).frames];
-%         frameIndex = unique(frameVecLong);
-%         zAvgVec = NaN(size(frameIndex));
-%         for f = 1:length(frameIndex)
-%             zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
-%         end
-%     end
-%     %%
+    %% Look for signatures of z stack changes in the data
+    setVec = [spot_struct.setID];
+    setIndex = unique(setVec);
+    for s = 2%:length(setIndex)
+        zVecLong = [spot_struct(setVec==setIndex(s)).zPosParticle];
+        frameVecLong = [spot_struct(setVec==setIndex(s)).frames];
+        frameIndex = unique(frameVecLong);
+        zAvgVec = NaN(size(frameIndex));
+        for f = 1:length(frameIndex)-1
+            zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
+        end
+    end
+    %%
     % assume that spot precedes protein for now
     for i = 1:length(spot_struct)
         timeVec = spot_struct(i).time;
@@ -639,12 +639,10 @@ if sequentialSamplingFlag
         % save original positions
         spot_struct(i).yPosParticleOrig = spot_struct(i).yPosParticle;
         spot_struct(i).xPosParticleOrig = spot_struct(i).xPosParticle;
-        spot_struct(i).zPosParticleOrig = spot_struct(i).zPosParticle;
         if sum(spotFrames) > 1 % if we only have on frame then do nothing
                     
             spot_struct(i).xPosParticle(spotFrames) = interp1(timeVec(spotFrames),xVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
             spot_struct(i).yPosParticle(spotFrames) = interp1(timeVec(spotFrames),yVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
-            spot_struct(i).zPosParticle(spotFrames) = interp1(timeVec(spotFrames),zVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
         
         end
     end
