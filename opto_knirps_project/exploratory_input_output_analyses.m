@@ -7,8 +7,8 @@ liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
-load([resultsRoot 'spot_struct_corrected.mat'])
-FigurePath = [liveProject.figurePath 'input_output' filesep];
+load([resultsRoot 'spot_struct.mat'])
+FigurePath = [liveProject.figurePath 'input_output_test' filesep];
 mkdir(FigurePath)
 
 % MS2 trace quality looks atrocious. Let's look at on and off times and the

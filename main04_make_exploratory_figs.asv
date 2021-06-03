@@ -151,12 +151,12 @@ spot_mean_fluo_title = [outputString ' Intensity at Active Locus'];
 null_mean_fluo_title = [outputString ' Intensity at Control Locus'];
 mean_fluo_clabel = ['MS2 intensity (au)'];
 spot_mean_fluo_heatmap = makeHeatmapPlots(spot_mcp_snip_mean, visibleOn, ...
-    spot_mean_fluo_title, mean_fluo_clabel,cMapHeat,PixelSize,[],[]);
+    spot_mean_fluo_title, mean_fluo_clabel,cMapHeat,PixelSize,lbRaw,ubRaw);
 saveas(spot_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_spot' '.png']);
 saveas(spot_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_spot' '.pdf']);
 
 edge_control_mean_fluo_heatmap = makeHeatmapPlots(edge_control_mcp_snip_mean, visibleOn, ...
-    null_mean_fluo_title, mean_fluo_clabel, cMapHeat,PixelSize,[],[]);
+    null_mean_fluo_title, mean_fluo_clabel, cMapHeat,PixelSize,lbRaw,ubRaw);
 saveas(edge_control_mean_fluo_heatmap,[FigurePath 'mean_fluo_snippet_null' '.png']);
 saveas(edge_control_mean_fluo_heatmap, [FigurePath 'mean_fluo_snippet_null' '.pdf']);
 
@@ -219,7 +219,7 @@ r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
 % title(['Radial Concentration Profile (' inputString ')'])
 r_ax.XLim = [0 1.2];
-r_ax.YLim = [.98 1.08];
+r_ax.YLim = [.95 1.25];
 StandardFigure([],r_ax);
 set(gca,'ytick',0.95:0.05:1.25)
 % r_ax.YLim = [relEnrich_lb relEnrich_ub];
