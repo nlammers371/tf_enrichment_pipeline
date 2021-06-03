@@ -1,4 +1,4 @@
-clear
+xclear
 close all
 
 addpath(genpath('./lib'))
@@ -1007,9 +1007,4 @@ t.TileSpacing = 'compact';
 
 %saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.png'])
 %saveas(tiled_fig,[FigurePath 'figure2_fraction_on_events_vs_knirps_center.pdf'])
-
-
-%% Figure: plot off rate + mean transcription rate vs mRNA pattern
-
-
 

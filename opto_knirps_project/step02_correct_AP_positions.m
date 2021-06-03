@@ -51,8 +51,8 @@ for p = 1:length(projectList)
     spot_struct(i).APPosParticleInterpOrig = spot_struct(i).APPosParticleInterp; % rename native AP variable
     spot_struct(i).APPosParticleInterp = NaN(size(spot_struct(i).xPosParticleInterp));
     
-    spot_struct(i).apPosNucleuspOrig = spot_struct(i).apPosNucleus; % rename native AP variable
-    spot_struct(i).apPosNucleus = NaN(size(spot_struct(i).xPosNucleus));
+    spot_struct(i).APPosNucleuspOrig = spot_struct(i).APPosNucleus; % rename native AP variable
+    spot_struct(i).APPosNucleus = NaN(size(spot_struct(i).xPosNucleus));
     
     % extract position info
     xPosVec = spot_struct(i).xPosParticleInterp;

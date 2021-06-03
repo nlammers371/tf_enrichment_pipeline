@@ -13,7 +13,7 @@ resultsRoot = [liveProject.dataPath filesep];
 
 % load data
 load([resultsRoot 'spot_struct.mat'])
-FigurePath = [liveProject.figurePath 'optogenetics' filesep];
+FigurePath = [liveProject.figurePath 'optogenetics_test' filesep];
 mkdir(FigurePath)
 
 % Choose embryo10 as a test case
