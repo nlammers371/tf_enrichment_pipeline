@@ -27,7 +27,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     minEdgeSep_um = .25; %um
     snippet_size_um = 1.5;
     min_nucleus_radius_um = 2;
-    max_nucleus_radius_um = 4;
+    max_nucleus_radius_um = 6;
     max_dist_nearest_neighbor_um = 2.5*max_nucleus_radius_um;
     segmentNuclei = 0;
     use3DSpotInfo = 0;
@@ -36,7 +36,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     use_psf_fit_dims = false; % NL: currently no supported
     xy_sigma_um = 0.2;% um 
     xy_sigma_nuclear_um = 1.5;
-    z_sigma_um = 0.4; % um
+    z_sigma_um = 0.25; % um
     ignoreQC = true;    
     NumWorkers = [];
     segmentationMethod = 1;
@@ -252,6 +252,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
   
         % load stacks            
         samplingInfo.protein_stack = imreadStack(samplingInfo.proteinPath);
+        
         % find and remove padding slices
         padding_flags_protein = reshape(max(max(samplingInfo.protein_stack,[],1),[],2),[],1)==0;        
         samplingInfo.protein_stack = samplingInfo.protein_stack(:,:,~padding_flags_protein); 
