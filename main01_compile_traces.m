@@ -613,21 +613,44 @@ end
 %%
 
 if sequentialSamplingFlag
-%     %% Look for signatures of z stack changes in the data
-%     setVec = [spot_struct.setID];
-%     setIndex = unique(setVec);
-%     for s = 1%:length(setIndex)
-%         zVecLong = [spot_struct(setVec==setIndex(s)).zPosParticle];
-%         frameVecLong = [spot_struct(setVec==setIndex(s)).frames];
-%         frameIndex = unique(frameVecLong);
-%         zAvgVec = NaN(size(frameIndex));
-%         for f = 1:length(frameIndex)
-%             zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
-%         end
-%     end
-%     %%
+    %% Look for signatures of z stack changes in the data
+    % keeping this simple and conservative for now
+    % will need to build out a bit further if we choose to get serious
+    % about interpolation
+    setVec = [spot_struct.setID];
+    setIndex = unique(setVec);
+    cp_struct = struct;
+   
+    for s = 1:length(setIndex)
+        zVecLong = [spot_struct(setVec==setIndex(s)).zPosParticle];
+        frameVecLong = [spot_struct(setVec==setIndex(s)).frames];
+        frameIndex = unique(frameVecLong);
+        zAvgVec = NaN(size(frameIndex));
+        for f = 1:length(frameIndex)
+            zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
+        end
+        % look for changepoints
+        zAvgVec = imgaussfilt(zAvgVec,1);
+        cpoints = findchangepts(zAvgVec,'Statistic','linear','MinThreshold',55,'MinDistance',2); % hardcode values for now        
+        cpoints = [0 cpoints length(zAvgVec)];          
+        cp_cell = cell(1,length(cpoints)-1);
+        for c = 1:length(cpoints)-1
+            cp_cell{c} = cpoints(c)+1:cpoints(c+1);
+        end
+        cp_struct(s).cp_cell = cp_cell;
+        cp_struct(s).zAvgVec = zAvgVec;
+    end
+    %%
     % assume that spot precedes protein for now
     for i = 1:length(spot_struct)
+      
+        % get setID
+        setID = spot_struct(i).setID;
+        
+        % get list of z stack change points
+        cp_cell = cp_struct(setID).cp_cell;
+        
+        % get times
         timeVec = spot_struct(i).time;
         queryTimes = timeVec + dt_raw/2 + filterSwitchTime;
         xVec = spot_struct(i).xPosParticle;
@@ -635,7 +658,8 @@ if sequentialSamplingFlag
         zVec = spot_struct(i).zPosParticle;
         
         spotFrames = ~isnan(xVec);
-
+        spotFramIndices = find(spotFrames);
+        
         % save original positions
         spot_struct(i).yPosParticleOrig = spot_struct(i).yPosParticle;
         spot_struct(i).xPosParticleOrig = spot_struct(i).xPosParticle;
@@ -644,7 +668,20 @@ if sequentialSamplingFlag
                     
             spot_struct(i).xPosParticle(spotFrames) = interp1(timeVec(spotFrames),xVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
             spot_struct(i).yPosParticle(spotFrames) = interp1(timeVec(spotFrames),yVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
-            spot_struct(i).zPosParticle(spotFrames) = interp1(timeVec(spotFrames),zVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
+            
+            % only interpolate within contiguous z series
+            for c = 1:length(cp_cell)
+                interpIndices = spotFramIndices(ismember(spotFramIndices,cp_cell{c}));
+                if length(interpIndices) > 2
+                    spot_struct(i).zPosParticle(interpIndices) = interp1(timeVec(interpIndices),zVec(interpIndices),queryTimes(interpIndices),'linear','extrap');
+                else
+                    spot_struct(i).zPosParticle(interpIndices) = zVec(interpIndices);
+                end
+            end
+            
+            % reset any negative indices to their prior values
+            err_flags = spot_struct(i).zPosParticle<1;
+            spot_struct(i).zPosParticle(err_flags) = spot_struct(i).zPosParticleOrig(err_flags);            
         
         end
     end
