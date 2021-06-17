@@ -85,7 +85,7 @@ tresInterp = 20;
 tresInterpFloor = 20;
 calculatePSF = false;
 sequentialSamplingFlag = false;
-filterSwitchTime = 0;
+% filterSwitchTime = 0;
 % projectName = projectName;
 SpotChannelIndex = 1; % this does nothing at the moment, but can serve as a starting point if ever we wish to analyze two-spot-two-color data
 ncRefVec = 9:14;
@@ -118,6 +118,7 @@ end
 %% %%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
+hasProteinInfo = false;
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
@@ -254,9 +255,9 @@ for i = 1:numExperiments
                 end
                 
                 % Add protein and nucleus info
-%                 if hasProteinInfo
-%                     compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
-%                 end
+                if hasProteinInfo
+                    compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
+                end
                 compiledSchnitzCells(nucleusCounter).frames = rawNucleusFrames';
                 compiledSchnitzCells(nucleusCounter).nucleusID = s;
                 compiledSchnitzCells(nucleusCounter).ncID = eval([num2str(setID) '.' sprintf('%04d',s)]);
@@ -440,9 +441,9 @@ end
 if hasAPInfo
     interpFields(end+1:end+2) = {'APPosParticle','APPosNucleus'};
 end
-% if hasProteinInfo
-%     interpFields(end+1) = {'rawNCProtein'};
-% end
+if hasProteinInfo
+    interpFields(end+1) = {'rawNCProtein'};
+end
 
 % calculate interpolation time
 %%
@@ -613,6 +614,19 @@ end
 %%
 
 if sequentialSamplingFlag
+  
+    FrameInfo = getFrameInfo(liveProject.includedExperiments{1});
+    yDim = FrameInfo(1).LinesPerFrame;
+    xDim = FrameInfo(1).PixelsPerLine;
+    zDim = FrameInfo(1).NumberSlices;
+    % initialize kalman options
+    kalmanOptions.type = 'ConstantVelocity';    
+    nDims = 2;
+    kalmanOptions.MeasurementNoise = liveProject.includedExperiments{1}.pixelSize_um; 
+    kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise*12; % this ratio works pretty well
+    kalmanOptions.InitialError = repelem(kalmanOptions.MeasurementNoise,nDims);
+
+    kalmanOptions.measurementFields = {'xPos', 'yPos', 'zPos'};
     
     %% Look for signatures of z stack changes in the data
     % keeping this simple and conservative for now
@@ -620,26 +634,54 @@ if sequentialSamplingFlag
     % about interpolation
     setVec = [spot_struct.setID];
     setIndex = unique(setVec);
-    cp_struct = struct;
+    
+    % NL: not adjusting for z stack shifts currently, will implement in
+    % future
+    
+    z_shift_cell = cell(1,length(setIndex));
+    z_frame_cell = cell(1,length(setIndex));
    
     for s = 1:length(setIndex)
         zVecLong = [spot_struct(setVec==setIndex(s)).zPosParticle];
         frameVecLong = [spot_struct(setVec==setIndex(s)).frames];
         frameIndex = unique(frameVecLong);
-        zAvgVec = NaN(size(frameIndex));
-        for f = 1:length(frameIndex)
-            zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
-        end
-        % look for changepoints
-        zAvgVec = imgaussfilt(zAvgVec,1);
-        cpoints = findchangepts(zAvgVec,'Statistic','linear','MinThreshold',55,'MinDistance',2); % hardcode values for now        
-        cpoints = [0 cpoints length(zAvgVec)];          
-        cp_cell = cell(1,length(cpoints)-1);
-        for c = 1:length(cpoints)-1
-            cp_cell{c} = cpoints(c)+1:cpoints(c+1);
-        end
-        cp_struct(s).cp_cell = cp_cell;
-        cp_struct(s).zAvgVec = zAvgVec;
+%         zAvgVec = NaN(size(frameIndex));
+%         for f = 1:length(frameIndex)
+%             zAvgVec(f) = nanmean(zVecLong(frameVecLong==frameIndex(f)));
+%         end
+%         
+%         % fill gaps
+%         interp_indices = find(isnan(zAvgVec));
+%         ref_indices = find(~isnan(zAvgVec));
+%         zAvgVecInterp = zAvgVec;
+%         zAvgVecInterp(interp_indices) = interp1(ref_indices,zAvgVec(ref_indices),interp_indices,'linear','extrap');           
+%         
+%         % look for changepoints
+%         zAvgVecInterp = imgaussfilt(zAvgVecInterp,1);        
+%         cpoints = findchangepts(zAvgVecInterp,'Statistic','linear','MinThreshold',10,'MinDistance',2); % hardcode values for now 
+%         
+%         % generate z shift vector
+%         z_shift_vec = zeros(size(zAvgVecInterp));
+%         if ~isempty(cpoints)
+%             z_shift_vec(1:cpoints(1)-1) = 0;
+%             cpoints = [1 cpoints length(zAvgVecInterp)+1];
+% 
+%             for c = 2:length(cpoints)-1
+%                 % get predictions
+%                 mdl_1 = fitlm(cpoints(c-1):cpoints(c)-1,zAvgVecInterp(cpoints(c-1):cpoints(c)-1));
+%                 pd1 = predict(mdl_1,cpoints(c)-1);
+% 
+%                 mdl_2 = fitlm(cpoints(c):cpoints(c+1)-1,zAvgVecInterp(cpoints(c):cpoints(c+1)-1));
+%                 pd2 = predict(mdl_2,cpoints(c));
+% 
+%                 % record shift
+%                 z_shift_vec(cpoints(c):cpoints(c+1)-1) = z_shift_vec(cpoints(c)-1) + pd2-pd1;
+%             end
+%         end
+% %         cpoints = [0 cpoints length(zAvgVec)];          
+        z_shift_cell{s} = zeros(size(frameIndex));%z_shift_vec;
+        z_frame_cell{s} = frameIndex;
+% 
     end
     %%
     % assume that spot precedes protein for now
@@ -648,45 +690,69 @@ if sequentialSamplingFlag
         % get setID
         setID = spot_struct(i).setID;
         
-        % get list of z stack change points
-        cp_cell = cp_struct(setID).cp_cell;
+        % get estimated z shifts
+        z_shift_vec = z_shift_cell{setID};
+        z_frames = z_frame_cell{setID};
         
         % get times
         timeVec = spot_struct(i).time;
-        queryTimes = timeVec + dt_raw/2 + filterSwitchTime;
-        xVec = spot_struct(i).xPosParticle;
-        yVec = spot_struct(i).yPosParticle;
-        zVec = spot_struct(i).zPosParticle;
+        queryTimes = timeVec + dt_raw/2;
         
-        spotFrames = ~isnan(xVec);
-        spotFramIndices = find(spotFrames);
-        
+        Frames = spot_struct(i).frames;         
+        spotFilter = ~isnan(spot_struct(i).yPosParticle);
+        spotIndices = find(spotFilter);
+        spotFrames = Frames(spotFilter);
         % save original positions
         spot_struct(i).yPosParticleOrig = spot_struct(i).yPosParticle;
         spot_struct(i).xPosParticleOrig = spot_struct(i).xPosParticle;
         spot_struct(i).zPosParticleOrig = spot_struct(i).zPosParticle;
-        if sum(spotFrames) > 1 % if we only have on frame then do nothing
+        
+        % we need to make temporary position vectors at higher res to
+        % perform kalman predictions       
+        % initialize vectors
+        spot_struct(i).timeHR = sort([timeVec queryTimes]);
+        spot_struct(i).xPosHR = NaN(1,2*length(timeVec));
+        spot_struct(i).xPosHR(1:2:end) = spot_struct(i).xPosParticle;
+        spot_struct(i).yPosHR = NaN(1,2*length(timeVec));
+        spot_struct(i).yPosHR(1:2:end) = spot_struct(i).yPosParticle;
+        spot_struct(i).zPosHR = NaN(1,2*length(timeVec));
+        spot_struct(i).zPosHR(1:2:end) = spot_struct(i).zPosParticle - z_shift_vec(ismember(Frames,z_frames));
+        
+        if sum(spotFilter) > 3 % if we only a handful of frames, do nothing
+          
+            temp_results = pathPrediction_v2(spot_struct(i), kalmanOptions); 
                     
-            spot_struct(i).xPosParticle(spotFrames) = interp1(timeVec(spotFrames),xVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
-            spot_struct(i).yPosParticle(spotFrames) = interp1(timeVec(spotFrames),yVec(spotFrames),queryTimes(spotFrames),'linear','extrap');
+            % transer primary results
+            spot_struct(i).xPosParticle(spotFilter) = temp_results.xPosInf(2*spotIndices);
+            spot_struct(i).yPosParticle(spotFilter) = temp_results.yPosInf(2*spotIndices);
+            spot_struct(i).zPosParticle(spotFilter) = temp_results.zPosInf(2*spotIndices)' + z_shift_vec(ismember(z_frames,spotFrames));
             
-            % only interpolate within contiguous z series
-            for c = 1:length(cp_cell)
-                interpIndices = spotFramIndices(ismember(spotFramIndices,cp_cell{c}));
-                if length(interpIndices) > 2
-                    spot_struct(i).zPosParticle(interpIndices) = interp1(timeVec(interpIndices),zVec(interpIndices),queryTimes(interpIndices),'linear','extrap');
-                else
-                    spot_struct(i).zPosParticle(interpIndices) = zVec(interpIndices);
-                end
-            end
+            % transfer kalman stuff
+            spot_struct(i).xPosInf = temp_results.xPosInf;
+            spot_struct(i).xPosSEInf = temp_results.xPosSEInf;
+            spot_struct(i).yPosInf = temp_results.yPosInf;
+            spot_struct(i).yPosSEInf = temp_results.yPosSEInf;
+            spot_struct(i).zPosInf = temp_results.zPosInf + repelem(z_shift_vec(ismember(z_frames,Frames)),2)';
+            spot_struct(i).zPosSEInf = temp_results.zPosSEInf;            
             
-            % reset any negative indices to their prior values
-            err_flags = spot_struct(i).zPosParticle<1;
+            % search for and reset any out-of-bounds predictions
+            
+            % x
+            err_flags = spot_struct(i).xPosParticle < 1 | spot_struct(i).xPosParticle > yDim;
+            spot_struct(i).xPosParticle(err_flags) = spot_struct(i).xPosParticleOrig(err_flags);
+            
+            % y
+            err_flags = spot_struct(i).yPosParticle < 1 | spot_struct(i).yPosParticle > yDim;
+            spot_struct(i).yPosParticle(err_flags) = spot_struct(i).yPosParticleOrig(err_flags);            
+            
+            % z
+            err_flags = spot_struct(i).zPosParticle < 1 | spot_struct(i).zPosParticle > zDim;
             spot_struct(i).zPosParticle(err_flags) = spot_struct(i).zPosParticleOrig(err_flags);            
         
         end
     end
-    
+   
+
 end
 
 if lastNC ~= 14

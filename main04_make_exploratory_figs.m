@@ -62,6 +62,13 @@ PixelSize = FrameInfo(1).PixelSize;
 null_protein_vec = [spot_struct_protein.edge_null_protein_vec];
 dist_vec = [spot_struct_protein.spot_edge_dist_vec]*PixelSize;
 
+%%
+set_vec_long = [];
+for i = 1:length(spot_struct_protein)
+    set_vec_long = [set_vec_long repelem(spot_struct_protein(i).setID,length(spot_struct_protein(i).spot_edge_dist_vec))];
+end
+set_vec_trunc = set_vec_long(~isnan(null_protein_vec)&dist_vec>=DistLim);
+%%
 % make figure to look for enrichment edge artifact 
 % makeEdgeArtifactFigure()
 
