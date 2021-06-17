@@ -254,9 +254,9 @@ for i = 1:numExperiments
                 end
                 
                 % Add protein and nucleus info
-                if hasProteinInfo
-                    compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
-                end
+%                 if hasProteinInfo
+%                     compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
+%                 end
                 compiledSchnitzCells(nucleusCounter).frames = rawNucleusFrames';
                 compiledSchnitzCells(nucleusCounter).nucleusID = s;
                 compiledSchnitzCells(nucleusCounter).ncID = eval([num2str(setID) '.' sprintf('%04d',s)]);
@@ -440,9 +440,9 @@ end
 if hasAPInfo
     interpFields(end+1:end+2) = {'APPosParticle','APPosNucleus'};
 end
-if hasProteinInfo
-    interpFields(end+1) = {'rawNCProtein'};
-end
+% if hasProteinInfo
+%     interpFields(end+1) = {'rawNCProtein'};
+% end
 
 % calculate interpolation time
 %%
@@ -613,6 +613,7 @@ end
 %%
 
 if sequentialSamplingFlag
+    
     %% Look for signatures of z stack changes in the data
     % keeping this simple and conservative for now
     % will need to build out a bit further if we choose to get serious
@@ -648,7 +649,7 @@ if sequentialSamplingFlag
         setID = spot_struct(i).setID;
         
         % get list of z stack change points
-        cp_cell = cp_struct(s).cp_cell;
+        cp_cell = cp_struct(setID).cp_cell;
         
         % get times
         timeVec = spot_struct(i).time;
@@ -678,14 +679,14 @@ if sequentialSamplingFlag
                     spot_struct(i).zPosParticle(interpIndices) = zVec(interpIndices);
                 end
             end
-            if any(spot_struct(i).zPosParticle<0)
-              error('sigh')
-            end
+            
+            % reset any negative indices to their prior values
+            err_flags = spot_struct(i).zPosParticle<1;
+            spot_struct(i).zPosParticle(err_flags) = spot_struct(i).zPosParticleOrig(err_flags);            
         
         end
     end
-   
-
+    
 end
 
 if lastNC ~= 14

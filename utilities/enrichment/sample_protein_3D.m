@@ -44,7 +44,7 @@ function average_intensity = sample_protein_3D(samplingInfo,data_stack,x_spot,y_
     % generate weight box   
     wt_box = exp(-.5*(((y_spot-y_ref_box)./xy_sigma).^2+((x_spot-x_ref_box)./xy_sigma).^2 + ...
         ((z_spot-z_ref_box)./z_sigma).^2));
-    wt_box(wt_box<exp(-1)) = 0;
+    wt_box(wt_box<exp(-2)) = 0;
     
     % take weighted average
     average_intensity = nansum(pt_samp_box(:).*wt_box(:)) / nansum(~isnan(pt_samp_box(:)).*wt_box(:));

@@ -254,9 +254,9 @@ for i = 1:numExperiments
                 end
                 
                 % Add protein and nucleus info
-                if hasProteinInfo
-                    compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
-                end
+%                 if hasProteinInfo
+%                     compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
+%                 end
                 compiledSchnitzCells(nucleusCounter).frames = rawNucleusFrames';
                 compiledSchnitzCells(nucleusCounter).nucleusID = s;
                 compiledSchnitzCells(nucleusCounter).ncID = eval([num2str(setID) '.' sprintf('%04d',s)]);
@@ -440,9 +440,9 @@ end
 if hasAPInfo
     interpFields(end+1:end+2) = {'APPosParticle','APPosNucleus'};
 end
-if hasProteinInfo
-    interpFields(end+1) = {'rawNCProtein'};
-end
+% if hasProteinInfo
+%     interpFields(end+1) = {'rawNCProtein'};
+% end
 
 % calculate interpolation time
 %%
@@ -613,6 +613,7 @@ end
 %%
 
 if sequentialSamplingFlag
+    
     %% Look for signatures of z stack changes in the data
     % keeping this simple and conservative for now
     % will need to build out a bit further if we choose to get serious
@@ -685,8 +686,7 @@ if sequentialSamplingFlag
         
         end
     end
-   
-
+    
 end
 
 if lastNC ~= 14
