@@ -628,8 +628,8 @@ if sequentialSamplingFlag
     nDims = 2;
 %     kalmanOptions.type = 'ConstantAcceleration';    
 %     nDims = 3;
-    kalmanOptions.MeasurementNoise = liveProject.includedExperiments{1}.pixelSize_um; 
-    kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise; % this ratio works pretty well
+    kalmanOptions.MeasurementNoise = liveProject.includedExperiments{1}.pixelSize_um*100; 
+    kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise*10; % this ratio works pretty well
     kalmanOptions.InitialError = repelem(kalmanOptions.MeasurementNoise,nDims);
 
     kalmanOptions.measurementFields = {'xPos', 'yPos', 'zPos'};
@@ -691,7 +691,7 @@ if sequentialSamplingFlag
     end
     %%
     % assume that spot precedes protein for now
-    for i = 1:length(spot_struct)
+    for i = 71%1:length(spot_struct)
       
         % get setID
         setID = spot_struct(i).setID;

@@ -20,7 +20,7 @@ function assembleSnips(liveProject)
   end
   snip_data = snip_data_master;
   % save
-  save([liveProject.dataPath 'snip_data.mat'],'snip_data');
+  save([liveProject.dataPath 'snip_data.mat'],'snip_data', '-v7.3');
   % remove snip fragments
   snipCleanup(snipPathTemp)
   

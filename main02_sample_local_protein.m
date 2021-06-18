@@ -35,9 +35,9 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
     % PSF info for 3D sampling
     use_psf_fit_dims = false; % NL: currently no supported
     xy_sigma_um = 0.2;% um 
-    xy_sigma_nuclear_um = 1.5;
-    z_sigma_um = 0.25; % um
-    ignoreQC = true;    
+    xy_sigma_nuclear_um = .5;
+    z_sigma_um = 0.33; % um
+    ignoreQC = false;    
     NumWorkers = [];
     segmentationMethod = 1;
     overwriteSegmentation = false;
@@ -360,7 +360,7 @@ function spot_struct_protein = main02_sample_local_protein(projectName,varargin)
 
             % Take average across all pixels within 1.5um of nuclues center           
             SamplingResults(i).nuclear_protein_vec(j_pass) = sample_protein_3D(...
-              samplingSubInfo,samplingSubInfo.mcp_stack,...
+              samplingSubInfo,samplingSubInfo.protein_stack,...
               samplingSubInfo.x_nucleus,samplingSubInfo.y_nucleus,samplingSubInfo.z_spot,samplingInfo.xy_sigma_nuclear,...
               samplingInfo.z_sigma,samplingSubInfo.nucleus_mask_3D);
 
