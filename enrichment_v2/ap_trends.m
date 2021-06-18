@@ -2,7 +2,7 @@ clear
 close all
 
 % designate project
-projectName = 'Bcd-GFP_hbMS2-mCh_Airy_fast';%'Bcd-GFP_hbP2P-mCh';%
+projectName = 'Bcd-GFP_hbMS2-mCh_Airy_fast_int';%'Bcd-GFP_hbP2P-mCh';%
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 FigurePath = liveProject.figurePath;
@@ -36,8 +36,8 @@ y_pos_vec = [spot_struct_protein(set_filter).yPosParticle];
 ap_pos_vec = [spot_struct_protein(set_filter).APPosParticle];
 spot_protein_vec = [spot_struct_protein(set_filter).spot_protein_vec];
 ctrl_protein_vec = [spot_struct_protein(set_filter).edge_null_protein_vec];
-nucleus_protein_vec = [spot_struct_protein(set_filter).edge_null_protein_vec];
-nucleus_protein_vec_alt = [spot_struct_protein(set_filter).nuclear_protein_vec];
+nucleus_protein_vec = [spot_struct_protein(set_filter).nuclear_protein_vec];
+% nucleus_protein_vec_alt = [spot_struct_protein(set_filter).nuclear_protein_vec];
 fluo_vec = [spot_struct_protein(set_filter).fluo];
 time_vec = [spot_struct_protein(set_filter).time]/60;
 
@@ -127,7 +127,7 @@ for t = 1:length(time_bin_vec)-1
     end
 end
 
-%% plot ap trends
+% plot ap trends
 MarkerSize = 75;
 
 % close all
@@ -266,7 +266,7 @@ ylabel(h,'minutes into nc14')
 % axis limits
 xlim([ap_plot(1)-1 ap_plot(end)+1])
 % save
-saveas(spot_fig,[FigurePath 'ap_spot_concentration_trends.png'])
+saveas(spot_fig,[FigurePath 'ap_relative_enrichment_trends.png'])
 
 %%%%%%%%%%%%%%%%%%
 %%% Make comparison plot
@@ -312,7 +312,7 @@ xlim([ap_plot(1)-1 ap_plot(end)+1])
 saveas(comparison_fig,[FigurePath 'comparison_plot.png'])
 
 
-%% plot bcd trends
+% plot bcd trends
 
 close all
 
@@ -342,16 +342,16 @@ h = colorbar;
 h.Ticks = c_ticks;
 h.TickLabels = time_plot;
 % axis labels
-xlabel('[Bcd] (au)')
+xlabel('Bcd-GFP in nucleus (au)')
 ylabel('hbP2P spot intensity (au)')
 ylabel(h,'minutes into nc14')
 % axis limits
-% xlim([ap_plot(1)-1 ap_plot(end)+1])
+xlim([bcd_plot(1)-25 bcd_plot(end)+25])
 % save
 saveas(fluo_fig,[FigurePath 'bcd_fluo_trends.png'])
 
 %%%%%%%%%%%%%%%%%%%%%
-%% Bcd enrichment
+% Bcd enrichment
 %%%%%%%%%%%%%%%%%%%%%
 mean_delta_array_bcd = nanmean(delta_protein_array_bcd,3);
 ste_delta_array_bcd = nanstd(delta_protein_array_bcd,[],3);
@@ -377,7 +377,7 @@ h = colorbar;
 h.Ticks = c_ticks;
 h.TickLabels = time_plot;
 % axis labels
-xlabel('[Bcd] (au)')
+xlabel('Bcd-GFP in nucleus (au)')
 ylabel('Bcd-GFP enrichment at spot (au)')
 ylabel(h,'minutes into nc14')
 % axis limits
@@ -388,17 +388,17 @@ saveas(enrichment_fig,[FigurePath 'bcd_enrichment_trends.png'])
 
 
 %%%%%%%%%%%%%%%%%%%%%
-%%% Bcd at spot
+% Bcd at spot
 %%%%%%%%%%%%%%%%%%%%%
-mean_rel_array = nanmean(delta_rel_protein_array_ap,3);
-ste_rel_array = nanstd(delta_rel_protein_array_ap,[],3);
+mean_rel_array_bcd = nanmean(delta_rel_protein_array_bcd,3);
+ste_rel_array_bcd = nanstd(delta_rel_protein_array_bcd,[],3);
 
 spot_fig = figure;
 hold on
 colormap(cm1);
 for t = 1:length(time_plot)
-    errorbar(ap_plot, mean_rel_array(t,:), ste_rel_array(t,:),'CapSize',0,'Color','k','LineWidth',0.75)
-    scatter(ap_plot, mean_rel_array(t,:),MarkerSize,'MarkerFaceColor',cm1(t,:),'MarkerEdgeColor','k')
+    errorbar(bcd_plot, mean_rel_array_bcd(t,:), ste_rel_array_bcd(t,:),'CapSize',0,'Color','k','LineWidth',0.75)
+    scatter(bcd_plot, mean_rel_array_bcd(t,:),MarkerSize,'MarkerFaceColor',cm1(t,:),'MarkerEdgeColor','k')
 end
 
 % formating
@@ -412,56 +412,15 @@ h = colorbar;
 h.Ticks = c_ticks;
 h.TickLabels = time_plot;
 % axis labels
-xlabel('AP position (% embryo length)')
+xlabel('Bcd-GFP in nucleus (au)')
 ylabel('relative Bcd enrichment(au)')
 ylabel(h,'minutes into nc14')
 % axis limits
-xlim([ap_plot(1)-1 ap_plot(end)+1])
+xlim([bcd_plot(1)-25 bcd_plot(end)+25])
 % save
-saveas(spot_fig,[FigurePath 'ap_spot_concentration_trends.png'])
+saveas(spot_fig,[FigurePath 'bcd_rel_enrichment_trends.png'])
 
-%%%%%%%%%%%%%%%%%%
-%%% Make comparison plot
-%%%%%%%%%%%%%%%%%%
-t_index = 2;
 
-comparison_fig = figure;
-hold on
-cm2 = brewermap([],'Set2');
-
-% plot enrichment
-errorbar(ap_plot, mean_delta_array(t_index,:), ste_delta_array(t_index,:),'CapSize',0,'Color','k','LineWidth',1)
-scatter(ap_plot, mean_delta_array(t_index,:),MarkerSize,'MarkerFaceColor',cm2(2,:),'MarkerEdgeColor','k')
-
-ylabel('Bcd-GFP enrichment at spot (au)')
-ax = gca;
-% ax.YColor = cm2(2,:);
-
-% now plot spot fluorescence
-yyaxis right
-errorbar(ap_plot, mean_fluo_array(t_index,:), ste_fluo_array(t_index,:),'CapSize',0,'Color','k','LineWidth',1)
-scatter(ap_plot, mean_fluo_array(t_index,:),'MarkerFaceColor',cm2(3,:),'MarkerEdgeColor','k')
-
-ax = gca;
-ax.YAxis(1).Color = cm2(2,:);
-ax.YAxis(2).Color = cm2(3,:);
-
-% formating
-set(gca,'Fontsize',14);
-set(gca,'Color',[228,221,209]/255) 
-grid on
-fluo_fig.InvertHardcopy = 'off';
-set(gcf,'color','w');
-
-% axis labels
-xlabel('AP position (% embryo length)')
-ylabel('hbP2P spot intensity (au)')
-
-% axis limits
-xlim([ap_plot(1)-1 ap_plot(end)+1])
-
-% save
-saveas(fluo_fig,[FigurePath 'comparison_plot.png'])
 %%
 plot_index = 453;
 qc_indices = find(set_filter);
