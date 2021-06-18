@@ -250,9 +250,9 @@ for i = 1:numExperiments
                 y = schnitzcells(s).ceny;
                 compiledSchnitzCells(nucleusCounter).xPosNucleus = x(ncFilter);
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
-                if hasAPInfo && isfield(schnitzcells,'APpos')
-                    compiledSchnitzCells(nucleusCounter).APPosNucleus =  schnitzcells(s).APpos(ncFilter);
-                end
+%                 if hasAPInfo && isfield(schnitzcells,'APpos')
+%                     compiledSchnitzCells(nucleusCounter).APPosNucleus =  schnitzcells(s).APpos(ncFilter);
+%                 end
                 
                 % Add protein and nucleus info
                 if hasProteinInfo
@@ -402,7 +402,11 @@ for i = 1:numExperiments
         if length(compiledSchnitzCells) ~= length([compiledSchnitzCells.particleID])
             error('wtf')
         end
-        spot_struct = [spot_struct  compiledSchnitzCells];
+        try
+          spot_struct = [spot_struct  compiledSchnitzCells];
+        catch
+          error('wtf')
+        end
     end
     
     waitbar(i/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
@@ -622,8 +626,10 @@ if sequentialSamplingFlag
     % initialize kalman options
     kalmanOptions.type = 'ConstantVelocity';    
     nDims = 2;
+%     kalmanOptions.type = 'ConstantAcceleration';    
+%     nDims = 3;
     kalmanOptions.MeasurementNoise = liveProject.includedExperiments{1}.pixelSize_um; 
-    kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise*12; % this ratio works pretty well
+    kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise; % this ratio works pretty well
     kalmanOptions.InitialError = repelem(kalmanOptions.MeasurementNoise,nDims);
 
     kalmanOptions.measurementFields = {'xPos', 'yPos', 'zPos'};
