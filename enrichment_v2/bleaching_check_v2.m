@@ -32,7 +32,7 @@ end
 %% 
 close all
 
-ap_bounds = [38 43];
+ap_bounds = [37 43];
 time_index = -3:35;
 % sets_to_use = {[2 3], 1};
 peg_time = 10;
@@ -84,7 +84,7 @@ set(gcf,'color','w');
 
 % axis labels
 xlabel('minutes into nc14')
-ylabel('[Bcd] at AP 38-43 (au)')
+ylabel('[Bcd] at AP 40% (au)')
 xlim([0 30])
 % save
 saveas(raw_fig,[FigurePath 'raw_bcd_trends.png'])
@@ -106,7 +106,7 @@ set(gcf,'color','w');
 
 % axis labels
 xlabel('minutes into nc14')
-ylabel('normalized [Bcd] at AP 38-43 (au)')
+ylabel('normalized [Bcd] at AP 40% (au)')
 xlim([0 30])
 ylim([0.2 1.05])
 % save

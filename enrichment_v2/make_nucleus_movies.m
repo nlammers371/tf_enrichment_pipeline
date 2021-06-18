@@ -8,149 +8,17 @@ resultsRoot = [liveProject.dataPath filesep];
 FigurePath = [liveProject.figurePath filesep 'nucleus_movies'];
 RefPath = [liveProject.dataPath 'refFrames' filesep];
 
-% load data
-load([resultsRoot 'spot_struct.mat'])  
+load([resultsRoot 'nucleusMovieData.mat'],'movieData') 
 
-% call header function
-[liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo, hasNucleusProbFiles] = headerFunction(projectName);
+%% first, we need to reconfigure stuff to be in particle-centric
 
-
-% determine protein channel 
-proteinChannel = liveProject.includedExperiments{1}.inputChannels;
-
-% select candidate nuclei for movies
-% we need to do some homework here: want to identify true starts and stops
-% in particles with reasonable segmentation that last a long time
-minSpotDP = 75;
-n_lead_frames = 3;
-z_offset = 1;
-% n_vec = [spot_struct.N];
-% candidate_indices = find(n_vec>=minSpotDP);
-spot_struct_trunc = struct;
-qc_kernel = ones(1,5);
-i_pass = 1;
-transfer_fields = {'fluo','time','frames','yPosNucleus','xPosNucleus','APPosNucleus','FrameQCFlags'};
-for i = 1:length(spot_struct)
-    FrameQCFlags = spot_struct(i).FrameQCFlags;
-    FrameQCFlags_1 = FrameQCFlags == 1;
-    FrameQCFlags_2 = conv(qc_kernel,FrameQCFlags_1,'full');
-    FrameQCFlags_2 = FrameQCFlags_2(3:end-2) >= 4;
-    
-    if nansum(FrameQCFlags_2) >= minSpotDP
-        % calculate start and stop indices
-        first_i = max([1,find(FrameQCFlags_2,1)-n_lead_frames]);
-        last_i = min([length(FrameQCFlags_2),find(FrameQCFlags_2,1,'last')+n_lead_frames]);
-        % add fields
-        for f = 1:length(transfer_fields)
-            vec = spot_struct(i).(transfer_fields{f});
-            spot_struct_trunc(i_pass).(transfer_fields{f}) = vec(first_i:last_i);
-        end
-        % basic ID info
-        spot_struct_trunc(i_pass).particleID = spot_struct(i).particleID;
-        spot_struct_trunc(i_pass).setID = spot_struct(i).setID;
-        spot_struct_trunc(i_pass).ncID = spot_struct(i).ncID;
-        % pull kalman inference for particle position
-        xPosInfDS = spot_struct(i).xPosInf(2:2:end);
-        spot_struct_trunc(i_pass).xPosParticle = xPosInfDS(first_i:last_i)';
-        yPosInfDS = spot_struct(i).yPosInf(2:2:end);
-        spot_struct_trunc(i_pass).yPosParticle = yPosInfDS(first_i:last_i)';
-        zPosInfDS = spot_struct(i).zPosInf(2:2:end);
-        spot_struct_trunc(i_pass).zPosParticle = zPosInfDS(first_i:last_i)';
-        spot_struct_trunc(i_pass).origID = i;
-        % increment
-        i_pass = i_pass + 1;
-    end
-end
-
-%%
-% set basic sampling parameters
 nucleus_snip_radius_um = 3; % in microns
 PixelSize = liveProject.includedExperiments{1}.pixelSize_um;
 nucleus_snip_radius_px = round(nucleus_snip_radius_um/PixelSize);
 snip_size = 2*nucleus_snip_radius_px+1;
-int_radius = 0.25 / PixelSize
+int_radius = 0.25 / PixelSize;
 nMovies = 100; % number of nucleus movies
 
-
-% randomize sampling order (eventually we can do this in parallel)
-rng(312)
-sample_order = randsample(1:length(spot_struct_trunc),nMovies,false);
-spot_struct_input = spot_struct_trunc(sample_order);
-
-% initialize data structure to store movie slices
-movieData = struct;
-
-% generate ref vectors
-[RefStruct, SetFrameArray, SamplingResults] = generateReferenceVectors(spot_struct_input,RefPath,false,true,[]);
-RefStruct.spot_fluo_ref = [spot_struct_input.fluo];
-RefStruct.nc_ap_ref = [spot_struct_input.APPosNucleus];
-RefStruct.time_ref = [spot_struct_input.time];
-
-% iterate through all relevant set/frame combinations
-NIter = size(RefStruct.set_frame_array,1);
-tic
-parpool(12);
-parfor i_stack = 1:NIter
-    
-    % extract basic info    
-    currFrame = RefStruct.set_frame_array(i_stack,2);
-    currSetID = RefStruct.set_frame_array(i_stack,1);
-    currExperiment = liveProject.includedExperiments{currSetID};
-    Prefix = currExperiment.Prefix;
-    % load protein stack
-    proteinPath = [currExperiment.preFolder  Prefix '_' sprintf('%03d',currFrame) '_ch0' num2str(proteinChannel) '.tif'];
-    proteinStack = imreadStack(proteinPath);
-    
-    % get indices of nucleus/frames in this stack
-    frame_set_indices = find(RefStruct.setID_ref==currSetID & RefStruct.frame_ref==currFrame);
-    
-    % initialize fields
-    movieData(i_stack).sliceArray = zeros(snip_size,snip_size,length(frame_set_indices));
-    movieData(i_stack).x_pos_vec = RefStruct.spot_x_ref(frame_set_indices);
-    movieData(i_stack).y_pos_vec = RefStruct.spot_y_ref(frame_set_indices);
-    movieData(i_stack).ap_pos_vec = RefStruct.nc_ap_ref(frame_set_indices);
-    movieData(i_stack).time_vec = RefStruct.time_ref(frame_set_indices);
-    movieData(i_stack).frame_vec = RefStruct.frame_ref(frame_set_indices);
-    movieData(i_stack).fluo_vec = RefStruct.spot_fluo_ref(frame_set_indices);
-    movieData(i_stack).particleID_vec = RefStruct.particleID_ref(frame_set_indices);
-    movieData(i_stack).x_nucleus = RefStruct.nc_x_ref(frame_set_indices);
-    movieData(i_stack).y_nucleus = RefStruct.nc_y_ref(frame_set_indices);
-    
-    % iterate through individual nuclei
-    for i_nucleus = 1:length(frame_set_indices)
-        % nucleus position
-        x_nucleus = RefStruct.nc_x_ref(frame_set_indices(i_nucleus));
-        y_nucleus = RefStruct.nc_y_ref(frame_set_indices(i_nucleus));
-        
-        % spot position
-%         x_spot = RefStruct.spot_x_ref(frame_set_indices(i_nucleus));
-%         y_spot = RefStruct.spot_y_ref(frame_set_indices(i_nucleus));
-        z_spot = max(min([currExperiment.zDim+2-1,round(RefStruct.spot_z_ref(frame_set_indices(i_nucleus)))]),2);
-        
-        % generate coordinate vectors for indexing
-        x_vec_full = x_nucleus-nucleus_snip_radius_px:x_nucleus+nucleus_snip_radius_px;
-        x_trim = x_vec_full(x_vec_full>=1 & x_vec_full<=currExperiment.xDim);
-        y_vec_full = y_nucleus-nucleus_snip_radius_px:y_nucleus+nucleus_snip_radius_px;
-        y_trim = y_vec_full(y_vec_full>=1 & y_vec_full<=currExperiment.yDim);
-        
-        % extract snip
-        nucleus_snip = zeros(length(y_vec_full),length(x_vec_full));
-        nucleus_snip(ismember(y_vec_full,y_trim),ismember(x_vec_full,x_trim)) = proteinStack(y_trim,x_trim,z_spot);
-        
-        % store info
-        movieData(i_stack).sliceArray(:,:,i_nucleus) = nucleus_snip;
-    end
-        
-end 
-toc
-
-%% save data
-disp('Saving...')
-save([resultsRoot 'nucleusMovieData.mat'],'movieData','-v7.3') 
-disp('Done.')
-%% make figures
-
-% first, we need to reconfigure stuff to be in particle-centric
 % arrangements
 longSliceArray = cat(3,movieData.sliceArray);
 longSpotXPosArray = [movieData.x_pos_vec];
@@ -171,8 +39,8 @@ fluo_max = prctile(longFluoArray,90);
 markerSize = 75;
 n_avg_frames = 7;
 gray = [0.5 0.5 0.5];
-% parpool(12)
-for p = 13%:length(particle_index)
+% parpool(4)
+parfor p = 20:length(particle_index)
   
     % make subdirectories
     prefix = ['particle_' num2str(particle_index(p))];
@@ -206,8 +74,8 @@ for p = 13%:length(particle_index)
     
     pt_min_mean = prctile(particle_slice_mean(:),5);
     pt_max_mean = prctile(particle_slice_mean(:),99.9);
-%     mc_vec = [];
-    for f = 1:20%1:length(frame_vec)
+
+    for f = 1:length(frame_vec)
       
          
         
@@ -230,11 +98,10 @@ for p = 13%:length(particle_index)
         
         hold on
         % plot protein heatmap
-        contourf(particle_slice(:,:,f));
+        cf = contourf(particle_slice(:,:,f),8);
         % plot spot position
-        scatter(rel_spot_x(f),rel_spot_y(f),20 + sz_val/fluo_max*150,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
+        scatter(rel_spot_x(f),rel_spot_y(f),10 + (sz_val/fluo_max*70)^1.3,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
         % plot circle indicating integration radisu
-%         viscircles([rel_spot_x(f),rel_spot_y(f)],int_radius,'Color',[0.5 0.5 0.5 0.5],'LineStyle','--')
         th = 0:pi/50:2*pi;
         xunit = int_radius * cos(th) + rel_spot_x(f);
         yunit = int_radius * sin(th) + rel_spot_y(f);
@@ -262,11 +129,13 @@ for p = 13%:length(particle_index)
         
         text(2,4,[num2str(round(time_vec(f)/60,2)) ' minutes'],'Fontsize',14,'Color','w')
         
-%         saveas(snip_fig1,[cf_dir filesep prefix '_contour_' sprintf('%03d',frame_vec(f)) '.tif'])
+        saveas(snip_fig1,[cf_dir filesep prefix '_contour_' sprintf('%03d',frame_vec(f)) '.tif'])
         
         %%%%%%%%%%%%%%%%%%
         % time-averaged contour
-        snip_fig2 = figure;%('Visible','off');
+        %%%%%%%%%%%%%%%%%%%%
+        
+        snip_fig2 = figure('Visible','off');
        
         colormap(cm2)
         % calculate color            
@@ -274,18 +143,13 @@ for p = 13%:length(particle_index)
         
         sz_vec = spot_fluo(lead_vec);
         sz_vec(isnan(sz_vec))=0;
-        sz_vec(sz_vec<0)=0;
-%         c_val_vec = ceil(1e3*spot_fluo(lead_vec)/fluo_max);
-%         c_val_vec(isnan(c_val_vec)) = 1;
-%         c_val_vec(c_val_vec > 1e3) = 1e3;
-%         c_val_vec(c_val_vec < 1) = 1;
-      
+        sz_vec(sz_vec<0)=0;      
         
         hold on        
-        contourf(particle_slice_mean(:,:,f))
+        contourf(particle_slice_mean(:,:,f),8)
         plot(rel_spot_x(lead_vec),rel_spot_y(lead_vec),'Color','k')
-        scatter(rel_spot_x(lead_vec),rel_spot_y(lead_vec),20 + sz_vec/fluo_max*150,'MarkerFaceColor',gray,'MarkerEdgeAlpha',0.25,'MarkerFaceAlpha',0.25,'LineWidth',1,'MarkerEdgeColor','k')
-        scatter(rel_spot_x(f),rel_spot_y(f),20 + sz_val/fluo_max*150,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
+        scatter(rel_spot_x(lead_vec),rel_spot_y(lead_vec),10 + (sz_vec/fluo_max*70).^1.3,'MarkerFaceColor',gray,'MarkerEdgeAlpha',0.25,'MarkerFaceAlpha',0.25,'LineWidth',1,'MarkerEdgeColor','k')
+        scatter(rel_spot_x(f),rel_spot_y(f),10 + (sz_val/fluo_max*70).^1.3,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
         % plot circle indicating integration radisu
 %         viscircles([rel_spot_x(f),rel_spot_y(f)],int_radius,'Color',[0.5 0.5 0.5 0.5],'LineStyle','--')
         th = 0:pi/50:2*pi;
@@ -315,7 +179,7 @@ for p = 13%:length(particle_index)
         
         text(2,4,[num2str(round(time_vec(f)/60,2)) ' minutes'],'Fontsize',14,'Color','w')
         
-%         saveas(snip_fig2,[cf_mean_dir filesep  prefix '_mean_contour_' sprintf('%03d',frame_vec(f)) '.tif'])
+        saveas(snip_fig2,[cf_mean_dir filesep  prefix '_mean_contour_' sprintf('%03d',frame_vec(f)) '.tif'])
         
         pause(0.25)
 %         close all
@@ -330,9 +194,8 @@ for p = 13%:length(particle_index)
         pc = pcolor(particle_slice(:,:,f));
         pc.EdgeAlpha = 0.1;
         % plot spot position
-        scatter(rel_spot_x(f),rel_spot_y(f),20 + sz_val/fluo_max*150,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
+        scatter(rel_spot_x(f),rel_spot_y(f),10 + (sz_val/fluo_max*70)^1.3,'MarkerFaceColor',mc,'MarkerEdgeColor','k','MarkerFaceAlpha',1,'LineWidth',1.5)
         % plot circle indicating integration radisu
-%         viscircles([rel_spot_x(f),rel_spot_y(f)],int_radius,'Color',[0.5 0.5 0.5 0.5],'LineStyle','--')
         th = 0:pi/50:2*pi;
         xunit = int_radius * cos(th) + rel_spot_x(f);
         yunit = int_radius * sin(th) + rel_spot_y(f);
@@ -360,8 +223,9 @@ for p = 13%:length(particle_index)
         
         text(2,4,[num2str(round(time_vec(f)/60,2)) ' minutes'],'Fontsize',14,'Color','w')
         
-%         saveas(snip_fig3,[cf_dir filesep prefix '_heatmap_' sprintf('%03d',frame_vec(f)) '.tif'])
-        pause(0.1)
+        saveas(snip_fig3,[im_dir filesep prefix '_heatmap_' sprintf('%03d',frame_vec(f)) '.tif'])
+        
+%         close all
     end
 end
 
