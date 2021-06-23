@@ -16,12 +16,29 @@ addpath(genpath('./lib'))
 %Prefix = '2021-05-13-optoknirps_eve4_6_embryo21'; APflip = 0;
 %Prefix = '2021-05-13-optoknirps_eve4_6_embryo22'; APflip = 0;
 %Prefix = '2021-05-14-optoknirps_eve4_6_embryo23'; APflip = 1;
-Prefix = '2021-05-15-optoknirps_eve4_6_embryo24'; APflip = 1;
+%Prefix = '2021-05-15-optoknirps_eve4_6_embryo24'; APflip = 1;
 
-avrInit = 30;
-avrFinal = 35;
+%avrInit = 30;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 35;
+
+%optokni_eve4+6_ON_CONST
+%Prefix = '2021-05-08-optoknirps_eve4_6_embryo18'; APflip = 1;
+%Prefix = '2021-05-10-optoknirps_eve4_6_embryo19'; APflip = 1;
+Prefix = '2021-05-10-optoknirps_eve4_6_embryo20'; APflip = 1;
+
+% for embryo 20
+avrInit = 20;
+avrFinal = 25;
 analysisInit = 0;
-analysisFinal = 35;
+analysisFinal = 25;
+
+% for embryo 18-19
+%avrInit = 30;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 35;
 
 %optokni_eve4+6_ON
 %Prefix = '2021-05-08-optoknirps_eve4_6_embryo18'; APflip = 1;

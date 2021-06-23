@@ -3,7 +3,7 @@
 clear
 close all
 
-projectList = {'optokni_eve4+6_ON_CONST'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_ON_ALL'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
@@ -76,9 +76,9 @@ for p = 1:length(projectList)
     for j = 1:length(xPosNucVec)    
         %NL: do lookup here
         if isnan(xPosNucVec)
-            spot_struct(i).apPosNucleus(j) = NaN;
+            spot_struct(i).APPosNucleus(j) = NaN;
         else
-            spot_struct(i).apPosNucleus(j) = ap_map(expID).APmap(round(yPosNucVec(j)),round(xPosNucVec(j)));
+            spot_struct(i).APPosNucleus(j) = ap_map(expID).APmap(round(yPosNucVec(j)),round(xPosNucVec(j)));
         end
     end
     

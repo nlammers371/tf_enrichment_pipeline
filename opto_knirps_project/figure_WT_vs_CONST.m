@@ -58,6 +58,9 @@ gr = [191 213 151]/255; % green
 
 projectName = {'optokni_eve4+6_WT','optokni_eve4+6_ON_CONST'}; 
 
+sample_traces_WT = [];
+sample_traces_CONST = [];
+
 for i = 1:length(projectName)
 
 liveProject = LiveEnrichmentProject(projectName{i});
@@ -156,7 +159,6 @@ for j = 1:length(spot_struct)
 end
 
 
-
 % Look at long vectors
 
 %set parameters
@@ -203,7 +205,6 @@ frac_on_time_array_ste = NaN(length(time_bins)-1,length(ap_bins)-1);
 frac_on_knirps_array_ste = NaN(length(time_bins)-1,length(ap_bins)-1);
 eve_time_array_ste = NaN(length(time_bins)-1,length(ap_bins)-1);
 knirps_time_array_ste = NaN(length(time_bins)-1,length(ap_bins)-1);
-
 
 for t = 1:length(time_bins)
     t
@@ -273,7 +274,93 @@ else
     CONST.inst_on = frac_inst_on_time_array_mean;
 end
 
+
+for j = 1:length(spot_struct)
+    
+    temp_trace = zeros(1,101);
+    
+    ap_vec = spot_struct(j).apPosNucleus;
+    ap_pos = mean(ap_vec);
+    
+    if (ap_pos>=-0.01) && (ap_pos<=0.01)
+        spot_fluo = spot_struct(j).fluoInterp;
+        frame_start = spot_struct(j).timeInterp(1)/20 + 1;
+        frame_final = spot_struct(j).timeInterp(end)/20 + 1;
+
+        if ~isnan(frame_start) && ~isnan(frame_final)
+            temp_trace(frame_start:frame_final) = spot_fluo;
+            if i == 1
+                sample_traces_WT = [sample_traces_WT;temp_trace];
+            else
+                sample_traces_CONST = [sample_traces_CONST;temp_trace];
+            end
+        end
+    end
+    
 end
+
+end
+
+%% plot sample single traces;
+
+sample_num = 100;
+
+time_vec = (0:150)/3;
+
+random_sample_traces_WT = sample_traces_WT(randperm(size(sample_traces_WT, 1)), :);
+random_sample_traces_CONST = sample_traces_CONST(randperm(size(sample_traces_CONST, 1)), :);
+
+sample_traces_frac_WT = mean(sample_traces_WT>0,1);
+sample_traces_frac_CONST = mean(sample_traces_CONST>0,1);
+
+sample_traces_mean_WT = mean(sample_traces_WT,1);
+sample_traces_mean_CONST = mean(sample_traces_CONST,1);
+
+single_traces_WT = figure;
+imagesc('XData',time_vec,'CData',random_sample_traces_WT(1:sample_num,:))
+xlabel('time (min)')
+xlim([0 40])
+ylim([1 sample_num])
+%colorbar
+colormap(plasma)
+caxis([0 3E5])
+pbaspect([2 1 1])
+
+single_traces_CONST = figure;
+imagesc('XData',time_vec,'CData',random_sample_traces_CONST(1:sample_num,:))
+xlabel('time (min)')
+xlim([0 40])
+ylim([1 sample_num])
+%colorbar
+colormap(plasma)
+caxis([0 5E5])
+pbaspect([2 1 1])
+
+single_traces_mean = figure;
+plot(time_vec,  movmean(sample_traces_mean_WT,3))
+hold on
+plot(time_vec,  movmean(sample_traces_mean_CONST/1.5,3))
+xlim([0 40])
+%ylim([0 1])
+xlabel('time (min)')
+ylabel('mean spot fluorescence (au)')
+pbaspect([2 1 1])
+
+single_traces_frac_on = figure;
+plot(time_vec, movmean(sample_traces_frac_WT,3))
+hold on
+plot(time_vec,  movmean(sample_traces_frac_CONST,3))
+xlim([0 40])
+ylim([0 1])
+xlabel('time (min)')
+ylabel('fraction of active nuclei')
+pbaspect([2 1 1])
+legend('WT','perturbed')
+
+saveas(single_traces_WT,[FigurePath 'figure_single_traces_WT.pdf'])
+saveas(single_traces_CONST,[FigurePath 'figure_single_traces_CONST.pdf'])
+saveas(single_traces_frac_on, [FigurePath 'figure_single_traces_frac_on.pdf'])
+
 
 %% plot calculated mean vector
 
@@ -343,6 +430,11 @@ ylim([0 35])
 xlabel('AP position (% embryo length)')
 ylabel('time (min)')
 
+saveas(WT_mean_eve_fig,[FigurePath 'figure_eve_mean_WT.pdf'])
+saveas(CONST_mean_eve_fig,[FigurePath 'figure_eve_mean_CONST.pdf'])
+saveas(WT_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_WT.pdf'])
+saveas(CONST_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_CONST.pdf'])
+
 
 %% Figure: Plot k_on, k_off vs ap
 
@@ -395,16 +487,15 @@ hold on
 
 set(gca,'FontSize',14)
 
-%WT
+
 errorbar(burst_axis*100,burst_k_off_mean_WT/burst_k_off_center,burst_k_off_ste_WT/burst_k_off_center,'Color','k','CapSize',0)
-plot(burst_axis*100,burst_k_off_mean_WT/burst_k_off_center,'-k')
-scatter(burst_axis*100,burst_k_off_mean_WT/burst_k_off_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-%CONST
 errorbar(burst_axis*100,burst_k_off_mean_CONST/burst_k_off_center,burst_k_off_ste_CONST/burst_k_off_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_k_off_mean_WT/burst_k_off_center,'-k')
 plot(burst_axis*100,burst_k_off_mean_CONST/burst_k_off_center,'-k')
+scatter(burst_axis*100,burst_k_off_mean_WT/burst_k_off_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
 scatter(burst_axis*100,burst_k_off_mean_CONST/burst_k_off_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
 %set(gca,'YColor',bl);
-ylabel(['k_{off} (relative to center)'])
+ylabel(['k_{off} (relative to WT center)'])
 ylim([0 2])
 
 
@@ -413,6 +504,7 @@ xlim([ap_axis(1) ap_axis(end)])
 %mRNA_fig2.InvertHardcopy = 'off';
 set(gcf,'color','w'); 
 pbaspect([2 1 1])
+legend('','','','','','')
 
 
 % k_on vs ap
@@ -420,18 +512,16 @@ burst_k_on_fig = figure;
 hold on
 
 set(gca,'FontSize',14)
-%WT
+
 errorbar(burst_axis*100,burst_k_on_mean_WT/burst_k_on_center,burst_k_on_ste_WT/burst_k_on_center,'Color','k','CapSize',0)
-plot(burst_axis*100,burst_k_on_mean_WT/burst_k_on_center,'-k')
-scatter(burst_axis*100,burst_k_on_mean_WT/burst_k_on_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-%CONST
 errorbar(burst_axis*100,burst_k_on_mean_CONST/burst_k_on_center,burst_k_on_ste_CONST/burst_k_on_center,'Color','k','CapSize',0)
+plot(burst_axis*100,burst_k_on_mean_WT/burst_k_on_center,'-k')
 plot(burst_axis*100,burst_k_on_mean_CONST/burst_k_on_center,'-k')
+scatter(burst_axis*100,burst_k_on_mean_WT/burst_k_on_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
 scatter(burst_axis*100,burst_k_on_mean_CONST/burst_k_on_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
 
-
 %set(gca,'YColor',bl);
-ylabel(['k_{on} (relative to center)'])
+ylabel(['k_{on} (relative to WT center)'])
 ylim([0 2])
 
 
@@ -440,6 +530,7 @@ xlim([ap_axis(1) ap_axis(end)])
 %mRNA_fig2.InvertHardcopy = 'off';
 set(gcf,'color','w'); 
 pbaspect([2 1 1])
+legend('','','','','','')
 
 
 % loading rate vs ap
@@ -452,7 +543,7 @@ errorbar(burst_axis*100,burst_rate_WT/burst_rate_center,burst_rate_ste_WT/burst_
 plot(burst_axis*100,burst_rate_WT/burst_rate_center,'-k')
 scatter(burst_axis*100,burst_rate_WT/burst_rate_center,50,'MarkerFaceColor',gr,'MarkerEdgeColor','k')
 %set(gca,'YColor',gr);
-ylabel(['mRNA loading rate (relative to center)'])
+ylabel(['mRNA loading rate (relative to WT center)'])
 ylim([0 2])
 
 
@@ -463,8 +554,8 @@ set(gcf,'color','w');
 pbaspect([2 1 1])
 
 
-%saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap.pdf'])
-%saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap.pdf'])
+saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap_WT_CONST.pdf'])
+saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap_WT_CONST.pdf'])
 %saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
 
 %% Bursting parameters with mRNA pattern
