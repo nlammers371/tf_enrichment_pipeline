@@ -39,8 +39,11 @@ fluo_max = prctile(longFluoArray,90);
 markerSize = 75;
 n_avg_frames = 7;
 gray = [0.5 0.5 0.5];
-% parpool(4)
-parfor p = 20:length(particle_index)
+try
+  parpool(18)
+catch
+end
+parfor p = 60:length(particle_index)
   
     % make subdirectories
     prefix = ['particle_' num2str(particle_index(p))];
@@ -48,7 +51,9 @@ parfor p = 20:length(particle_index)
     mkdir(cf_dir);
     cf_mean_dir = [FigurePath filesep prefix '_mean_contour'];
     mkdir(cf_mean_dir);
-    im_dir = [FigurePath filesep prefix '_heatmap'];
+    hm_dir = [FigurePath filesep prefix '_heatmap'];
+    mkdir(hm_dir);
+    im_dir = [FigurePath filesep prefix '_raw'];
     mkdir(im_dir);
     
     % apply particle filter
@@ -69,7 +74,9 @@ parfor p = 20:length(particle_index)
     particle_slice_mean = particle_slice_mean(:,:,1:size(particle_slice_mean,3)-length(conv_kernel)+1);
     
     % set fluorescence scale
-    pt_min = prctile(particle_slice(:),50);
+    lb = prctile(particle_slice(:),0.1);
+    ub = prctile(particle_slice(:),99.9);
+    pt_min = prctile(particle_slice(:),40);
     pt_max = prctile(particle_slice(:),99.9);
     
     pt_min_mean = prctile(particle_slice_mean(:),5);
@@ -77,7 +84,9 @@ parfor p = 20:length(particle_index)
 
     for f = 1:length(frame_vec)
       
-         
+        % first write the raw tif snip to file
+%         im_snip = mat2gray(particle_slice(:,:,f),[lb ub]);
+%         imwrite(im_snip,[im_dir filesep prefix '_snip_' sprintf('%03d',frame_vec(f)) '.tif'])
         
         %%%%%%%%%%%%%%%%%%
         % contour plot
@@ -90,7 +99,7 @@ parfor p = 20:length(particle_index)
         mc = gray/2;
         sz_val = 0;
         if ~isnan(spot_fluo(f))
-            sz_val = spot_fluo(f);
+            sz_val = max([1 spot_fluo(f)]);
             c_val = ceil(1e3*spot_fluo(f)/fluo_max);
             c_val = max([1 min(1e3,c_val)]);
             mc = cm1(c_val,:);
@@ -223,9 +232,9 @@ parfor p = 20:length(particle_index)
         
         text(2,4,[num2str(round(time_vec(f)/60,2)) ' minutes'],'Fontsize',14,'Color','w')
         
-        saveas(snip_fig3,[im_dir filesep prefix '_heatmap_' sprintf('%03d',frame_vec(f)) '.tif'])
+        saveas(snip_fig3,[hm_dir filesep prefix '_heatmap_' sprintf('%03d',frame_vec(f)) '.tif'])
         
-%         close all
+        close all
     end
 end
 

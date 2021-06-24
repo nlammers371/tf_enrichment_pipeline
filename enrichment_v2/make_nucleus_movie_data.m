@@ -22,7 +22,7 @@ proteinChannel = liveProject.includedExperiments{1}.inputChannels;
 % we need to do some homework here: want to identify true starts and stops
 % in particles with reasonable segmentation that last a long time
 minSpotDP = 75;
-n_lead_frames = 3;
+n_lead_frames = 7;
 z_offset = 1;
 % n_vec = [spot_struct.N];
 % candidate_indices = find(n_vec>=minSpotDP);
@@ -62,7 +62,7 @@ for i = 1:length(spot_struct)
     end
 end
 
-%%
+
 % set basic sampling parameters
 nucleus_snip_radius_um = 3; % in microns
 PixelSize = liveProject.includedExperiments{1}.pixelSize_um;

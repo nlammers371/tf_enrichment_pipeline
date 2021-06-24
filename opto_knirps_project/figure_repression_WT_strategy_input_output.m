@@ -1,4 +1,4 @@
-xclear
+clear
 close all
 
 addpath(genpath('./lib'))
@@ -105,7 +105,9 @@ end
 %% Figure 2: Plot mean vectors
 nBoots = 100;
 
-ap_bins = linspace(-0.12,0.12,21);
+ap_bins = linspace(-0.125,0.125,26);
+%ap_bins = linspace(-0.12,0.12,21);
+
 ap_groups = discretize(ap_vec_long,ap_bins); 
 ap_groups_mean = discretize(mean_ap,ap_bins); 
 ap_groups_off = discretize(off_ap,ap_bins); 
@@ -148,7 +150,8 @@ bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
 
 ap_axis = 100*(ap_bins(1:end-1) + diff(ap_bins)/2);
-ap_filter = ap_axis>=-6 & ap_axis <=4.5;
+ap_filter = ap_axis>=-6 & ap_axis <=4.5; % used for figure
+
 ap_indices = find(ap_filter);
 %ap_axis = ap_axis - 61;
 % fraction on
@@ -398,8 +401,10 @@ ever_on_vec = [];
 mean_ap = [];
 time_orig_long = [];
 fluo_orig_long = [];
+knirps_orig_long = [];
 off_time_long = [];
 off_knirps_long = [];
+
 
 count = 0;
 
@@ -421,7 +426,6 @@ for i = 1:length(spot_struct)
         ever_on_orig = any(~isnan(fluo_vec_orig));
         mean_ap_orig = nanmean(ap_vec_orig);
         mean_knirps_orig = nanmean(knirps_vec_orig);
-        
 
         %fluo_vec = spot_struct(i).fluoInterp;
         %time_vec = spot_struct(i).timeInterp;
@@ -438,11 +442,13 @@ for i = 1:length(spot_struct)
             off_ap_orig = ap_vec_orig(stop_i);
         end
         
-        if (mean_ap_orig > -0.02) && (mean_ap_orig < 0.02)
+        if (mean_ap_orig > -0.01) && (mean_ap_orig < 0.01)
+           % 0.01  is for the figure
            time_orig_long = [time_orig_long time_vec_orig-off_time_orig];
            fluo_orig_long = [fluo_orig_long fluo_vec_orig];
            off_time_long = [off_time_long off_time_orig];
            off_knirps_long = [off_knirps_long off_knirps_vec_orig];
+           knirps_orig_long = [knirps_orig_long knirps_vec_orig];
            
            %plot((time_vec_orig-off_time_orig)/60,fluo_vec_orig,'Color', [175 175 175]/255);
            plot((time_vec_orig-off_time_orig)/60,fluo_vec_orig);
@@ -476,6 +482,9 @@ for i = 1:length(time_bin)-1
     fluo_vec_mean(i) = nanmean(fluo_orig_long(time_filter_long));
     fluo_vec_ste(i) = std(fluo_orig_long(time_filter_long));
     
+    knirps_vec_mean(i) = nanmean(knirps_orig_long(time_filter_long));
+    knirps_vec_ste(i) = std(knirps_orig_long(time_filter_long));
+    
 end  
     
 
@@ -489,8 +498,123 @@ ylabel(['mean activity (au)'])
 
 pbaspect([3 2 1])
 
-saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.png'])
-saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.pdf'])
+%saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.png'])
+%saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.pdf'])
+
+%% Figure: plot mean fluorescence vs time (aligned by off time), with Knirps
+
+nBoots = 100;
+
+ever_on_vec = [];
+mean_ap = [];
+time_orig_long = [];
+fluo_orig_long = [];
+knirps_orig_long = [];
+off_time_long = [];
+off_knirps_long = [];
+
+
+count = 0;
+
+fluo_silencing_fig  = figure;
+hold on
+
+for i = 1:length(spot_struct)
+    
+    if (spot_struct(i).TraceQCFlag == 1)
+        % extract core vectors 
+        
+        % extract core vectors 
+        fluo_vec_orig = spot_struct(i).fluo;
+        time_vec_orig = spot_struct(i).time;
+        knirps_vec_orig = spot_struct(i).rawNCProtein;
+        ap_vec_orig = spot_struct(i).apPosNucleus;
+        
+        % get off and on indices
+        ever_on_orig = any(~isnan(fluo_vec_orig));
+        mean_ap_orig = nanmean(ap_vec_orig);
+        mean_knirps_orig = nanmean(knirps_vec_orig);
+
+        %fluo_vec = spot_struct(i).fluoInterp;
+        %time_vec = spot_struct(i).timeInterp;
+        %ap_vec = spot_struct(i).APPosParticleInterp;
+        
+        mean_ap = [mean_ap nanmean(ap_vec)];
+        
+        if ever_on_orig
+            start_i = find(~isnan(fluo_vec_orig),1);
+            stop_i = find(~isnan(fluo_vec_orig),1,'last');
+            off_time_orig = time_vec_orig(stop_i);
+            off_knirps_vec_orig = knirps_vec_orig(stop_i);
+            off_spot_fluo_orig = fluo_vec_orig(stop_i);
+            off_ap_orig = ap_vec_orig(stop_i);
+        end
+        
+        if (mean_ap_orig > -0.01) && (mean_ap_orig < 0.01)
+           % 0.01  is for the figure
+           time_orig_long = [time_orig_long time_vec_orig-off_time_orig];
+           fluo_orig_long = [fluo_orig_long fluo_vec_orig];
+           off_time_long = [off_time_long off_time_orig];
+           off_knirps_long = [off_knirps_long off_knirps_vec_orig];
+           knirps_orig_long = [knirps_orig_long knirps_vec_orig];
+           
+           %plot((time_vec_orig-off_time_orig)/60,fluo_vec_orig,'Color', [175 175 175]/255);
+           plot((time_vec_orig-off_time_orig)/60,fluo_vec_orig);
+           count = count + 1 
+        end
+        
+%         if (mean_ap(end) > -0.01) && (mean_ap(end) < 0.01)
+%             plot(time_vec-time_vec(end),fluo_vec);
+%             count = count + 1
+%         end
+        
+    end
+    
+end
+
+time_bin = linspace(-15,0,21);
+time_groups = discretize(time_orig_long/60,time_bin);
+
+fluo_vec_mean = zeros(length(time_bin)-1,1);
+fluo_vec_ste = zeros(length(time_bin)-1,1);
+
+for i = 1:length(time_bin)-1
+ 
+    time_filter_long = time_groups==i;
+    
+    %if sum(time_filter_long) > 10        
+    %    boot_samples_fluo = bootstrp(nBoots,@nanmean,fluo_orig_long(time_filter_long));
+    %    fluo_vec_mean(i) = nanmean(boot_samples_fluo);
+    %    fluo_vec_ste(i) = std(boot_samples_fluo);
+    
+    fluo_vec_mean(i) = nanmean(fluo_orig_long(time_filter_long));
+    fluo_vec_ste(i) = std(fluo_orig_long(time_filter_long));
+    
+    knirps_vec_mean(i) = nanmean(knirps_orig_long(time_filter_long));
+    knirps_vec_ste(i) = std(knirps_orig_long(time_filter_long));
+    
+end  
+    
+yyaxis left
+plot(time_bin(2:end),fluo_vec_mean,'LineWidth',5,'Color',mRNA_red)
+    
+xlim([-10 3])
+%ylim([0 3.5E5])
+ylim([0 4E5])
+
+ylabel(['mean activity (au)'])
+
+yyaxis right
+plot(time_bin(2:end),knirps_vec_mean,'LineWidth',5,'Color',color_green)
+ylim([5E5 10E5])
+
+xlabel(['time (min) relative to the silencing event'])
+
+pbaspect([3 2 1])
+
+%saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.png'])
+%saveas(fluo_silencing_fig,[FigurePath 'figure2_fluo_silencing.pdf'])
+
 
 %% Figure: plot mean fluorescence vs time (not aligned)
 
@@ -644,48 +768,62 @@ for i = 1:length(ap_cell)
     saveas(ap_time_fig,[FigurePath 'figure2_supp_fraction_on_vs_time_' num2str(i) '.pdf'])
 end
 
-%% Figure: plot fraction_on vs knirps
+%% plot fraction_on vs time for one bin
 
-for i = length(ap_cell)%1:length(ap_cell)
+%ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:end)}; %ap_indices(1:9) ap_indices(1:end)};
+%ap_cell = {ap_indices(1:3) ap_indices(1:6) ap_indices(1:9) ap_indices(1:end)};
+%ap_cell = {ap_indices(1:end)};
+
+ap_cell = {6};
+
+close all
+knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
+knirps_axis = knirps_axis*1e-5;
+time_axis = time_bins(1:end-1) + diff(time_bins)/2;
+time_axis = time_axis/60;
+
+cmap_bin_num = 100;
+
+for i = 1:length(ap_cell)
     ap_indices_iter = ap_cell{i};
-    
-    ap_knirps_fig = figure;
+  
+    ap_time_fig = figure;
     hold on
-    cmap1 = flipud(brewermap(cmap_bin_num*1.4,'PrGn'));
-    cmap1 = cmap1(0.20*cmap_bin_num:1.20*cmap_bin_num-1,:);
+    %cmap1 = brewermap(length(ap_indices),'blues');
+    cmap1 = brewermap(cmap_bin_num*1.2,'blues');
+    cmap1 = cmap1(1:cmap_bin_num,:);
+    
     colormap(cmap1)
     %iter = 1;
     for a = ap_indices_iter
-        errorbar(knirps_axis,frac_on_knirps_array_mean(:,a),frac_on_time_array_ste(:,a),'o','Color',[0 0 0 0],'CapSize',0,'LineWidth',.5);
-    %     plot(knirps_axis,frac_on_knirps_array_mean(:,a),'color',[0 0 0 0.2]);
-        %scatter(knirps_axis,frac_on_knirps_array_mean(:,a),50,'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
+        errorbar(time_axis,frac_on_time_array_mean(:,a),frac_on_time_array_ste(:,a),'Color','k','CapSize',0);
+        %scatter(time_axis,frac_on_time_array_mean(:,a),'MarkerFaceColor',cmap1(iter,:),'MarkerEdgeColor','k')
         cmap_bin = round((ap_axis(a)-ap_axis(ap_indices(1)))*(cmap_bin_num-1)/(ap_axis(ap_indices(end))-ap_axis(ap_indices(1))))+1;
-        scatter(knirps_axis,frac_on_knirps_array_mean(:,a),50,'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k')
+        scatter(time_axis,frac_on_time_array_mean(:,a),'MarkerFaceColor',cmap1(cmap_bin,:),'MarkerEdgeColor','k')
         %iter = iter + 1;
     end
-    caxis([ap_axis(ap_indices(1)),ap_axis(ap_indices(end))])
+    caxis([ap_axis(ap_indices(1)) ap_axis(ap_indices(end))])
     h = colorbar;
-
-    xlabel('[Knirps] (au)');
+    xlim([time_bins(1)/60 time_bins(end)/60])
+    xlabel('time since start of nc14 (minutes)');
     ylabel('fraction of {\it eve} loci still on');
     ylabel(h,'AP position')
 
     %grid on
     set(gca,'FontSize',14)
     %set(gca,'Color',[228,221,209]/255) 
-    xlim([2 11])
+
     ax = gca;
     ax.YAxis(1).Color = 'k';
     ax.XAxis(1).Color = 'k';
 
-    ap_knirps_fig.InvertHardcopy = 'off';
+    ap_time_fig.InvertHardcopy = 'off';
     set(gcf,'color','w'); 
-    
-    pbaspect([3 2 1])
 
-    saveas(ap_knirps_fig,[FigurePath 'figure2_fraction_on_vs_knirps_' num2str(i) '.png'])
-    saveas(ap_knirps_fig,[FigurePath 'figure2_fraction_on_vs_knirps_' num2str(i) '.pdf'])
+    saveas(ap_time_fig,[FigurePath 'figure2_supp_fraction_on_vs_time_' num2str(i) '.png'])
+    saveas(ap_time_fig,[FigurePath 'figure2_supp_fraction_on_vs_time_' num2str(i) '.pdf'])
 end
+
 
 %% Figure 2: Combine simple hill function fit with input-output
 % Step 1: fit simple hill function to each ap position
