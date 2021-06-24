@@ -64,7 +64,7 @@ end
 %% Combine Particles into a single master set and generate down-sampled 
 %%%Traces
 downsample_struct = struct;
-ds_factor_vec = [4 3 2 1]; % keep every second, every third, or every fourht point
+ds_factor_vec = [4 3 2 1]; % keep every second, every third, or every fourth point
 
 % concatenate particles
 ParticlesFull = [master_struct.Particles];
@@ -96,7 +96,7 @@ for p = 1:length(ParticlesFull)
         conv_kernel = [1 zeros(1,ds_factor-1) 1 zeros(1,ds_factor-1) 1];
         nb_flag_vec = conv(conv_kernel,ObsVec);
         nb_flag_vec = nb_flag_vec(ds_factor+1:end-ds_factor);
-        valid_option_flags = nb_flag_vec==3;
+        valid_option_flags = nb_flag_vec>=2;
         
         % pick series with appropriate spacing
         skip_flag_vec = false(size(valid_option_flags));
@@ -114,6 +114,7 @@ for p = 1:length(ParticlesFull)
         ref_flag_vec = bwdist(skip_flag_vec)==ds_factor;
         fi = 1;%find(ref_flag_vec,1);
         li = length(ref_flag_vec);%find(ref_flag_vec,1,'last');
+        
         % add the fields
         ParticlesFullLong(iter).OriginalParticle = p;
         ParticlesFullLong(iter).dsFactor = ds_factor;
@@ -134,16 +135,19 @@ end
 
 %% Now let's use these datasets to generate testing data sets
 % initialize array to store results
-spotPathArray = NaN(length([ParticlesFullLong.xPos]),13);
+spotPathArray = NaN(length([ParticlesFullLong.xPos]),15);
 
 % initialize kalman options
 kalmanOptions.type = 'ConstantVelocity';
 nDims = 2;
 kalmanOptions.MeasurementNoise = liveExperiment.pixelSize_um; 
-kalmanOptions.MotionNoise = repelem(1,nDims)*1e2;
+kalmanOptions.MotionNoise = repelem(1,nDims)*kalmanOptions.MeasurementNoise;
 kalmanOptions.InitialError = repelem(kalmanOptions.MeasurementNoise,nDims);
 
 kalmanOptions.measurementFields = {'xPos', 'yPos', 'zPos'};
+
+kalmanOptions2 = kalmanOptions;
+kalmanOptions2.MotionNoise = kalmanOptions2.MotionNoise/100;
 
 % initialize variables to track position in array
 start_i = 1;
@@ -154,17 +158,22 @@ for p = 1:length(ParticlesFullLong)
     RefFlags = ParticlesFullLong(p).RefFlags';
     
     % get kalman predictions
-    ParticlesTemp = pathPrediction_v2(ParticlesFullLong(p), kalmanOptions); 
+    ParticlesTemp = pathPrediction(ParticlesFullLong(p), kalmanOptions); 
+    ParticlesTemp2 = pathPrediction(ParticlesFullLong(p), kalmanOptions2); 
 
     % generate array to concatenate with master        
     xFitVec = ParticlesTemp.xPosFull;
     yFitVec = ParticlesTemp.yPosFull;
+    
     pIDVec = double(repelem(i,length(yFitVec))');
     dsIDVec = double(repelem(ParticlesFullLong(p).dsFactor,length(yFitVec))');
     opIDVec = double(repelem(ParticlesFullLong(p).OriginalParticle,length(yFitVec))');
     xInfVec = ParticlesTemp.xPosInf;
     yInfVec = ParticlesTemp.yPosInf;
 
+    xInfVec2 = ParticlesTemp2.xPosInf;
+    yInfVec2 = ParticlesTemp2.yPosInf;
+    
     tempArray = [dsIDVec pIDVec FramesFull xFitVec' yFitVec' ...
                 ParticlesFullLong(p).RefFlags' ParticlesFullLong(p).SkipFlags' xInfVec yInfVec];
 
@@ -188,7 +197,7 @@ for p = 1:length(ParticlesFullLong)
     yLast(~RefFlags) = interp1(FramesFull(RefFlags),yFitVec(RefFlags),FramesFull(~RefFlags),'previous');
 
     % add to array
-    tempArray(:,end+1:end+4) = [xLin' yLin' xLast' yLast'];
+    tempArray(:,end+1:end+6) = [xLin' yLin' xLast' yLast' xInfVec2 yInfVec2];
       
     last_i = start_i + size(tempArray,1) - 1;
     spotPathArray(start_i:last_i,:) = tempArray;
@@ -201,22 +210,25 @@ close all
 
 gapFlags = spotPathArray(:,7)==1;
 dsIDVec = spotPathArray(gapFlags,1);
-kalmanErrors = sqrt(sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,8:9)).^2,2));
-interpErrors = sqrt(sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,10:11)).^2,2));
-prevErrors = sqrt(sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,12:13)).^2,2));
+kalmanErrors = sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,8:9)).^2,2);
+kalmanErrors2 = sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,14:15)).^2,2);
+interpErrors = sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,10:11)).^2,2);
+prevErrors = sum((spotPathArray(gapFlags,4:5)-spotPathArray(gapFlags,12:13)).^2,2);
 
 outlier_flags = interpErrors > 10 | prevErrors > 10 | kalmanErrors > 10;
 
 % kalErr = nanmedian(kalmanErrors)
 px_size = liveExperiment.pixelSize_um;
 kal_err_mean = NaN(1,length(ds_factor_vec));
+kal_err_mean2 = NaN(1,length(ds_factor_vec));
 interp_err_mean = NaN(1,length(ds_factor_vec));
 prev_err_mean = NaN(1,length(ds_factor_vec));
 
 for d = 1:length(ds_factor_vec)
-    kal_err_mean(d) = px_size*nanmean(kalmanErrors(dsIDVec==ds_factor_vec(d)));
-    interp_err_mean(d) = px_size*nanmean(interpErrors(dsIDVec==ds_factor_vec(d)));
-    prev_err_mean(d) = px_size*nanmean(prevErrors(dsIDVec==ds_factor_vec(d)));
+    kal_err_mean(d) = sqrt(nanmean(kalmanErrors(dsIDVec==ds_factor_vec(d))));
+    kal_err_mean2(d) = sqrt(nanmean(kalmanErrors2(dsIDVec==ds_factor_vec(d))));
+    interp_err_mean(d) = sqrt(nanmean(interpErrors(dsIDVec==ds_factor_vec(d))));
+    prev_err_mean(d) = sqrt(nanmean(prevErrors(dsIDVec==ds_factor_vec(d))));
 end
     
 x_axis = Tres*(ds_factor_vec);
@@ -235,14 +247,18 @@ s2 = scatter(x_axis,interp_err_mean,'MarkerFaceColor',cmap1(2,:),'MarkerEdgeColo
 plot(x_axis,kal_err_mean,'Color','k')
 s3 = scatter(x_axis,kal_err_mean,'MarkerFaceColor',cmap1(3,:),'MarkerEdgeColor','k');
 
+plot(x_axis,kal_err_mean2,'Color','k')
+s4 = scatter(x_axis,kal_err_mean2,'MarkerFaceColor',cmap1(4,:),'MarkerEdgeColor','k');
+
 xlabel('time gap (seconds)')
-ylabel('prediction error (\mu m)')
+% ylabel('prediction error (\mum)')
+ylabel('prediction error (pixels)')
 
 grid on
 set(gca,'Fontsize',14)
-legend([s1 s2 s3],'previous position','linear interpolation','kalman filter','Location','southeast')
+legend([s1 s2 s3 s4],'previous position','linear interpolation','kalman filter (v1)','kalman filter (v2)','Location','southeast')
 xlim([0 20])
-ylim([0 0.7])
+ylim([2 8])
 saveas(err_fig,[FigurePath 'prediction_error_v_time_gap.png'])
 
 
