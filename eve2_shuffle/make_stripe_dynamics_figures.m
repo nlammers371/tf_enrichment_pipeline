@@ -136,7 +136,6 @@ saveas(stripe_param_raw,[FigurePath 'stripe_param_raw.png'])
 
 %% Make phase space scatters
 
-
 close all
 markerAlpha = 0.5;
 time_indices = 25:40;

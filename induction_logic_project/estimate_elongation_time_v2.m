@@ -39,7 +39,7 @@ for i = 1:length(spot_struct)
   trace = spot_struct(i).fluoInterp;%imgaussfilt(spot_struct(i).fluoInterp,sm_factor);  
   
   % subdivide trace into contiguous active perods
-  on_filter = trace>=thresh;
+  on_filter = ~isnan(trace);%>=thresh;
   start_id = find(on_filter,1);
   stop_id = find(on_filter,1,'last');    
   
