@@ -4,15 +4,17 @@ clear
 close all
 
 % set basic paths
-% DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\';
-DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
+ReadRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\raw_data\';
+WriteRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
+% DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
 project  = '20210430';
 % project = '20200807_opto_chronic';
-DataPath = [DataRoot project filesep];
+ReadPath = [ReadRoot project filesep];
+WritePath = [WriteRoot project filesep];
 
 % get list of data sets
-TraceFileList = dir([DataPath '*.xlsx']);
-ProteinFileList = dir([DataPath '*protein_only.xlsx']);
+TraceFileList = dir([ReadPath '*.xlsx']);
+ProteinFileList = dir([ReadPath '*protein_only.xlsx']);
 expStrings = {TraceFileList.name};
 expStrings = expStrings(~contains(expStrings,'~$'));
 expIDs = 1:length(expStrings);
@@ -27,7 +29,6 @@ gene_len_vec = [2398 6671 2381];
 elongation_rate = 2000 * dT/60;
 mem_vec = ceil(gene_len_vec ./ elongation_rate);
 alpha_frac_vec = ms2_len ./ gene_len_vec;
-
 
 for e = 1:length(expStrings)
   i_iter = 1;
@@ -60,7 +61,7 @@ for e = 1:length(expStrings)
     divFactor = 10^ceil(log10(size(raw_array,2)));
 
     if length(ProteinFileList)>=e
-        raw_protein_table = readtable([DataPath ProteinFileList(e).name]);
+        raw_protein_table = readtable([ReadPath ProteinFileList(e).name]);
         raw_protein_array = raw_protein_table{:,:};
         % It looks like there are 10 spot frames for every protein frame
         proteinFrames = 1:10:length(time_vec);
@@ -120,11 +121,11 @@ for e = 1:length(expStrings)
   
   % save
   
-  projectPath = [DataRoot filesep project '_' gene_name filesep];
+  projectPath = [WriteRoot filesep project '_' gene_name filesep];
   mkdir(projectPath);
   save([projectPath 'spot_struct.mat'],'spot_struct')
   if ~isempty(ProteinFileList)
-      save([DataPath 'spot_struct_protein.mat'],'spot_struct_protein')
+      save([projectPath 'spot_struct_protein.mat'],'spot_struct_protein')
   end    
 end
 

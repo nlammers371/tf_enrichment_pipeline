@@ -28,7 +28,7 @@ inferenceInfo.AdditionalGroupingVariable = 'stripeCenterFlag';%'Stripe'
 inferenceInfo.SampleSize = 3000;
 inferenceInfo.useQCFlag = true;
 
-inferenceInfo.n_localEM = 50;
+inferenceInfo.n_localEM = 25;
 
 % Get basic project info and determing file paths
 liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});

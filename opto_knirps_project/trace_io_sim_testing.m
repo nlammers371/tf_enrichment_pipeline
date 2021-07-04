@@ -20,7 +20,7 @@ tf_dependent_flags = false(size(RateMatrix));
 tf_dependent_flags(1,2) = true;
 
 % specify io response characteristics
-KD = 5;
+KD = 6;
 hill_coeff = -2;
 
 % calculate time resolution that we need to use
@@ -28,16 +28,14 @@ granularity = 1./max(abs(RateMatrix(:))) / 10;
 
 % generate hypothetical temporal TF input profile (assume linear)
 m_tf = 0.25*KD / 5 * 60/ deltaT;
-r0 = 1;
-r1 = 11;
+r0 = KD-5;
+r1 = KD+5;
 t_shift = 10*60/deltaT;
 center_time = seq_length/2;
 tf_profile = NaN(1,seq_length+1);
 tf_profile(1:center_time-t_shift/2) = r0;
 tf_profile(center_time+2+t_shift/2:end) = r1;
 tf_profile(center_time+1-t_shift/2:center_time+1+t_shift/2) = linspace(r0,r1,t_shift+1);
-% tf_profile = linspace(KD-seq_length/2*m_tf,KD+seq_length/2*m_tf,seq_length+1);
-% tf_profile(tf_profile<1e-6) = 1e-6;
 
 %%
 
