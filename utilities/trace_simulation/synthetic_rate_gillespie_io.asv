@@ -59,7 +59,9 @@ for window = 1:length(fluo_grid)
     t_end = obs_time_grid(window);  
     t_start = max(0,t_end - memory*deltaT);
     s_ind = find(jump_times<=t_start,1,'last'); % index of first relevant promoter state
-  
+    if isempty(s_ind)
+        error('wtf')
+    end
     e_ind = find(jump_times<t_end,1,'last'); % last relevant state
     times = jump_times(s_ind:e_ind);
     times(1) = t_start;
@@ -68,16 +70,20 @@ for window = 1:length(fluo_grid)
     F = 0;
     F_alpha = 0;
     for t = 1:(length(times)-1)
-        r_state = r_emission(states(t));
-  
+        r_mean = mean(r_array(t_ref_out>=times(t)&t_ref_out<times(t+1),states(t)));
+        if isnan(r_mean)
+            r_mean = r_array(find(t_ref_out>=times(t),1));
+        end
         t1 = t_end - times(t);
         t2 = t_end - times(t+1);
         ta1 = min(t1,t_MS2);
         ta2 = min(t2,t_MS2);
-        F = F + r_state*(t1 - t2);
-        F_alpha = F_alpha + r_state*(ta1-ta2)*(ta1+ta2)/t_MS2*.5 + ...
-            ((t1 - t2)-(ta1-ta2))*r_state;
-
+        F = F + r_mean*(t1 - t2);
+        F_alpha = F_alpha + r_mean*(ta1-ta2)*(ta1+ta2)/t_MS2*.5 + ...
+            ((t1 - t2)-(ta1-ta2))*r_mean;
+        if isnan(F)
+            error('afsa')
+        end
     end    
     fluo_grid(window) = F;    
     fluo_grid_MS2(window) = F_alpha;
