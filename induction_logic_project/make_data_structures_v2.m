@@ -4,8 +4,14 @@ clear
 close all
 
 % set basic paths
-ReadRoot = 'C:\Users\nlamm\Dropbox (Personal)\InductionLogic\raw_data\';
-WriteRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
+DataRoot = 'C:\Users\nlamm\Dropbox (Personal)';
+if ~exist(DataRoot)
+  DataRoot = 'S:\Nick\Dropbox\';
+end
+
+% set basic paths
+ReadRoot = [DataRoot 'InductionLogic\raw_data\'];
+WriteRoot = [DataRoot 'ProcessedEnrichmentData\'];
 % DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
 project  = '20210430';
 % project = '20200807_opto_chronic';

@@ -15,7 +15,9 @@ project_prefix = '20210430';
 projectList = dir([DataRoot project_prefix '*']);
 
 master_struct=  struct;
-for p = 1:length(projectList)     
+
+project_index = 2;
+for p = project_index%1:length(projectList)     
 
     % load spots struct
     DataPath = [DataRoot filesep projectList(p).name filesep];
@@ -30,7 +32,7 @@ for p = 1:length(projectList)
     inferenceInfo.ProteinBinFlag = 0;
     inferenceInfo.FluoBinFlag = 0;
     %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-    inferenceInfo.timeBins = {[0 40*60]}; % should be >= than 15min
+    inferenceInfo.timeBins = {[0 Inf*60]}; % should be >= than 15min
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
@@ -46,11 +48,11 @@ for p = 1:length(projectList)
     inferenceInfo.n_localEM = 25;
 
     % Get basic project info and determing file paths
-    liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
+%     liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
 
     % save
-    slashes = regexp(liveProject.dataPath,'/|\');
-    dataDir = liveProject.dataPath(1:slashes(end-1));
+    slashes = regexp(DataPath,'/|\');
+    dataDir = DataPath(1:slashes(end-1));
     inferenceDir = [dataDir 'inferenceDirectory' filesep];
     mkdir(inferenceDir)
     save([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')

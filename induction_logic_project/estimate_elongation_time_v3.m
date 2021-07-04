@@ -23,14 +23,14 @@ end
 
 % concatenate
 spot_struct = [master_struct.spot_struct];
-%%
+
 Tres = spot_struct(1).Tres;
 
 % set parameters for autocorr analysis
 window_size = 15;
 n_boots = 100;
 
-%% calculate autocorrelation
+% define indexing vectors
 particle_id_vec = [spot_struct.particleID];
 set_id_vec = [spot_struct.setID];
 set_index = unique(set_id_vec);

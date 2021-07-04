@@ -33,9 +33,20 @@ customProjectFlag = exist('customProjectPath','var');
 if savioFlag && ~manualInferenceInfo
   inferenceDir = '~/dat/tf_enrichment/inferenceDirectory/';
 elseif ~manualInferenceInfo
-  liveProject = LiveEnrichmentProject(projectNameCell{1});
-  slashes = regexp(liveProject.dataPath,'/|\');
-  dataDir = liveProject.dataPath(1:slashes(end-1));
+  try
+    liveProject = LiveEnrichmentProject(projectNameCell{1});
+    dataPath = liveProject.dataPath;
+  catch
+    customProjectFlag = true;
+    if savioFlag
+      dataPath = ['~/dat/tf_enrichment/' projectNameCell{1} filesep];
+    else % NL: this is just for testing purposes
+      dataPath = ['S:/Nick/Dropbox/ProcessedEnrichmentData/' projectNameCell{1} filesep];
+    end
+    customProjectPath = dataPath;
+  end
+  slashes = regexp(dataPath,'/|\');
+  dataDir = dataPath(1:slashes(end-1));
   inferenceDir = [dataDir 'inferenceDirectory' filesep];
 end
 
@@ -89,8 +100,8 @@ for p = 1:length(projectNameCell)%randsample(1:length(projectNameCell),length(pr
         % Get basic project info and determing file paths
         [InputDataPath, OutputDataPath] = getDataPaths(savioFlag,projectNameCell{p});
     else
-        InputDataPath = [customProjectPath projectNameCell{p} filesep];
-        OutputDataPath = [customProjectPath projectNameCell{p} filesep];
+        InputDataPath = [customProjectPath  filesep];
+        OutputDataPath = [customProjectPath filesep];
     end
     % Call main inference function
     cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,options{:})
