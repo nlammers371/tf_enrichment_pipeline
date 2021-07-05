@@ -174,8 +174,7 @@ time_bins_plot = time_bins(1:end-1)/60;
 %knirps_bins = linspace(0,15e5,nLinBins);
 
 %knirps_offset = 2.5e5;%prctile(double(knirps_vec_long),1);
-%knirps_offset = 3.75e5;
-knirps_offset = 0;
+knirps_offset = 3.75e5;
 
 % calculate mean vectors
 knirps_vec_long = knirps_vec_long_raw - knirps_offset;
@@ -322,28 +321,28 @@ sample_traces_mean_CONST = mean(sample_traces_CONST,1);
 single_traces_WT = figure;
 imagesc('XData',time_vec,'CData',random_sample_traces_WT(1:sample_num,:))
 xlabel('time (min)')
-xlim([0 37.5])
+xlim([0 40])
 ylim([1 sample_num])
-colorbar
+%colorbar
 colormap(plasma)
-caxis([0 4.5E5])
+caxis([0 5E5])
 pbaspect([2 1 1])
 
 single_traces_CONST = figure;
 imagesc('XData',time_vec,'CData',random_sample_traces_CONST(1:sample_num,:))
 xlabel('time (min)')
-xlim([0 37.5])
+xlim([0 40])
 ylim([1 sample_num])
-colorbar
+%colorbar
 colormap(plasma)
-caxis([0 4.5E5])
+caxis([0 5E5])
 pbaspect([2 1 1])
 
 single_traces_mean = figure;
 plot(time_vec,  movmean(sample_traces_mean_WT,3))
 hold on
 plot(time_vec,  movmean(sample_traces_mean_CONST,3))
-xlim([0 37.5])
+xlim([0 40])
 %ylim([0 1])
 xlabel('time (min)')
 ylabel('mean spot fluorescence (au)')
@@ -353,11 +352,11 @@ single_traces_frac_on = figure;
 plot(time_vec, movmean(sample_traces_frac_WT,3))
 hold on
 plot(time_vec,  movmean(sample_traces_frac_CONST,3))
-xlim([0 37.5])
+xlim([0 40])
 ylim([0 1])
 xlabel('time (min)')
 ylabel('fraction of active nuclei')
-pbaspect([3 1 1])
+pbaspect([2 1 1])
 legend('WT','perturbed')
 
 saveas(single_traces_WT,[FigurePath 'figure_single_traces_WT.pdf'])
@@ -439,37 +438,14 @@ saveas(CONST_mean_eve_fig,[FigurePath 'figure_eve_mean_CONST.pdf'])
 saveas(WT_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_WT.pdf'])
 saveas(CONST_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_CONST.pdf'])
 
-%% Figure: plot protein level comparison between WT and ON_CONST
-
-WT_knirps_mean_ap = (mean(WT.knirps_mean(35:50,:),1)*1e-5)-3.75;
-CONST_knirps_mean_ap = mean(CONST.knirps_mean(35:50,:),1)*1e-5/1.25-3.75;
-
-knirps_mean_ap_fig = figure;
-plot(ap_bins_plot*100,WT_knirps_mean_ap)
-hold on
-plot(ap_bins_plot*100, CONST_knirps_mean_ap)
-
-xlim([-10.6667 10.6667])
-ylim([0.5 9])
-xlabel('AP position (% embryo length)')
-ylabel('[Knirps] (AU)')
-
-pbaspect([3 1 1])
-
-saveas(knirps_mean_ap_fig,[FigurePath 'figure_kni_mean_WT_CONST_ap.pdf'])
-
-
 
 %% Figure: Plot k_on, k_off vs ap
 
 % load inference results
-%WT_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap7_t1_f2D_temp_WT.mat');
-WT_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap9_t1_f2D_WT.mat');
-%CONST_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap7_t1_f2D_combined_ON_CONST.mat');
-CONST_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap9_t1_f2D_CONST.mat');
+WT_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap7_t1_f2D_CONST.mat');
+CONST_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap7_t1_f2D_WT_v1.mat');
 
 burst_axis = (WT_bursting.compiledResults.apBins(1:end-1)+ WT_bursting.compiledResults.apBins(2:end))/2;
-ap_axis = burst_axis*100;
 % data from WT
 burst_freq_WT = WT_bursting.compiledResults.freq_vec_mean;
 burst_freq_ste_WT = WT_bursting.compiledResults.freq_vec_ste;
@@ -489,6 +465,10 @@ burst_rate_ste_CONST = CONST_bursting.compiledResults.init_vec_ste*1e-5;
 burst_dur_center = burst_dur_WT(4);
 burst_rate_center = burst_rate_WT(4);
 burst_freq_center = burst_freq_WT(4);
+
+
+ap_bins = linspace(-0.12,0.12,21);
+ap_axis = 100*(ap_bins(1:end-1) + diff(ap_bins)/2);
 
 burst_k_off_center = 1/burst_dur_center;
 burst_k_on_center = 1/burst_freq_center;
@@ -563,11 +543,8 @@ hold on
 set(gca,'FontSize',14)
 
 errorbar(burst_axis*100,burst_rate_WT/burst_rate_center,burst_rate_ste_WT/burst_rate_center,'Color','k','CapSize',0)
-errorbar(burst_axis*100,burst_rate_CONST/burst_rate_center,burst_rate_ste_CONST/burst_rate_center,'Color','k','CapSize',0)
 plot(burst_axis*100,burst_rate_WT/burst_rate_center,'-k')
-plot(burst_axis*100,burst_rate_CONST/burst_rate_center,'-k')
-scatter(burst_axis*100,burst_rate_WT/burst_rate_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
-scatter(burst_axis*100,burst_rate_CONST/burst_rate_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+scatter(burst_axis*100,burst_rate_WT/burst_rate_center,50,'MarkerFaceColor',gr,'MarkerEdgeColor','k')
 %set(gca,'YColor',gr);
 ylabel(['mRNA loading rate (relative to WT center)'])
 ylim([0 2])
@@ -580,76 +557,9 @@ set(gcf,'color','w');
 pbaspect([2 1 1])
 
 
-%saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap_WT_CONST.pdf'])
-%saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap_WT_CONST.pdf'])
+saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap_WT_CONST.pdf'])
+saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap_WT_CONST.pdf'])
 %saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
-
-%% plot bursting rates + loading rate
-
-% loading rate vs ap
-burst_loading_rate_ap_fig = figure;
-hold on
-
-set(gca,'FontSize',14)
-%set(gca, 'YScale', 'log')
-
-errorbar(burst_axis*100,burst_rate_CONST,burst_rate_ste_CONST,'Color','k','CapSize',0)
-errorbar(burst_axis*100,burst_rate_WT,burst_rate_ste_WT,'Color','k','CapSize',0)
-plot(burst_axis*100,burst_rate_CONST,'-k')
-plot(burst_axis*100,burst_rate_WT,'-k')
-scatter(burst_axis*100,burst_rate_CONST,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
-scatter(burst_axis*100,burst_rate_WT,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-%set(gca,'YColor',gr);
-ylabel(['mRNA loading rate (AU/min)'])
-ylim([0 4])
-
-xlabel('AP position (% embryo length)');
-xlim([ap_axis(1) ap_axis(end)])
-%mRNA_fig2.InvertHardcopy = 'off';
-set(gcf,'color','w'); 
-pbaspect([2 1 1])
-
-
-
-% transition rate vs ap
-burst_rate_fig = figure;
-hold on
-
-set(gca,'FontSize',14)
-set(gca, 'YScale', 'log')
-
-errorbar(burst_axis*100,burst_k_on_mean_CONST,burst_k_on_ste_CONST,'Color','k','CapSize',0)
-errorbar(burst_axis*100,burst_k_on_mean_WT,burst_k_on_ste_WT,'Color','k','CapSize',0)
-plot(burst_axis*100,burst_k_on_mean_CONST,'-k')
-plot(burst_axis*100,burst_k_on_mean_WT,'-k')
-scatter(burst_axis*100,burst_k_on_mean_CONST,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
-scatter(burst_axis*100,burst_k_on_mean_WT,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-
-errorbar(burst_axis*100,burst_k_off_mean_CONST,burst_k_off_ste_CONST,'Color','k','CapSize',0)
-errorbar(burst_axis*100,burst_k_off_mean_WT,burst_k_off_ste_WT,'Color','k','CapSize',0)
-plot(burst_axis*100,burst_k_off_mean_CONST,'-k')
-plot(burst_axis*100,burst_k_off_mean_WT,'-k')
-scatter(burst_axis*100,burst_k_off_mean_CONST,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
-scatter(burst_axis*100,burst_k_off_mean_WT,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-
-%set(gca,'YColor',bl);
-ylabel(['transition rates (1/min)'])
-ylim([0 10])
-
-
-xlabel('AP position (% embryo length)');
-xlim([ap_axis(1) ap_axis(end)])
-%mRNA_fig2.InvertHardcopy = 'off';
-set(gcf,'color','w'); 
-pbaspect([2 1 1])
-%legend('','','','','','')
-
-
-saveas(burst_rate_fig,[FigurePath 'figure_burst_rate_vs_ap.pdf'])
-saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
-
-
-
 
 %% Bursting parameters with mRNA pattern
 % which time to plot for knirps

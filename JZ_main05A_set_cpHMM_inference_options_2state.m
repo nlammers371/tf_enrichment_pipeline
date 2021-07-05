@@ -11,16 +11,21 @@ inferenceInfo = struct;
 % set project identifiers (only applicable if running this on savio)
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
-%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT_FUN'};
+inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
 
+%optokni_eve4+6_ON_CONST
+%inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
+%inferenceInfo.apBins = linspace(-0.12,0.12,8);%linspace(-.2,.2,10);
+
 %optokni_eve4+6_WT
-inferenceInfo.timeBins = {[0*60 30*60]}; % should be longer than 15min
-inferenceInfo.apBins = linspace(-0.12,0.12,8);%linspace(-.2,.2,10);
+inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
+inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
 %inferenceInfo.apBins = ([-0.12 0.12]);
 
 %optokni_eve4+6_MCP-GFP_Homo

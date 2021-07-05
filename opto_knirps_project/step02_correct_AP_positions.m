@@ -3,7 +3,7 @@
 clear
 close all
 
-projectList = {'optokni_eve4+6_ON_ALL'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_WT_FUN'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
@@ -24,6 +24,7 @@ for p = 1:length(projectList)
   end
   
   disp('performing AP correction...')
+ 
   % initialize grouping variables and add new position
   for i = 1:length(spot_struct_protein)
     % rename fields
@@ -45,6 +46,7 @@ for p = 1:length(projectList)
         end
     end
   end
+
   
   for i = 1:length(spot_struct)
     % rename fields
