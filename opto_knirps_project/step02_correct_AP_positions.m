@@ -3,7 +3,7 @@
 clear
 close all
 
-projectList = {'optokni_eve4+6_WT_FUN'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_ON'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
@@ -42,7 +42,7 @@ for p = 1:length(projectList)
         if isnan(xPosVec)
             spot_struct_protein(i).APPosParticleInterp(j) = NaN;
         else
-            spot_struct_protein(i).APPosParticleInterp(j) = ap_map(expID).APmap(round(yPosVec(j)),round(xPosVec(j)));
+            spot_struct_protein(i).APPosParticleInterp(j) = ap_map(expID).APmap(ceil(yPosVec(j)),ceil(xPosVec(j)));
         end
     end
   end
@@ -71,7 +71,7 @@ for p = 1:length(projectList)
         if isnan(xPosVec)
             spot_struct(i).APPosParticleInterp(j) = NaN;
         else
-            spot_struct(i).APPosParticleInterp(j) = ap_map(expID).APmap(round(yPosVec(j)),round(xPosVec(j)));
+            spot_struct(i).APPosParticleInterp(j) = ap_map(expID).APmap(ceil(yPosVec(j)),ceil(xPosVec(j)));
         end
     end
     
@@ -80,7 +80,7 @@ for p = 1:length(projectList)
         if isnan(xPosNucVec)
             spot_struct(i).APPosNucleus(j) = NaN;
         else
-            spot_struct(i).APPosNucleus(j) = ap_map(expID).APmap(round(yPosNucVec(j)),round(xPosNucVec(j)));
+            spot_struct(i).APPosNucleus(j) = ap_map(expID).APmap(ceil(yPosNucVec(j)),ceil(xPosNucVec(j)));
         end
     end
     
