@@ -22,7 +22,7 @@ pi0 = simInfo.pi0;
 nStates = size(RateMatrix,1);  
 
 % calculate time vector
-t_process = deltaT*seq_length; % length of simulation in seconds
+t_process = deltaT*(seq_length-1); % length of simulation in seconds
 t_ref_in = (0:deltaT:t_process)';
 t_ref_out = (0:granularity:t_process)'; % assuming that jump lengths are much shorter than obs time
 

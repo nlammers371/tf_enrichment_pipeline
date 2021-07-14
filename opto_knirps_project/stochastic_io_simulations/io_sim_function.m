@@ -13,12 +13,13 @@ simInfo = struct;
 simInfo.simType = simType;%'out_only_off';
 
 % define basic sim parameters
-simInfo.seq_length = 120;
-simInfo.memory = 7;
-simInfo.deltaT = 20;
-simInfo.t_MS2 = 1.4;
 simInfo.n_traces = 100;
 simInfo.granularity = 1;
+
+simInfo.seq_length = systemParams.seq_length;
+simInfo.memory = systemParams.memory;
+simInfo.deltaT = systemParams.deltaT;
+simInfo.t_MS2 = systemParams.t_MS2;
 
 % define response parameters
 simInfo.KD = KD;

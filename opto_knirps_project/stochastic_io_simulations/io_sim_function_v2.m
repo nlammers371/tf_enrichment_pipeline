@@ -1,7 +1,7 @@
 % Function wrapper for stochastic trace simulations in non-steady-state
 % conditions
 
-function simInfo = io_sim_function_v2(simType,systemParams,KD,HC,K_out,K_in,tf_profile_array,varargin)
+function simInfo = io_sim_function_v2(simType,systemParams,KD,HC,K_out,K_in,tf_profile_array,n_traces,granularity,varargin)
 
 % close all
 addpath(genpath('../../utilities'));
@@ -13,12 +13,13 @@ simInfo = struct;
 simInfo.simType = simType;%'out_only_off';
 
 % define basic sim parameters
-simInfo.seq_length = 120;
-simInfo.memory = 7;
-simInfo.deltaT = 20;
-simInfo.t_MS2 = 1.4;
-simInfo.n_traces = 100;
-simInfo.granularity = 1;
+simInfo.seq_length = systemParams.seq_length;
+simInfo.memory = systemParams.memory;
+simInfo.deltaT = systemParams.deltaT;
+simInfo.t_MS2 = systemParams.t_MS2;
+
+simInfo.n_traces = n_traces;
+simInfo.granularity = granularity;
 
 % define response parameters
 simInfo.KD = KD;

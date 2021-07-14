@@ -1,4 +1,4 @@
-function simInfoPD = io_prediction_wrapper(mcmcInfo)
+function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
 
     paramList = mcmcInfo.paramList;
     HC = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'HC'));
@@ -17,4 +17,9 @@ function simInfoPD = io_prediction_wrapper(mcmcInfo)
 
     % use output to generate predicted cumulative OFF (or ON) curve(s)
     simInfoPD.F_min = F_min;%logspace(3,log(5e4));
-    simInfoPD = calculate_cumulative_dist(simInfoPD);
+    simInfoPD = calculate_cumulative_dist(simInfoPD,F_min);
+    
+    % apply filter
+    simInfoPD.p_on_array = simInfoPD.p_on_array(mcmcInfo.t_filter,:);
+    simInfoPD.fluo_array = nanmean(simInfoPD.gillespie.fluo_ms2_array,2);
+    simInfoPD.fluo_array = simInfoPD.fluo_array(mcmcInfo.t_filter);
