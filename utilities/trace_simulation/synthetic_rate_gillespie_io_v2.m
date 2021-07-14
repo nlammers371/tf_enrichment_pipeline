@@ -1,17 +1,34 @@
 % Experiment with sochastic simulations in which rates vary in time
-function temp_gillespie = synthetic_rate_gillespie_io(seq_length,r_emission,pi0,...
-            t_MS2, memory, tf_profile, KD, hill_coeff, tf_dependent_flags,...
-            RateMatrix, deltaT, noise, granularity, n_traces)
+function temp_gillespie = synthetic_rate_gillespie_io_v2(simInfo)
 
-nStates = size(RateMatrix,1);          
+% extract key parameters
+KD = simInfo.KD;
+HC = simInfo.HC;
+deltaT = simInfo.deltaT;
+seq_length = simInfo.seq_length;
+n_traces = simInfo.n_traces;
+tf_profile_array = simInfo.tf_profile_array;
+tf_dependent_flags = simInfo.tf_dependent_flags;          
+granularity = simInfo.granularity;
+
+% trace sim characteristics
+noise = simInfo.noise;
+t_MS2 = simInfo.t_MS2;
+memory = simInfo.memory;
+RateMatrix = simInfo.RateMatrix;
+r_emission = simInfo.r_emission;
+pi0 = simInfo.pi0;
+
+nStates = size(RateMatrix,1);  
+
 % calculate time vector
 t_process = deltaT*seq_length; % length of simulation in seconds
 t_ref_in = (0:deltaT:t_process)';
 t_ref_out = (0:granularity:t_process)'; % assuming that jump lengths are much shorter than obs time
 
 % calculate I/O curve
-io_curve_in = tf_profile.^hill_coeff ./ (KD.^hill_coeff +  tf_profile.^hill_coeff);
-io_curve_out = interp1(t_ref_in,io_curve_in,t_ref_out);
+io_curve_in = tf_profile_array.^HC ./ (KD.^HC +  tf_profile_array.^HC);
+io_curve_out = permute(interp1(t_ref_in,io_curve_in,t_ref_out),[1 3 2]);
 
 %%% Make Rate Array (3D rate matrix)
 R_array = repmat(RateMatrix,1,1,n_traces);
@@ -31,7 +48,8 @@ for t = 2:length(t_ref_out)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%% calculate updated transition rate array
     % apply time trend        
-    trend_array_temp = trend_flags .* reshape(io_curve_out(t,:),1,1,[]);
+    trend_array_temp = trend_flags .* io_curve_out(t,1,:);
+
     trend_array_temp(stable_flags) = 1;
     R_array_temp = R_array.*trend_array_temp;
 
@@ -46,12 +64,9 @@ for t = 2:length(t_ref_out)
     prev_state_vec = promoter_state_array(t-1,:);
     
     % get mean jump times 
-    prev_lin_index_vec = prev_state_vec + nStates*(prev_state_vec-1) + trace_ind_vec;
-    try
-      tau_vec = -1./R_array_temp(prev_lin_index_vec);
-    catch
-      error('wtf')
-    end
+    prev_lin_index_vec = prev_state_vec + nStates*(prev_state_vec-1) + trace_ind_vec;    
+    tau_vec = -1./R_array_temp(prev_lin_index_vec);
+    
     % randomly select next jump time for each trace
     next_jump_times = exprnd(tau_vec);
     
@@ -64,7 +79,7 @@ for t = 2:length(t_ref_out)
     next_states = sum(next_options<rnd_vec,1) + 1;
     
     % update states for cases when next jump is within sampling resolution
-    accepted_jumps =next_jump_times<granularity;
+    accepted_jumps = next_jump_times<granularity;
     promoter_state_array(t,accepted_jumps) = next_states(accepted_jumps);
     promoter_state_array(t,~accepted_jumps) = promoter_state_array(t-1,~accepted_jumps);
             
@@ -73,7 +88,7 @@ end
 % perform convolution to obtain predicted fluorescence
 fluo_kernel = ms2_loading_coeff (t_MS2, memory);
 fluo_kernel_full = interp1((0:memory-1)*deltaT,fluo_kernel,0:granularity:(memory-1)*deltaT);
-initiation_state_array = r_emission(promoter_state_array);
+initiation_state_array = r_emission(promoter_state_array) * length(fluo_kernel) / length(fluo_kernel_full);
 fluo_ms2_array = convn(fluo_kernel_full',initiation_state_array,'full');
 fluo_ms2_array = fluo_ms2_array(1:end-length(fluo_kernel_full)+1,:);
 

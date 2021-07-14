@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
+projectName = 'optokni_eve4+6_ON_ALL'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -16,38 +16,37 @@ load([resultsRoot 'spot_struct.mat'])
 FigurePath = [liveProject.figurePath 'reactivation_dynamics_all' filesep];
 mkdir(FigurePath)
 
+% Embryo 10
+%embryo(1).expID = 2;
+%embryo(1).time_on = 20.48;
+%embryo(1).frame_on = 60;
+
+% Embryo 11
+%embryo(2).expID = 3;
+%embryo(2).time_on = 27.17;
+%embryo(2).frame_on = 95;
 
 % Embryo 18
-%embryo(1).expID = 1;
-%embryo(1).frame_on = 79;
+embryo(1).expID = 4;
+%embryo(1).time_on = 20.48;
+embryo(1).frame_on = 79;
 
-% Embryo 20, good
-embryo(1).expID = 2;
-embryo(1).frame_on = 36;
+% Embryo 19
+%embryo(2).expID = 2;
+%embryo(2).time_on = 27.17;
+%embryo(2).frame_on = 69;
 
-% Embryo 25, good
-embryo(2).expID = 3;
-embryo(2).frame_on = 43;
-
-% Embryo 26
-%embryo(4).expID = 4;
-%embryo(4).frame_on = 67;
-
-% Embryo 33, good
-embryo(3).expID = 5;
-embryo(3).frame_on = 45;
-
-% Embryo 36, good
-embryo(4).expID = 6;
-embryo(4).frame_on = 43;
-
+% Embryo 20
+embryo(2).expID = 5;
+%embryo(2).time_on = 27.17;
+embryo(2).frame_on = 36;
 
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
 color_green = [38 143 75]/256; % color from Jake
 mRNA_red = brighten([212 100 39]/256,.2);
 
-knirps_offset = 3.75E5;%prctile(double(knirps_vec_long),1);
+knirps_offset = 0;%prctile(double(knirps_vec_long),1);
 
 %ap_lim = 0.03; % AP range for analysis, 0.02 seems to be a reasonable number
 ap_lim = 0.02;
@@ -56,18 +55,15 @@ time_threshold = 2; %min
 %time_threshold = 1;
 
 % histogram parameters
-%binNum = 14;
-%binMax = 12;
-binNum = 14;%14
-binMax = 8;
+binNum = 14;
+binMax = 12;
 edges = linspace(0,binMax,binNum);
 %edges1 = linspace(0,10,11); % bin for histogram
 %edges1 = linspace(0,15,16);
 %edges = linspace(0,6,9); % bin for histogram
 
 % temporary correction
-correction_factor = 1.25; % for now
-%correction_factor = 1;
+correction_factor = 1.2;
 
 % timerange to analyze for response time
 analysis_range = 8;
@@ -125,10 +121,10 @@ for i = 1:length(embryo)
                time_orig_long = [time_orig_long time_vec_orig];
                frame_orig_long = [frame_orig_long frame_vec_orig];
                fluo_orig_long = [fluo_orig_long fluo_vec_orig];
-               knirps_orig_long = [knirps_orig_long knirps_vec_orig];
-               %if ~isempty(first_on_frame) && (first_on_frame<79+15) ((first_on_frame>=79)) && (expID == 4)
-               % 1
-               %end
+               knirps_orig_long = [knirps_orig_long knirps_vec_orig-knirps_offset];
+               if ~isempty(first_on_frame) && (first_on_frame<79+15) ((first_on_frame>=79)) && (expID == 4)
+                1
+               end
 
                if ~isempty(last_on_frame) && ~isempty(first_on_frame)
                    last_on_long = [last_on_long last_on_frame];
@@ -198,7 +194,6 @@ for i = 1:length(embryo)
     time_vec_on = time_vec-time_vec(frame_on);
 
     knirps_vec_mean(time_vec_on>=0) = knirps_vec_mean(time_vec_on>=0)/correction_factor;
-    knirps_vec_mean = knirps_vec_mean-knirps_offset;
 
     % record the result for this embryo
     data_filter = (time_vec(last_on_long) <= time_vec(frame_on)-time_threshold);
@@ -223,7 +218,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
     xlim([-10 5])
-    ylim([4E5 9E5])
+    ylim([4E5 13E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
@@ -306,8 +301,7 @@ end
 
 [B,I] = sort(first_on_time_long,'descend');
 
-%I = I((~isnan(B)) & (B<=5));
-I = I((~isnan(B)));
+I = I((~isnan(B)) & (B<=5));
 
 sample_traces_fig = figure;
 imagesc('XData',time_vec_interp,'CData',sample_traces(I,:))
@@ -322,7 +316,7 @@ saveas(sample_traces_fig,[FigurePath 'figure_ON_sample_traces.pdf'])
 
 %% plot single sample trace
 
-trace_num = I(10);
+trace_num = I(20);
 
 single_traces_fig = figure;
 plot(time_vec_interp,sample_traces(trace_num,:))
@@ -385,8 +379,7 @@ saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
 
 %% fit gamma function
 
-%a = response_time_final(response_time_final<=5);%
-a = response_time_final(response_time_final<=8);
+a = response_time_final(response_time_final<=5);%
 %a = response_time_final;
 
 % fit gamma function
