@@ -21,7 +21,7 @@ load([resultsRoot 'io_ref_struct.mat'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % designate simulation type
-simType = 'in_only_off';%'out_only_off';
+simType = 'out_only_off';%'out_only_off';
 
 % specify 2 state network architecture (eventually this will be drawn from
 % actual fits)
@@ -120,6 +120,7 @@ sweepInfo.fluo_fit_array = vertcat(sweepTemp.fluo_fit_array);
 sweepInfo.p_on_fit_array = vertcat(sweepTemp.p_on_fit_array);
 sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
 sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
-sweepInfo.gillespie = [sweepTemp.gillespie];
+gillespie_struct = [sweepTemp.gillespie];
 
 save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
+save([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct', '-v7.3');
