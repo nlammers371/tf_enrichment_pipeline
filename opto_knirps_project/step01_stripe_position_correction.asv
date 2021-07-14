@@ -29,20 +29,20 @@ mask_ratio = 0.8;
 %Prefix = '2021-05-10-optoknirps_eve4_6_embryo20'; APflip = 1;
 %Prefix = '2021-06-15-optoknirps_eve4_6_embryo25'; APflip = 0;
 %Prefix = '2021-06-15-optoknirps_eve4_6_embryo26'; APflip = 1;
-%Prefix = '2021-06-16-optoknirps_eve4_6_embryo33'; APflip = 0;
-Prefix = '2021-06-17-optoknirps_eve4_6_embryo36'; APflip = 0;
+Prefix = '2021-06-16-optoknirps_eve4_6_embryo33'; APflip = 0;
 
-% for embryo 20, 25, 36
-avrInit = 22.5;
-avrFinal = 25;
-analysisInit = 0;
-analysisFinal = 25;
+
+% for embryo 20, 25
+%avrInit = 22.5;
+%avrFinal = 25;
+%analysisInit = 0;
+%analysisFinal = 25;
 
 % embryo 33
-%avrInit = 27.5;
-%avrFinal = 30;
-%analysisInit = 0;
-%analysisFinal = 30;
+avrInit = 27.5;
+avrFinal = 30;
+analysisInit = 0;
+analysisFinal = 30;
 
 
 % embryo 26
