@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'};%};
+projectNameCell = {'20210430_Nanog','20210430_Oct4','20210430_Sox2'};%};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
@@ -13,10 +13,11 @@ for p = 1:length(projectNameCell)
     projectName = projectNameCell{p};
 
     % get path to results
-    if ~exist('resultsRoot','var')
+    try
         liveProject = LiveEnrichmentProject(projectName);
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
-    else
+    catch
+        resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
     % get list of all inference subdirectories. By default, we'll generate

@@ -58,7 +58,7 @@ for e = 1:length(expStrings)
   end
   
   % iterate through sheets
-  for k = 1:length(data_sheets)
+  for k = 2:length(data_sheets)
     
     % extract table
     raw_array = data_sheets{k};
@@ -109,7 +109,7 @@ for e = 1:length(expStrings)
           spot_struct(i_pass).KO_flag = contains(sheet_names{k},'KO');
           spot_struct(i_pass).off_flag = all(spot_struct(i_pass).fluoInterp==0);
           spot_struct(i_pass).diff_flag = contains(sheet_names{k},'diff');
-          spot_struct(i_pass).TraceQCFlag = sum(spot_struct(i_pass).fluoInterp>0)>20;
+          spot_struct(i_pass).TraceQCFlag = sum(spot_struct(i_pass).fluoInterp>2e3)>15;
           spot_struct(i_pass).FrameQCFlags = repelem(spot_struct(i_pass).TraceQCFlag,length(spot_struct(i_pass).fluo));
 
           % add fields to protein structure
