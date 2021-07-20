@@ -70,7 +70,7 @@ simInfo.RateMatrix(diag_flags) = -sum(simInfo.RateMatrix);
 simInfo.r_emission = [0 systemParams.r2]; % loading rate for each state
 simInfo.noise = systemParams.noise;
 simInfo.pi0 = [0 systemParams.pi0];
-if contains(simInfo.simType,'on')
+if contains(simInfo.simType,'_on') && ~contains(simInfo.simType,'2')
     simInfo.pi0(1) = 1;
 end
 % simInfo.noise = 1e4; 

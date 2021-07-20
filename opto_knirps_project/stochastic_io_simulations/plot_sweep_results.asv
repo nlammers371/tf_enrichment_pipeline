@@ -13,7 +13,7 @@ projectName = 'optokni_eve4+6_ON';
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
 
-simType = 'kon_only_2';
+simType = 'koff_only_2';
 if contains(simType,'in_only')
   rate_str = 'k_{in}';
 elseif contains(simType,'out_only')
@@ -21,7 +21,6 @@ elseif contains(simType,'out_only')
 end
   
 load([resultsRoot 'sweepInfo_' simType '.mat'])
-load([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct');
 
 FigurePath = [liveProject.figurePath 'io_sim_results' filesep];
 mkdir(FigurePath)
@@ -38,7 +37,7 @@ time_axis = sweepInfo.time_vec - sweepInfo.time_vec(pert_ind);
 % examine goodness of fit
 p_on_fit_fig = figure;
 hold on
-plot(time_axis,sweepInfo.p_on_fit_array(:,mi_pon)','--','LineWidth',2)
+plot(time_axis,sweepInfo.p_on_fit_array(mi_pon,:),'--','LineWidth',2)
 plot(time_axis,sweepInfo.p_on_true,'Color','k','LineWidth',2)
 
 yyaxis right
@@ -61,7 +60,7 @@ saveas(p_on_fit_fig,[FigurePath 'p_on_fit_' simType '.png'])
 [~,mi_fluo] = min(sweepInfo.objective_val_fluo);
 fluo_fit_fig = figure;
 hold on
-plot(time_axis,sweepInfo.fluo_fit_array(:,mi_fluo)','--','LineWidth',2)
+plot(time_axis,sweepInfo.fluo_fit_array(mi_fluo,:),'--','LineWidth',2)
 plot(time_axis,sweepInfo.fluo_true,'Color','k','LineWidth',2)
 ylabel('average fluorescence (au)')
 
