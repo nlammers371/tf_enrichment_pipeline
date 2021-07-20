@@ -10,8 +10,8 @@ addpath(genpath('../utilities'));
 
 projectName = 'optokni_eve4+6_ON'; 
 
-liveProject = LiveEnrichmentProject(projectName);
-resultsRoot = [liveProject.dataPath filesep];
+% liveProject = LiveEnrichmentProject(projectName);
+resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\optokni_eve4+6_ON\';%[liveProject.dataPath filesep];
 
 % load data
 load([resultsRoot 'io_ref_struct.mat'])
@@ -52,7 +52,11 @@ close all force
 sweepInfo = struct;
 
 % record "true" profile
-sweepInfo.NumWorkers = 24;
+myCluster = parcluster('local');
+max_workers = myCluster.NumWorkers;
+
+sweepInfo.NumWorkers = min([24 max_workers]);
+
 sweepInfo.systemParams = systemParams;
 sweepInfo.p_on_true = nanmean(io_ref_struct.on_off_array,2);
 sweepInfo.fluo_true = nanmean(io_ref_struct.fluo_array,2);
