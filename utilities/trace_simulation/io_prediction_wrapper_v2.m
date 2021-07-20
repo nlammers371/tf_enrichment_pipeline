@@ -17,8 +17,8 @@ function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
 
     % use output to generate predicted cumulative OFF (or ON) curve(s)
     simInfoPD.F_min = F_min;%logspace(3,log(5e4));
-    simInfoPD = calculate_cumulative_dist(simInfoPD,F_min);
-    
+%     simInfoPD = calculate_cumulative_dist(simInfoPD,F_min);
+    simInfoPD.p_on_array = nanmean(simInfoPD.gillespie.fluo_ms2_array>F_min,2);
     % apply filter
     simInfoPD.p_on_array = simInfoPD.p_on_array(mcmcInfo.t_filter,:);
     simInfoPD.fluo_array = nanmean(simInfoPD.gillespie.fluo_ms2_array,2);

@@ -21,7 +21,7 @@ load([resultsRoot 'io_ref_struct.mat'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % designate simulation type
-simType = 'out_only_off';%'out_only_off';
+simType = 'koff_only_2';%'out_only','in_only','kon_only_2';
 
 % specify 2 state network architecture (eventually this will be drawn from
 % actual fits)
@@ -76,7 +76,11 @@ sweepInfo.n_keep = 10;
 % set list of parameters to sample 
 sweepInfo.paramList = {'HC','KD','F_min','K_out','K_in'};
 sweepInfo.fitFlags = [1 1 0 1 1];
-sweepInfo.trueVals = [7,6e5,3e4,1,1/60]; % NL: these are guesses
+if contains(simInfo.simType,'2')      
+    sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_in')) = 0;
+    sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_out')) = 0;    
+end    
+sweepInfo.trueVals = [7,6e5,3e4,1,1/60]; % NL: these are guesses...defaults that will be used if not flagged for fitting
 sweepInfo.nFit = sum(sweepInfo.fitFlags);
 sweepInfo.nIterations = sweepInfo.nParamIncrement^sweepInfo.nFit;
 

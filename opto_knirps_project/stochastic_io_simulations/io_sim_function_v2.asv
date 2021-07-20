@@ -61,7 +61,6 @@ simInfo.RateMatrix(2:3,2:3) = systemParams.R2;
 if ~contains(simInfo.simType,'2')
     simInfo.RateMatrix(:,1) = [0 ; K_in ; 0];
     simInfo.RateMatrix(1,:) = [0 K_out 0];
-end    
 diag_flags = eye(size(simInfo.RateMatrix,1))==1;
 simInfo.RateMatrix(diag_flags) = 0;
 simInfo.RateMatrix(diag_flags) = -sum(simInfo.RateMatrix);
@@ -82,11 +81,6 @@ if contains(simInfo.simType,'out')
 elseif contains(simInfo.simType,'in')      
     simInfo.HC = -simInfo.HC;
     simInfo.tf_dependent_flags(2,1) = true;
-elseif contains(simInfo.simType,'kon')      
-    simInfo.HC = -simInfo.HC;
-    simInfo.tf_dependent_flags(3,2) = true;
-elseif contains(simInfo.simType,'koff')          
-    simInfo.tf_dependent_flags(2,3) = true;    
 end
 
 % simulate TF profiles

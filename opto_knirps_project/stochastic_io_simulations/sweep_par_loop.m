@@ -1,6 +1,6 @@
 function sweepTemp = sweep_par_loop(sweepInfo)
 
-
+% temporalily switch to "slice-able" format
 sweepTemp = struct;
 for i = 1:sweepInfo.nIterations
     sweepTemp(i).param_fit_array = sweepInfo.param_fit_array(i,:);
@@ -27,7 +27,6 @@ elseif  pool.NumWorkers ~= sweepInfo.NumWorkers
   parpool(sweepInfo.NumWorkers);  
 end  
 
-
 h = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
 afterEach(D, @nUpdateWaitbar);
@@ -41,7 +40,7 @@ parfor sweep_step = 1:sweepInfo.nIterations
     % update step
     sweepTemp(sweep_step).step = 1;%sweep_step;
     
-    % cpnduct simulation
+    % conduct simulation
     simInfoPD = io_prediction_wrapper_v2(sweepTemp(sweep_step));
     
     % store mean profiles    
