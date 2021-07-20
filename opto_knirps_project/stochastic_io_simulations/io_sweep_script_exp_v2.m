@@ -16,12 +16,20 @@ resultsRoot = [liveProject.dataPath filesep];
 % load data
 load([resultsRoot 'io_ref_struct.mat'])
 
+
+%% set basic parameters
+sweepInfo = struct;
+sweepInfo.nParamIncrement = 1e1;
+sweepInfo.granularity = 5;
+sweepInfo.n_traces = 100;
+sweepInfo.n_keep = 10;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % designate simulation type
-simType = 'koff_only_2';%'out_only','in_only','kon_only_2';
+simType = 'kon_only_2';%'out_only','in_only','kon_only_2';
 
 % specify 2 state network architecture (eventually this will be drawn from
 % actual fits)
@@ -31,7 +39,7 @@ systemParams.R2 = [-.92  1/1.07;
 % systemParams.r2 = [0 2.7]*1e5/60; % loading rate for each state
 systemParams.r2 = [0 4]*1e4; % loading rate for each state
 systemParams.pi0 = [0.5 0.5];
-if contains(simType,'on')
+if contains(simType,'_on') && ~contains(simType,'2')
     systemParams.pi0 = [0 0];
 end
 systemParams.noise = 5e3; 
@@ -49,8 +57,6 @@ systemParams.seq_length = length(systemParams.time_full);
 %%%%%%%%%%%%%%%%%%%%%% Call MCMC function %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all force 
 
-sweepInfo = struct;
-
 % record "true" profile
 sweepInfo.NumWorkers = 24;
 sweepInfo.systemParams = systemParams;
@@ -67,16 +73,10 @@ sweepInfo.t_filter = ismember(systemParams.time_full,sweepInfo.time_vec);
 sweepInfo.t_start = sweepInfo.time_vec(1);
 sweepInfo.t_stop = sweepInfo.time_vec(end);
 
-% set basic parameters
-sweepInfo.nParamIncrement = 1e1;
-sweepInfo.granularity = 5;
-sweepInfo.n_traces = 100;
-sweepInfo.n_keep = 10;
-
 % set list of parameters to sample 
 sweepInfo.paramList = {'HC','KD','F_min','K_out','K_in'};
 sweepInfo.fitFlags = [1 1 0 1 1];
-if contains(simInfo.simType,'2')      
+if contains(sweepInfo.simType,'2')      
     sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_in')) = 0;
     sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_out')) = 0;    
 end    
@@ -103,7 +103,7 @@ for i = find(sweepInfo.fitFlags)
     
     iter = iter + 1;
 end
-sweepInfo.param_fit_array(:,~sweepInfo.fitFlags) = sweepInfo.trueVals(~sweepInfo.fitFlags);
+sweepInfo.param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(sweepInfo.param_fit_array,1),1);
 
 % track profile
 sweepInfo.p_on_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
@@ -120,8 +120,8 @@ toc
 
 % recombine
 sweepInfo.param_val_array = vertcat(sweepTemp.param_fit_array);
-sweepInfo.fluo_fit_array = vertcat(sweepTemp.fluo_fit_array);
-sweepInfo.p_on_fit_array = vertcat(sweepTemp.p_on_fit_array);
+sweepInfo.fluo_fit_array = [sweepTemp.fluo_fit_array];
+sweepInfo.p_on_fit_array = [sweepTemp.p_on_fit_array];
 sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
 sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
 gillespie_struct = [sweepTemp.gillespie];
