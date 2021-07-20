@@ -34,7 +34,8 @@ for p = 3%:length(projectNameCell)
         liveProject = LiveEnrichmentProject(projectName);
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     catch
-        resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
+%         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
+        resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
     
@@ -79,19 +80,19 @@ for p = 3%:length(projectNameCell)
 
     hold on
     
-    e = errorbar(x_vec,fluo_vec_mean,fluo_vec_ste,'o','Color','black','LineWidth',1);  
+    e = errorbar(x_vec,fluo_vec_mean,fluo_vec_ste,'.','Color','black','LineWidth',1);  
     e.CapSize = 0;
-    s = scatter(x_vec,fluo_vec_mean,MarkerSize,'o','MarkerFaceColor',hm_cm(5,:),'MarkerEdgeColor','black');
+    s = scatter(x_vec,fluo_vec_mean,MarkerSize,'^','MarkerFaceColor',hm_cm(5,:),'MarkerEdgeColor','black');
     
     grid on
     %         xlim(x_lim)
     ylim([0.66*min(fluo_vec_mean) 1.5*max(fluo_vec_mean)])
     % xlabel('time') % NL: need to make this dynamic
-    set(gca,'xticklabel',condition_key)
+    set(gca,'xtick',x_vec,'xticklabel',condition_key)
     ylabel('average transcription rate (au/min)')
 %     legend(s,'Sox2 (wildtype control)','Sox2 (opto-chronic)','Location','southwest')
     title(['Mean Transcription Rate (r) Across Conditions'])
-    set(gca,'Fontsize',14)
+    set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([x_vec(1)-0.5 x_vec(end)+0.5])
     set(gca,'yscale','log');
@@ -108,7 +109,7 @@ for p = 3%:length(projectNameCell)
 
     hold on
     
-    e = errorbar(x_vec,init_vec_mean,init_vec_ste,'o','Color','black','LineWidth',1);  
+    e = errorbar(x_vec,init_vec_mean,init_vec_ste,'.','Color','black','LineWidth',1);  
     e.CapSize = 0;
     s = scatter(x_vec,init_vec_mean,MarkerSize,'o','MarkerFaceColor',hm_cm(1,:),'MarkerEdgeColor','black');
     
@@ -116,11 +117,11 @@ for p = 3%:length(projectNameCell)
     %         xlim(x_lim)
     ylim([0.66*min(init_vec_mean) 1.5*max(init_vec_mean)])
     % xlabel('time') % NL: need to make this dynamic
-    set(gca,'xticklabel',condition_key)
+    set(gca,'xtick',x_vec,'xticklabel',condition_key)
     ylabel('burst amplitude (au/min)')
 %     legend(s,'Sox2 (wildtype control)','Sox2 (opto-chronic)','Location','southwest')
     title(['Burst Amplitude (r) Across Conditions'])
-    set(gca,'Fontsize',14)
+    set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([x_vec(1)-0.5 x_vec(end)+0.5])
     set(gca,'yscale','log');
@@ -136,19 +137,19 @@ for p = 3%:length(projectNameCell)
 
     hold on
     
-    e = errorbar(x_vec,dur_vec_mean,dur_vec_ste,'o','Color','black','LineWidth',1);  
+    e = errorbar(x_vec,dur_vec_mean,dur_vec_ste,'.','Color','black','LineWidth',1);  
     e.CapSize = 0;
-    s = scatter(x_vec,dur_vec_mean,MarkerSize,'o','MarkerFaceColor',hm_cm(2,:),'MarkerEdgeColor','black');
+    s = scatter(x_vec,dur_vec_mean,MarkerSize,'s','MarkerFaceColor',hm_cm(2,:),'MarkerEdgeColor','black');
     
     grid on
     %         xlim(x_lim)
     ylim([0.66*min(dur_vec_mean) 1.5*max(dur_vec_mean)])
     % xlabel('time') % NL: need to make this dynamic
-    set(gca,'xticklabel',condition_key)
+    set(gca,'xtick',x_vec,'xticklabel',condition_key)
     ylabel('burst duration (min)')
 %     legend(s,'Sox2 (wildtype control)','Sox2 (opto-chronic)','Location','southwest')
     title(['Burst Duration (1/k_{off}) Across Conditions'])
-    set(gca,'Fontsize',14)
+    set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([x_vec(1)-0.5 x_vec(end)+0.5])
     set(gca,'yscale','log');
@@ -164,19 +165,19 @@ for p = 3%:length(projectNameCell)
 
     hold on
     
-    e = errorbar(x_vec,freq_vec_mean,freq_vec_ste,'o','Color','black','LineWidth',1);  
+    e = errorbar(x_vec,freq_vec_mean,freq_vec_ste,'.','Color','black','LineWidth',1);  
     e.CapSize = 0;
-    s = scatter(x_vec,freq_vec_mean,MarkerSize,'o','MarkerFaceColor',hm_cm(3,:),'MarkerEdgeColor','black');
+    s = scatter(x_vec,freq_vec_mean,MarkerSize,'d','MarkerFaceColor',hm_cm(3,:),'MarkerEdgeColor','black');
     
     grid on
     %         xlim(x_lim)
     ylim([0.66*min(freq_vec_mean) 1.5*max(freq_vec_mean)])
     % xlabel('time') % NL: need to make this dynamic
-    set(gca,'xticklabel',condition_key)
+    set(gca,'xtick',x_vec,'xticklabel',condition_key)
     ylabel('burst frequency (1/min)')
 %     legend(s,'Sox2 (wildtype control)','Sox2 (opto-chronic)','Location','southwest')
     title(['Burst Frequency (k_{on}) Across Conditions'])
-    set(gca,'Fontsize',14)
+    set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([x_vec(1)-0.5 x_vec(end)+0.5])
     set(gca,'yscale','log');
@@ -229,13 +230,13 @@ for p = 3%:length(projectNameCell)
     e.CapSize = 0;
     s4 = scatter((1:2)+0.1,fluo_fold,MarkerSize,'^','MarkerFaceColor',hm_cm(5,:),'MarkerEdgeColor','black');
     
-    set(gca,'Fontsize',14)
+    set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([0.5 2.5])
     set(gca,'xtick',1:2,'xticklabels',{'SFES','diff'})
     set(gca,'yscale','log');
     legend([s1 s2 s3 s4],'burst amplitude','burst duration','burst frequency','mean rate','Location','best')
-    ylabel('fold change')
+    ylabel('fold change (KO/WT)')
     grid on
     
     saveas(fold_fig,[FigPath, 'fold_change.tif'])
