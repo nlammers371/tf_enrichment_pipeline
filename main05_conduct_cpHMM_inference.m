@@ -76,6 +76,9 @@ end
 if isfield(inferenceInfo,'useQCFlag')
     options(end+1:end+2) = {'useQCFlag',inferenceInfo.useQCFlag};
 end
+if isfield(inferenceInfo,'ignoreNDP')
+    options(end+1:end+2) = {'ignoreNDP',inferenceInfo.ignoreNDP};
+end
 
 % intensity binning
 if inferenceInfo.FluoBinFlag

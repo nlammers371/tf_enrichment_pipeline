@@ -42,9 +42,9 @@ for p = project_index%1:length(projectList)
 
     % other info
     inferenceInfo.AdditionalGroupingVariable = 'setID';%'Stripe'
-    inferenceInfo.SampleSize = 3000;
-    inferenceInfo.useQCFlag = true;
-
+    inferenceInfo.SampleSize = 10000;
+    inferenceInfo.useQCFlag = false;
+    inferenceInfo.ignoreNDP = true;
     inferenceInfo.n_localEM = 25;
 
     % Get basic project info and determing file paths
