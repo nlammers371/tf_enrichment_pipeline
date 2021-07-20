@@ -14,6 +14,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.FluoBinFlag = 0;
   inferenceOptions.SampleSize = 5000;
   inferenceOptions.maxWorkers = 20;  
+  inferenceOptions.ignoreNDP = 0;
   
   %% Core inference options (these generally remain fixed)
   inferenceOptions.n_localEM = 25; % set num local runs
