@@ -1,4 +1,4 @@
-function logL_vec = calculate_bootstrap_logL(mcmcInfo,simInfoPD)
+function [logL_vec,simInfoPD] = calculate_bootstrap_logL(mcmcInfo,simInfoPD)
 
     selection_array = floor(rand(mcmcInfo.nBoots,mcmcInfo.n_traces)*mcmcInfo.n_traces)*size(simInfoPD.gillespie.fluo_ms2_array,1) + mcmcInfo.ref_array;    
     trace_samples = simInfoPD.gillespie.fluo_ms2_array(selection_array);

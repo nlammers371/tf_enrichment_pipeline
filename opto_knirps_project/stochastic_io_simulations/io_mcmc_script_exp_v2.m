@@ -88,6 +88,7 @@ simInfoPD = io_prediction_wrapper_v2(mcmcInfo);
 % estimate error bars with bootstrap resampling
 logL_vec = calculate_bootstrap_logL(mcmcInfo,simInfoPD);
 mcmcInfo.objective_val_p_on(1) = sum(logL_vec);
+mcmcInfo.p_on_fit_array(1,:) = nanmean(simInfoPD.gillespie.fluo_ms2_array>simInfoPD.F_min,2);
 
 for mcmc_step = 2:mcmcInfo.nIterations
     % increment
@@ -117,12 +118,16 @@ for mcmc_step = 2:mcmcInfo.nIterations
         mcmcInfo.objective_val_p_on(mcmc_step) = new_logL;
         % document move
         mcmcInfo.move_flags(mcmc_step) = 1;
+        % save inferred profile
+        mcmcInfo.p_on_fit_array(mcmc_step,:) = simInfoPD.pon_mean;
     else
         mcmcInfo.objective_val_p_on(mcmc_step) = mcmcInfo.objective_val_p_on(mcmc_step-1);
         % reset param values
         mcmcInfo.param_fit_array(mcmc_step,fit_flags) = mcmcInfo.param_fit_array(mcmc_step-1,fit_flags);        
-        % document move
+        % document decision
         mcmcInfo.move_flags(mcmc_step) = 0;
+        % carry previous profile forward
+        mcmcInfo.p_on_fit_array(mcmc_step,:) = mcmcInfo.p_on_fit_array(mcmc_step-1,:);
     end
 end
 %%
