@@ -29,7 +29,7 @@ t_ref_out = (0:granularity:t_process)'; % assuming that jump lengths are much sh
 % calculate I/O curve
 io_curve_in = tf_profile_array.^HC ./ (KD.^HC +  tf_profile_array.^HC);
 rate_curve_in = NaN(size(io_curve_in));
-io_curve_out = interp1(t_ref_in,io_curve_in,t_ref_out);
+io_curve_out = permute(interp1(t_ref_in,io_curve_in,t_ref_out),[1 3 2]);
 
 %%% Make Rate Array (3D rate matrix)
 R_array = repmat(RateMatrix,1,1,n_traces);
@@ -91,9 +91,7 @@ for t = 1:length(t_ref_out)
     promoter_state_array(t,accepted_jumps) = next_states(accepted_jumps);
     if t > 1
         promoter_state_array(t,~accepted_jumps) = promoter_state_array(t-1,~accepted_jumps);
-    else
-        promoter_state_array(t,~accepted_jumps) = init_vec(~accepted_jumps);
-    end
+    e
 end
 
 % perform convolution to obtain predicted fluorescence

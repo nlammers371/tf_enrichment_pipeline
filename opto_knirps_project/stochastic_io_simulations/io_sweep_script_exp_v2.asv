@@ -31,7 +31,7 @@ sweepInfo.n_keep = 10;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % designate simulation type
-simType = 'koff_only_2';%'out_only','in_only','kon_only_2';
+simType = 'kon_only_2';%'out_only','in_only','kon_only_2';
 
 % specify 2 state network architecture (eventually this will be drawn from
 % actual fits)
@@ -52,7 +52,6 @@ systemParams.noise = 5e3;
 systemParams.memory = 7;
 systemParams.deltaT = io_ref_struct.deltaT;
 systemParams.t_MS2 = 1.4;
-systemParams.rate_max = 1; % nothing faster than a second
 systemParams.time_full = (systemParams.deltaT:systemParams.deltaT:io_ref_struct.time_vec(end)*60)/60;% size(io_ref_struct.on_off_array,1);
 systemParams.seq_length = length(systemParams.time_full);
 
@@ -83,15 +82,12 @@ sweepInfo.t_stop = sweepInfo.time_vec(end);
 % set list of parameters to sample 
 sweepInfo.paramList = {'HC','KD','F_min','K_out','K_in','k0'};
 sweepInfo.fitFlags = [1 1 0 1 1 0];
-sweepInfo.trueVals = [7,6e5,3e4,1,1/60,0]; % NL: these are guesses...defaults that will be used if not flagged for fitting
 if contains(sweepInfo.simType,'2')      
     sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_in')) = 0;
     sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_out')) = 0;  
     if contains(sweepInfo.simType,'koff') 
-%         sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'k0')) = 1;  
-        sweepInfo.trueVals(strcmp(sweepInfo.paramList,'k0')) = systemParams.R2(1,2);  
-    end
 end    
+sweepInfo.trueVals = [7,6e5,3e4,1,1/60]; % NL: these are guesses...defaults that will be used if not flagged for fitting
 sweepInfo.nFit = sum(sweepInfo.fitFlags);
 sweepInfo.nIterations = sweepInfo.nParamIncrement^sweepInfo.nFit;
 
@@ -102,7 +98,6 @@ sweepInfo.param_bounds(:,2) = linspace(1e5, 1e6, sweepInfo.nParamIncrement);
 sweepInfo.param_bounds(:,3) =  linspace(1e4, 1e5, sweepInfo.nParamIncrement);
 sweepInfo.param_bounds(:,4) = logspace(-3,0,sweepInfo.nParamIncrement);%[1e-2 60]';
 sweepInfo.param_bounds(:,5) = logspace(-3,0,sweepInfo.nParamIncrement);
-sweepInfo.param_bounds(:,6) = logspace(-3,0,sweepInfo.nParamIncrement);
 
 % initialize vectors to store results
 sweepInfo.param_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.paramList));

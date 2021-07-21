@@ -62,7 +62,9 @@ parfor sweep_step = 1:sweepInfo.nIterations
     gill_small.initiation_rate_array = gill_small.promoter_state_array(:,keep_indices);
     gill_small.fluo_ms2_array = gill_small.fluo_ms2_array(:,keep_indices);
     gill_small.initiation_rate_array = gill_small.fluo_ms2_array_full(:,keep_indices);
-    gill_small.io_ref_in = permute(gill_small.io_ref_in(:,1,keep_indices),[1 3 2]);
+    gill_small.output_response_ref = permute(gill_small.io_ref_in(:,1,keep_indices),[1 3 2]);
+    gill_small.output_rate_response_ref = permute(gill_small.rate_curve_in(:,1,keep_indices),[1 3 2]);
+    gill_small.input_tf_ref = permute(gill_small.tf_ref_in(:,1,keep_indices),[1 3 2]);    
     sweepTemp(sweep_step).gillespie = gill_small;
     
     % update waitbar

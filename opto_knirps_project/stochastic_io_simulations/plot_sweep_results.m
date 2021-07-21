@@ -9,11 +9,14 @@ addpath(genpath('../utilities'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 projectName = 'optokni_eve4+6_ON'; 
+try
+    liveProject = LiveEnrichmentProject(projectName);
+    resultsRoot = [liveProject.dataPath filesep];
+catch
+    resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\optokni_eve4+6_ON\';%[liveProject.dataPath filesep];
+end
 
-liveProject = LiveEnrichmentProject(projectName);
-resultsRoot = [liveProject.dataPath filesep];
-
-simType = 'kon_only_2';
+simType = 'koff_only_2';
 if contains(simType,'in_only')
   rate_str = 'k_{in}';
 elseif contains(simType,'out_only')
@@ -23,7 +26,11 @@ end
 load([resultsRoot 'sweepInfo_' simType '.mat'])
 load([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct');
 
-FigurePath = [liveProject.figurePath 'io_sim_results' filesep];
+try
+    FigurePath = [liveProject.figurePath 'io_sim_results' filesep];
+catch
+    FigurePath = 'C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\PipelineOutput\optokni_eve4+6_WT';
+end
 mkdir(FigurePath)
 
 close all

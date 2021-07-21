@@ -1,7 +1,7 @@
 % Function wrapper for stochastic trace simulations in non-steady-state
 % conditions
 
-function simInfo = io_sim_function_v2(simType,systemParams,KD,HC,K_out,K_in,...
+function simInfo = io_sim_function_v2(simType,systemParams,KD,HC,K_out,K_in,k0,...
                                       tf_profile_array,n_traces,granularity,varargin)
 
 % close all
@@ -27,6 +27,7 @@ simInfo.KD = KD;
 simInfo.HC = HC;
 simInfo.K_out = K_out;
 simInfo.K_in = K_in;
+simInfo.k0 = k0;
 
 % specify network architecture
 simInfo.systemParams = systemParams;
@@ -49,7 +50,9 @@ if contains(simInfo.simType,'in') % this signifies 3 state system where rate fro
     R2(2,1) = kon_true;
     R2(1,1) = -kon_true;
     systemParams.R2 = R2;
-end
+elseif strcmp(simInfo.simType,'koff_only_2')
+    systemParams.R2(1,2) = systemParams.rate_max;
+end    
 
 if contains(simInfo.simType,'on')
     simInfo.frac_init = 1e-3;
@@ -93,8 +96,8 @@ end
 if isempty(tf_profile_array)
     simInfo.tf_profile_array = simulate_tf_profiles(simInfo.frac_init,simInfo.frac_final,simInfo);
 else
-    s_indices = randsample(1:size(tf_profile_array,3),simInfo.n_traces,true);
-    simInfo.tf_profile_array = tf_profile_array(:,1,s_indices);
+    s_indices = randsample(1:size(tf_profile_array,2),simInfo.n_traces,true);
+    simInfo.tf_profile_array = permute(tf_profile_array(:,s_indices),[1 3 2]);
 end
 %% call simulation function
 simInfo.gillespie = synthetic_rate_gillespie_io_v2(simInfo);

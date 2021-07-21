@@ -5,6 +5,7 @@ function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
     KD = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'KD'));
     K_out = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'K_out'));
     K_in = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'K_in'));
+    k0 = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'k0'));
     F_min = mcmcInfo.param_fit_array(mcmcInfo.step,strcmp(paramList,'F_min'));
     
     tf_profile_array = mcmcInfo.tf_profile_array;
@@ -12,7 +13,7 @@ function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
     granularity = mcmcInfo.granularity;
     
     % call stochastic simulation function
-    simInfoPD = io_sim_function_v2(mcmcInfo.simType,mcmcInfo.systemParams,KD,HC,K_out,K_in,tf_profile_array,...
+    simInfoPD = io_sim_function_v2(mcmcInfo.simType,mcmcInfo.systemParams,KD,HC,K_out,K_in,k0,tf_profile_array,...
                                                                 n_traces,granularity);
 
     % use output to generate predicted cumulative OFF (or ON) curve(s)
