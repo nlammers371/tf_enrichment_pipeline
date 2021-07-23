@@ -25,7 +25,7 @@ for p = 1:length(projectNameCell)
     infDirList = dir([resultsDir 'w*']);
 
     % iterate through the directories and compile the results
-    for inf = 1:length(infDirList)
+    for inf = 1%1:length(infDirList)
 
         resultsPath = [infDirList(inf).folder filesep infDirList(inf).name filesep];
 
@@ -151,6 +151,10 @@ for p = 1:length(projectNameCell)
 
                     % enforce rank ordering of states by initiation rate
                     [r,ri] = sort(inferenceResults(d_ids(i)).r);
+                    if min(r) < 0 && abs(min(r)) >= 0.25*max(r)
+                      warning('negative initiation rate(s) found')
+                      continue
+                    end
                     A = inferenceResults(d_ids(i)).A_mat(ri,ri);
 
                     % convert to transition rate matrix
