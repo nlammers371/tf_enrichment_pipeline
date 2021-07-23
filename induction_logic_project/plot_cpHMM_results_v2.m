@@ -11,7 +11,7 @@ addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
 projectNameCell = {'20210430_Nanog','20210430_Oct4','20210430_Sox2'};%};
-infString = 'K3_p0_ap1_t1_f2D_qc0_setID';
+infString = 'K3_p0_ap1_t1_f2D_qc1_setID';
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 condition_key = {'SFES (WT)','SFES (KO)','diff (WT)','diff (KO)'};
 % useful colors
@@ -25,7 +25,7 @@ dur_lims = [0 3.5];
 freq_lims = [0 3];
 init_lims = [0 18]*1e4;
     
-for p = 3%:length(projectNameCell)
+for p = 2%:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -35,8 +35,8 @@ for p = 3%:length(projectNameCell)
         liveProject = LiveEnrichmentProject(projectName);
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     catch
-        resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
-%         resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+%         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
+        resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
     

@@ -7,7 +7,7 @@ clc
 addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
 
-%% Load data
+% Load data
 
 projectName = 'optokni_eve4+6_ON'; 
 
@@ -18,7 +18,7 @@ resultsRoot = [liveProject.dataPath filesep];
 load([resultsRoot 'spot_struct.mat'])
 % load([resultsRoot 'spot_struct_protein.mat'])
 
-%% Filter for only nuclei in correct region with "significant" activity
+% Filter for only nuclei in correct region with "significant" activity
 min_dp = 10;
 time_bounds = [5 30]; % nuclei must have been around for full extent of this interval 
 ap_bounds = [-0.025 0.025];
@@ -56,6 +56,7 @@ index_vec = 1:length(time_ref);
 io_ref_struct = struct;
 io_ref_struct.on_off_array = false(length(time_ref),length(spot_struct_trunc));
 io_ref_struct.fluo_array = zeros(length(time_ref),length(spot_struct_trunc));
+io_ref_struct.fluo_raw_array = NaN(length(time_ref),length(spot_struct_trunc));
 io_ref_struct.knirps_array = NaN(length(time_ref),length(spot_struct_trunc));
 
 for i = 1:length(spot_struct_trunc)
@@ -71,6 +72,7 @@ for i = 1:length(spot_struct_trunc)
     match_from = ismember(time_vec_interp,time_ref);
     
     io_ref_struct.fluo_array(match_to,i) = fluo_vec_interp(match_from);
+    io_ref_struct.fluo_raw_array(match_to,i) = fluo_vec_interp(match_from);
     io_ref_struct.on_off_array(:,i) = io_ref_struct.fluo_array(:,i) > 0;
     io_ref_struct.knirps_array(:,i) = knirps_vec_interp;
     

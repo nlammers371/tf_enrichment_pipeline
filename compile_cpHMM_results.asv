@@ -7,7 +7,7 @@ addpath(genpath('utilities'))
 projectNameCell = {'20210430_Nanog','20210430_Oct4','20210430_Sox2'};%};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
-for p = 2%:length(projectNameCell)
+for p = 1:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -26,7 +26,7 @@ for p = 2%:length(projectNameCell)
     infDirList = dir([resultsDir 'w*']);
 
     % iterate through the directories and compile the results
-    for inf = 1%1:length(infDirList)
+    for inf = 1:2%1:length(infDirList)
 
         resultsPath = [infDirList(inf).folder filesep infDirList(inf).name filesep];
 
@@ -152,7 +152,7 @@ for p = 2%:length(projectNameCell)
 
                     % enforce rank ordering of states by initiation rate
                     [r,ri] = sort(inferenceResults(d_ids(i)).r);
-                    if min(r) < 0 && abs(min(r)) >= 0.25*max(r)% && inf > 1
+                    if min(r) < 0 && abs(min(r)) >= 0.25*max(r)
                       warning('negative initiation rate(s) found')
                       continue
                     end

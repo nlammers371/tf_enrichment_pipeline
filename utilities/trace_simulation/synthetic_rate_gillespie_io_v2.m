@@ -47,6 +47,7 @@ init_vec = randsample(1:nStates,n_traces,true,pi0);
 
 % iterate through time points
 for t = 1:length(t_ref_out)
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%% calculate updated transition rate array
     % apply time trend        
@@ -60,8 +61,7 @@ for t = 1:length(t_ref_out)
     end
     % renormalize    
     R_array_temp(diag_flags==1) = 0;
-    R_array_temp(diag_flags==1) = -sum(R_array_temp,1);
-
+    R_array_temp(diag_flags==1) = -sum(R_array_temp,1);    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% Choose next states
     
@@ -93,7 +93,7 @@ for t = 1:length(t_ref_out)
         promoter_state_array(t,~accepted_jumps) = promoter_state_array(t-1,~accepted_jumps);
     else
         promoter_state_array(t,~accepted_jumps) = init_vec(~accepted_jumps);
-    end
+    end    
 end
 
 % perform convolution to obtain predicted fluorescence
