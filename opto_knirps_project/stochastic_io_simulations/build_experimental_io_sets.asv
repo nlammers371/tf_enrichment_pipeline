@@ -32,21 +32,16 @@ n_filter = n_frames_active_vec >= min_dp;
 
 set_vec = [spot_struct.setID];
 set_filter = ismember(set_vec,sets_to_use);
-%%
+
 particle_id_vec = [spot_struct.particleID];
 
 ap_pos_mean_vec = NaN(size(n_filter));
 for i = 1:length(spot_struct)
     time_vec = spot_struct(i).time/60;
-    fluo_vec_interp = spot_struct(i).fluoInterp;
-    time_vec_interp = spot_struct(i).timeInterp;
-    obs_times = time_vec_interp(fluo_vec_interp>0);
-    if isempty(obs_times)
-        obs_times = 0;
-    end
+    fluo_vec = spot_struct(i).fluo;
+    
     knirps_vec = spot_struct(i).rawNCProtein;
-    if nanmin(time_vec)<=time_bounds(1) && nanmax(time_vec)>=time_bounds(2) && mean(isnan(knirps_vec)) < 0.25...
-         && min(obs_times) < switch_time && max(obs_times) > switch_time
+    if nanmin(time_vec)<=time_bounds(1) && nanmax(time_vec)>=time_bounds(2) && mean(isnan(knirps_vec)) < 0.25
         ap_pos_mean_vec(i) = nanmean(spot_struct(i).APPosNucleus);
     end
 end

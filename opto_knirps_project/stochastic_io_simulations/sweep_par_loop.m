@@ -34,7 +34,7 @@ afterEach(D, @nUpdateWaitbar);
 N = sweepInfo.nIterations;
 p = 1;
 tic
-for sweep_step = 1:sweepInfo.nIterations
+parfor sweep_step = 1:sweepInfo.nIterations
 %     waitbar(sweep_step/sweepInfo.nIterations,wb);
     
     % update step
