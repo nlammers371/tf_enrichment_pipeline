@@ -11,6 +11,7 @@ addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
 projectNameCell = {'20210430_Nanog','20210430_Oct4','20210430_Sox2'};%};
+infString = 'K3_p0_ap1_t1_f2D_qc0_setID';
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 condition_key = {'SFES (WT)','SFES (KO)','diff (WT)','diff (KO)'};
 % useful colors
@@ -34,21 +35,23 @@ for p = 3%:length(projectNameCell)
         liveProject = LiveEnrichmentProject(projectName);
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     catch
-%         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
-        resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
+%         resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
     
 
     % make figure path
-    FigPath = [resultsDir 'inference_figs' filesep];
+    FigPath = [resultsDir 'inference_figs_' infString filesep];
     mkdir(FigPath);   
         
     
     % get list of projects
     resultList = dir([resultsDir '*result*']);            
+    name_cell = {resultList.name};
+    inf_index = find(contains(name_cell,infString));
     
-    for r = 1%:length(resultList) % assume just 1 for now
+    for r = inf_index%:length(resultList) % assume just 1 for now
       
         % load data
         load([resultsDir filesep resultList(r).name]);
