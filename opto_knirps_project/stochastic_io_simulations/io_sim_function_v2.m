@@ -92,7 +92,7 @@ elseif contains(simInfo.simType,'koff')
     simInfo.tf_dependent_flags(2,3) = true;    
 end
 
-% simulate TF profiles
+% simulate TF profiles (unless empirical profiles are provided)
 if isempty(tf_profile_array)
     simInfo.tf_profile_array = simulate_tf_profiles(simInfo.frac_init,simInfo.frac_final,simInfo);
 else

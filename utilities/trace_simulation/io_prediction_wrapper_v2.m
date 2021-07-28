@@ -20,7 +20,14 @@ function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
     simInfoPD.F_min = F_min;%logspace(3,log(5e4));
 %     simInfoPD = calculate_cumulative_dist(simInfoPD,F_min);
     simInfoPD.p_on_array = nanmean(simInfoPD.gillespie.fluo_ms2_array>F_min,2);
+    
+    % make raw version
+    fluo_array_raw = simInfoPD.gillespie.fluo_ms2_array;
+    fluo_array_raw(fluo_array_raw<F_min) = NaN;
+    simInfoPD.fluo_array_raw = nanmean(fluo_array_raw,2);
+    
     % apply filter
     simInfoPD.p_on_array = simInfoPD.p_on_array(mcmcInfo.t_filter,:);
     simInfoPD.fluo_array = nanmean(simInfoPD.gillespie.fluo_ms2_array,2);
     simInfoPD.fluo_array = simInfoPD.fluo_array(mcmcInfo.t_filter);
+    simInfoPD.fluo_raw_array = simInfoPD.fluo_array_raw(mcmcInfo.t_filter);

@@ -62,7 +62,7 @@ for s = 1:length(sets_to_use)
     time_index_standard = NaN(size(time_ref));
     time_index_standard(ismember(round(time_ref/60,2),round(time_index_interp-time_index_interp(switch_i),2)))...
                         = time_index_interp(ismember(round(time_index_interp-time_index_interp(switch_i),2),round(time_ref/60,2)));
-    time_filter_set = time_index_standard>=time_bounds(1) & time_index_standard<=time_bounds(2);
+    time_filter_set = time_index_interp<time_bounds(1) | time_index_interp>time_bounds(2);
     set_indices = find(set_filter);
     for i = set_indices%1:length(spot_struct)
         time_vec = spot_struct(i).time/60;
@@ -154,7 +154,7 @@ for s = 1:length(sets_to_use)
     end    
 
     % remove NaNs
-    nn_filter = mean(isnan(io_ref_struct_temp.knirps_array(time_filter_set,:)))<=0.1;
+    nn_filter = ~any(isnan(io_ref_struct_temp.knirps_array(:,time_filter_set)));
 
     io_ref_struct_temp.particle_id_vec = particle_id_filt(nn_filter);
     io_ref_struct_temp.knirps_array = io_ref_struct_temp.knirps_array(:,nn_filter);
