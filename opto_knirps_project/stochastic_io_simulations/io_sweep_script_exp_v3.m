@@ -24,17 +24,17 @@ sweepInfo = struct;
 sweepInfo.nParamIncrement = 25;
 sweepInfo.granularity = 2;
 sweepInfo.n_traces = 100;
-sweepInfo.n_keep = 10;
+sweepInfo.n_keep = 5;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Specify key system characteristics
 systemParams = struct;
 systemParams.memory = 7;
-systemParams.deltaT = io_ref_struct.deltaT;
+systemParams.deltaT = io_ref_struct.deltaT(1);
 systemParams.t_MS2 = 1.4;
 systemParams.rate_max = 1; % nothing faster than a second
-systemParams.time_full = (systemParams.deltaT:systemParams.deltaT:io_ref_struct.time_vec(end)*60)/60;% size(io_ref_struct.on_off_array,1);
+systemParams.time_full = ((1:length(io_ref_struct.time_vec))*systemParams.deltaT)/60;% size(io_ref_struct.on_off_array,1);
 systemParams.seq_length = length(systemParams.time_full);
 
 
@@ -43,8 +43,8 @@ systemParams.seq_length = length(systemParams.time_full);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % designate simulation type
-simTypeCell = {'koff_only_2','out_only','in_only','kon_only_2'};
-for s = 2:length(simTypeCell)
+simTypeCell = {'out_only','in_only','koff_only_2','kon_only_2'};
+for s = 1:length(simTypeCell)
     simType = simTypeCell{s};
 
     % specify 2 state network architecture (eventually this will be drawn from
@@ -74,32 +74,34 @@ for s = 2:length(simTypeCell)
     % record "true" profile
     myCluster = parcluster('local');
     max_workers = myCluster.NumWorkers;
-
     sweepInfo.NumWorkers = min([24 max_workers]);
-
     sweepInfo.systemParams = systemParams;
+    
+    % generate ground truth vectors
     sweepInfo.p_on_true = nanmean(io_ref_struct.on_off_array,2);
     sweepInfo.fluo_true = nanmean(io_ref_struct.fluo_array,2);
+    sweepInfo.fluo_true_raw = nanmean(io_ref_struct.fluo_raw_array,2);
+    
+    % save simulation type
     sweepInfo.simType = simType;
-    sweepInfo.tf_profile_array_true = io_ref_struct.knirps_array_norm;
-    sweepInfo.tf_profile_array = NaN(systemParams.seq_length,size(sweepInfo.tf_profile_array_true,2));
-    start_i = find(systemParams.time_full<io_ref_struct.time_vec(1),1,'last');
-    sweepInfo.tf_profile_array(1:start_i,:) = repmat(sweepInfo.tf_profile_array_true(1,:),start_i,1);
-    sweepInfo.tf_profile_array(start_i+1:end,:) = sweepInfo.tf_profile_array_true;
-    sweepInfo.time_vec = io_ref_struct.time_vec;
-    sweepInfo.t_filter = ismember(systemParams.time_full,sweepInfo.time_vec);
-    sweepInfo.t_start = sweepInfo.time_vec(1);
-    sweepInfo.t_stop = sweepInfo.time_vec(end);
-
+    
+    % generate input TF profile array
+    sweepInfo.tf_profile_array = io_ref_struct.knirps_array_norm;            
+    
+    % save time info
+    sweepInfo.time_vec = io_ref_struct.time_vec;    
+    sweepInfo.t_filter = io_ref_struct.t_filter;    
+    sweepInfo.exp_time_bounds = io_ref_struct.time_bounds;
+    
     % set list of parameters to sample 
     sweepInfo.paramList = {'HC','KD','F_min','K_out','K_in','k0'};
     sweepInfo.fitFlags = [1 1 0 1 1 0];
-    sweepInfo.trueVals = [7,6e5,3e4,1,1/60,0]; % NL: these are guesses...defaults that will be used if not flagged for fitting
+    sweepInfo.trueVals = [7,6e5,io_ref_struct.F_min_fit,1,1/60,0]; % NL: these are guesses...defaults that will be used if not flagged for fitting
     if contains(sweepInfo.simType,'2')      
         sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_in')) = 0;
         sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'K_out')) = 0;  
         if contains(sweepInfo.simType,'koff') 
-    %         sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'k0')) = 1;  
+            sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'k0')) = 1;  
             sweepInfo.trueVals(strcmp(sweepInfo.paramList,'k0')) = systemParams.R2(1,2);  
         end
     end    
@@ -109,7 +111,7 @@ for s = 2:length(simTypeCell)
     % set mcmc sampling hyperparameters
     sweepInfo.param_values = NaN(2,sweepInfo.nParamIncrement);
     sweepInfo.param_bounds(:,1) = linspace(0.5, 20, sweepInfo.nParamIncrement);
-    sweepInfo.param_bounds(:,2) = linspace(1e5, 1e6, sweepInfo.nParamIncrement);
+    sweepInfo.param_bounds(:,2) = linspace(1e5, 2e6, sweepInfo.nParamIncrement);
     sweepInfo.param_bounds(:,3) =  linspace(1e4, 1e5, sweepInfo.nParamIncrement);
     sweepInfo.param_bounds(:,4) = logspace(-3,0,sweepInfo.nParamIncrement);%[1e-2 60]';
     sweepInfo.param_bounds(:,5) = logspace(-3,0,sweepInfo.nParamIncrement);
@@ -135,6 +137,7 @@ for s = 2:length(simTypeCell)
     % track function fit
     sweepInfo.objective_val_p_on = NaN(sweepInfo.nIterations,1);
     sweepInfo.objective_val_fluo = NaN(sweepInfo.nIterations,1);
+    sweepInfo.objective_val_fluo_raw = NaN(sweepInfo.nIterations,1);
 
     % call parallel sweep script
     tic
@@ -145,10 +148,12 @@ for s = 2:length(simTypeCell)
     sweepInfo.param_val_array = vertcat(sweepTemp.param_fit_array);
     sweepInfo.fluo_fit_array = [sweepTemp.fluo_fit_array];
     sweepInfo.p_on_fit_array = [sweepTemp.p_on_fit_array];
+    sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
     sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
     sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
-    gillespie_struct = [sweepTemp.gillespie];
+    sweepInfo.objective_val_fluo_raw = vertcat(sweepTemp.objective_val_fluo_raw);
+%     gillespie_struct = [sweepTemp.gillespie];
 
     save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
-    save([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct', '-v7.3');
+%     save([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct', '-v7.3');
 end
