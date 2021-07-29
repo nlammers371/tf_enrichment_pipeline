@@ -20,11 +20,11 @@ load([resultsRoot 'io_ref_struct.mat'])
 
 
 % set basic parameters
-sweepInfo = struct;
-sweepInfo.nParamIncrement = 5;
-sweepInfo.granularity = 2;
-sweepInfo.n_traces = 100;
-sweepInfo.n_keep = 5;
+sweepInfoRaw = struct;
+sweepInfoRaw.nParamIncrement = 25;
+sweepInfoRaw.granularity = 2;
+sweepInfoRaw.n_traces = 100;
+sweepInfoRaw.n_keep = 5;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +47,8 @@ simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
 for s = 1:length(simTypeCell)
+    sweepInfo = sweepInfoRaw;
+    
     simType = simTypeCell{s};
 
     % specify 2 state network architecture (eventually this will be drawn from
@@ -162,7 +164,7 @@ for s = 1:length(simTypeCell)
     sweepInfo.reactivation_time_vec = [sweepTemp.reactivation_time_vec];
     sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
     sweepInfo.tf_rate_trends = [sweepTemp.tf_dependent_rate];
-    
+    sweepInfo.fluo_obs_only_array =  [sweepTemp.fluo_obs_only_array];
     sweepInfo.reactivation_time_cdf_array = vertcat(sweepTemp.reactivation_time_cdf)';
     sweepInfo.reactivation_time_axis = sweepTemp(1).reactivation_time_cdf';
     
@@ -174,7 +176,7 @@ for s = 1:length(simTypeCell)
 % %     gillespie_struct = [sweepTemp.gillespie];
 
     save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
-    
-    clear sweepInfo
+%     
+%     clear sweepInfo
 %     save([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct', '-v7.3');
 end

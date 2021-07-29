@@ -148,7 +148,7 @@ for s = 1:length(sets_to_use)
                 still_on_vec(first_i:find(frame_vec_rel==-1,1)) = 0;
                 
                 % store "off fluo"
-                off_frames = frame_vec_rel(1:first_i) - frame_vec_rel(first_i) - 1;
+                off_frames = frame_vec_rel(1:first_i-1) - frame_vec_rel(first_i-1);
                 to_i = ismember(io_ref_struct_temp.off_fluo_frames,off_frames);
                 from_i = ismember(off_frames,io_ref_struct_temp.off_fluo_frames);
                 io_ref_struct_temp.off_fluo_array(to_i,i) = fluo_vec_interp(from_i);  

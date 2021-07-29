@@ -38,7 +38,7 @@ parfor sweep_step = 1:sweepInfo.nIterations
     sweepTemp.p_on_fit_array = simInfoPD.p_on_array;
     sweepTemp.fluo_fit_array = simInfoPD.fluo_array;
     sweepTemp.fluo_raw_fit_array = simInfoPD.fluo_array_raw;
-    sweepTemp.off_fluo_array = simInfoPD.off_fluo_array;
+    sweepTemp.fluo_obs_only_array = simInfoPD.fluo_array_obs_only;
     sweepTemp.off_fluo_array = simInfoPD.off_fluo_array;
     sweepTemp.reactivation_time_vec = simInfoPD.reactivation_time_vec;
     sweepTemp.mean_ra = mean(~isnan(simInfoPD.reactivation_time_vec));
@@ -53,7 +53,10 @@ parfor sweep_step = 1:sweepInfo.nIterations
     % update waitbar
     send(D, sweep_step);
 end
+% delete pool
+delete(gcp) 
 
+% delete 
 delete(h);
 
 sweepTempFull = reassembleTempResults(tempSavePath,sweepInfo.nIterations);

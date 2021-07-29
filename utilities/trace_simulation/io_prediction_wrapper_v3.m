@@ -38,7 +38,7 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     index_vec = -window_size:window_size;
     off_frames = -6:-1;
     
-    % was trace on before and after perturnation?
+    % was trace on before and after perturbation?
     active_indices = 1*(fluo_array_zeros>0) .* index_vec';
     first_i_vec = min(active_indices);
     last_i_vec = max(active_indices);
@@ -49,6 +49,8 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
         
     fluo_array_raw = fluo_array_zeros;
+    all_zero_flags = all(fluo_array_raw==0);
+    fluo_array_raw(:,all_zero_flags) = NaN;
     
     off_fluo_frames = -30:-1;
     off_fluo_array = NaN(length(off_fluo_frames),size(fluo_array_zeros,2));
