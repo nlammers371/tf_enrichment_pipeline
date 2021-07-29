@@ -51,7 +51,6 @@ t_filter_alt = time_vec <= t_bounds_fit(2) & time_vec >= t_bounds_fit(1);
 
 
 labelCell2 = [{'data'} labelCell];
-%%
 close all
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,7 +73,7 @@ for s = 1:length(master_struct)
     % find best fit
     [~,mi_pon] = min(master_struct(s).pon_objective_vec_alt);
     master_struct(s).mi_pon = mi_pon;
-    pon_fit_profile = master_struct(s).sweepInfo.p_on_fit_array(:,master_struct(s).mi_pon);    
+    pon_fit_profile = master_struct(s).sweepInfo.p_on_fit_array(:,mi_pon);    
     master_struct(s).best_pon_fit_profile = pon_fit_profile;
     
     % plot
@@ -107,7 +106,7 @@ set(gcf,'color','w');
 saveas(pon_fig,[FigurePath 'best_p_on_fits.png'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Fluo full
+% Fluo full
 
 fluo_full_true_profile = master_struct(1).sweepInfo.fluo_true;
 
@@ -129,7 +128,7 @@ for s = 1:length(master_struct)
     % find best fit
     [~,mi_fluo] = min(master_struct(s).fluo_full_objective_vec_alt);
     master_struct(s).mi_fluo= mi_fluo;
-    fluo_full_fit_profile = master_struct(s).sweepInfo.fluo_fit_array(:,master_struct(s).mi_pon);    
+    fluo_full_fit_profile = master_struct(s).sweepInfo.fluo_fit_array(:,mi_fluo);    
     master_struct(s).fluo_full_fit_profile = fluo_full_fit_profile;
     
     % plot
@@ -178,14 +177,13 @@ for s = 1:length(master_struct)
     % calculate errors for each predicted profile
     fluo_raw_fit_array = master_struct(s).sweepInfo.fluo_raw_fit_array;
     diff2_array = (fluo_raw_fit_array-fluo_raw_true_profile).^2;
-    nan_flags = isnan(diff2_array(t_filter_alt,:));
+    nan_flags = isnan(diff2_array);
     master_struct(s).fluo_raw_objective_vec_alt = nanmean(diff2_array(t_filter_alt,:),1);
-    master_struct(s).fluo_raw_objective_vec_alt(mean(nan_flags)>0.25) = NaN;
     
     % find best fit
     [~,mi_fluo_raw] = min(master_struct(s).fluo_raw_objective_vec_alt);
     master_struct(s).mi_fluo_raw = mi_fluo_raw;
-    fluo_raw_fit_profile = master_struct(s).sweepInfo.fluo_raw_fit_array(:,master_struct(s).mi_fluo_raw);    
+    fluo_raw_fit_profile = master_struct(s).sweepInfo.fluo_raw_fit_array(:,mi_fluo_raw);    
     master_struct(s).fluo_raw_fit_profile = fluo_raw_fit_profile;
     
     % plot
@@ -193,7 +191,7 @@ for s = 1:length(master_struct)
 end
 
 ylabel('average spot fluorescence (active loci only) (au)')
-ylim([0 2.5e5]);
+ylim([0 2.3e5]);
 
 yyaxis right
 plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
@@ -217,14 +215,6 @@ fluo_raw_fig.InvertHardcopy = 'off';
 set(gcf,'color','w');
 
 saveas(fluo_raw_fig,[FigurePath 'best_fluo_raw_fits.png'])
-%%
-close all
-figure;
-hold on
-for s = 1:length(master_struct)
-    scatter(1./master_struct(s).pon_objective_vec_alt,1./master_struct(s).fluo_raw_objective_vec_alt)
-end
-legend(labelCell{:},'Location','northeast')
 %%
 % find best fit
 [~,mi_pon] = min(sweepInfo.objective_val_p_on);
