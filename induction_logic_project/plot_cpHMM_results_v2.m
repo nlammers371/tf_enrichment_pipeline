@@ -11,6 +11,7 @@ addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
 projectNameCell = {'20210430_Nanog','20210430_Oct4','20210430_Sox2'};%};
+geneCell = {'Nanog','Oct4','Sox2'};
 infString = 'K3_p0_ap1_t1_f2D_qc1_setID';
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 condition_key = {'SFES (WT)','SFES (KO)','diff (WT)','diff (KO)'};
@@ -25,11 +26,11 @@ dur_lims = [0 3.5];
 freq_lims = [0 3];
 init_lims = [0 18]*1e4;
     
-for p = 2%:length(projectNameCell)
+for p = 3%:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
-
+    geneName = geneCell{p};
     % get path to results
     try
         liveProject = LiveEnrichmentProject(projectName);
@@ -43,36 +44,31 @@ for p = 2%:length(projectNameCell)
 
     % make figure path
     FigPath = [resultsDir 'inference_figs_' infString filesep];
-    mkdir(FigPath);   
-        
+    mkdir(FigPath);           
     
     % get list of projects
     resultList = dir([resultsDir '*result*']);            
     name_cell = {resultList.name};
-    inf_index = find(contains(name_cell,infString));
-    
-    for r = inf_index%:length(resultList) % assume just 1 for now
+    inf_index = find(contains(name_cell,infString));        
       
-        % load data
-        load([resultsDir filesep resultList(r).name]);
-                  
-        % transfer results
-        init_vec_mean = compiledResults.init_vec_mean;
-        init_vec_ste = compiledResults.init_vec_ste;
-        
-        freq_vec_mean = compiledResults.freq_vec_mean;
-        freq_vec_ste = compiledResults.freq_vec_ste;
-        
-        dur_vec_mean = compiledResults.dur_vec_mean;
-        dur_vec_ste = compiledResults.dur_vec_ste;
-        
-        time_vec_mean = compiledResults.time_vec_mean;
-        time_vec_ste = compiledResults.time_vec_ste;
-        
-        fluo_vec_mean = compiledResults.fluo_mean;
-        fluo_vec_ste = compiledResults.fluo_ste;
-        
-    end
+    % load data
+    load([resultsDir filesep resultList(inf_index).name]);
+
+    % transfer results
+    init_vec_mean = compiledResults.init_vec_mean;
+    init_vec_ste = compiledResults.init_vec_ste;
+
+    freq_vec_mean = compiledResults.freq_vec_mean;
+    freq_vec_ste = compiledResults.freq_vec_ste;
+
+    dur_vec_mean = compiledResults.dur_vec_mean;
+    dur_vec_ste = compiledResults.dur_vec_ste;
+
+    time_vec_mean = compiledResults.time_vec_mean;
+    time_vec_ste = compiledResults.time_vec_ste;
+
+    fluo_vec_mean = compiledResults.fluo_mean;
+    fluo_vec_ste = compiledResults.fluo_ste;            
     
     x_vec = 1:length(fluo_vec_mean);
     % make figures
@@ -94,7 +90,7 @@ for p = 2%:length(projectNameCell)
     set(gca,'xtick',x_vec,'xticklabel',condition_key)
     ylabel('average transcription rate (au/min)')
 %     legend(s,'Sox2 (wildtype control)','Sox2 (opto-chronic)','Location','southwest')
-    title(['Mean Transcription Rate (r) Across Conditions'])
+    title(['Mean Transcription Rate Across Conditions'])
     set(gca,'Fontsize',12)
     % ylim([2000 3000]);
     xlim([x_vec(1)-0.5 x_vec(end)+0.5])
@@ -245,9 +241,16 @@ for p = 2%:length(projectNameCell)
     saveas(fold_fig,[FigPath, 'fold_change.tif'])
     saveas(fold_fig,[FigPath, 'fold_change.pdf'])
     
+    % make output dataset
+    result_array = [fluo_vec_mean' fluo_vec_ste' init_vec_mean' init_vec_ste' ...
+          dur_vec_mean' dur_vec_ste' freq_vec_mean' freq_vec_ste'];
+    result_table = array2table(result_array,'VariableNames',{'spot_intensity_mean','spot_intensity_ste',...
+              'initiation_rate_mean','initiation_rate_ste','burst_duration_mean','burst_duration_ste',...
+              'burst_frequency_mean','burst_frequency_ste'});
+    result_table.experiment_type = condition_key';
+    result_table = [result_table(:,end) result_table(:,1:end-1)];        
+    
+    writetable(result_table,[FigPath geneName '_inference_results.csv'])
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% make figures        
-close all
 
