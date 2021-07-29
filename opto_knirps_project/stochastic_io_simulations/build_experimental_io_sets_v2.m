@@ -2,7 +2,7 @@
 % simulations
 clear
 close all
-clc
+% clc
 
 addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
@@ -26,7 +26,7 @@ sets_to_use = [2 3 5 6];
 on_frames = [36 43 45 43];
 cal_slope = 1.243;
 cal_intercept = 1.079e5 / 1e5; %NL: div8idng everything through by 1e5 for simplicity
-
+off_frame_ref = -6:-1; % let's say it needs to have been off for at least two minutes prior
 % iterate through sets one-by-one and extract relevant io data
 master_struct = struct;
 
@@ -90,6 +90,12 @@ for s = 1:length(sets_to_use)
     io_ref_struct_temp.knirps_array_filled = NaN(length(index_vec),length(spot_struct_trunc));
     io_ref_struct_temp.still_on_array = NaN(length(index_vec),length(spot_struct_trunc));
     
+    % just for kicks, let's generate an array that back-aligns traces to
+    % turn-off time
+    io_ref_struct_temp.off_fluo_frames = -30:-1;
+    io_ref_struct_temp.off_fluo_array = NaN(length(io_ref_struct_temp.off_fluo_frames),length(spot_struct_trunc));
+    
+    % track wt for reactivation
     io_ref_struct_temp.reactivation_time_vec = NaN(1,length(spot_struct_trunc));
 
     for i = 1:length(spot_struct_trunc)
@@ -99,29 +105,36 @@ for s = 1:length(sets_to_use)
         frame_vec = find(ismember(time_index_interp,time_vec_interp));
         frame_vec_rel = frame_vec - switch_i;
         time_vec_raw = spot_struct_trunc(i).time/60;
+        knirps_vec = spot_struct_trunc(i).rawNCProtein / 1e5;
         
-        if max(time_vec_interp) > switch_time+2 && min(time_vec_interp) < switch_time-2 && max(diff(time_vec_raw)) < 2
-          
+        if max(diff(time_vec_raw)) < 2 && mean(~isnan(knirps_vec)) > 0.9
+
             % actual data            
             fluo_vec_interp = spot_struct_trunc(i).fluoInterp;
-            fluo_vec_orig = spot_struct_trunc(i).fluo;            
-            knirps_vec = spot_struct_trunc(i).rawNCProtein / 1e5;
-            knirps_vec_interp = interp1(time_vec_raw,knirps_vec,time_index_interp);            
-            time_filter = time_index_interp<=max(time_vec_raw) & time_index_interp>=min(time_vec_raw);
-            
-            
+            fluo_vec_orig = spot_struct_trunc(i).fluo;   
+            nan_frames = isnan(knirps_vec);
+            knirps_vec_interp = interp1(time_vec_raw(~nan_frames),knirps_vec(~nan_frames),time_index_interp);   
+            time_filter = time_ref/60<=max(time_vec_raw-switch_time) & time_ref/60>=min(time_vec_raw-switch_time);
+
             % add Missings back for frames preceding perturbation
             fluo_obs_only_array = fluo_vec_interp;
-            fluo_obs_only_array(fluo_obs_only_array<=0) = NaN;            
+            fluo_obs_only_array(fluo_obs_only_array<=0) = NaN;      
+
+            % was trace active both before and after?
+            before_after_flag = max(time_vec_interp) > switch_time+2 && min(time_vec_interp) < switch_time-2;
+            
+            % Check to see if the trace properly "turns off" prior to
+            % perturbation            
+            off_flag = all(fluo_vec_interp(ismember(frame_vec_rel,off_frame_ref))==0);
+            
+            % define basic vectors
+            fluo_vec_raw = fluo_vec_interp;
             still_on_vec = ones(size(fluo_vec_interp));
             still_on_vec(frame_vec_rel>0) = NaN;
-
-            % Check to see if the trace properly "turns off" prior to
-            % perturbation
-            off_frames = -3:-1; % let's say it needs to have been off for at least a minute prior
-            off_flag = all(fluo_vec_interp(ismember(frame_vec_rel,off_frames))==0);
-            fluo_vec_raw = fluo_vec_interp;
-            if off_flag
+                
+            % slightly less restrictive
+            if min(time_vec_interp) < switch_time-2 && off_flag    
+                
                 % find start and end of zero run
                 first_i = find(fluo_vec_raw(frame_vec_rel<0)>0,1,'last')+1; %last active index
                 temp = fluo_vec_raw;
@@ -129,15 +142,24 @@ for s = 1:length(sets_to_use)
                 last_i = find(temp>0,1)-1;
                 if isempty(last_i)
                     last_i = length(fluo_vec_raw);
-                end
+                end  
+                
                 fluo_vec_raw(first_i:last_i) = NaN;
                 still_on_vec(first_i:find(frame_vec_rel==-1,1)) = 0;
                 
-                % estimate reactivation time
-                ra_i = find(time_vec_raw > switch_time & ~isnan(fluo_vec_orig),1);
-                io_ref_struct_temp.reactivation_time_vec(i) = time_vec_raw(ra_i)-switch_time;
-            end        
-
+                % store "off fluo"
+                off_frames = frame_vec_rel(1:first_i) - frame_vec_rel(first_i) - 1;
+                to_i = ismember(io_ref_struct_temp.off_fluo_frames,off_frames);
+                from_i = ismember(off_frames,io_ref_struct_temp.off_fluo_frames);
+                io_ref_struct_temp.off_fluo_array(to_i,i) = fluo_vec_interp(from_i);  
+                
+                if before_after_flag % require that trace turns back on for reactivation times                                                              
+                    % estimate reactivation time
+                    ra_i = find(time_vec_raw > switch_time & ~isnan(fluo_vec_orig),1);
+                    io_ref_struct_temp.reactivation_time_vec(i) = time_vec_raw(ra_i)-switch_time;
+                end
+            end
+      
             % generate indexing vectors            
             match_to = ismember(index_vec,frame_vec_rel);
             match_from = ismember(frame_vec_rel,index_vec);
@@ -145,45 +167,25 @@ for s = 1:length(sets_to_use)
             % save
             io_ref_struct_temp.fluo_array(time_filter,i) = 0;
             io_ref_struct_temp.fluo_array(match_to,i) = fluo_vec_interp(match_from);
-            
+
             io_ref_struct_temp.fluo_obs_only_array(match_to,i) = fluo_obs_only_array(match_from);
             io_ref_struct_temp.fluo_raw_array(match_to,i) = fluo_vec_raw(match_from);
-            
+
             io_ref_struct_temp.on_off_array(io_ref_struct_temp.fluo_array(:,i) > 0,i) = 1;
             io_ref_struct_temp.on_off_array(io_ref_struct_temp.fluo_array(:,i) <= 0,i) = 0;
             io_ref_struct_temp.on_off_array(isnan(io_ref_struct_temp.fluo_array(:,i)),i) = NaN;
-            
+
             io_ref_struct_temp.knirps_array(match_to,i) = knirps_vec_interp(match_from);
             io_ref_struct_temp.still_on_array(match_to,i) = still_on_vec(match_from);
 
             % extend knirps profile 
-            io_ref_struct_temp.knirps_array_filled(:,i) = io_ref_struct_temp.knirps_array(:,i);
+            io_ref_struct_temp.knirps_array_filled(:,i) = io_ref_struct_temp.knirps_array(:,i);            
             si = find(~isnan(io_ref_struct_temp.knirps_array(:,i)),1);
             fi = find(~isnan(io_ref_struct_temp.knirps_array(:,i)),1,'last');
             io_ref_struct_temp.knirps_array_filled(1:si-1,i) = io_ref_struct_temp.knirps_array_filled(si,i);
-            io_ref_struct_temp.knirps_array_filled(fi+1:end,i) = io_ref_struct_temp.knirps_array_filled(fi,i);
+            io_ref_struct_temp.knirps_array_filled(fi+1:end,i) = io_ref_struct_temp.knirps_array_filled(fi,i);                                    
         end
     end    
-
-%     % generate filter to use for QC checks...we only want them to apply to
-%     % period that is interesting
-%     time_index_standard = NaN(size(time_ref));
-%     time_index_standard(ismember(round(time_ref/60,2),round(time_index_interp-time_index_interp(switch_i),2)))...
-%                         = time_index_interp(ismember(round(time_index_interp-time_index_interp(switch_i),2),round(time_ref/60,2)));
-%                       
-%     time_filter_set = time_index_standard>=time_bounds(1) & time_index_standard<=time_bounds(2);
-%     
-%     % remove traces with too many NaNs
-%     nn_filter = mean(isnan(io_ref_struct_temp.knirps_array(time_filter_set,:)))<=0.1;
-% 
-%     io_ref_struct_temp.particle_id_vec = particle_id_filt(nn_filter);
-%     io_ref_struct_temp.knirps_array = io_ref_struct_temp.knirps_array(:,nn_filter);
-%     io_ref_struct_temp.knirps_array_filled = io_ref_struct_temp.knirps_array_filled(:,nn_filter);
-%     io_ref_struct_temp.fluo_array = io_ref_struct_temp.fluo_array(:,nn_filter);
-%     io_ref_struct_temp.fluo_raw_array = io_ref_struct_temp.fluo_raw_array(:,nn_filter);
-%     io_ref_struct_temp.fluo_obs_only_array = io_ref_struct_temp.fluo_obs_only_array(:,nn_filter);
-%     io_ref_struct_temp.on_off_array = io_ref_struct_temp.on_off_array(:,nn_filter);
-%     io_ref_struct_temp.still_on_array = io_ref_struct_temp.still_on_array(:,nn_filter);
     
     % cv_factor = k_after/k_before;
     io_ref_struct_temp.knirps_array_norm = io_ref_struct_temp.knirps_array_filled;
@@ -199,7 +201,7 @@ for s = 1:length(sets_to_use)
     io_ref_struct_temp.time_vec = time_ref';
     io_ref_struct_temp.setID = setID;
     io_ref_struct_temp.switch_time = switch_time;
-    
+    io_ref_struct_temp.particle_id_vec = particle_id_filt;
     fnames = fieldnames(io_ref_struct_temp);
     for f = 1:length(fnames)
         master_struct(s).(fnames{f}) = io_ref_struct_temp.(fnames{f});
@@ -208,7 +210,6 @@ for s = 1:length(sets_to_use)
 end
 
 % merge sets
-
 fnames = fieldnames(master_struct);
 io_ref_struct = struct;
 for f = 1:length(fnames)
@@ -217,6 +218,22 @@ end
 io_ref_struct.set_index_full = floor(io_ref_struct.particle_id_vec);
 io_ref_struct.time_vec = io_ref_struct.time_vec(:,1);
 io_ref_struct.ap_bounds = io_ref_struct.ap_bounds(1:2);
+
+% get rid of observations with NaN knirps values
+nan_flags = any(isnan(io_ref_struct.knirps_array_norm));
+
+io_ref_struct.knirps_array_norm = io_ref_struct.knirps_array_norm(:,~nan_flags);
+io_ref_struct.on_off_array = io_ref_struct.on_off_array(:,~nan_flags);
+io_ref_struct.fluo_array = io_ref_struct.fluo_array(:,~nan_flags);
+io_ref_struct.fluo_obs_only_array = io_ref_struct.fluo_obs_only_array(:,~nan_flags);
+io_ref_struct.fluo_raw_array = io_ref_struct.fluo_raw_array(:,~nan_flags);
+io_ref_struct.knirps_array = io_ref_struct.knirps_array(:,~nan_flags);
+io_ref_struct.knirps_array_filled = io_ref_struct.knirps_array_filled(:,~nan_flags);
+io_ref_struct.still_on_array = io_ref_struct.still_on_array(:,~nan_flags);
+io_ref_struct.off_fluo_array = io_ref_struct.off_fluo_array(:,~nan_flags);
+io_ref_struct.reactivation_time_vec = io_ref_struct.reactivation_time_vec(~nan_flags);
+io_ref_struct.particle_id_vec = io_ref_struct.particle_id_vec(~nan_flags);
+io_ref_struct.set_index_full = io_ref_struct.set_index_full(~nan_flags);
 
 % find start and end indices for set
 start_i = find(mean(~isnan(io_ref_struct.fluo_array),2)>=0.5,1);
@@ -241,9 +258,25 @@ ob_fun = @(x) counts-gauss_fun(x);
 fit_parameters = lsqnonlin(ob_fun,[1e4 1e4 100],[0 0 0],[Inf Inf Inf]);
 
 % record
+io_ref_struct.min_fluo_bins = bins_fit;
+io_ref_struct.min_fluo_counts = counts;
+io_ref_struct.fit_parameters = fit_parameters;
+io_ref_struct.gauss_fun = gauss_fun;
 io_ref_struct.min_spot_values = min_fluo_vec;
 io_ref_struct.F_min_fit = fit_parameters(1);
 io_ref_struct.F_min_std_fit = fit_parameters(2);
+
+% construct empirical cdf for ractivation
+ra_times = io_ref_struct.reactivation_time_vec(~isnan(io_ref_struct.reactivation_time_vec));
+max_ra_time = round(max(ra_times)*60/spot_struct(1).tresInterp)*spot_struct(1).tresInterp;
+[ra_times_sorted,ra_si] = sort(ra_times);
+ra_time_vec = 0:spot_struct(1).tresInterp:max_ra_time;
+ra_count_raw = (0:length(ra_times))/length(ra_times);
+dummy_time_vec = [0 sort(ra_times_sorted*60 +rand(size(ra_times_sorted))*1e-6)];
+ra_count_interp = interp1(dummy_time_vec,ra_count_raw,ra_time_vec);
+
+io_ref_struct.reactivation_time_cdf = ra_count_interp;
+io_ref_struct.reactivation_time_axis = ra_time_vec;
 
 % save
 save([resultsRoot 'io_ref_struct.mat'],'io_ref_struct')
@@ -259,3 +292,23 @@ save([resultsRoot 'io_ref_struct.mat'],'io_ref_struct')
 %                    io_ref_struct.knirps_array_norm >= knirps_vec(k);
 %     still_on_vec_mean(k) = nanmean(io_ref_struct.still_on_array(filter_array));
 % end
+
+%     % generate filter to use for QC checks...we only want them to apply to
+%     % period that is interesting
+%     time_index_standard = NaN(size(time_ref));
+%     time_index_standard(ismember(round(time_ref/60,2),round(time_index_interp-time_index_interp(switch_i),2)))...
+%                         = time_index_interp(ismember(round(time_index_interp-time_index_interp(switch_i),2),round(time_ref/60,2)));
+%                       
+%     time_filter_set = time_index_standard>=time_bounds(1) & time_index_standard<=time_bounds(2);
+%     
+%     % remove traces with too many NaNs
+%     nn_filter = mean(isnan(io_ref_struct_temp.knirps_array(time_filter_set,:)))<=0.1;
+% 
+%     io_ref_struct_temp.particle_id_vec = particle_id_filt(nn_filter);
+%     io_ref_struct_temp.knirps_array = io_ref_struct_temp.knirps_array(:,nn_filter);
+%     io_ref_struct_temp.knirps_array_filled = io_ref_struct_temp.knirps_array_filled(:,nn_filter);
+%     io_ref_struct_temp.fluo_array = io_ref_struct_temp.fluo_array(:,nn_filter);
+%     io_ref_struct_temp.fluo_raw_array = io_ref_struct_temp.fluo_raw_array(:,nn_filter);
+%     io_ref_struct_temp.fluo_obs_only_array = io_ref_struct_temp.fluo_obs_only_array(:,nn_filter);
+%     io_ref_struct_temp.on_off_array = io_ref_struct_temp.on_off_array(:,nn_filter);
+%     io_ref_struct_temp.still_on_array = io_ref_struct_temp.still_on_array(:,nn_filter);

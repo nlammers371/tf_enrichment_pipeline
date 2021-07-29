@@ -16,18 +16,26 @@ function simInfoPD = io_prediction_wrapper_v2(mcmcInfo)
     simInfoPD = io_sim_function_v2(mcmcInfo.simType,mcmcInfo.systemParams,KD,HC,K_out,K_in,k0,tf_profile_array,...
                                                                 n_traces,granularity);
 
-    % use output to generate predicted cumulative OFF (or ON) curve(s)
-    simInfoPD.F_min = F_min;%logspace(3,log(5e4));
-%     simInfoPD = calculate_cumulative_dist(simInfoPD,F_min);
-    simInfoPD.p_on_array = nanmean(simInfoPD.gillespie.fluo_ms2_array>F_min,2);
+    % use output to generate predicted curves
+    fluo_array = simInfoPD.gillespie.fluo_ms2_array;
+    
+    % instanaeous fraction ON    
+    fluo_array_zeros = fluo_array;
+    fluo_array_zeros(fluo_array_zeros<F_min) = 0;
+    simInfoPD.p_on_array = nanmean(fluo_array_zeros>0,2);
+    
+    % average overall fluorscence (including "OFF" frames)    
+    simInfoPD.fluo_array = nanmean(fluo_array_zeros,2);
     
     % make raw version
-    fluo_array_raw = simInfoPD.gillespie.fluo_ms2_array;
-    fluo_array_raw(fluo_array_raw<F_min) = NaN;
-    simInfoPD.fluo_array_raw = nanmean(fluo_array_raw,2);
+    fluo_array_obs_only = simInfoPD.gillespie.fluo_ms2_array;
+    fluo_array_obs_only(fluo_array_obs_only<F_min) = NaN;
+    simInfoPD.fluo_array_obs_only = nanmean(fluo_array_obs_only,2);
     
-    % apply filter
+    % calculate stats for fraction of traces that actually turn off
+    
+    
+    
     simInfoPD.p_on_array = simInfoPD.p_on_array(mcmcInfo.t_filter,:);
-    simInfoPD.fluo_array = nanmean(simInfoPD.gillespie.fluo_ms2_array,2);
     simInfoPD.fluo_array = simInfoPD.fluo_array(mcmcInfo.t_filter);
     simInfoPD.fluo_raw_array = simInfoPD.fluo_array_raw(mcmcInfo.t_filter);

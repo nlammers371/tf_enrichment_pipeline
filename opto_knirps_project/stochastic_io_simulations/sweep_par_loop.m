@@ -23,11 +23,11 @@ end
 
 % NumWorkers = 24;    
 pool = gcp('nocreate');
-if isempty(pool)
-  parpool(sweepInfo.NumWorkers);  
-elseif  pool.NumWorkers ~= sweepInfo.NumWorkers      
-  parpool(sweepInfo.NumWorkers);  
-end  
+% if isempty(pool)
+%   parpool(sweepInfo.NumWorkers);  
+% elseif  pool.NumWorkers ~= sweepInfo.NumWorkers      
+%   parpool(sweepInfo.NumWorkers);  
+% end  
 
 h = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
@@ -36,7 +36,7 @@ afterEach(D, @nUpdateWaitbar);
 N = sweepInfo.nIterations;
 p = 1;
 
-parfor sweep_step = 1:sweepInfo.nIterations
+for sweep_step = 1:sweepInfo.nIterations
 %     waitbar(sweep_step/sweepInfo.nIterations,wb);
     
     % update step
@@ -46,12 +46,17 @@ parfor sweep_step = 1:sweepInfo.nIterations
 %     sweepTemp(sweep_step).step = 1;%sweep_step;
     
     % conduct simulation
-    simInfoPD = io_prediction_wrapper_v2(sweepInfoTemp);
+    simInfoPD = io_prediction_wrapper_v3(sweepInfoTemp);
     
     % store mean profiles    
     sweepTemp(sweep_step).p_on_fit_array = simInfoPD.p_on_array;
     sweepTemp(sweep_step).fluo_fit_array = simInfoPD.fluo_array;
-    sweepTemp(sweep_step).fluo_raw_fit_array = simInfoPD.fluo_raw_array;
+    sweepTemp(sweep_step).fluo_raw_fit_array = simInfoPD.fluo_array_raw;
+    sweepTemp(sweep_step).off_fluo_array = simInfoPD.off_fluo_array;
+    sweepTemp(sweep_step).off_fluo_array = simInfoPD.off_fluo_array;
+    sweepTemp(sweep_step).reactivation_time_vec = simInfoPD.reactivation_time_vec;
+    sweepTemp(sweep_step).reactivation_time_cdf = simInfoPD.reactivation_time_cdf;
+    sweepTemp(sweep_step).reactivation_time_axis = simInfoPD.reactivation_time_axis;
     
     % calculat error relative to fraction on profile
     ref_array_pon = sweepInfoTemp.p_on_true(sweepInfo.t_filter);    
