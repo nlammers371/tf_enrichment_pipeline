@@ -21,7 +21,7 @@ load([resultsRoot 'io_ref_struct.mat'])
 
 % set basic parameters
 sweepInfo = struct;
-sweepInfo.nParamIncrement = 15;
+sweepInfo.nParamIncrement = 5;
 sweepInfo.granularity = 2;
 sweepInfo.n_traces = 100;
 sweepInfo.n_keep = 5;
@@ -46,7 +46,7 @@ systemParams.seq_length = length(systemParams.time_full);
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 3:length(simTypeCell)
+for s = 1:length(simTypeCell)
     simType = simTypeCell{s};
 
     % specify 2 state network architecture (eventually this will be drawn from
@@ -166,6 +166,7 @@ for s = 3:length(simTypeCell)
     sweepInfo.reactivation_time_cdf_array = vertcat(sweepTemp.reactivation_time_cdf)';
     sweepInfo.reactivation_time_axis = sweepTemp(1).reactivation_time_cdf';
     
+    clear sweepTemp
     
 %     sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
 %     sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
@@ -173,5 +174,7 @@ for s = 3:length(simTypeCell)
 % %     gillespie_struct = [sweepTemp.gillespie];
 
     save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
+    
+    clear sweepInfo
 %     save([resultsRoot 'gillespie_' simType '.mat'],'gillespie_struct', '-v7.3');
 end

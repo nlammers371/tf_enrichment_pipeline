@@ -10,3 +10,8 @@ for n = 1:nIterations
     end
     waitbar(n/nIterations,wb)
 end
+
+for n = 1:nIterations    
+    delete([tempSavePath 'sweepTemp' sprintf('%08d',n) '.mat'])
+end
+
