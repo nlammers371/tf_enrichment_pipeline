@@ -18,14 +18,15 @@ end
 % load data
 load([resultsRoot 'io_ref_struct.mat'])
 
+resultsRoot = [resultsRoot 'temp' filesep];
+mkdir(resultsRoot);
 
 % set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 25;
+sweepInfoRaw.nParamIncrement = 20;
 sweepInfoRaw.granularity = 2;
 sweepInfoRaw.n_traces = 100;
 sweepInfoRaw.n_keep = 5;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Specify key system characteristics
@@ -37,7 +38,6 @@ systemParams.rate_max = 1; % nothing faster than a second
 systemParams.time_full = ((1:length(io_ref_struct.time_vec))*systemParams.deltaT)/60;% size(io_ref_struct.on_off_array,1);
 systemParams.seq_length = length(systemParams.time_full);
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ systemParams.seq_length = length(systemParams.time_full);
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 1:length(simTypeCell)
+for s = 4%length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -54,8 +54,7 @@ for s = 1:length(simTypeCell)
     % specify 2 state network architecture (eventually this will be drawn from
     % actual fits)
     systemParams.R2 = [-.92  1/1.07; 
-                        .92 -1/1.07]/60;
-    % systemParams.r2 = [0 2.7]*1e5/60; % loading rate for each state
+                        .92 -1/1.07]/60;    
 
 %     % estimate r for now
     pon = systemParams.R2(2,1) / (systemParams.R2(2,1) + systemParams.R2(1,2));
@@ -146,9 +145,9 @@ for s = 1:length(simTypeCell)
     sweepInfo.fluo_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
 
     % track function fit
-    sweepInfo.objective_val_p_on = NaN(sweepInfo.nIterations,1);
-    sweepInfo.objective_val_fluo = NaN(sweepInfo.nIterations,1);
-    sweepInfo.objective_val_fluo_raw = NaN(sweepInfo.nIterations,1);
+%     sweepInfo.objective_val_p_on = NaN(sweepInfo.nIterations,1);
+%     sweepInfo.objective_val_fluo = NaN(sweepInfo.nIterations,1);
+%     sweepInfo.objective_val_fluo_raw = NaN(sweepInfo.nIterations,1);
 
     % call parallel sweep script
     tic

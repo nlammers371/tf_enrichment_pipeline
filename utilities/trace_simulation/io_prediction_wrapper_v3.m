@@ -92,22 +92,21 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     end
     
     % store additional results
-    simInfoPD.reactivation_time_vec = reactivation_time_vec;
-    simInfoPD.fluo_array_raw = fluo_array_raw;
-    simInfoPD.off_fluo_array = off_fluo_array;
+    simInfoPD.reactivation_time_vec = reactivation_time_vec';
+    simInfoPD.fluo_array_raw = nanmean(fluo_array_raw,2);
+    simInfoPD.off_fluo_array = nanmean(off_fluo_array,2);
     
     % construct empirical cdf for ractivation
-    ra_times = simInfoPD.reactivation_time_vec(~isnan(simInfoPD.reactivation_time_vec));
+    ra_times = simInfoPD.reactivation_time_vec(~isnan(simInfoPD.reactivation_time_vec))';
 %     max_ra_time = round(max(ra_times)*simInfoPD.deltaT);   
     max_time = 50*60;
     ra_time_vec = 0:simInfoPD.deltaT:max_time;
 %     ra_count_interp = NaN(size(ra_time_vec));
     if length(ra_times) > 20
       
-      [ra_times_sorted,ra_si] = sort(ra_times);      
-      ra_count_raw = (0:length(ra_times))/length(ra_times);    
-      
-      bs_time_vec = [0 ra_times_sorted+rand(size(ra_si))*1e-6 max_time];      
+      [ra_times_sorted,~] = sort(ra_times);      
+      ra_count_raw = (0:length(ra_times))/length(ra_times);          
+      bs_time_vec = [0 ra_times_sorted+rand(size(ra_times_sorted))*1e-6 max_time];      
       [bs_time_sorted,~] = sort(bs_time_vec);
       ra_count_interp = interp1(bs_time_sorted,[ra_count_raw 1],ra_time_vec);            
       
