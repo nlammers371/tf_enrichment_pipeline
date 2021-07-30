@@ -8,5 +8,11 @@ for n = 1:nIterations
     for f = 1:length(fnames)
         sweepTempFull(n).(fnames{f}) = sweepTemp.(fnames{f});
     end
+    
+%     delete([tempSavePath 'sweepTemp' sprintf('%08d',n) '.mat'])
+    
     waitbar(n/nIterations,wb)
 end
+delete(wb)
+
+

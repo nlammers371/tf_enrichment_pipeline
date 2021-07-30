@@ -38,7 +38,7 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     index_vec = -window_size:window_size;
     off_frames = -6:-1;
     
-    % was trace on before and after perturnation?
+    % was trace on before and after perturbation?
     active_indices = 1*(fluo_array_zeros>0) .* index_vec';
     first_i_vec = min(active_indices);
     last_i_vec = max(active_indices);
@@ -49,6 +49,8 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
         
     fluo_array_raw = fluo_array_zeros;
+    all_zero_flags = all(fluo_array_raw==0);
+    fluo_array_raw(:,all_zero_flags) = NaN;
     
     off_fluo_frames = -30:-1;
     off_fluo_array = NaN(length(off_fluo_frames),size(fluo_array_zeros,2));
@@ -90,22 +92,21 @@ function simInfoPD = io_prediction_wrapper_v3(mcmcInfo)
     end
     
     % store additional results
-    simInfoPD.reactivation_time_vec = reactivation_time_vec;
-    simInfoPD.fluo_array_raw = fluo_array_raw;
-    simInfoPD.off_fluo_array = off_fluo_array;
+    simInfoPD.reactivation_time_vec = reactivation_time_vec';
+    simInfoPD.fluo_array_raw = nanmean(fluo_array_raw,2);
+    simInfoPD.off_fluo_array = nanmean(off_fluo_array,2);
     
     % construct empirical cdf for ractivation
-    ra_times = simInfoPD.reactivation_time_vec(~isnan(simInfoPD.reactivation_time_vec));
+    ra_times = simInfoPD.reactivation_time_vec(~isnan(simInfoPD.reactivation_time_vec))';
 %     max_ra_time = round(max(ra_times)*simInfoPD.deltaT);   
     max_time = 50*60;
     ra_time_vec = 0:simInfoPD.deltaT:max_time;
 %     ra_count_interp = NaN(size(ra_time_vec));
     if length(ra_times) > 20
       
-      [ra_times_sorted,ra_si] = sort(ra_times);      
-      ra_count_raw = (0:length(ra_times))/length(ra_times);    
-      
-      bs_time_vec = [0 ra_times_sorted+rand(size(ra_si))*1e-6 max_time];      
+      [ra_times_sorted,~] = sort(ra_times);      
+      ra_count_raw = (0:length(ra_times))/length(ra_times);          
+      bs_time_vec = [0 ra_times_sorted+rand(size(ra_times_sorted))*1e-6 max_time];      
       [bs_time_sorted,~] = sort(bs_time_vec);
       ra_count_interp = interp1(bs_time_sorted,[ra_count_raw 1],ra_time_vec);            
       
