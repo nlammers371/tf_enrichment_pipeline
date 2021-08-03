@@ -58,7 +58,7 @@ cmap = brewermap([],'Set2');
 hold on
 
 b = bar(bins_fit,min_fluo_counts,1,'FaceColor',cmap(5,:));
-p = plot(bins_fit,profile_pd,'Color','k');
+p = plot(bins_fit,profile_pd,'Color','k','LineWidth',2);
 
 xlabel('minimum detected spot intensity (au)');
 ylabel('frequency')
@@ -187,6 +187,14 @@ end
 
 legend(labelCell2{:},'Location','southeast','Color','w')
 saveas(cdf_fig,[FigurePath 'cdf_fit_fig_all.png'])
+
+%% Generate example traces for best-fitting parameter set in each model scenario
+
+
+
+
+
+
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% %%%%%%%%%%%%%%%%%%%% Make basic fit figures %%%%%%%%%%%%%%%%%%%%%%%%%%%%
