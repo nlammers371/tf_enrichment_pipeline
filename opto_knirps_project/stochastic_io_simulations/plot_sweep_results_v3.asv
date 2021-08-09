@@ -37,7 +37,7 @@ load([resultsRoot 'io_ref_struct.mat']);
 try
     FigurePath = [liveProject.figurePath 'io_sim_results' filesep];
 catch
-    FigurePath = 'C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\PipelineOutput\optokni_eve4+6_ON';
+    FigurePath = 'C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\PipelineOutput\optokni_eve4+6_ON\';
 end
 mkdir(FigurePath)
 
@@ -58,7 +58,7 @@ cmap = brewermap([],'Set2');
 hold on
 
 b = bar(bins_fit,min_fluo_counts,1,'FaceColor',cmap(5,:));
-p = plot(bins_fit,profile_pd,'Color','k');
+p = plot(bins_fit,profile_pd,'Color','k','LineWidth',2);
 
 xlabel('minimum detected spot intensity (au)');
 ylabel('frequency')
@@ -84,7 +84,7 @@ wt_cdf_true(end) = 1;
 
 % find best fits using CDF
 ra_cdf_times = 0:20:50*60;
-n_fits = 50;
+n_fits = 1e3;
 best_ra_fit_ids = NaN(n_fits,length(master_struct));
 best_ra_fit_scores = NaN(n_fits,length(master_struct));
 best_ra_cdf_fits = NaN(length(reactivation_time_axis),n_fits,length(master_struct));
@@ -96,7 +96,7 @@ for s = 1:length(master_struct)
     time_filter = ismember(ra_cdf_times,reactivation_time_axis);
     ra_cdf_array_ft = ra_cdf_array(time_filter,:);
     % calculate msq diff
-    mean_squared_differences = sqrt(sum((ra_cdf_array_ft-wt_cdf_true').^2));
+    mean_squared_differences = sqrt(mean((ra_cdf_array_ft-wt_cdf_true').^2));
     % sort results according to fit
     [~ ,fit_ranking] = sort(mean_squared_differences);
     % decide how many to take, take n_fits if there are enough that meet
@@ -134,14 +134,32 @@ for s = 1:length(master_struct)
     ax = gca;
     ax.YAxis(1).Color = 'k';
     ax.XAxis(1).Color = 'k';
-  
+    xlim([0 8])
     saveas(cdf_fit_figure,[FigurePath 'cdf_fit_fig_' simTypeCell{s} '.png'])
     
 end  
 
+% make pdf plot 
+pdf_fig = figure;
+bar(reactivation_time_axis/60,wt_pdf_true,1,'FaceColor',cmap(8,:))
+
+xlabel('minutes since ON perturbation');
+ylabel('fraction reactivated')
+
+set(gca,'FontSize',14)
+
+set(gca,'Color',[228,221,209]/255) 
+grid on
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+xlim([0 8])
+
+saveas(pdf_fig,[FigurePath 'pdf_fig_data_only.png'])
+
 % plot them all together
 p = [];
-cdf_fig1 = figure;
+cdf_fig = figure;
 
 hold on
 
@@ -158,8 +176,9 @@ grid on
 ax = gca;
 ax.YAxis(1).Color = 'k';
 ax.XAxis(1).Color = 'k';
+xlim([0 8])
 
-saveas(cdf_fig1,[FigurePath 'cdf_fit_fig_data_only.png'])
+saveas(cdf_fig,[FigurePath 'cdf_fit_fig_data_only.png'])
 
 for s = 1:length(master_struct)
 %     plot(reactivation_time_axis/60,best_ra_cdf_fits(:,:,s),'Color',[cmap(s,:) .3])
@@ -167,7 +186,103 @@ for s = 1:length(master_struct)
 end
 
 legend(labelCell2{:},'Location','southeast','Color','w')
-saveas(cdf_fig1,[FigurePath 'cdf_fit_fig_all.png'])
+saveas(cdf_fig,[FigurePath 'cdf_fit_fig_all.png'])
+
+%% Generate example traces for best-fitting parameter set in each model scenario
+swap_fields = {'n_traces','granularity','systemParams','simType','paramList','fitFlags','tf_profile_array'};
+rng(123)
+close all
+n_plot = 10;
+% pt_time = 41*20 / 60;
+
+for s = 1:length(master_struct)
+    best_id = best_ra_fit_ids(1,s);
+    % generate temporay structure
+    simTemp = struct;
+    simTemp.param_fit_array = master_struct(s).sweepInfo.param_fit_array(best_id,:);
+    simTemp.step = 1;
+    for f = 1:length(swap_fields)
+        simTemp.(swap_fields{f}) = master_struct(s).sweepInfo.(swap_fields{f});
+    end
+    
+    % run simulation
+    simInfoPD = io_prediction_wrapper_v3(simTemp);
+    F_min = master_struct(s).sweepInfo.param_fit_array(best_id,3)';
+    % store
+    master_struct(s).simExample = simInfoPD;
+    master_struct(s).sweepInfoTrunc = simTemp;
+    
+    % plot results
+    % look for traces that turned off
+    off_flags = ~isnan(simInfoPD.reactivation_time_vec);
+    
+    plot_ids = randsample(1:simTemp.n_traces,n_plot,true,off_flags); 
+    
+    % generate time axis
+    time_axis = simInfoPD.gillespie.t_ref;
+    time_axis = (time_axis - time_axis(41))/60;
+    
+    % generate mean knirps profile
+    mean_rate_vec = nanmean(simInfoPD.gillespie.rate_curve_in,3);
+    mean_knirps_vec = nanmean(simInfoPD.gillespie.tf_ref_in,3);
+    
+    trace_fig_knirps = figure;
+%     colormap(cmap)
+    hold on
+    plot(time_axis,simInfoPD.gillespie.fluo_ms2_array(:,plot_ids))
+    plot(time_axis,repelem(F_min,length(time_axis)),'--k','LineWidth',1.5)
+    xlabel('minutes since ON perturbation');
+    ylabel('simulated fluorescence (au)')
+
+    yyaxis right
+    
+    plot(time_axis,mean_knirps_vec,'Color',cmap(5,:),'LineWidth',2.5)
+    
+    set(gca,'FontSize',14)
+    
+    ylabel('knirps concentration (au)')
+    
+    set(gca,'Color',[228,221,209]/255) 
+    grid on
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+    ax.YAxis(2).Color = cmap(5,:);
+    xlim([-10 10])
+    
+    saveas(trace_fig_knirps,[FigurePath 'sim_w_knirps_' simTypeCell{s} '.png'])
+    
+    
+    % now with rate instead
+    trace_fig_rate = figure;
+%     colormap(cmap)
+    hold on
+    plot(time_axis,simInfoPD.gillespie.fluo_ms2_array(:,plot_ids))
+    plot(time_axis,repelem(F_min,length(time_axis)),'--k','LineWidth',1.5)
+    xlabel('minutes since ON perturbation');
+    ylabel('simulated fluorescence (au)')
+
+    yyaxis right
+    
+    plot(time_axis,mean_rate_vec,'Color',cmap(s,:),'LineWidth',2.5)
+    
+    set(gca,'FontSize',14)
+    
+    ylabel([labelCell{s} ' (s^{-1})'])
+    
+    set(gca,'Color',[228,221,209]/255) 
+    grid on
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+    ax.YAxis(2).Color = cmap(s,:);
+    xlim([-10 10])
+    
+    saveas(trace_fig_rate,[FigurePath 'sim_w_rate_' simTypeCell{s} '.png'])
+end
+
+
+
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% %%%%%%%%%%%%%%%%%%%% Make basic fit figures %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,7 +294,7 @@ mean_tf_vec = nanmean(master_struct(1).sweepInfo.tf_profile_array,2);
 
 % generate an alternative filter that is more focused on the immediate
 % vicinity of the event
-t_bounds_fit = [-8 6];
+t_bounds_fit = [-5 5];
 t_filter_alt = time_vec <= t_bounds_fit(2) & time_vec >= t_bounds_fit(1);
 
 
@@ -200,32 +315,44 @@ for s = 1:length(master_struct)
     % calculate errors for each predicted profile
     pon_fit_array = master_struct(s).sweepInfo.p_on_fit_array;
     diff2_array = (pon_fit_array-pon_true_profile).^2;
-    master_struct(s).pon_objective_vec_alt = sum(diff2_array(t_filter_alt,:),1);
+    master_struct(s).pon_objective_vec_alt = mean(sqrt(diff2_array(t_filter_alt,:),1));
     
     % find best fit
     [~,mi_pon] = min(master_struct(s).pon_objective_vec_alt);
     master_struct(s).mi_pon = mi_pon;
-    best_ids = best_ra_fit_ids(:,s);
-    best_ids = best_ids(~isnan(best_ids));
-    pon_fit_profiles = master_struct(s).sweepInfo.p_on_fit_array(:,best_ids);    
+    
+    best_ra_ids = best_ra_fit_ids(:,s);
+    best_ra_ids = best_ra_ids(~isnan(best_ra_ids));
+    pon_fit_profiles = master_struct(s).sweepInfo.p_on_fit_array(:,best_ra_ids);    
     master_struct(s).best_pon_fit_profile = pon_fit_profiles;
+    
+    % take subset of results that are "good enough" from reactivation
+    % perspective
+    objective_filtered = master_struct(s).pon_objective_vec_alt;
+    objective_filtered(~ismember(1:length(objective_filtered),best_ra_ids))) = Inf;
+    
     
     % plot
 %     plot(time_vec,pon_fit_profiles,'-','Color',[cmap(s,:) .2],'LineWidth',1)
-    fit_spread = pon_fit_profiles
-    p(s+1) = plot(time_vec,pon_fit_profiles(:,1),'-.','Color',cmap(s,:),'LineWidth',2);
+    fit_spread = std(pon_fit_profiles,[],2)';
+    fit_mean = mean(pon_fit_profiles,2)';
+    fit_ub = fit_mean + fit_spread;
+    fit_lb = fit_mean - fit_spread;
+%     p(s+1) = plot(time_vec,fit_mean,'-.','Color',cmap(s,:),'LineWidth',1.5);
+%     fill([time_vec' fliplr(time_vec')],[fit_ub fliplr(fit_lb)],cmap(s,:),'FaceAlpha',0.5,'EdgeColor','k')
+    p(s+1) = errorbar(time_vec+rand(size(time_vec))*0.1,fit_mean,fit_spread,'Color',cmap(s,:),'LineWidth',1,'CapSize',3);
 end
 
 ylabel('instantaneous active fraction')
 
-yyaxis right
-plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
+% yyaxis right
+% plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
 
 % ylim([0 2])
 xlim(t_bounds_fit)
 
 xlabel('minutes from light ON event');
-ylabel('average knirps concentration (au)')
+% ylabel('average knirps concentration (au)')
 % grid on
 set(gca,'FontSize',14)
 legend(p,labelCell2{:},'Location','southeast')
@@ -245,13 +372,13 @@ set(gcf,'color','w');
 %% Fluo full
 
 fluo_full_true_profile = master_struct(1).sweepInfo.fluo_true;
-
+p = [];
 fluo_full_fig = figure;
 cmap = brewermap([],'Set2');
 hold on
 
 % plot the true profile
-plot(time_vec,fluo_full_true_profile,'Color','k','LineWidth',2.5)
+p(1) = plot(time_vec,fluo_full_true_profile,'Color','k','LineWidth',2.5);
 
 
 % iterate through sim types
@@ -264,26 +391,33 @@ for s = 1:length(master_struct)
     % find best fit
     [~,mi_fluo] = min(master_struct(s).fluo_full_objective_vec_alt);
     master_struct(s).mi_fluo= mi_fluo;
-    fluo_full_fit_profile = master_struct(s).sweepInfo.fluo_fit_array(:,master_struct(s).mi_pon);    
-    master_struct(s).fluo_full_fit_profile = fluo_full_fit_profile;
     
-    % plot
-    plot(time_vec,fluo_full_fit_profile,'-.','Color',cmap(s,:),'LineWidth',2)
+    best_ra_ids = best_ra_fit_ids(:,s);
+    best_ra_ids = best_ra_ids(~isnan(best_ra_ids));
+    
+    fluo_full_fit_profiles = master_struct(s).sweepInfo.fluo_fit_array(:,best_ra_ids);    
+    master_struct(s).fluo_full_fit_profile2 = fluo_full_fit_profiles;
+    
+    fit_spread = std(fluo_full_fit_profiles,[],2)';
+    fit_mean = mean(fluo_full_fit_profiles,2)';
+    fit_ub = fit_mean + fit_spread;
+    fit_lb = fit_mean - fit_spread;
+    p(s+1) = errorbar(time_vec+rand(size(time_vec))*0.1,fit_mean,fit_spread,'Color',cmap(s,:),'LineWidth',1,'CapSize',3);
 end
 
 ylabel('average spot fluorescence (all loci) (au)')
 
-yyaxis right
-plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
+% yyaxis right
+% plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
 
 % ylim([0 2])
 xlim(t_bounds_fit)
 
 xlabel('minutes from light ON event');
-ylabel('average knirps concentration (au)')
+% ylabel('average knirps concentration (au)')
 % grid on
 set(gca,'FontSize',14)
-legend(labelCell2{:},'Location','southwest')
+legend(p,labelCell2{:},'Location','southwest')
 set(gca,'Color',[228,221,209]/255) 
 grid on
 ax = gca;
@@ -297,55 +431,62 @@ set(gcf,'color','w');
 saveas(fluo_full_fig,[FigurePath 'best_fluo_full_fits.png'])
 
 %%
-
+close all
 fluo_raw_true_profile = master_struct(1).sweepInfo.fluo_true_raw;
 
 fluo_raw_fig = figure;
 cmap = brewermap([],'Set2');
 hold on
-
+p = [];
 % plot the true profile
-plot(time_vec,fluo_raw_true_profile,'Color','k','LineWidth',2.5)
+p(1) = plot(time_vec,fluo_raw_true_profile,'Color','k','LineWidth',2.5);
 
 
 % iterate through sim types
-for s = 1:length(master_struct)
+for s = 1%1:length(master_struct)
     % calculate errors for each predicted profile
-    fluo_raw_fit_array = master_struct(s).sweepInfo.fluo_raw_fit_array;
-    diff2_array = (fluo_raw_fit_array-fluo_raw_true_profile).^2;
-    nan_flags = isnan(diff2_array(t_filter_alt,:));
-    master_struct(s).fluo_raw_objective_vec_alt = nanmean(diff2_array(t_filter_alt,:),1);
-    master_struct(s).fluo_raw_objective_vec_alt(mean(nan_flags)>0.25) = NaN;
+%     fluo_raw_fit_array = master_struct(s).sweepInfo.fluo_raw_fit_array;
+%     diff2_array = (fluo_raw_fit_array-fluo_raw_true_profile).^2;
+%     nan_flags = isnan(diff2_array(t_filter_alt,:));
+%     master_struct(s).fluo_raw_objective_vec_alt = nanmean(diff2_array(t_filter_alt,:),1);
+%     master_struct(s).fluo_raw_objective_vec_alt(mean(nan_flags)>0.25) = NaN;
     
     % find best fit
-    [~,mi_fluo_raw] = min(master_struct(s).fluo_raw_objective_vec_alt);
-    master_struct(s).mi_fluo_raw = mi_fluo_raw;
-    fluo_raw_fit_profile = master_struct(s).sweepInfo.fluo_raw_fit_array(:,master_struct(s).mi_fluo_raw);    
-    master_struct(s).fluo_raw_fit_profile = fluo_raw_fit_profile;
+%     [~,mi_fluo_raw] = min(master_struct(s).fluo_raw_objective_vec_alt);
+%     master_struct(s).mi_fluo_raw = mi_fluo_raw;
     
-    % plot
-    plot(time_vec,fluo_raw_fit_profile,'-.','Color',cmap(s,:),'LineWidth',2)
+    best_ra_ids = best_ra_fit_ids(:,s);
+    best_ra_ids = best_ra_ids(~isnan(best_ra_ids));
+    
+    fluo_raw_fit_profiles = master_struct(s).sweepInfo.fluo_raw_fit_array(:,best_ra_ids);    
+    master_struct(s).fluo_raw_fit_profiles = fluo_raw_fit_profiles;
+    
+    fit_spread = nanstd(fluo_raw_fit_profiles,[],2)';
+    fit_mean = nanmean(fluo_raw_fit_profiles,2)';
+    fit_ub = fit_mean + fit_spread;
+    fit_lb = fit_mean - fit_spread;
+    p(s+1) = errorbar(time_vec+rand(size(time_vec))*0.1,fit_mean,fit_spread,'Color',cmap(s,:),'LineWidth',1,'CapSize',3);
 end
 
 ylabel('average spot fluorescence (active loci only) (au)')
 ylim([0 2.5e5]);
 
-yyaxis right
-plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
+% yyaxis right
+% plot(time_vec,mean_tf_vec,'-','Color',cmap(s+1,:),'LineWidth',2)
 
 % ylim([0 2])
 xlim(t_bounds_fit)
 
 xlabel('minutes from light ON event');
-ylabel('average knirps concentration (au)')
+% ylabel('average knirps concentration (au)')
 % grid on
 set(gca,'FontSize',14)
-legend(labelCell2{:},'Location','southwest')
+legend(p,labelCell2{:},'Location','southwest')
 set(gca,'Color',[228,221,209]/255) 
 grid on
 ax = gca;
 ax.YAxis(1).Color = 'k';
-ax.YAxis(2).Color = cmap(s+1,:);
+% ax.YAxis(2).Color = cmap(s+1,:);
 ax.XAxis(1).Color = 'k';
 
 fluo_raw_fig.InvertHardcopy = 'off';
