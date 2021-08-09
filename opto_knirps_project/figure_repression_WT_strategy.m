@@ -22,9 +22,7 @@ load([resultsRoot 'spot_struct.mat'])
 FigurePath = [liveProject.figurePath 'strategy' filesep];
 mkdir(FigurePath)
 
-% MS2 trace quality looks atrocious. Let's look at on and off times and the
-% like
-
+% Initialize vectors to capture key transcriptional behaviors
 ever_on_vec = zeros(size(spot_struct));
 off_time_vec = NaN(size(spot_struct));
 on_time_vec = NaN(size(spot_struct));
@@ -36,6 +34,7 @@ on_ap = NaN(size(spot_struct));
 mean_ap = NaN(size(spot_struct));
 mean_knirps = NaN(size(spot_struct));
 mean_fluo = NaN(size(spot_struct));
+
 % initialize longform vectors for regression
 ap_vec_long = [];
 time_vec_long = [];

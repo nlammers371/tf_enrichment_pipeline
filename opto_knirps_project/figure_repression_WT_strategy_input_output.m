@@ -3,7 +3,7 @@ close all
 
 addpath(genpath('./lib'))
 
-knirps_offset = 3.75e5;%prctile(double(knirps_vec_long),1);
+knirps_offset = 3.75e5;
 
 % knirps green
 k_green = brighten([38 142 75]/256,.4);
