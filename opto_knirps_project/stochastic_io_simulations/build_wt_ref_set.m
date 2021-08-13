@@ -1,8 +1,8 @@
 % Script to build io silencing dataset to compare with stochastic
 % simulations
 function io_ref_wt = build_wt_ref_set(projectNameWT)
-clear
-close all
+% clear
+% close all
 % clc
 
 addpath(genpath('./lib'))

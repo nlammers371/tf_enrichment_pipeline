@@ -19,16 +19,9 @@ io_ref_wt = build_wt_ref_set(projectNameWT);
 tco
 disp('Done.')
 
-% save combined dataset to master directory
+%% save combined dataset to master directory
 liveProject = LiveEnrichmentProject(projectNameWT);
 resultsPath = [liveProject.dataPath];
 slashes = strfind(resultsPath,'\');
-ResultsRoot = resultsPath(1:slashes(end-1));
-sweepDir = [ResultsRoot 'parameterSweeps' filesep];
-mkdir(sweepDir);
-disp('Saving...')
-save([sweepDir 'io_ref_wt.mat'],'io_ref_wt')
-save([sweepDir 'io_ref_ra.mat'],'io_ref_ra')
-disp('Done.')
-save([sweepDir 'io_ref_wt.mat'],'io_ref_wt')
+ResultsRoot = resultsPath(
 

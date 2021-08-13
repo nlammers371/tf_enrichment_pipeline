@@ -1,8 +1,8 @@
 function io_ref_ra = build_ra_ref_set(projectNameRA)
 % Script to build io silencing dataset to compare with stochastic
 % simulations
-clear
-close all
+% clear
+% close all
 % clc
 
 addpath(genpath('./lib'))
