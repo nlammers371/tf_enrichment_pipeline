@@ -1,5 +1,6 @@
-% Figure to build io silencing dataset to compare with stochastic
+% Script to build io silencing dataset to compare with stochastic
 % simulations
+function io_ref_wt = build_wt_ref_set(projectNameWT)
 clear
 close all
 % clc
@@ -8,9 +9,9 @@ addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
 
 % Load data
-projectName = 'optokni_eve4+6_WT_FUN'; 
+% projectNameWT = 'optokni_eve4+6_WT_FUN'; 
 
-liveProject = LiveEnrichmentProject(projectName);
+liveProject = LiveEnrichmentProject(projectNameWT);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data

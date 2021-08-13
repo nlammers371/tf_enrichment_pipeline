@@ -1,4 +1,5 @@
-% Figure to build io silencing dataset to compare with stochastic
+function io_ref_ra = build_ra_ref_set(projectNameRA)
+% Script to build io silencing dataset to compare with stochastic
 % simulations
 clear
 close all
@@ -8,9 +9,9 @@ addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
 
 % Load data
-projectName = 'optokni_eve4+6_ON'; 
+% projectNameRA = 'optokni_eve4+6_ON'; 
 
-liveProject = LiveEnrichmentProject(projectName);
+liveProject = LiveEnrichmentProject(projectNameRA);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
@@ -147,7 +148,7 @@ for s = 1:length(sets_to_use)
     io_ref_struct_temp.knirps_array_norm = io_ref_struct_temp.knirps_array_norm - knirps_offset;
 
     % add some basic metadata
-    io_ref_struct_temp.projectName = projectName;
+    io_ref_struct_temp.projectName = projectNameRA;
     io_ref_struct_temp.deltaT = spot_struct_trunc(1).tresInterp;
     io_ref_struct_temp.min_dp = min_dp;
     io_ref_struct_temp.ap_bounds = ap_bounds;

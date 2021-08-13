@@ -8,7 +8,7 @@ addpath(genpath('../utilities'));
 % %%%%%%%%%%%%%%%% Load experimental data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-projectName = 'optokni_eve4+6_ON'; 
+projectNameCell = 'optokni_eve4+6_ON'; 
 try
   liveProject = LiveEnrichmentProject(projectName);
   resultsRoot = [liveProject.dataPath filesep];
