@@ -119,7 +119,7 @@ end
 
 [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
 %hasProteinInfo = false;
-
+has3DSpotInfo = false;
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
 % Generate master structure with info on all nuclei and traces in
