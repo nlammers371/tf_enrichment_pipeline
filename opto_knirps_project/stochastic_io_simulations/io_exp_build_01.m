@@ -17,6 +17,7 @@ resultsRoot = [liveProject.dataPath filesep];
 load([resultsRoot 'spot_struct.mat'])
 
 % Filter for only nuclei in correct region with "significant" activity
+knirps_offset = 3.75e5 / 1e5;
 min_dp = 10;
 window_size = 40; % size of lead and lag interval, in frames
 time_bounds = [7 20]; % nuclei must have been around for full extent of this interval 
@@ -143,6 +144,7 @@ for s = 1:length(sets_to_use)
     io_ref_struct_temp.knirps_array_norm = io_ref_struct_temp.knirps_array_filled;
     io_ref_struct_temp.knirps_array_norm(window_size+1:end,:) = ...
       (io_ref_struct_temp.knirps_array_norm(window_size+1:end,:)-cal_intercept)/cal_slope;
+    io_ref_struct_temp.knirps_array_norm = io_ref_struct_temp.knirps_array_norm - knirps_offset;
 
     % add some basic metadata
     io_ref_struct_temp.projectName = projectName;
@@ -174,7 +176,8 @@ io_ref_ra.ap_bounds = io_ref_ra.ap_bounds(1:2);
 % get rid of observations with NaN knirps values
 nan_flags = any(isnan(io_ref_ra.knirps_array_norm));
 
-io_ref_ra.knirps_array_norm = io_ref_ra.knirps_array_norm(:,~nan_flags);
+io_ref_ra.knirps_array = io_ref_ra.knirps_array_norm(:,~nan_flags);
+io_ref_ra.knirps_array(io_ref_ra.knirps_array<0) = 0;
 io_ref_ra.fluo_array = io_ref_ra.fluo_array(:,~nan_flags);
 io_ref_ra.knirps_array_filled = io_ref_ra.knirps_array_filled(:,~nan_flags);
 io_ref_ra.reactivation_time_vec = io_ref_ra.reactivation_time_vec(~nan_flags);

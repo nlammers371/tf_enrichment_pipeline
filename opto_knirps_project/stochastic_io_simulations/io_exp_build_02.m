@@ -8,7 +8,7 @@ addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
 
 % Load data
-projectName = 'optokni_eve4+6_WT'; 
+projectName = 'optokni_eve4+6_WT_FUN'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -20,7 +20,7 @@ load([resultsRoot 'spot_struct.mat'])
 min_dp = 10;
 time_bounds = [7 30]; % nuclei must have been around for full extent of this interval 
 ap_bounds = [-0.07 0.05];
-knirps_offset = 3.75e5;
+knirps_offset = 375000 / 1e5;
 TresInterp = 20;
 
 % define time axis 
@@ -58,7 +58,7 @@ for i = 1:length(spot_struct)
     % extract core vectors 
     fluo_vec = spot_struct(i).fluo;
     time_vec = spot_struct(i).time;
-    knirps_vec = spot_struct(i).rawNCProtein;
+    knirps_vec = spot_struct(i).rawNCProtein / 1e5;
     ap_vec = spot_struct(i).APPosNucleus;
     
     % find first active time
@@ -141,6 +141,7 @@ end
 % Calculate AP trends for comparison with simulations
 % first let's remove unwanted entries
 io_ref_wt.knirps_array = io_ref_wt.knirps_array(:,keep_flags);
+io_ref_wt.knirps_array(io_ref_wt.knirps_array<0) = 0;
 io_ref_wt.fluo_array = io_ref_wt.fluo_array(:,keep_flags);
 io_ref_wt.fluo_full_array = io_ref_wt.fluo_full_array(:,keep_flags);
 io_ref_wt.off_flag_array = io_ref_wt.off_flag_array(:,keep_flags);
