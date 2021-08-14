@@ -1,30 +1,24 @@
-function sweepTempFull = sweep_par_loop_v2(sweepInfo,savePath)
+function sweepTempFull = sweep_par_loop_v3(sweepInfo,savePath)
 
 % make directory to store temporary files
 tempSavePath = [savePath filesep sweepInfo.simType '_tempSweepFiles' filesep];
 mkdir(tempSavePath)
 
-% initialize array to track acceptance events
+% initialize parallel pools
+initializePool(sweepInfo)
 
-% NumWorkers = 24;    
-pool = gcp('nocreate');
-if isempty(pool)
-  parpool(sweepInfo.NumWorkers);  
-elseif  pool.NumWorkers ~= sweepInfo.NumWorkers     
-  delete(pool)
-  parpool(sweepInfo.NumWorkers);  
-end  
-
+% initialize stuff for waitbar
 h = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
 afterEach(D, @nUpdateWaitbar);
 
 N = sweepInfo.nIterations;
 p = 1;
-tic
+    
+% iterate through different param values
 for sweep_step = 1:sweepInfo.nIterations
     
-    waitbar(sweep_step/sweepInfo.nIterations,wb);
+    waitbar(sweep_step/sweepInfo.nIterations,h);
     
     % update step
     sweepInfoTemp = sweepInfo;

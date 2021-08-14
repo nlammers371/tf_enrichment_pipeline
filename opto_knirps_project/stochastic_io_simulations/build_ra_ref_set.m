@@ -184,6 +184,7 @@ io_ref_ra.knirps_array_filled = io_ref_ra.knirps_array_filled(:,~nan_flags);
 io_ref_ra.reactivation_time_vec = io_ref_ra.reactivation_time_vec(~nan_flags);
 io_ref_ra.particle_id_vec = io_ref_ra.particle_id_vec(~nan_flags);
 io_ref_ra.set_index_full = io_ref_ra.set_index_full(~nan_flags);
+io_ref_ra.off_frame_ref = off_frame_ref;
 
 % construct empirical cdf for ractivation
 ra_times = io_ref_ra.reactivation_time_vec(~isnan(io_ref_ra.reactivation_time_vec));

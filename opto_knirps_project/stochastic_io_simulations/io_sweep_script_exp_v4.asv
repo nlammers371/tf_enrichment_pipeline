@@ -45,12 +45,11 @@ for s = 1%length(simTypeCell)
     
     simType = simTypeCell{s};
     
+    % load markov system parameter info
+    systemInfo = getMarkovSystemInfo(simType);
+    sweepInfo.systemInfo = systemInfo;
     % save simulation type
     sweepInfo.simType = simType;
-    
-    % load markov system parameter info
-    sweepInfo = getMarkovSystemInfo(sweepInfo);
-    
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%% Call Sweep function %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     close all force 
@@ -74,7 +73,7 @@ for s = 1%length(simTypeCell)
     
     % observed off times
     sweepInfo.off_time_ap = io_ref_wt.off_time_vec_mean;
-    sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;               
+    sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;           
     
     % save TF profiles and time vec for RA type
     sweepInfo.tf_profile_array_ra = io_ref_ra.knirps_array;               
@@ -83,19 +82,61 @@ for s = 1%length(simTypeCell)
     % save TF profiles and time vec for WT type
     sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array;               
     sweepInfo.ap_profile_vec_tf = io_ref_wt.mean_ap;               
-    sweepInfo.time_axis_wt = io_ref_wt.time_axis';        
+    sweepInfo.time_axis_wt = io_ref_wt.time_axis';
+    
+    % set list of parameters to sample 
+    sweepInfo.paramList = {'HC','KD','F_min','ks','ka','k0','kon','koff'};
+    sweepInfo.fitFlags = [1 1 0 1 1 0 0 0];
+    sweepInfo.trueVals = [7,6e5,io_ref_struct.F_min_fit,1,1,0,systemParams.R2(2,1),systemParams.R2(1,2)]; 
+    
+    if contains(sweepInfo.simType,'2')      
+        sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'ks')) = 0;
+        sweepInfo.trueVals(strcmp(sweepInfo.paramList,'ks')) = 0;
+        sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'ka')) = 0;
+        sweepInfo.trueVals(strcmp(sweepInfo.paramList,'ka')) = 0;
+        if contains(sweepInfo.simType,'koff') 
+            sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'k0')) = 1;  
+            sweepInfo.trueVals(strcmp(sweepInfo.paramList,'k0')) = systemParams.R2(1,2);  
+        end
+    end    
+    sweepInfo.nFit = sum(sweepInfo.fitFlags);
+    sweepInfo.nIterations = sweepInfo.nParamIncrement^sweepInfo.nFit;
+
+    % set mcmc sampling hyperparameters
+    sweepInfo.param_values = NaN(2,sweepInfo.nParamIncrement);
+    sweepInfo.param_bounds(:,1) = linspace(0.5, 20, sweepInfo.nParamIncrement);
+    sweepInfo.param_bounds(:,2) = linspace(1, 20, sweepInfo.nParamIncrement);
+    sweepInfo.param_bounds(:,3) =  linspace(1e4, 1e5, sweepInfo.nParamIncrement);
+    % constrain rates
+    sweepInfo.param_bounds(:,4) = logspace(-3,0,sweepInfo.nParamIncrement);%[1e-2 60]';
+    sweepInfo.param_bounds(:,5) = logspace(-3,0,sweepInfo.nParamIncrement);
+    sweepInfo.param_bounds(:,6) = logspace(-3,0,sweepInfo.nParamIncrement);
 
     % initialize vectors to store results
-    sweepInfo = initializeSweepValues(sweepInfo);   
+    sweepInfo.param_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.paramList));
+    iter = 1;
+    for i = find(sweepInfo.fitFlags)
+        vec_orig = sweepInfo.param_bounds(:,i);
+        vec1 = repmat(vec_orig,sweepInfo.nIterations / sweepInfo.nParamIncrement^iter,1);
+        vec2 = repelem(vec1,sweepInfo.nIterations  / sweepInfo.nParamIncrement^(sweepInfo.nFit-iter+1));
+        sweepInfo.param_fit_array(:,i) = vec2;
 
-    % track fits to observables of interest
-    sweepInfo.ra_fit = NaN(sweepInfo.nIterations,1);
-    sweepInfo.mean_fluo_fit = NaN(sweepInfo.nIterations,1);
-    sweepInfo.off_time_fit = NaN(sweepInfo.nIterations,1);
-    
+        iter = iter + 1;
+    end
+    sweepInfo.param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(sweepInfo.param_fit_array,1),1);
+
+    % track profile
+    sweepInfo.p_on_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
+    sweepInfo.fluo_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
+
+    % track function fit
+%     sweepInfo.objective_val_p_on = NaN(sweepInfo.nIterations,1);
+%     sweepInfo.objective_val_fluo = NaN(sweepInfo.nIterations,1);
+%     sweepInfo.objective_val_fluo_raw = NaN(sweepInfo.nIterations,1);
+
     % call parallel sweep script
     tic
-    sweepTemp = sweep_par_loop_v3(sweepInfo,resultsRoot);    
+    sweepTemp = sweep_par_loop_v2(sweepInfo,resultsRoot);    
     toc
 
     % recombine    
