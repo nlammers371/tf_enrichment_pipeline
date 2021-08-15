@@ -63,7 +63,7 @@ for s = 1%length(simTypeCell)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % generate ground truth reference curves
     reactivation_cdf = io_ref_ra.reactivation_time_cdf;
-    keep_flags = reactivation_cdf<=0.95;
+    keep_flags = true(size(reactivation_cdf));%<=0.95;
     reactivation_time = io_ref_ra.reactivation_time_axis;
     
     sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);

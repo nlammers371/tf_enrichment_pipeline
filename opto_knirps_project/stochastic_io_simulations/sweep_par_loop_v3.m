@@ -25,8 +25,11 @@ for sweep_step = 1:sweepInfo.nIterations
     sweepInfoTemp.step = 1;
     sweepInfoTemp.param_fit_array = sweepInfo.param_fit_array(sweep_step,:);
     
-    % conduct simulation
-    simInfoPD = io_prediction_wrapper_ra(sweepInfoTemp);
+    % conduct RA simulations
+    sweepInfoTemp = io_prediction_wrapper_ra(sweepInfoTemp);
+    
+    % conduct WT simulations
+    sweepInfoTemp = io_prediction_wrapper_wt(sweepInfoTemp);
     
     sweepTemp = struct;
     % store mean profiles    

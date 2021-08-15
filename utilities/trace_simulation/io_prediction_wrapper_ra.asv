@@ -1,4 +1,4 @@
-function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
+function simInfoPD = io_prediction_wrapper_ra(sweepInfo)
 
     paramList = sweepInfo.paramList;
     sweepInfo.HC = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'HC'));
@@ -13,7 +13,7 @@ function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
 
     % extract info
     n_traces = sweepInfo.n_traces;
-%     granularity = sweepInfo.granularity;                                                          
+    granularity = sweepInfo.granularity;                                                          
     
     % randomly draw tf profiles
     s_indices = randsample(1:size(sweepInfo.tf_profile_array_ra,2),n_traces,true);
@@ -38,7 +38,7 @@ function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
     % was trace on before and after perturbation?
     active_indices = 1*(fluo_array_zeros>0) .* index_vec';
     first_i_vec = min(active_indices);
-%     last_i_vec = max(active_indices);
+    last_i_vec = max(active_indices);
     max_time = max(sweepInfo.reactivation_time);
     before_flags = first_i_vec < 0;
 %     after_flags = last_i_vec > 0;
@@ -82,5 +82,5 @@ function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
 
     ra_count_interp = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');                  
 
-    sweepInfo.reactivation_time_cdf_predicted = ra_count_interp;
-    sweepInfo.reactivation_time_axis_predicted = ra_time_vec;
+    simInfoPD.reactivation_time_cdf = ra_count_interp;
+    simInfoPD.reactivation_time_axis = ra_time_vec;
