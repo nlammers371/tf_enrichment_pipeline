@@ -16,7 +16,7 @@ projectNameWT = 'optokni_eve4+6_WT_FUN';
 disp('Building wild-type reference set...')
 tic
 io_ref_wt = build_wt_ref_set(projectNameWT);
-tco
+toc
 disp('Done.')
 
 % save combined dataset to master directory
