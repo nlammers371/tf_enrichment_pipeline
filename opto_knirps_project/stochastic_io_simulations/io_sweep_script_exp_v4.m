@@ -21,7 +21,7 @@ load([resultsRoot 'io_ref_wt.mat'])
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
 
-%% set basic parameters
+% set basic parameters
 sweepInfoRaw = struct;
 sweepInfoRaw.nParamIncrement = 20;
 sweepInfoRaw.granularity = 2;
@@ -68,6 +68,7 @@ for s = 1%length(simTypeCell)
     
     sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);
     sweepInfo.reactivation_time = reactivation_time(keep_flags);
+    sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     
     % mean fluorescence vs. AP
     sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
