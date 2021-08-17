@@ -1,4 +1,4 @@
-function sweepTempFull = sweep_par_loop_v3(sweepInfo,savePath)
+function sweepResults = sweep_par_loop_v3(sweepInfo,sweepResults,savePath)
 
 % make directory to store temporary files
 tempSavePath = [savePath filesep sweepInfo.simType '_tempSweepFiles' filesep];
@@ -8,7 +8,7 @@ mkdir(tempSavePath)
 initializePool(sweepInfo)
 
 % initialize stuff for waitbar
-h = waitbar(0,'conducting parameter sweeps...');
+WB = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
 afterEach(D, @nUpdateWaitbar);
 
@@ -16,51 +16,32 @@ N = sweepInfo.nIterations;
 p = 1;
     
 % iterate through different param values
-for sweep_step = 1:sweepInfo.nIterations
+nIterations = sweepInfo.nIterations;
+parfor sweep_step = 1:nIterations
     
-    waitbar(sweep_step/sweepInfo.nIterations,h);
+%     waitbar(sweep_step/nIterations,WB);                
     
-    % update step
-    sweepInfoTemp = sweepInfo;
-    sweepInfoTemp.step = 1;
-    sweepInfoTemp.param_fit_array = sweepInfo.param_fit_array(sweep_step,:);
+    % conduct RA simulations
+    sweepResults(sweep_step) = io_prediction_wrapper_ra(sweepInfo,sweepResults(sweep_step));
     
-    % conduct simulation
-    simInfoPD = io_prediction_wrapper_ra(sweepInfoTemp);
-    
-    sweepTemp = struct;
-    % store mean profiles    
-    sweepTemp.p_on_fit_array = simInfoPD.p_on_array;
-    sweepTemp.fluo_fit_array = simInfoPD.fluo_array;
-    sweepTemp.fluo_raw_fit_array = simInfoPD.fluo_array_raw;
-    sweepTemp.fluo_obs_only_array = simInfoPD.fluo_array_obs_only;
-    sweepTemp.off_fluo_array = simInfoPD.off_fluo_array;
-    sweepTemp.reactivation_time_vec = simInfoPD.reactivation_time_vec;
-    sweepTemp.mean_ra = mean(~isnan(simInfoPD.reactivation_time_vec));
-    sweepTemp.reactivation_time_cdf = simInfoPD.reactivation_time_cdf;
-    sweepTemp.reactivation_time_axis = simInfoPD.reactivation_time_axis;
-
-    sweepTemp.tf_dependent_rate = nanmean(simInfoPD.gillespie.rate_curve_in,3);
-    
-    % cave temporary file
-    saveTempResults(sweep_step,sweepTemp,tempSavePath);
-    
+    % conduct WT simulations
+    sweepResults(sweep_step) = io_prediction_wrapper_wt(sweepInfo,sweepResults(sweep_step));
+         
     % update waitbar
     send(D, sweep_step);
     
 end
 toc
-% delete pool
+% delete pool (necessary to clear from RAM)
 delete(gcp) 
+ 
+delete(WB);
 
-delete 
-delete(h);
-
-sweepTempFull = reassembleTempResults(tempSavePath,sweepInfo.nIterations);
+% sweepTempFull = reassembleTempResults(tempSavePath,sweepInfo.nIterations);
 
 % helper function
 function nUpdateWaitbar(~)
-  waitbar(p/N, h);
+  waitbar(p/N, WB);
   p = p + 1;
 end
 

@@ -21,16 +21,14 @@ load([resultsRoot 'io_ref_wt.mat'])
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
 
-%% set basic parameters
+% set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 20;
+sweepInfoRaw.nParamIncrement = 4;
 sweepInfoRaw.granularity = 2;
 sweepInfoRaw.n_traces = 100;
 sweepInfoRaw.n_keep = 5;
 sweepInfoRaw.rate_max = 1; % nothing faster than a second
-% sweepInfoRaw.time_full = ((1:length(io_ref_struct.time_vec))*systemParams.deltaT)/60;% size(io_ref_struct.on_off_array,1);
-% sweepInfoRaw.seq_length = length(systemParams.time_full);
-
+sweepInfoRaw.keep_prediction_flag = false;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
@@ -40,7 +38,7 @@ sweepInfoRaw.rate_max = 1; % nothing faster than a second
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 1%length(simTypeCell)
+for s = 3:length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -63,11 +61,12 @@ for s = 1%length(simTypeCell)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % generate ground truth reference curves
     reactivation_cdf = io_ref_ra.reactivation_time_cdf;
-    keep_flags = reactivation_cdf<=0.95;
+    keep_flags = true(size(reactivation_cdf));%<=0.95;
     reactivation_time = io_ref_ra.reactivation_time_axis;
     
     sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);
     sweepInfo.reactivation_time = reactivation_time(keep_flags);
+    sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     
     % mean fluorescence vs. AP
     sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
@@ -86,37 +85,20 @@ for s = 1%length(simTypeCell)
     sweepInfo.time_axis_wt = io_ref_wt.time_axis';        
 
     % initialize vectors to store results
-    sweepInfo = initializeSweepValues(sweepInfo);   
-
-    % track fits to observables of interest
-    sweepInfo.ra_fit = NaN(sweepInfo.nIterations,1);
-    sweepInfo.mean_fluo_fit = NaN(sweepInfo.nIterations,1);
-    sweepInfo.off_time_fit = NaN(sweepInfo.nIterations,1);
-    
+    [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo);          
+        
     % call parallel sweep script
     tic
-    sweepTemp = sweep_par_loop_v3(sweepInfo,resultsRoot);    
+    sweepResults= sweep_par_loop_v3(sweepInfo,sweepResults,resultsRoot);    
     toc
 
-    % recombine    
-    sweepInfo.fluo_fit_array = [sweepTemp.fluo_fit_array];
-    sweepInfo.p_on_fit_array = [sweepTemp.p_on_fit_array];
-    sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
+    % recombine 
+    fnames = fieldnames(sweepResults);
+    for f = 1:length(fnames)
+        sweepInfo.(fnames{f}) = vertcat(sweepResults.(fnames{f}));
+    end
     
-    sweepInfo.off_fluo_array = [sweepTemp.off_fluo_array];
-    sweepInfo.reactivation_time_vec = [sweepTemp.reactivation_time_vec];
-    sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
-    sweepInfo.tf_rate_trends = [sweepTemp.tf_dependent_rate];
-    sweepInfo.fluo_obs_only_array =  [sweepTemp.fluo_obs_only_array];
-    sweepInfo.reactivation_time_cdf_array = vertcat(sweepTemp.reactivation_time_cdf)';
-    sweepInfo.reactivation_time_axis = sweepTemp(1).reactivation_time_cdf';
-    
-    clear sweepTemp
-    
-%     sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
-%     sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
-%     sweepInfo.objective_val_fluo_raw = vertcat(sweepTemp.objective_val_fluo_raw);
-% %     gillespie_struct = [sweepTemp.gillespie];
+    clear sweepResults    
 
     save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
 %     

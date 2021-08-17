@@ -6,7 +6,7 @@ KD = simInfo.KD;
 HC = simInfo.HC;
 deltaT = simInfo.deltaT;
 seq_length = size(tf_profile_array,1);
-n_traces = simInfo.n_traces;
+n_traces = size(tf_profile_array,3);
 tf_dependent_flags = simInfo.tf_dependent_flags;          
 granularity = simInfo.granularity;
 

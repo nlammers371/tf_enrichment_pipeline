@@ -21,16 +21,14 @@ load([resultsRoot 'io_ref_wt.mat'])
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
 
-%% set basic parameters
+% set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 20;
+sweepInfoRaw.nParamIncrement = 5;
 sweepInfoRaw.granularity = 2;
 sweepInfoRaw.n_traces = 100;
 sweepInfoRaw.n_keep = 5;
 sweepInfoRaw.rate_max = 1; % nothing faster than a second
-% sweepInfoRaw.time_full = ((1:length(io_ref_struct.time_vec))*systemParams.deltaT)/60;% size(io_ref_struct.on_off_array,1);
-% sweepInfoRaw.seq_length = length(systemParams.time_full);
-
+sweepInfoRaw.keep_prediction_flag = true;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
@@ -45,11 +43,12 @@ for s = 1%length(simTypeCell)
     
     simType = simTypeCell{s};
     
-    % load markov system parameter info
-    systemInfo = getMarkovSystemInfo(simType);
-    sweepInfo.systemInfo = systemInfo;
     % save simulation type
     sweepInfo.simType = simType;
+    
+    % load markov system parameter info
+    sweepInfo = getMarkovSystemInfo(sweepInfo);
+    
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%% Call Sweep function %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     close all force 
@@ -62,18 +61,19 @@ for s = 1%length(simTypeCell)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % generate ground truth reference curves
     reactivation_cdf = io_ref_ra.reactivation_time_cdf;
-    keep_flags = reactivation_cdf<=0.95;
+    keep_flags = true(size(reactivation_cdf));%<=0.95;
     reactivation_time = io_ref_ra.reactivation_time_axis;
     
     sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);
     sweepInfo.reactivation_time = reactivation_time(keep_flags);
+    sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     
     % mean fluorescence vs. AP
     sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
     
     % observed off times
     sweepInfo.off_time_ap = io_ref_wt.off_time_vec_mean;
-    sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;           
+    sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;               
     
     % save TF profiles and time vec for RA type
     sweepInfo.tf_profile_array_ra = io_ref_ra.knirps_array;               
@@ -82,64 +82,19 @@ for s = 1%length(simTypeCell)
     % save TF profiles and time vec for WT type
     sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array;               
     sweepInfo.ap_profile_vec_tf = io_ref_wt.mean_ap;               
-    sweepInfo.time_axis_wt = io_ref_wt.time_axis';
-    
-    % set list of parameters to sample 
-    sweepInfo.paramList = {'HC','KD','F_min','ks','ka','k0','kon','koff'};
-    sweepInfo.fitFlags = [1 1 0 1 1 0 0 0];
-    sweepInfo.trueVals = [7,6e5,io_ref_struct.F_min_fit,1,1,0,systemParams.R2(2,1),systemParams.R2(1,2)]; 
-    
-    if contains(sweepInfo.simType,'2')      
-        sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'ks')) = 0;
-        sweepInfo.trueVals(strcmp(sweepInfo.paramList,'ks')) = 0;
-        sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'ka')) = 0;
-        sweepInfo.trueVals(strcmp(sweepInfo.paramList,'ka')) = 0;
-        if contains(sweepInfo.simType,'koff') 
-            sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'k0')) = 1;  
-            sweepInfo.trueVals(strcmp(sweepInfo.paramList,'k0')) = systemParams.R2(1,2);  
-        end
-    end    
-    sweepInfo.nFit = sum(sweepInfo.fitFlags);
-    sweepInfo.nIterations = sweepInfo.nParamIncrement^sweepInfo.nFit;
-
-    % set mcmc sampling hyperparameters
-    sweepInfo.param_values = NaN(2,sweepInfo.nParamIncrement);
-    sweepInfo.param_bounds(:,1) = linspace(0.5, 20, sweepInfo.nParamIncrement);
-    sweepInfo.param_bounds(:,2) = linspace(1, 20, sweepInfo.nParamIncrement);
-    sweepInfo.param_bounds(:,3) =  linspace(1e4, 1e5, sweepInfo.nParamIncrement);
-    % constrain rates
-    sweepInfo.param_bounds(:,4) = logspace(-3,0,sweepInfo.nParamIncrement);%[1e-2 60]';
-    sweepInfo.param_bounds(:,5) = logspace(-3,0,sweepInfo.nParamIncrement);
-    sweepInfo.param_bounds(:,6) = logspace(-3,0,sweepInfo.nParamIncrement);
+    sweepInfo.time_axis_wt = io_ref_wt.time_axis';        
 
     % initialize vectors to store results
-    sweepInfo.param_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.paramList));
-    iter = 1;
-    for i = find(sweepInfo.fitFlags)
-        vec_orig = sweepInfo.param_bounds(:,i);
-        vec1 = repmat(vec_orig,sweepInfo.nIterations / sweepInfo.nParamIncrement^iter,1);
-        vec2 = repelem(vec1,sweepInfo.nIterations  / sweepInfo.nParamIncrement^(sweepInfo.nFit-iter+1));
-        sweepInfo.param_fit_array(:,i) = vec2;
-
-        iter = iter + 1;
-    end
-    sweepInfo.param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(sweepInfo.param_fit_array,1),1);
-
-    % track profile
-    sweepInfo.p_on_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
-    sweepInfo.fluo_fit_array = NaN(sweepInfo.nIterations,length(sweepInfo.p_on_true));
-
-    % track function fit
-%     sweepInfo.objective_val_p_on = NaN(sweepInfo.nIterations,1);
-%     sweepInfo.objective_val_fluo = NaN(sweepInfo.nIterations,1);
-%     sweepInfo.objective_val_fluo_raw = NaN(sweepInfo.nIterations,1);
-
+    [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo);          
+        
     % call parallel sweep script
     tic
-    sweepTemp = sweep_par_loop_v2(sweepInfo,resultsRoot);    
+    sweepTemp = sweep_par_loop_v3(sweepInfo,sweepResults,resultsRoot);    
     toc
 
-    % recombine    
+    % recombine 
+    fnames = fieldnames(
+    for i = 1
     sweepInfo.fluo_fit_array = [sweepTemp.fluo_fit_array];
     sweepInfo.p_on_fit_array = [sweepTemp.p_on_fit_array];
     sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
