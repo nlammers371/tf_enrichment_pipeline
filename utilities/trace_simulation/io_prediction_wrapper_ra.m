@@ -39,7 +39,7 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     first_i_vec = min(active_indices);
     max_time = max(sweepInfo.reactivation_time);
     before_flags = first_i_vec < 0;
-    
+    n_ever_on = sum(max(active_indices)>0);
     % was trace OFF immediately preceding ON perturbation?
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
 
@@ -76,13 +76,16 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     ra_count_raw = (0:length(ra_times))/length(ra_times); 
     option_vec = 1:length(ra_times_sorted);
     ra_array = NaN(nBoots,length(ra_time_vec));
+    ra_array_full = NaN(nBoots,length(ra_time_vec));
     % conduct bootstrapping
     for n = 1:nBoots
         boot_indices = randsample(option_vec,length(option_vec),true);
         % generate dummy time vector so that matlab won't throw a fit
         bs_time_vec = sort([0 ra_times_sorted(boot_indices)+rand(size(ra_times_sorted))*1e-6]);      
         if length(bs_time_vec) > 1
-            ra_array(n,:) = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');                  
+            ra_array(n,:) = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');          
+            ra_full = ra_array(n,:) + (n_ever_on-length(option_vec))/length(option_vec);
+            ra_array_full(n,:) = ra_full * length(option_vec) / n_ever_on;
         else
             ra_array(n,:) = zeros(size(ra_time_vec));                  
         end
@@ -90,11 +93,18 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     ra_cdf_mean = nanmean(ra_array);
     ra_cdf_ste = nanstd(ra_array)+1e-3;
     
+    ra_cdf_full_mean = nanmean(ra_array_full);
+    ra_cdf_full_ste = nanstd(ra_array_full)+1e-3;
+    
     % calculate likelihood score
     logL_ra_cdf = -0.5*(((ra_cdf_mean-sweepInfo.reactivation_cdf)./ra_cdf_ste).^2);% + log(2*pi*ra_cdf_ste.^2));
     sweepResults.ra_fit = mean(logL_ra_cdf);
     
+    logL_ra_full_cdf = -0.5*(((ra_cdf_full_mean-sweepInfo.reactivation_cdf_full)./ra_cdf_full_ste).^2);% + log(2*pi*ra_cdf_ste.^2));
+    sweepResults.ra_full_fit = mean(logL_ra_full_cdf);
+    
     if sweepInfo.keep_prediction_flag
         sweepResults.ra_time_cdf_predicted = ra_cdf_mean;
+        sweepResults.ra_time_cdf_full_predicted = ra_cdf_full_mean;
         sweepResults.tf_dependent_curve_ra = nanmean(gillespie.rate_curve_in,3)';
     end

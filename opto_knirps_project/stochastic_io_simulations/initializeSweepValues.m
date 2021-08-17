@@ -53,11 +53,13 @@ function [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo)
   % track fits to observables of interest
   for i = 1:sweepInfo.nIterations
       sweepResults(i).ra_fit = NaN;%(sweepInfo.nIterations,1);
+      sweepResults(i).ra_full_fit = NaN;
       sweepResults(i).mean_fluo_fit = NaN;%(sweepInfo.nIterations,1);
       sweepResults(i).off_time_fit = NaN;%(sweepInfo.nIterations,1);
 
       if sweepInfo.keep_prediction_flag
           sweepResults(i).ra_time_cdf_predicted = NaN(1,length(sweepInfo.reactivation_time));
+          sweepResults(i).ra_time_cdf_full_predicted = NaN(1,length(sweepInfo.reactivation_time));
           sweepResults(i).tf_dependent_curve_ra = NaN(1,size(sweepInfo.tf_profile_array_ra,1));
 
           sweepResults(i).mean_fluo_predicted = NaN(1,length(sweepInfo.ap_axis_mean));

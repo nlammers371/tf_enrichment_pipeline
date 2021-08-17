@@ -38,7 +38,7 @@ sweepInfoRaw.keep_prediction_flag = false;
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 3:length(simTypeCell)
+for s = 1:length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -65,6 +65,7 @@ for s = 3:length(simTypeCell)
     reactivation_time = io_ref_ra.reactivation_time_axis;
     
     sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);
+    sweepInfo.reactivation_cdf_full = io_ref_ra.reactivation_time_cdf_full(keep_flags);
     sweepInfo.reactivation_time = reactivation_time(keep_flags);
     sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     
@@ -80,9 +81,14 @@ for s = 3:length(simTypeCell)
     sweepInfo.time_axis_ra = io_ref_ra.time_vec';
     
     % save TF profiles and time vec for WT type
-    sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array;               
+    % calculate a sensible start time
+    start_time = ceil(nanmean(io_ref_wt.on_time_vec) / 60)*60;
+    [~,start_i] = min(abs(io_ref_wt.time_axis-start_time));
+    
+    sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array(start_i:end,:);               
+    sweepInfo.wt_start_time = start_time;
     sweepInfo.ap_profile_vec_tf = io_ref_wt.mean_ap;               
-    sweepInfo.time_axis_wt = io_ref_wt.time_axis';        
+    sweepInfo.time_axis_wt = io_ref_wt.time_axis(start_i:end)';        
 
     % initialize vectors to store results
     [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo);          
