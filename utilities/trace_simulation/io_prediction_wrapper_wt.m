@@ -1,15 +1,15 @@
-function sweepInfo = io_prediction_wrapper_wt(sweepInfo)
+function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
 
     paramList = sweepInfo.paramList;
-    sweepInfo.HC = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'HC'));
-    sweepInfo.KD = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'KD'));
-    sweepInfo.ks = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'ks'));
-    sweepInfo.ka = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'ka'));
-    sweepInfo.k0 = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'k0'));
-    sweepInfo.F_min = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'F_min'));   
+    sweepInfo.HC = sweepResults.param_val_vec(strcmp(paramList,'HC'));
+    sweepInfo.KD = sweepResults.param_val_vec(strcmp(paramList,'KD'));
+    sweepInfo.ks = sweepResults.param_val_vec(strcmp(paramList,'ks'));
+    sweepInfo.ka = sweepResults.param_val_vec(strcmp(paramList,'ka'));
+    sweepInfo.k0 = sweepResults.param_val_vec(strcmp(paramList,'k0'));
+    sweepInfo.F_min = sweepResults.param_val_vec(strcmp(paramList,'F_min'));   
         
-%     % final model-building step
-%     sweepInfo = generate_full_model(sweepInfo);                                                     
+    % final model-building step
+    sweepInfo = generate_full_model(sweepInfo);                                                     
     
     % randomly draw tf profiles
     ap_axis_mean = sweepInfo.ap_axis_mean;
@@ -64,16 +64,32 @@ function sweepInfo = io_prediction_wrapper_wt(sweepInfo)
     for a = 1:length(ap_axis_mean)
         ap_ft = average_array;
         ap_ft(:,trace_ap_vec~=a) = false;
-        
-        mean_fluo = bootstrp(100,@(x)mean(x),fluo_array_zeros(ap_ft));
-        fluo_vec_mean(a) = mean(mean_fluo);
-        fluo_vec_ste(a) = std(mean_fluo);
-        
-        mean_off_times = bootstrp(100,@(x)mean(x),last_i_vec(trace_ap_vec==a));
-        off_time_vec_mean(a) = mean(mean_off_times);
-        off_time_vec_ste(a) = std(mean_off_times);
+        if any(ap_ft(:))
+            mean_fluo = bootstrp(100,@(x)mean(x),fluo_array_zeros(ap_ft));
+            fluo_vec_mean(a) = mean(mean_fluo);
+            fluo_vec_ste(a) = std(mean_fluo);
+
+            mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.deltaT*last_i_vec(trace_ap_vec==a));
+            off_time_vec_mean(a) = mean(mean_off_times);
+            off_time_vec_ste(a) = std(mean_off_times);
+        else
+            fluo_vec_mean(a) = 0;
+            fluo_vec_ste(a) = 1e-3;
+            off_time_vec_mean(a) = 0;
+            off_time_vec_ste(a) = 1e-3;
+        end
     end
                  
-
-    sweepInfo.reactivation_time_cdf_predicted = ra_count_interp;
-    sweepInfo.reactivation_time_axis_predicted = ra_time_vec;
+    % calculate log likelihood of experimental trends assuming gaussian
+    % errors
+    logL_off_times = -0.5*(((off_time_vec_mean-sweepInfo.off_time_ap)./off_time_vec_ste).^2);% + log(2*pi*off_time_vec_ste.^2));
+    sweepResults.off_time_fit = mean(logL_off_times);
+    
+    logL_fluo = -0.5*(((fluo_vec_mean-sweepInfo.mean_fluo_ap)./fluo_vec_ste).^2);% + log(2*pi*fluo_vec_ste.^2));
+    sweepResults.mean_fluo_fit = mean(logL_fluo);
+    
+    if sweepInfo.keep_prediction_flag
+        sweepResults.mean_fluo_predicted = fluo_vec_mean;
+        sweepResults.off_time_predicted = off_time_vec_mean;
+        sweepResults.tf_dependent_curve_wt = nanmean(gillespie.rate_curve_in,3)';        
+    end

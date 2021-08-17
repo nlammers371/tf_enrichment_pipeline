@@ -23,12 +23,12 @@ load([resultsRoot 'io_ref_wt.mat'])
 
 % set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 4;
+sweepInfoRaw.nParamIncrement = 5;
 sweepInfoRaw.granularity = 2;
 sweepInfoRaw.n_traces = 100;
 sweepInfoRaw.n_keep = 5;
 sweepInfoRaw.rate_max = 1; % nothing faster than a second
-sweepInfoRaw.keep_prediction_flag = false;
+sweepInfoRaw.keep_prediction_flag = true;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
@@ -38,7 +38,7 @@ sweepInfoRaw.keep_prediction_flag = false;
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 3:length(simTypeCell)
+for s = 1%length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -89,16 +89,30 @@ for s = 3:length(simTypeCell)
         
     % call parallel sweep script
     tic
-    sweepResults= sweep_par_loop_v3(sweepInfo,sweepResults,resultsRoot);    
+    sweepTemp = sweep_par_loop_v3(sweepInfo,sweepResults,resultsRoot);    
     toc
 
     % recombine 
-    fnames = fieldnames(sweepResults);
-    for f = 1:length(fnames)
-        sweepInfo.(fnames{f}) = vertcat(sweepResults.(fnames{f}));
-    end
+    fnames = fieldnames(
+    for i = 1
+    sweepInfo.fluo_fit_array = [sweepTemp.fluo_fit_array];
+    sweepInfo.p_on_fit_array = [sweepTemp.p_on_fit_array];
+    sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
     
-    clear sweepResults    
+    sweepInfo.off_fluo_array = [sweepTemp.off_fluo_array];
+    sweepInfo.reactivation_time_vec = [sweepTemp.reactivation_time_vec];
+    sweepInfo.fluo_raw_fit_array = [sweepTemp.fluo_raw_fit_array];
+    sweepInfo.tf_rate_trends = [sweepTemp.tf_dependent_rate];
+    sweepInfo.fluo_obs_only_array =  [sweepTemp.fluo_obs_only_array];
+    sweepInfo.reactivation_time_cdf_array = vertcat(sweepTemp.reactivation_time_cdf)';
+    sweepInfo.reactivation_time_axis = sweepTemp(1).reactivation_time_cdf';
+    
+    clear sweepTemp
+    
+%     sweepInfo.objective_val_p_on = vertcat(sweepTemp.objective_val_p_on);
+%     sweepInfo.objective_val_fluo = vertcat(sweepTemp.objective_val_fluo);
+%     sweepInfo.objective_val_fluo_raw = vertcat(sweepTemp.objective_val_fluo_raw);
+% %     gillespie_struct = [sweepTemp.gillespie];
 
     save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
 %     

@@ -1,19 +1,18 @@
-function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
+function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
 
     paramList = sweepInfo.paramList;
-    sweepInfo.HC = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'HC'));
-    sweepInfo.KD = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'KD'));
-    sweepInfo.ks = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'ks'));
-    sweepInfo.ka = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'ka'));
-    sweepInfo.k0 = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'k0'));
-    sweepInfo.F_min = sweepInfo.param_fit_array(sweepInfo.step,strcmp(paramList,'F_min'));   
+    sweepInfo.HC = sweepResults.param_val_vec(strcmp(paramList,'HC'));
+    sweepInfo.KD = sweepResults.param_val_vec(strcmp(paramList,'KD'));
+    sweepInfo.ks = sweepResults.param_val_vec(strcmp(paramList,'ks'));
+    sweepInfo.ka = sweepResults.param_val_vec(strcmp(paramList,'ka'));
+    sweepInfo.k0 = sweepResults.param_val_vec(strcmp(paramList,'k0'));
+    sweepInfo.F_min = sweepResults.param_val_vec(strcmp(paramList,'F_min'));   
         
     % final model-building step
     sweepInfo = generate_full_model(sweepInfo);
 
     % extract info
-    n_traces = sweepInfo.n_traces;
-%     granularity = sweepInfo.granularity;                                                          
+    n_traces = sweepInfo.n_traces;                                                      
     
     % randomly draw tf profiles
     s_indices = randsample(1:size(sweepInfo.tf_profile_array_ra,2),n_traces,true);
@@ -38,10 +37,8 @@ function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
     % was trace on before and after perturbation?
     active_indices = 1*(fluo_array_zeros>0) .* index_vec';
     first_i_vec = min(active_indices);
-%     last_i_vec = max(active_indices);
     max_time = max(sweepInfo.reactivation_time);
     before_flags = first_i_vec < 0;
-%     after_flags = last_i_vec > 0;
     
     % was trace OFF immediately preceding ON perturbation?
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
@@ -75,12 +72,29 @@ function sweepInfo = io_prediction_wrapper_ra(sweepInfo)
     [ra_times_sorted,~] = sort(ra_times);  
     
     % generate count vec
+    nBoots = 100;
     ra_count_raw = (0:length(ra_times))/length(ra_times); 
+    option_vec = 1:length(ra_times_sorted);
+    ra_array = NaN(nBoots,length(ra_time_vec));
+    % conduct bootstrapping
+    for n = 1:nBoots
+        boot_indices = randsample(option_vec,length(option_vec),true);
+        % generate dummy time vector so that matlab won't throw a fit
+        bs_time_vec = sort([0 ra_times_sorted(boot_indices)+rand(size(ra_times_sorted))*1e-6]);      
+        if length(bs_time_vec) > 1
+            ra_array(n,:) = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');                  
+        else
+            ra_array(n,:) = zeros(size(ra_time_vec));                  
+        end
+    end
+    ra_cdf_mean = nanmean(ra_array);
+    ra_cdf_ste = nanstd(ra_array)+1e-3;
     
-    % generate dummy time vector so that matlab won't throw a fit
-    bs_time_vec = sort([0 ra_times_sorted+rand(size(ra_times_sorted))*1e-6]);      
-
-    ra_count_interp = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');                  
-
-    sweepInfo.reactivation_time_cdf_predicted = ra_count_interp;
-    sweepInfo.reactivation_time_axis_predicted = ra_time_vec;
+    % calculate likelihood score
+    logL_ra_cdf = -0.5*(((ra_cdf_mean-sweepInfo.reactivation_cdf)./ra_cdf_ste).^2);% + log(2*pi*ra_cdf_ste.^2));
+    sweepResults.ra_fit = mean(logL_ra_cdf);
+    
+    if sweepInfo.keep_prediction_flag
+        sweepResults.ra_time_cdf_predicted = ra_cdf_mean;
+        sweepResults.tf_dependent_curve_ra = nanmean(gillespie.rate_curve_in,3)';
+    end

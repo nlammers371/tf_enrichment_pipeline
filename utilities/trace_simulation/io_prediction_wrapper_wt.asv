@@ -52,24 +52,32 @@ function sweepInfo = io_prediction_wrapper_wt(sweepInfo)
     last_i_vec = max(active_indices.*~isinf(active_indices));
     all_off_flags = all(fluo_array_zeros==0);
     average_array = false(size(fluo_array_zeros));
-    for a = find(~all_off_flags)
-      try
-        average_array(first_i_vec(a):last_i_vec(a),a) = true;
-      catch
-        error('asfa')
-      end
+    for a = find(~all_off_flags)      
+        average_array(first_i_vec(a):last_i_vec(a),a) = true;  
     end
               
     %% calculate average fluorescence over trace lifetime
     off_time_vec_mean = NaN(size(ap_axis_mean));
+    off_time_vec_ste = NaN(size(ap_axis_mean));
     fluo_vec_mean = NaN(size(ap_axis_mean));
+    fluo_vec_ste = NaN(size(ap_axis_mean));
     for a = 1:length(ap_axis_mean)
         ap_ft = average_array;
         ap_ft(:,trace_ap_vec~=a) = false;
-        fluo_vec_mean(a) = mean(fluo_array_zeros(ap_ft));
-        off_time_vec_mean(a) = mean(last_i_vec(trace_ap_vec==a));
+        
+        mean_fluo = bootstrp(100,@(x)mean(x),fluo_array_zeros(ap_ft));
+        fluo_vec_mean(a) = mean(mean_fluo);
+        fluo_vec_ste(a) = std(mean_fluo);
+        
+        mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.deltaT*last_i_vec(trace_ap_vec==a));
+        off_time_vec_mean(a) = mean(mean_off_times);
+        off_time_vec_ste(a) = std(mean_off_times);
     end
                  
-
-    sweepInfo.reactivation_time_cdf_predicted = ra_count_interp;
-    sweepInfo.reactivation_time_axis_predicted = ra_time_vec;
+    % calculate log likelihood of experimental trends assuming gaussian
+    % errors
+    logL_off_times = -0.5*(((off_time_vec_mean-sweepInfo.off_time_ap)./off_time_vec_ste).^2 + log(2*pi*off_time_vec_ste.^2));
+    sweepInfo.off_time_fit(sweepInfo.step) = mean(logL_off_times);
+    
+    logL_fluo = -0.5*(((fluo_vec_mean-sweepInfo.mean_fluo_ap)./fluo_vec_ste).^2 + log(2*pi*fluo_vec_ste.^2));
+    sweepInfo.mean_fluo_fit(sweepInfo.step) = mean(logL_fluo);

@@ -44,25 +44,8 @@ function [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo)
 
       iter = iter + 1;
   end
-  param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(param_fit_array,1),1);
-  % assign  to structure
+  param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(sweepInfo.param_fit_array,1),1);
   for j = 1:size(param_fit_array,1)
        sweepResults(j).param_val_vec = param_fit_array(j,:);
-  end
-  
-  % track fits to observables of interest
-  for i = 1:sweepInfo.nIterations
-      sweepResults(i).ra_fit = NaN;%(sweepInfo.nIterations,1);
-      sweepResults(i).mean_fluo_fit = NaN;%(sweepInfo.nIterations,1);
-      sweepResults(i).off_time_fit = NaN;%(sweepInfo.nIterations,1);
-
-      if sweepInfo.keep_prediction_flag
-          sweepResults(i).ra_time_cdf_predicted = NaN(1,length(sweepInfo.reactivation_time));
-          sweepResults(i).tf_dependent_curve_ra = NaN(1,size(sweepInfo.tf_profile_array_ra,1));
-
-          sweepResults(i).mean_fluo_predicted = NaN(1,length(sweepInfo.ap_axis_mean));
-          sweepResults(i).off_time_predicted = NaN(1,length(sweepInfo.ap_axis_mean));
-          sweepResults(i).tf_dependent_curve_wt = NaN(1,size(sweepInfo.tf_profile_array_wt,1));
-      end
   end
   

@@ -52,10 +52,10 @@ sweepInfo.tf_dependent_flags = false(size(sweepInfo.RateMatrix));
 if contains(sweepInfo.simType,'out')      
     sweepInfo.tf_dependent_flags(1,2) = true;
 elseif contains(sweepInfo.simType,'in')      
-    sweepInfo.simInfo.HC = -sweepInfo.simInfo.HC;
+    sweepInfo.HC = -sweepInfo.HC;
     sweepInfo.tf_dependent_flags(2,1) = true;
 elseif contains(sweepInfo.simType,'kon')      
-    sweepInfo.simInfo.HC = -sweepInfo.simInfo.HC;
+    sweepInfo.HC = -sweepInfo.HC;
     sweepInfo.tf_dependent_flags(3,2) = true;
 elseif contains(sweepInfo.simType,'koff')          
     sweepInfo.tf_dependent_flags(2,3) = true;    

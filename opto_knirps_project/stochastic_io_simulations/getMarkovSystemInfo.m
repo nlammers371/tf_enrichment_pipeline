@@ -11,7 +11,7 @@ function simInfo = getMarkovSystemInfo(simInfo)
     % specify 2 state network architecture (eventually this will be drawn from
     % actual fits)
     simInfo.R2 = [-.92  1/1.07; 
-                        .92 -1/1.07]/60;    
+                   .92 -1/1.07]/60;    
 
 %     % estimate r for now
 %     pon = systemInfo.R2(2,1) / (systemInfo.R2(2,1) + systemInfo.R2(1,2));
