@@ -71,9 +71,13 @@ for s = 1:length(sets_to_use)
         if isempty(obs_times)
             obs_times = 0;
         end
-        if min(obs_times) < switch_time && nanmax(time_vec)>switch_time % I want expression both before and after perturbation                   
-            [~,closest_index] = min(abs(time_vec-switch_time));
-            ap_pos_mean_vec(i) = spot_struct(i).APPosNucleus(closest_index);          
+        if min(obs_times) < switch_time && nanmax(time_vec)>switch_time % I want expression both before and after perturbation       
+            try
+              [~,closest_index] = min(abs(time_vec-switch_time));
+              ap_pos_mean_vec(i) = spot_struct(i).APPosNucleus(closest_index);
+            catch
+              error('asfa')
+            end
         end
     end
 
@@ -121,7 +125,7 @@ for s = 1:length(sets_to_use)
                 % estimate reactivation time
                 ra_i = find(time_vec_raw > switch_time & ~isnan(fluo_vec_orig),1);
                 if isempty(ra_i)
-                    io_ref_struct_temp.reactivation_time_vec(i) = 1e6;                
+                    io_ref_struct_temp.reactivation_time_vec(i) = Inf;                
                 else
                     io_ref_struct_temp.reactivation_time_vec(i) = time_vec_raw(ra_i)-switch_time;                
                 end
@@ -193,15 +197,15 @@ io_ref_ra.off_frame_ref = off_frame_ref;
 
 % construct empirical cdf for ractivation
 ra_times = io_ref_ra.reactivation_time_vec(~isnan(io_ref_ra.reactivation_time_vec));
-% ra_times(isinf(ra_times)) = realmax/1e10;
+ra_times(isinf(ra_times)) = realmax/1e10;
 % Tres = spot_struct(1).tresInterp;
 max_ra_time = 20*60;%ceil(max(ra_times)*60/Tres)*Tres;
 [ra_times_sorted,~] = sort(ra_times);
 ra_time_vec = 0:spot_struct(1).tresInterp:max_ra_time;
 ra_count_raw = (0:length(ra_times))/length(ra_times);
-dummy_time_vec = [0 sort(ra_times_sorted*60+rand(size(ra_times_sorted))*1)];
-ra_count_interp = interp1(dummy_time_vec,ra_count_raw,ra_time_vec,'previous');
-% ra_count_interp(end) = 1;
+dummy_time_vec = [0 sort(ra_times_sorted*60 +rand(size(ra_times_sorted))*1e-6)];
+ra_count_interp = interp1(dummy_time_vec,ra_count_raw,ra_time_vec);
+ra_count_interp(end) = 1;
 
 % store results
 io_ref_ra.reactivation_time_cdf = ra_count_interp;
