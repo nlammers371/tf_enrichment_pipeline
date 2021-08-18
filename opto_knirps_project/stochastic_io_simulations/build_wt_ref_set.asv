@@ -70,7 +70,7 @@ for i = 1:length(spot_struct)
     end
     % filter for nuclei that are present and that had activity
     if time_vec(end)/60 >= time_bounds(2) && time_vec(1) <=time_bounds(1)/60 && first_time < 15 &&...
-          sum(~isnan(fluo_vec))>=min_dp && mean(~isnan(knirps_vec)) > 0.9
+          sum(~isnan(fluo_vec))>=min_dp && mean(~isnan(knirps_vec)) >0.9
       
         % get off and on indices        
         post_on_vec = zeros(size(ap_vec));
@@ -95,7 +95,9 @@ for i = 1:length(spot_struct)
                 
         [~, off_i] = min(abs(time_index-io_ref_wt.off_time_vec(i)));
         io_ref_wt.off_flag_array(off_i+1:end,i) = 1;
-        % make regression vectors              
+        % make regression vectors       
+%         post_turn_on_flags = [post_turn_on_flags post_on_vec];
+%         post_turn_off_flags = [post_turn_off_flags post_off_vec];        
         
         % make vectors where missing data points are replaced with zeros
         % only between first and last detections
@@ -139,7 +141,7 @@ end
 % Calculate AP trends for comparison with simulations
 % first let's remove unwanted entries
 io_ref_wt.knirps_array = io_ref_wt.knirps_array(:,keep_flags);
-io_ref_wt.knirps_array(io_ref_wt.knirps_array<0) = 1e-6; % setting this to small nonzero value saves pain later
+io_ref_wt.knirps_array(io_ref_wt.knirps_array<0) = 0;
 io_ref_wt.fluo_array = io_ref_wt.fluo_array(:,keep_flags);
 io_ref_wt.fluo_full_array = io_ref_wt.fluo_full_array(:,keep_flags);
 io_ref_wt.off_flag_array = io_ref_wt.off_flag_array(:,keep_flags);

@@ -15,13 +15,13 @@ liveProject = LiveEnrichmentProject(projectNameRA);
 resultsRoot = [liveProject.dataPath filesep];
 
 % load data
-load([resultsRoot 'spot_struct.mat'])
+load([resultsRoot 'spot_struct.mat'],'spot_struct')
 
 % Filter for only nuclei in correct region with "significant" activity
 knirps_offset = 3.75e5 / 1e5;
 min_dp = 10;
 window_size = 40; % size of lead and lag interval, in frames
-time_bounds = [7 20]; % nuclei must have been around for full extent of this interval 
+time_bounds = [8 25]; % nuclei must have been around for full extent of this interval 
 ap_bounds = [-0.02 0.02];
 sets_to_use = [2 3 5 6];
 on_frames = [36 43 45 43];
@@ -38,7 +38,7 @@ n_frames_active_vec = [spot_struct.N];
 n_filter = n_frames_active_vec >= min_dp;
 time_ref = (-window_size:window_size)*spot_struct(1).tresInterp;
 index_vec = -window_size:window_size;
-    
+full_denom_count = 0;    
 for s = 1:length(sets_to_use)
   
     % extract key indentifying parameters
@@ -49,6 +49,9 @@ for s = 1:length(sets_to_use)
     set_filter = set_vec==setID;
     particle_id_vec = [spot_struct.particleID];
     ap_pos_mean_vec = NaN(size(n_filter));
+    first_fluo_time_vec = NaN(size(n_filter));
+    first_nuc_time_vec = NaN(size(n_filter));
+    last_nuc_time_vec = NaN(size(n_filter));
     
     % geneate set-specific time ref vectors    
     time_index_interp = unique([spot_struct(set_filter).timeInterp])/60;
@@ -71,21 +74,25 @@ for s = 1:length(sets_to_use)
         if isempty(obs_times)
             obs_times = 0;
         end
-        if min(obs_times) < switch_time && nanmax(time_vec)>switch_time % I want expression both before and after perturbation                   
-            [~,closest_index] = min(abs(time_vec-switch_time));
-            ap_pos_mean_vec(i) = spot_struct(i).APPosNucleus(closest_index);          
-        end
+        first_fluo_time_vec(i) = nanmin(obs_times);
+        first_nuc_time_vec(i) = nanmin(time_vec);
+        last_nuc_time_vec(i) = nanmax(time_vec);
+        [~,closest_index] = min(abs(time_vec-switch_time));
+        ap_pos_mean_vec(i) = spot_struct(i).APPosNucleus(closest_index);          
+        
     end
 
     % apply position and obs number filter
+    time_filter = first_fluo_time_vec < switch_time & last_nuc_time_vec >= ...
+                        time_bounds(2) & first_nuc_time_vec <= time_bounds(1);
     ap_filter = ap_pos_mean_vec<=ap_bounds(2) & ap_pos_mean_vec>=ap_bounds(1);
-    spot_struct_trunc = spot_struct(n_filter & ap_filter);
-    particle_id_filt = particle_id_vec(n_filter & ap_filter);
+    spot_struct_trunc = spot_struct(n_filter & ap_filter & time_filter);
+    particle_id_filt = particle_id_vec(n_filter & ap_filter & time_filter);
         
     % now generate arrays containing fraction of active nuclei and knirps as a
     % function of time      
     io_ref_struct_temp = struct;
-    io_ref_struct_temp.on_off_array = NaN(length(index_vec),length(spot_struct_trunc));
+%     io_ref_struct_temp.on_off_array = NaN(length(index_vec),length(spot_struct_trunc));
     io_ref_struct_temp.fluo_array = NaN(length(index_vec),length(spot_struct_trunc));        
     io_ref_struct_temp.knirps_array = NaN(length(index_vec),length(spot_struct_trunc));
     io_ref_struct_temp.knirps_array_filled = NaN(length(index_vec),length(spot_struct_trunc));    
@@ -115,7 +122,8 @@ for s = 1:length(sets_to_use)
             % Check to see if the trace properly "turns off" prior to
             % perturbation            
             off_flag = all(fluo_vec_interp(ismember(frame_vec_rel,off_frame_ref))==0);            
-                
+            full_denom_count = full_denom_count + 1;
+            
             % slightly less restrictive
             if off_flag                                                                                                 
                 % estimate reactivation time
@@ -183,6 +191,7 @@ io_ref_ra.ap_bounds = io_ref_ra.ap_bounds(1:2);
 nan_flags = any(isnan(io_ref_ra.knirps_array_norm));
 
 io_ref_ra.knirps_array = io_ref_ra.knirps_array_norm(:,~nan_flags);
+io_ref_ra = rmfield(io_ref_ra,'knirps_array_norm');
 io_ref_ra.knirps_array(io_ref_ra.knirps_array<0) = 0;
 io_ref_ra.fluo_array = io_ref_ra.fluo_array(:,~nan_flags);
 io_ref_ra.knirps_array_filled = io_ref_ra.knirps_array_filled(:,~nan_flags);
@@ -192,19 +201,43 @@ io_ref_ra.set_index_full = io_ref_ra.set_index_full(~nan_flags);
 io_ref_ra.off_frame_ref = off_frame_ref;
 
 % construct empirical cdf for ractivation
-ra_times = io_ref_ra.reactivation_time_vec(~isnan(io_ref_ra.reactivation_time_vec));
+% ra_times = io_ref_ra.reactivation_time_vec(~isnan(io_ref_ra.reactivation_time_vec));
 % ra_times(isinf(ra_times)) = realmax/1e10;
 % Tres = spot_struct(1).tresInterp;
-max_ra_time = 20*60;%ceil(max(ra_times)*60/Tres)*Tres;
-[ra_times_sorted,~] = sort(ra_times);
+
+% use bootstrap resampling to estimate standard error
+nBoots = 100;
+max_ra_time =15*60;%ceil(max(ra_times)*60/Tres)*Tres;
 ra_time_vec = 0:spot_struct(1).tresInterp:max_ra_time;
-ra_count_raw = (0:length(ra_times))/length(ra_times);
-dummy_time_vec = [0 sort(ra_times_sorted*60+rand(size(ra_times_sorted))*1)];
-ra_count_interp = interp1(dummy_time_vec,ra_count_raw,ra_time_vec,'previous');
-% ra_count_interp(end) = 1;
+ra_time_array = NaN(nBoots,length(ra_time_vec));
+ra_time_array_full = NaN(nBoots,length(ra_time_vec));
+sample_indices = 1:length(io_ref_ra.reactivation_time_vec);
+
+for n = 1:nBoots
+    boot_indices = randsample(sample_indices,length(sample_indices),true);
+    reactivation_time_vec_boot = io_ref_ra.reactivation_time_vec(boot_indices);
+    ra_times_boot = reactivation_time_vec_boot(~isnan(reactivation_time_vec_boot));
+    [ra_times_sorted,~] = sort(ra_times_boot); 
+    ra_count_raw = (0:length(ra_times_boot))/length(ra_times_boot);
+    dummy_time_vec = [0 sort(ra_times_sorted*60+rand(size(ra_times_sorted))*1)];
+    if max(dummy_time_vec) < ra_time_vec(end)
+        dummy_time_vec(end+1) = ra_time_vec(end);
+        ra_count_raw(end+1) = ra_count_raw(end);
+    end
+    ra_count_interp = interp1(dummy_time_vec,ra_count_raw,ra_time_vec,'previous');
+    ra_time_array(n,:) = ra_count_interp;
+    
+    % reincorporate baseline
+    ra_count_interp_full = ra_count_interp + sum(isnan(reactivation_time_vec_boot))/sum(~isnan(reactivation_time_vec_boot));
+    ra_count_interp_full = ra_count_interp_full*sum(~isnan(reactivation_time_vec_boot))/length(reactivation_time_vec_boot);
+    ra_time_array_full(n,:) = ra_count_interp_full;
+end
 
 % store results
-io_ref_ra.reactivation_time_cdf = ra_count_interp;
+io_ref_ra.reactivation_time_cdf = mean(ra_time_array);
+io_ref_ra.reactivation_time_cdf_ste = std(ra_time_array);
+io_ref_ra.reactivation_time_cdf_full = mean(ra_time_array_full);
+io_ref_ra.reactivation_time_cdf_ste_full = std(ra_time_array_full);
 io_ref_ra.reactivation_time_axis = ra_time_vec;
 
 % save

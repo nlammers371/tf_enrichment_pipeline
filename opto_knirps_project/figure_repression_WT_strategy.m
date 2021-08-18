@@ -12,7 +12,7 @@ mRNA_red = brighten([212 100 39]/256,.2);
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_WT'; 
+projectName = 'optokni_eve4+6_WT_FUN'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -161,7 +161,7 @@ for a = 1:length(ap_bins)-1
              
 end
 
-% Define some colors  
+%% Define some colors  
 yw = [234 194 100]/255; % yellow
 bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
