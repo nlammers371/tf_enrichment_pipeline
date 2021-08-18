@@ -24,14 +24,12 @@ inferenceInfo.FluoBinFlag = 0;
 %inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
 
 %Shorter range, test: optokni_eve4+6_WT and ON_CONST
-%inferenceInfo.timeBins = {[10*60 25*60]}; % should be longer than 15min
-%inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
+inferenceInfo.timeBins = {[10*60 25*60]}; % should be longer than 15min
+inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
 
 %Temporal inference, test
-%inferenceInfo.timeBins = {[10*60 25*60],[12.5*60 27.5*60],[15*60 30*60],[17.5*60 32.5*60],[20*60 35*60],[22.5*60 37.5*60],[25*60 40*60]}; % should be longer than 15min
-inferenceInfo.timeBins = {[0*60 15*60],[2.5*60 17.5*60],[5*60 20*60],[7.5*60 22.5*60],[10*60 25*60],[12.5*60 27.5*60],[15*60 30*60],[17.5*60 32.5*60],[20*60 35*60],[22.5*60 37.5*60],[25*60 40*60]};
-%inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
-inferenceInfo.apBins = ([-0.025 0.025]);
+inferenceInfo.timeBins = {[10*60 25*60],[]}; % should be longer than 15min
+inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
 
 %% old parameters
 %optokni_eve4+6_ON_CONST

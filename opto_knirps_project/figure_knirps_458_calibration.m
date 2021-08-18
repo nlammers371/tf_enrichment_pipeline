@@ -54,9 +54,10 @@ end
 ft = fittype('a*x');
 
 % perform fitting
-f1 = fit(fluo_wt',fluo_458',ft);
-f2 = fit(fluo_wt',fluo_458','poly1');
-k = f1.a
+%f1 = fit(fluo_wt',fluo_458',ft);
+f1 = fit(fluo_wt',fluo_458','poly1');
+%k = f1.a
+k = f1.p1
 x_plot = linspace(0,1.2*max(fluo_wt),1000);
 
 

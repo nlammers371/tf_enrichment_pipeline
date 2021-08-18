@@ -360,9 +360,20 @@ ylabel('fraction of active nuclei')
 pbaspect([3 1 1])
 legend('WT','perturbed')
 
-saveas(single_traces_WT,[FigurePath 'figure_single_traces_WT.pdf'])
-saveas(single_traces_CONST,[FigurePath 'figure_single_traces_CONST.pdf'])
-saveas(single_traces_frac_on, [FigurePath 'figure_single_traces_frac_on.pdf'])
+single_traces_mean_on = figure;
+plot(time_vec, sample_traces_mean_WT./sample_traces_frac_WT)
+hold on
+plot(time_vec,  sample_traces_mean_CONST./sample_traces_frac_CONST)
+xlim([0 37.5])
+ylim([0 3E5])
+xlabel('time (min)')
+%ylabel('fraction of active nuclei')
+pbaspect([3 1 1])
+legend('WT','perturbed')
+
+%saveas(single_traces_WT,[FigurePath 'figure_single_traces_WT.pdf'])
+%saveas(single_traces_CONST,[FigurePath 'figure_single_traces_CONST.pdf'])
+%saveas(single_traces_frac_on, [FigurePath 'figure_single_traces_frac_on.pdf'])
 
 
 %% plot calculated mean vector
@@ -648,6 +659,128 @@ pbaspect([2 1 1])
 saveas(burst_rate_fig,[FigurePath 'figure_burst_rate_vs_ap.pdf'])
 saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
 
+
+%% Figure: Plot k_on, k_off vs time
+
+% load inference results
+WT_temp_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t11_f2D_WT.mat');
+CONST_temp_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t11_f2D_ON_CONST.mat');
+
+burst_axis = linspace(7.5,32.5,11);
+
+% data from WT
+burst_freq_WT = WT_temp_bursting.compiledResults.freq_vec_mean;
+burst_freq_ste_WT = WT_temp_bursting.compiledResults.freq_vec_ste;
+burst_dur_WT = WT_temp_bursting.compiledResults.dur_vec_mean;
+burst_dur_ste_WT = WT_temp_bursting.compiledResults.dur_vec_ste;
+burst_rate_WT= WT_temp_bursting.compiledResults.init_vec_mean*1e-5;
+burst_rate_ste_WT = WT_temp_bursting.compiledResults.init_vec_ste*1e-5;
+
+% data from CONST
+burst_freq_CONST = CONST_temp_bursting.compiledResults.freq_vec_mean;
+burst_freq_ste_CONST = CONST_temp_bursting.compiledResults.freq_vec_ste;
+burst_dur_CONST = CONST_temp_bursting.compiledResults.dur_vec_mean;
+burst_dur_ste_CONST = CONST_temp_bursting.compiledResults.dur_vec_ste;
+burst_rate_CONST= CONST_temp_bursting.compiledResults.init_vec_mean*1e-5;
+burst_rate_ste_CONST = CONST_temp_bursting.compiledResults.init_vec_ste*1e-5;
+
+burst_dur_first = burst_dur_WT(1);
+burst_rate_first = burst_rate_WT(1);
+burst_freq_first = burst_freq_WT(1);
+
+burst_k_off_center = 1/burst_dur_first;
+burst_k_on_center = 1/burst_freq_first;
+
+burst_k_off_mean_WT = 1./WT_temp_bursting.compiledResults.dur_vec_mean;
+burst_k_off_ste_WT = 1./(WT_temp_bursting.compiledResults.dur_vec_mean.^2).*WT_temp_bursting.compiledResults.dur_vec_ste;
+burst_k_on_mean_WT = 1./WT_temp_bursting.compiledResults.freq_vec_mean;
+burst_k_on_ste_WT = 1./(WT_temp_bursting.compiledResults.freq_vec_mean.^2).*WT_temp_bursting.compiledResults.freq_vec_ste;
+
+burst_k_off_mean_CONST = 1./CONST_temp_bursting.compiledResults.dur_vec_mean;
+burst_k_off_ste_CONST = 1./(CONST_temp_bursting.compiledResults.dur_vec_mean.^2).*CONST_temp_bursting.compiledResults.dur_vec_ste;
+burst_k_on_mean_CONST = 1./CONST_temp_bursting.compiledResults.freq_vec_mean;
+burst_k_on_ste_CONST = 1./(CONST_temp_bursting.compiledResults.freq_vec_mean.^2).*CONST_temp_bursting.compiledResults.freq_vec_ste;
+
+
+% k_off vs time
+burst_k_off_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+
+errorbar(burst_axis,burst_k_off_mean_WT/burst_k_off_center,burst_k_off_ste_WT/burst_k_off_center,'Color','k','CapSize',0)
+errorbar(burst_axis,burst_k_off_mean_CONST/burst_k_off_center,burst_k_off_ste_CONST/burst_k_off_center,'Color','k','CapSize',0)
+plot(burst_axis,burst_k_off_mean_WT/burst_k_off_center,'-k')
+plot(burst_axis,burst_k_off_mean_CONST/burst_k_off_center,'-k')
+scatter(burst_axis,burst_k_off_mean_WT/burst_k_off_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
+scatter(burst_axis,burst_k_off_mean_CONST/burst_k_off_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+%set(gca,'YColor',bl);
+ylabel(['k_{off}'])
+ylim([0 2])
+
+
+xlabel('time (min) into nc14');
+xlim([5 35])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+legend('','','','','','')
+
+
+% k_on vs time
+burst_k_on_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+errorbar(burst_axis,burst_k_on_mean_WT/burst_k_on_center,burst_k_on_ste_WT/burst_k_on_center,'Color','k','CapSize',0)
+errorbar(burst_axis,burst_k_on_mean_CONST/burst_k_on_center,burst_k_on_ste_CONST/burst_k_on_center,'Color','k','CapSize',0)
+plot(burst_axis,burst_k_on_mean_WT/burst_k_on_center,'-k')
+plot(burst_axis,burst_k_on_mean_CONST/burst_k_on_center,'-k')
+scatter(burst_axis,burst_k_on_mean_WT/burst_k_on_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
+scatter(burst_axis,burst_k_on_mean_CONST/burst_k_on_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+
+%set(gca,'YColor',bl);
+ylabel(['k_{on}'])
+ylim([0 2])
+
+
+xlabel('time (min) into nc14');
+xlim([5 35])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+legend('','','','','','')
+
+
+% loading rate vs time
+burst_loading_rate_ap_fig = figure;
+hold on
+
+set(gca,'FontSize',14)
+
+errorbar(burst_axis,burst_rate_WT/burst_rate_center,burst_rate_ste_WT/burst_rate_center,'Color','k','CapSize',0)
+errorbar(burst_axis,burst_rate_CONST/burst_rate_center,burst_rate_ste_CONST/burst_rate_center,'Color','k','CapSize',0)
+plot(burst_axis,burst_rate_WT/burst_rate_center,'-k')
+plot(burst_axis,burst_rate_CONST/burst_rate_center,'-k')
+scatter(burst_axis,burst_rate_WT/burst_rate_center,50,'MarkerFaceColor',yw,'MarkerEdgeColor','k')
+scatter(burst_axis,burst_rate_CONST/burst_rate_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
+%set(gca,'YColor',gr);
+ylabel(['mRNA loading rate'])
+ylim([0 2])
+
+
+xlabel('time (min) into nc14');
+xlim([5 35])
+%mRNA_fig2.InvertHardcopy = 'off';
+set(gcf,'color','w'); 
+pbaspect([2 1 1])
+
+
+%saveas(burst_k_on_fig,[FigurePath 'figure_k_on_vs_ap_WT_CONST.pdf'])
+%saveas(burst_k_off_fig,[FigurePath 'figure_k_off_vs_ap_WT_CONST.pdf'])
+%saveas(burst_loading_rate_ap_fig,[FigurePath 'figure_loading_rate_vs_ap.pdf'])
 
 
 

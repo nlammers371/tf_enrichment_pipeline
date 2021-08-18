@@ -38,7 +38,7 @@ sweepInfoRaw.keep_prediction_flag = false;
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 3:length(simTypeCell)
+for s = 1:length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -59,20 +59,21 @@ for s = 3:length(simTypeCell)
     sweepInfo.NumWorkers = min([24 max_workers]);
         
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % generate ground truth reference curves
-    reactivation_cdf = io_ref_ra.reactivation_time_cdf;
-    keep_flags = true(size(reactivation_cdf));%<=0.95;
-    reactivation_time = io_ref_ra.reactivation_time_axis;
-    
-    sweepInfo.reactivation_cdf = reactivation_cdf(keep_flags);
-    sweepInfo.reactivation_time = reactivation_time(keep_flags);
+    % generate ground truth reference curves       
+    sweepInfo.reactivation_cdf = io_ref_ra.reactivation_time_cdf;
+    sweepInfo.reactivation_cdf_ste = io_ref_ra.reactivation_time_cdf_ste;
+    sweepInfo.reactivation_cdf_full = io_ref_ra.reactivation_time_cdf_full;
+    sweepInfo.reactivation_cdf_full_ste = io_ref_ra.reactivation_time_cdf_ste_full;
+    sweepInfo.reactivation_time = io_ref_ra.reactivation_time_axis;
     sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     
     % mean fluorescence vs. AP
     sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
+    sweepInfo.mean_fluo_ap_ste = io_ref_wt.fluo_vec_ste;
     
     % observed off times
     sweepInfo.off_time_ap = io_ref_wt.off_time_vec_mean;
+    sweepInfo.off_time_ap_ste = io_ref_wt.off_time_vec_ste;
     sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;               
     
     % save TF profiles and time vec for RA type
@@ -80,9 +81,14 @@ for s = 3:length(simTypeCell)
     sweepInfo.time_axis_ra = io_ref_ra.time_vec';
     
     % save TF profiles and time vec for WT type
-    sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array;               
+    % calculate a sensible start time
+    start_time = ceil(nanmean(io_ref_wt.on_time_vec) / 60)*60;
+    [~,start_i] = min(abs(io_ref_wt.time_axis-start_time));
+    
+    sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array(start_i:end,:);               
+    sweepInfo.wt_start_time = start_time;
     sweepInfo.ap_profile_vec_tf = io_ref_wt.mean_ap;               
-    sweepInfo.time_axis_wt = io_ref_wt.time_axis';        
+    sweepInfo.time_axis_wt = io_ref_wt.time_axis(start_i:end)';        
 
     % initialize vectors to store results
     [sweepInfo, sweepResults] = initializeSweepValues(sweepInfo);          

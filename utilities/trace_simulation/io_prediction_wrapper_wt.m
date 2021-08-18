@@ -32,7 +32,9 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     %% call simulation function
     granularity_orig = sweepInfo.granularity;
     sweepInfo.granularity = sweepInfo.granularity*5;
+    
     gillespie = synthetic_rate_gillespie_io_v3(sweepInfo,tf_profile_array);
+    
     sweepInfo.granularity = granularity_orig;
     
     % use output to generate predicted curves
@@ -47,9 +49,10 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     
     % calculate first and last active frames for each trace
     active_indices = 1*(fluo_array_zeros>0) .* index_vec;    
-    active_indices(active_indices==0) = Inf;
-    first_i_vec = min(active_indices);
-    last_i_vec = max(active_indices.*~isinf(active_indices));
+    active_indices2 = active_indices;
+    active_indices2(active_indices2==0) = Inf;
+    first_i_vec = min(active_indices2);
+    last_i_vec = max(active_indices);
     all_off_flags = all(fluo_array_zeros==0);
     average_array = false(size(fluo_array_zeros));
     for a = find(~all_off_flags)      
@@ -69,7 +72,7 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
             fluo_vec_mean(a) = mean(mean_fluo);
             fluo_vec_ste(a) = std(mean_fluo);
 
-            mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.deltaT*last_i_vec(trace_ap_vec==a));
+            mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.time_axis_wt(last_i_vec(trace_ap_vec==a&~all_off_flags)));
             off_time_vec_mean(a) = mean(mean_off_times);
             off_time_vec_ste(a) = std(mean_off_times);
         else
@@ -80,12 +83,14 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
         end
     end
                  
+    delta_off = off_time_vec_mean-sweepInfo.off_time_ap;
+    delta_fluo = fluo_vec_mean-sweepInfo.mean_fluo_ap;
     % calculate log likelihood of experimental trends assuming gaussian
     % errors
-    logL_off_times = -0.5*(((off_time_vec_mean-sweepInfo.off_time_ap)./off_time_vec_ste).^2);% + log(2*pi*off_time_vec_ste.^2));
+    logL_off_times = -0.25*((delta_off./off_time_vec_ste).^2 + (delta_off./sweepInfo.off_time_ap_ste).^2);% 
     sweepResults.off_time_fit = mean(logL_off_times);
     
-    logL_fluo = -0.5*(((fluo_vec_mean-sweepInfo.mean_fluo_ap)./fluo_vec_ste).^2);% + log(2*pi*fluo_vec_ste.^2));
+    logL_fluo = -0.25*((delta_fluo./fluo_vec_ste).^2 + (delta_fluo./sweepInfo.mean_fluo_ap_ste).^2);% + log(2*pi*fluo_vec_ste.^2));
     sweepResults.mean_fluo_fit = mean(logL_fluo);
     
     if sweepInfo.keep_prediction_flag
