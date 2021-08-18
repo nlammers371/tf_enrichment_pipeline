@@ -65,39 +65,60 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     end
             
     % construct empirical cdf for ractivation
-    ra_times = reactivation_time_vec(~isnan(reactivation_time_vec));           
+%     ra_times = reactivation_time_vec(~isnan(reactivation_time_vec));           
     ra_time_vec = sweepInfo.reactivation_time;
-    
-    % sort   
-    [ra_times_sorted,~] = sort(ra_times);  
-    
+             
     % generate count vec
     nBoots = 100;
-    ra_count_raw = (0:length(ra_times))/length(ra_times); 
-    option_vec = 1:length(ra_times_sorted);
+    
+    option_vec = 1:length(reactivation_time_vec);
     ra_array = NaN(nBoots,length(ra_time_vec));
     ra_array_full = NaN(nBoots,length(ra_time_vec));
     % conduct bootstrapping
     for n = 1:nBoots
         boot_indices = randsample(option_vec,length(option_vec),true);
+        reactivation_time_vec_boot = reactivation_time_vec(boot_indices);
+        ra_time_vec_boot = reactivation_time_vec_boot(~isnan(reactivation_time_vec_boot));
+        ra_count_raw = (0:length(ra_time_vec_boot))/length(ra_time_vec_boot); 
+         % sort   
+        [ra_times_sorted,~] = sort(ra_time_vec_boot);
         % generate dummy time vector so that matlab won't throw a fit
-        bs_time_vec = sort([0 ra_times_sorted(boot_indices)+rand(size(ra_times_sorted))*1e-6]);      
+        bs_time_vec = sort([0 ra_times_sorted+rand(size(ra_times_sorted))*1e-6]);      
         if length(bs_time_vec) > 1
+            if max(bs_time_vec) < ra_time_vec(end)
+                bs_time_vec(end+1) = ra_time_vec(end);
+                ra_count_raw(end+1) = ra_count_raw(end);
+            end
             ra_array(n,:) = interp1(bs_time_vec,ra_count_raw,ra_time_vec,'previous');          
-            ra_full = ra_array(n,:) + (n_ever_on-length(option_vec))/length(option_vec);
-            ra_array_full(n,:) = ra_full * length(option_vec) / n_ever_on;
+            ra_full = ra_array(n,:) + sum(isnan(reactivation_time_vec_boot))/sum(~isnan(reactivation_time_vec_boot));%(n_ever_on-length(option_vec))/length(option_vec);
+            ra_array_full(n,:) = ra_full*sum(~isnan(reactivation_time_vec_boot))/length(reactivation_time_vec_boot);%length(option_vec) / n_ever_on;
         else
             ra_array(n,:) = zeros(size(ra_time_vec));                  
         end
     end
-    ra_cdf_mean = nanmean(ra_array);
-    ra_cdf_ste = nanstd(ra_array)+1e-3;
+    
+    % predicted stats
+    ra_cdf_pd_mean = nanmean(ra_array);
+    ra_cdf_pd_ste = nanstd(ra_array)+1e-3;
+    
+    ra_cdf_full_mean = nanmean(ra_array_full);
+    ra_cdf_full_ste = nanstd(ra_array_full)+1e-3;
+    
+    % actual stats
+    ra_cdf_exp_ste = sweepInfo.reactivation_cdf_ste+1e-3;
+    ra_cdf_exp_full_ste = sweepInfo.reactivation_cdf_full_ste+1e-3;
     
     % calculate likelihood score
-    logL_ra_cdf = -0.5*(((ra_cdf_mean-sweepInfo.reactivation_cdf)./ra_cdf_ste).^2);% + log(2*pi*ra_cdf_ste.^2));
+    delta_cdf = ra_cdf_pd_mean-sweepInfo.reactivation_cdf;
+    logL_ra_cdf = -0.25*((delta_cdf./ra_cdf_pd_ste).^2 + (delta_cdf./ra_cdf_exp_ste).^2);
     sweepResults.ra_fit = mean(logL_ra_cdf);
     
+    delta_cdf_full = ra_cdf_full_mean-sweepInfo.reactivation_cdf_full;
+    logL_ra_full_cdf = -0.25*((delta_cdf_full./ra_cdf_full_ste).^2 + (delta_cdf_full./ra_cdf_exp_full_ste)).^2;
+    sweepResults.ra_full_fit = mean(logL_ra_full_cdf);
+    
     if sweepInfo.keep_prediction_flag
-        sweepResults.ra_time_cdf_predicted = ra_cdf_mean;
+        sweepResults.ra_time_cdf_predicted = ra_cdf_pd_mean;
+        sweepResults.ra_time_cdf_full_predicted = ra_cdf_full_mean;
         sweepResults.tf_dependent_curve_ra = nanmean(gillespie.rate_curve_in,3)';
     end

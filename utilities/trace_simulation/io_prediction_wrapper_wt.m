@@ -83,12 +83,14 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
         end
     end
                  
+    delta_off = off_time_vec_mean-sweepInfo.off_time_ap;
+    delta_fluo = fluo_vec_mean-sweepInfo.mean_fluo_ap;
     % calculate log likelihood of experimental trends assuming gaussian
     % errors
-    logL_off_times = -0.5*(((off_time_vec_mean-sweepInfo.off_time_ap)./off_time_vec_ste).^2);% + log(2*pi*off_time_vec_ste.^2));
+    logL_off_times = -0.25*((delta_off./off_time_vec_ste).^2 + (delta_off./sweepInfo.off_time_ap_ste).^2);% 
     sweepResults.off_time_fit = mean(logL_off_times);
     
-    logL_fluo = -0.5*(((fluo_vec_mean-sweepInfo.mean_fluo_ap)./fluo_vec_ste).^2);% + log(2*pi*fluo_vec_ste.^2));
+    logL_fluo = -0.25*((delta_fluo./fluo_vec_ste).^2 + (delta_fluo./sweepInfo.mean_fluo_ap_ste).^2);% + log(2*pi*fluo_vec_ste.^2));
     sweepResults.mean_fluo_fit = mean(logL_fluo);
     
     if sweepInfo.keep_prediction_flag
