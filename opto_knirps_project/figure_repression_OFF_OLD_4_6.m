@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_OFF'; 
+projectName = 'optokni_eve4+6_oFF_OLD'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -16,17 +16,20 @@ load([resultsRoot 'spot_struct.mat'])
 FigurePath = [liveProject.figurePath 'repression_dynamics' filesep];
 mkdir(FigurePath)
 
-% Embryo 37
+% Embryo 13
 embryo(1).expID = 1;
-embryo(1).frame_on = 39;
+embryo(1).frame_on = 17;
+embryo(1).time_on = 5.41981;
 
-% Embryo 39
+% Embryo 14
 embryo(2).expID = 2;
-embryo(2).frame_on = 16;
+embryo(2).frame_on = 49;
+embryo(2).time_on = 16.9258;
 
-% Embryo 40
+% Embryo 16
 embryo(3).expID = 3;
-embryo(3).frame_on = 33;
+embryo(3).frame_on = 17;
+embryo(3).time_on = 5.43871;
 
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
@@ -35,16 +38,14 @@ mRNA_red = brighten([212 100 39]/256,.2);
 
 knirps_offset = 2.5e5;%prctile(double(knirps_vec_long),1);
 
-ap_lim = 0.01; % AP range for analysis, 0.02 seems to be a reasonable number
+ap_lim = 0.02; % AP range for analysis, 0.02 seems to be a reasonable number
 
 time_threshold = 2; %min
 %time_threshold = 1;
 
 % histogram parameters
-binNum = 11; % best
-binMax = 10; % best
-binNum = 15;
-binMax = 14;
+binNum = 25;
+binMax = 12;
 edges = linspace(0,binMax,binNum);
 %edges1 = linspace(0,10,11); % bin for histogram
 %edges1 = linspace(0,15,16);
@@ -55,7 +56,7 @@ correction_factor = 1.5;
 %correction_factor = 1;
 
 % timerange to analyze for response time
-analysis_range = 14;
+analysis_range = 8;
 
 
 %% Figure: plot mean fluorescence vs time (not aligned)
@@ -63,6 +64,8 @@ analysis_range = 14;
 data_filter_full = [];
 on_time_full = [];
 response_time_full = [];
+
+count1 = 0;
 
 for i = 1:length(embryo)
 
@@ -84,7 +87,6 @@ for i = 1:length(embryo)
     first_off_long = [];
 
     count = 0;
-
     for j = 1:length(spot_struct)
 
         if (spot_struct(j).TraceQCFlag == 1) && (spot_struct(j).setID == expID)
@@ -95,7 +97,7 @@ for i = 1:length(embryo)
             time_vec_orig = spot_struct(j).time;
             frame_vec_orig = spot_struct(j).frames;
             knirps_vec_orig = spot_struct(j).rawNCProtein;
-            ap_vec_orig = spot_struct(j).APPosNucleus;
+            ap_vec_orig = spot_struct(j).apPosNucleus;
 
             % calculate mean
             ever_on_orig = any(~isnan(fluo_vec_orig));
@@ -105,19 +107,24 @@ for i = 1:length(embryo)
             if ever_on_orig
                 %last_on_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig <= frame_on),1,'last'));
                 %first_on_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig > frame_on),1));
-                %last_off_frame = frame_vec_orig(find(isnan(fluo_vec_orig) & (frame_vec_orig <= frame_on),1,'last'));
-                first_off_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig > frame_on),1,'last'));
+                last_off_frame = frame_vec_orig(find(isnan(fluo_vec_orig) & (frame_vec_orig <= frame_on),1,'last'));
+                first_off_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig > frame_on),1,'last'))+1;
             end
 
             if (mean_ap_orig > -ap_lim) && (mean_ap_orig < ap_lim)
+               count1 = count1+1;
                time_orig_long = [time_orig_long time_vec_orig];
                frame_orig_long = [frame_orig_long frame_vec_orig];
                fluo_orig_long = [fluo_orig_long fluo_vec_orig];
                knirps_orig_long = [knirps_orig_long knirps_vec_orig-knirps_offset];
+
+               %if ~isempty(last_on_frame) && ~isempty(first_on_frame)
+               %    last_on_long = [last_on_long last_on_frame];
+               %    first_on_long = [first_on_long first_on_frame];
+               %end
                
-               %if ~isempty(last_off_frame) && ~isempty(first_off_frame)
-               if ~isempty(first_off_frame)
-                   %last_off_long = [last_off_long last_off_frame];
+               if ~isempty(last_off_frame) && ~isempty(first_off_frame)
+                   last_off_long = [last_off_long last_off_frame];
                    first_off_long = [first_off_long first_off_frame];
                end
 
@@ -184,12 +191,17 @@ for i = 1:length(embryo)
     end
 
     time_vec_on = time_vec-time_vec(frame_on);
+
     knirps_vec_mean(time_vec_on<0) = knirps_vec_mean(time_vec_on<0)/correction_factor;
-    response_time_full = [response_time_full time_vec(first_off_long)-time_vec(frame_on)];
+    
+    try
+        on_time_full = [on_time_full time_vec(frame_on)-time_vec(last_off_long)];
+        response_time_full = [response_time_full time_vec(first_off_long)-time_vec(frame_on)];
         
-    % record the result for this embryo
-    %data_filter = (time_vec(last_off_long) <= time_vec(frame_on)-time_threshold);
-    %data_filter_full = [data_filter_full data_filter];
+        % record the result for this embryo
+        data_filter = (time_vec(last_off_long) <= time_vec(frame_on)-time_threshold);
+        data_filter_full = [data_filter_full data_filter];
+    end
         
     temp_traj_fig  = figure('Position',[10 10 800 800]);
     tiledlayout(3,1)
@@ -205,7 +217,7 @@ for i = 1:length(embryo)
     errorbar(time_vec_on,knirps_vec_ste,'Color','k','CapSize',0);
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
-    xlim([-2.5 8.5])
+    xlim([-2.5 7])
     ylim([2E5 10E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
@@ -216,7 +228,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,frac_on,'.')
     plot(time_interp,frac_on_interp,'-','LineWidth',2);
     scatter(time_vec_on,frac_on,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
-    xlim([-2.5 8.5])
+    xlim([-2.5 7])
     ylim([0 1])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['fraction of nuclei on'])
@@ -227,7 +239,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,fluo_vec_mean./frac_on,'.')
     %plot(time_interp,frac_on_interp,'-','LineWidth',2);
     scatter(time_vec_on,fluo_vec_mean./frac_on,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
-    xlim([-2.5 8.5])
+    xlim([-2.5 7])
     ylim([0 3E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['mean transcription rate (au)'])
@@ -252,7 +264,7 @@ for j = 1:length(spot_struct)
 
         temp_trace = zeros(1,151);
 
-        ap_vec = spot_struct(j).APPosNucleus;
+        ap_vec = spot_struct(j).apPosNucleus;
         ap_pos = mean(ap_vec);
 
         if (ap_pos>=-ap_lim) && (ap_pos<=ap_lim)
@@ -280,18 +292,17 @@ for j = 1:length(spot_struct)
     
 end
 
-%last_off_time_long = zeros(size(sample_traces,1),1);
+last_off_time_long = zeros(size(sample_traces,1),1);
 first_off_time_long = zeros(size(sample_traces,1),1);
 
 for i = 1:size(sample_traces,1)
     spot_vec_temp = sample_traces(i,:);
     
-    %last_off_time = time_vec_interp(find((spot_vec_temp==0) & (time_vec_interp<0),1,'last'));
+    last_off_time = time_vec_interp(find((spot_vec_temp==0) & (time_vec_interp<0),1,'last'));
     first_off_time = time_vec_interp(find((spot_vec_temp>0) & (time_vec_interp>0),1,'last'));
     
-    %if ~isempty(last_off_time) && ~isempty(first_off_time) && (last_off_time<-time_threshold)
-    if ~isempty(first_off_time)
-        %last_off_time_long(i) = last_off_time;
+    if ~isempty(last_off_time) && ~isempty(first_off_time) && (last_off_time<-time_threshold)
+        last_off_time_long(i) = last_off_time;
         first_off_time_long(i) = first_off_time;
     else
         last_off_time_long(i) = NaN;
@@ -306,7 +317,7 @@ I = I((~isnan(B)));
 
 sample_traces_fig = figure;
 imagesc('XData',time_vec_interp,'CData',sample_traces(I,:))
-xlim([-2.5 10])
+xlim([-10 10])
 ylim([1 length(I)])
 xlabel('time relative to perturbation (min)')
 colormap(plasma)
@@ -380,11 +391,10 @@ pbaspect([4 1 1])
 %% fit gamma function
 
 %a = response_time_final(response_time_final<=6);
-%response_time_final = response_time_full(data_filter_full==1);
-response_time_final = response_time_full;
+response_time_final = response_time_full(data_filter_full==1);
 %silence_time_final = silence_time_full(data_filter_full==1);
-%a = response_time_final(response_time_final<=analysis_range);
-a = response_time_final;
+a = response_time_final(response_time_final<=8);
+%a = response_time_final;
 
 % fit gamma function
 [muhat,muci] = mle(a,'distribution','gamma'); % Generic function
@@ -401,9 +411,9 @@ h.FaceColor = mRNA_red;
 %plot(x,y1,'LineWidth',3,'Color',mRNA_red)
 mean(a)
 
-xlim([0 analysis_range])
-%xlim([0 10])
-ylim([0 0.25])
+%xlim([0 analysis_range])
+xlim([0 8])
+ylim([0 0.275])
 xlabel('response time (min)')
 ylabel('probability')
 pbaspect([3 2 1])

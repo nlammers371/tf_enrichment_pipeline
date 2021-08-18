@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
+projectName = 'optokni_eve4+6_HDAC_ON'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -17,29 +17,17 @@ FigurePath = [liveProject.figurePath 'reactivation_dynamics_all' filesep];
 mkdir(FigurePath)
 
 
-% Embryo 18
-%embryo(1).expID = 1;
-%embryo(1).frame_on = 79;
+% Embryo 6, good
+embryo(1).expID = 1;
+embryo(1).frame_on = 59;
 
-% Embryo 20, good
-embryo(1).expID = 2;
-embryo(1).frame_on = 36;
+% Embryo 7, good
+embryo(2).expID = 2;
+embryo(2).frame_on = 73;
 
-% Embryo 25, good
-embryo(2).expID = 3;
-embryo(2).frame_on = 43;
-
-% Embryo 26
-%embryo(4).expID = 4;
-%embryo(4).frame_on = 67;
-
-% Embryo 33, good
-embryo(3).expID = 5;
-embryo(3).frame_on = 45;
-
-% Embryo 36, good
-embryo(4).expID = 6;
-embryo(4).frame_on = 43;
+% Embryo 8, good
+embryo(3).expID = 3;
+embryo(3).frame_on = 51;
 
 
 % color to be used
@@ -71,7 +59,7 @@ correction_factor = 1.346; % calibration factor
 %correction_factor = 1;
 
 % timerange to analyze for response time
-analysis_range = 5;
+analysis_range = 8;
 
 
 %% Figure: plot mean fluorescence vs time (not aligned)

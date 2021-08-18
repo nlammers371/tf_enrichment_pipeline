@@ -14,7 +14,7 @@ for p = 1:length(projectList)
   % load compiled traces dataot
   disp('loading spot structure...')
   load([liveProject.dataPath filesep 'spot_struct.mat']);
-  load([liveProject.dataPath filesep 'spot_struct_protein.mat']);
+  %load([liveProject.dataPath filesep 'spot_struct_protein.mat']);
   
   % load AP map file
   disp('load AP map file here...')
@@ -25,6 +25,7 @@ for p = 1:length(projectList)
   
   disp('performing AP correction...')
  
+  %{
   % initialize grouping variables and add new position
   for i = 1:length(spot_struct_protein)
     % rename fields
@@ -46,7 +47,7 @@ for p = 1:length(projectList)
         end
     end
   end
-
+%}
   
   for i = 1:length(spot_struct)
     % rename fields
@@ -87,7 +88,7 @@ for p = 1:length(projectList)
   end
   
   % save
-  save([liveProject.dataPath filesep 'spot_struct_protein_corrected.mat'],'spot_struct_protein');
+  %save([liveProject.dataPath filesep 'spot_struct_protein_corrected.mat'],'spot_struct_protein');
   save([liveProject.dataPath filesep 'spot_struct_corrected.mat'],'spot_struct');
   
 end
