@@ -13,6 +13,23 @@ mask_ratio = 0.8;
 
 % We need to specify the prefix of the project we wish to analyze
 
+%optokni_eve4+6_WT
+%Prefix = '2020-11-21-optoknirps_eve4_6_embryo5'; APflip = 1;
+%Prefix = '2020-11-22-optoknirps_eve4_6_embryo6'; APflip = 0;
+%Prefix = '2020-11-24-optoknirps_eve4_6_embryo7'; APflip = 0;
+%Prefix = '2020-11-27-optoknirps_eve4_6_embryo8'; APflip = 1;
+
+%Prefix = '2021-06-15-optoknirps_eve4_6_embryo27'; APflip = 1;
+%Prefix = '2021-06-15-optoknirps_eve4_6_embryo28'; APflip = 0;
+%Prefix = '2021-06-16-optoknirps_eve4_6_embryo30'; APflip = 0;
+%Prefix = '2021-06-17-optoknirps_eve4_6_embryo34'; APflip = 1;
+%Prefix = '2021-06-17-optoknirps_eve4_6_embryo35'; APflip = 0;
+
+%avrInit = 32.5;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 35;
+
 %optokni_eve4+6_ON_CONST
 %Prefix = '2021-05-13-optoknirps_eve4_6_embryo21'; APflip = 0;
 %Prefix = '2021-05-13-optoknirps_eve4_6_embryo22'; APflip = 0;
@@ -30,20 +47,19 @@ mask_ratio = 0.8;
 %Prefix = '2021-06-15-optoknirps_eve4_6_embryo25'; APflip = 0;
 %Prefix = '2021-06-15-optoknirps_eve4_6_embryo26'; APflip = 1;
 %Prefix = '2021-06-16-optoknirps_eve4_6_embryo33'; APflip = 0;
-Prefix = '2021-06-17-optoknirps_eve4_6_embryo36'; APflip = 0;
+%Prefix = '2021-06-17-optoknirps_eve4_6_embryo36'; APflip = 0;
 
 % for embryo 20, 25, 36
-avrInit = 22.5;
-avrFinal = 25;
-analysisInit = 0;
-analysisFinal = 25;
+%avrInit = 22.5;
+%avrFinal = 25;
+%analysisInit = 0;
+%analysisFinal = 25;
 
 % embryo 33
 %avrInit = 27.5;
 %avrFinal = 30;
 %analysisInit = 0;
 %analysisFinal = 30;
-
 
 % embryo 26
 %avrInit = 27.5;
@@ -58,23 +74,96 @@ analysisFinal = 25;
 %analysisInit = 0;
 %analysisFinal = 35;
 
+%optokni_eve4+6_OFF
+%Prefix = '2021-06-18-optoknirps_eve4_6_embryo37'; APflip = 1;
+%Prefix = '2021-06-18-optoknirps_eve4_6_embryo39'; APflip = 1;
+%Prefix = '2021-06-18-optoknirps_eve4_6_embryo40'; APflip = 1;
 
-%optokni_eve4+6_WT
-%Prefix = '2020-11-21-optoknirps_eve4_6_embryo5'; APflip = 1;
-%Prefix = '2020-11-22-optoknirps_eve4_6_embryo6'; APflip = 0;
-%Prefix = '2020-11-24-optoknirps_eve4_6_embryo7'; APflip = 0;
-%Prefix = '2020-11-27-optoknirps_eve4_6_embryo8'; APflip = 1;
-
-%Prefix = '2021-06-15-optoknirps_eve4_6_embryo27'; APflip = 1;
-%Prefix = '2021-06-15-optoknirps_eve4_6_embryo28'; APflip = 0;
-%Prefix = '2021-06-16-optoknirps_eve4_6_embryo30'; APflip = 0;
-%Prefix = '2021-06-17-optoknirps_eve4_6_embryo34'; APflip = 1;
-%Prefix = '2021-06-17-optoknirps_eve4_6_embryo35'; APflip = 0;
-
-%avrInit = 32.5;
-%avrFinal = 35;
+% for embryo 37
+%avrInit = 25;
+%avrFinal = 27.5;
 %analysisInit = 0;
-%analysisFinal = 35;
+%analysisFinal = 27.5;
+
+% for embryo 39
+%avrInit = 12.5;
+%avrFinal = 15;
+%analysisInit = 0;
+%analysisFinal = 15;
+
+% for embryo 40
+%avrInit = 20;
+%avrFinal = 22.5;
+%analysisInit = 0;
+%analysisFinal = 22.5;
+
+
+%optokni_eve4+6_HDAC_WT
+%Prefix = '2021-07-24-optoknirps_eve4_6_HDAC_embryo1'; APflip = '0';
+%Prefix = '2021-07-24-optoknirps_eve4_6_HDAC_embryo2'; APflip = '0';
+%Prefix = '2021-07-25-optoknirps_eve4_6_HDAC_embryo3'; APflip = '1';
+%Prefix = '2021-07-25-optoknirps_eve4_6_HDAC_embryo4'; APflip = '1';
+%Prefix = '2021-07-27-optoknirps_eve4_6_HDAC_embryo5'; APflip = '1';
+
+%avrInit = 31.5;
+%avrFinal = 34;
+%analysisInit = 0;
+%analysisFinal = 34;
+
+
+%optokni_eve4+6_HDAC_ON
+%Prefix = '2021-07-27-optoknirps_eve4_6_HDAC_embryo6'; APflip = '1';
+%Prefix = '2021-07-28-optoknirps_eve4_6_HDAC_embryo7'; APflip = '1';
+%Prefix = '2021-07-29-optoknirps_eve4_6_HDAC_embryo8'; APflip = '1';
+
+% for embryo 6
+%avrInit = 27.5;
+%avrFinal = 30;
+%analysisInit = 0;
+%analysisFinal = 30;
+
+% for embryo 7
+%avrInit = 27.5;
+%avrFinal = 30;
+%analysisInit = 0;
+%analysisFinal = 30;
+
+% for embryo 8
+%avrInit = 20;
+%avrFinal = 22.5;
+%analysisInit = 0;
+%analysisFinal = 22.5;
+
+%optokni_eve4+6_HDAC_OFF
+%Prefix = '2021-08-09-optoknirps_eve4_6_HDAC_embryo9'; APflip = '1';
+%Prefix = '2021-08-10-optoknirps_eve4_6_HDAC_embryo10'; APflip = '0';
+%Prefix = '2021-08-10-optoknirps_eve4_6_HDAC_embryo11'; APflip = '1';
+Prefix = '2021-08-11-optoknirps_eve4_6_HDAC_embryo12'; APflip = '0';
+
+% for embryo 9
+%avrInit = 30;
+%avrFinal = 32.5;
+%analysisInit = 0;
+%analysisFinal = 32.5;
+
+% for embryo 10
+%avrInit = 27.5;
+%avrFinal = 30;
+%analysisInit = 0;
+%analysisFinal = 30;
+
+% for embryo 11
+%avrInit = 27.5;
+%avrFinal = 30;
+%analysisInit = 0;
+%analysisFinal = 30;
+
+% for embryo 12
+avrInit = 17.5;
+avrFinal = 20;
+analysisInit = 0;
+analysisFinal = 20;
+
 
 %%
 %optokni_eveBAC_WT

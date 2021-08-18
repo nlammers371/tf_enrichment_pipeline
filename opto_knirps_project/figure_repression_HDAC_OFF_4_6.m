@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_OFF'; 
+projectName = 'optokni_eve4+6_HDAC_OFF'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -18,15 +18,15 @@ mkdir(FigurePath)
 
 % Embryo 37
 embryo(1).expID = 1;
-embryo(1).frame_on = 39;
+embryo(1).frame_on = 67;
 
 % Embryo 39
 embryo(2).expID = 2;
-embryo(2).frame_on = 16;
+embryo(2).frame_on = 71;
 
 % Embryo 40
 embryo(3).expID = 3;
-embryo(3).frame_on = 33;
+embryo(3).frame_on = 59;
 
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
@@ -41,8 +41,6 @@ time_threshold = 2; %min
 %time_threshold = 1;
 
 % histogram parameters
-binNum = 11; % best
-binMax = 10; % best
 binNum = 15;
 binMax = 14;
 edges = linspace(0,binMax,binNum);
@@ -206,7 +204,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
     xlim([-2.5 8.5])
-    ylim([2E5 10E5])
+    ylim([2E5 12E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
@@ -401,8 +399,8 @@ h.FaceColor = mRNA_red;
 %plot(x,y1,'LineWidth',3,'Color',mRNA_red)
 mean(a)
 
+%xlim([0 analysis_range])
 xlim([0 analysis_range])
-%xlim([0 10])
 ylim([0 0.25])
 xlabel('response time (min)')
 ylabel('probability')

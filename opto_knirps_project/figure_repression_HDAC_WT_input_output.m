@@ -12,7 +12,7 @@ mRNA_red = brighten([212 100 39]/256,.2);
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_WT_FUN'; 
+projectName = 'optokni_eve4+6_HDAC_WT'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -930,9 +930,9 @@ saveas(ap_HM_fig,[FigurePath 'figure2_ap_vs_HM.pdf'])
 
 %% Figure 2: plot fraction_on vs knirps + hill equation fit (only for stripe center)
 % Also plot Knirps concentration when silencing happened
-
+ 
 %Look at long vectors and calculate fraction on for stripe center
-ap_bins_center = [-0.01 0.01];
+ap_bins_center = [-0.02 0.02];
 %ap_bins_center = [-0.03 0.03];
 
 % Step 1: Calculate using long vectors
