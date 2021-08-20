@@ -43,7 +43,7 @@ io_ref_wt.mean_fluo_n = NaN(size(spot_struct));
 io_ref_wt.knirps_array = NaN(length(time_index),length(spot_struct));
 io_ref_wt.fluo_array = NaN(length(time_index),length(spot_struct));
 io_ref_wt.fluo_full_array = zeros(length(time_index),length(spot_struct));
-io_ref_wt.off_flag_array = zeros(length(time_index),length(spot_struct));
+io_ref_wt.off_flag_array = NaN(length(time_index),length(spot_struct));
 
 % initialize longform vectors for regression
 % ap_vec_long = [];
@@ -92,9 +92,10 @@ for i = 1:length(spot_struct)
             io_ref_wt.on_time_vec(i) = time_vec(start_i);            
         end
         post_on_vec(start_i+1:end) = 1;
-                
+        [~, on_i] = min(abs(time_index-time_vec(start_i)));
         [~, off_i] = min(abs(time_index-io_ref_wt.off_time_vec(i)));
-        io_ref_wt.off_flag_array(off_i+1:end,i) = 1;
+        io_ref_wt.off_flag_array(on_i:end,i) = 1;
+        io_ref_wt.off_flag_array(off_i+1:end,i) = 0;
         % make regression vectors              
         
         % make vectors where missing data points are replaced with zeros
@@ -184,20 +185,73 @@ io_ref_wt.time_axis = time_index;
 
 % Generate fraction off vs knirps curve
 knirps_vec_long = io_ref_wt.knirps_array(:);
-off_flags_long = io_ref_wt.off_flag_array(:);
+% off_flags_long = io_ref_wt.off_flag_array(:);
 knirps_bins = logspace(log10(prctile(knirps_vec_long,1)),log10(prctile(knirps_vec_long,99)),26);
 knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
-knirps_groups = discretize(knirps_vec_long, knirps_bins); 
+% knirps_groups = discretize(knirps_vec_long, knirps_bins); 
 
-fraction_on_vec = NaN(1,length(knirps_bins)-1);
-
-for k = 1:length(knirps_bins)-1
-    fraction_on_vec(k) = mean(~off_flags_long(knirps_groups==k));
-end
-
-io_ref_wt.fraction_on_vec = fraction_on_vec;
+% fraction_on_vec = NaN(1,length(knirps_bins)-1);
+% 
+% for k = 1:length(knirps_bins)-1
+%     fraction_on_vec(k) = mean(~off_flags_long(knirps_groups==k));
+% end
+% 
+% io_ref_wt.fraction_on_vec = fraction_on_vec;
 io_ref_wt.knirps_axis_fon = knirps_axis;
 io_ref_wt.knirps_bins_fon = knirps_bins;
 
-% save
-save([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')
+%% Estimate our detection threshold
+% get empirical distribution of min fluo values
+min_fluo_vec = NaN(1,length(spot_struct));
+for i = 1:length(spot_struct)
+    min_fluo_vec(i) = nanmin(spot_struct(i).fluo);
+end
+bins = linspace(0,5e5);
+counts = histcounts(min_fluo_vec,bins);
+% counts = counts/sum(counts);
+bins_fit = bins(1:end-1) + diff(bins)/2;
+
+% fit a simple Gaussian function
+gauss_fun = @(x) x(3)*exp(-0.5*((x(1)-bins_fit)./x(2)).^2);
+ob_fun = @(x) counts-gauss_fun(x);
+fit_parameters = lsqnonlin(ob_fun,[1e4 1e4 100],[0 0 0],[Inf Inf Inf]);
+
+% record
+io_ref_wt.min_fluo_bins = bins_fit;
+io_ref_wt.min_fluo_counts = counts;
+io_ref_wt.fit_parameters = fit_parameters;
+io_ref_wt.gauss_fit = gauss_fun(fit_parameters);
+io_ref_wt.min_spot_values = min_fluo_vec;
+io_ref_wt.F_min_fit = fit_parameters(1);
+io_ref_wt.F_min_std_fit = fit_parameters(2);
+
+% now let's do something a little mor sophisticated: try to to estimate
+% probabilities of missing a detection as a function of spot fluorescence
+io_ref_wt = estimateDetectionThreshold(io_ref_wt,spot_struct);
+
+%% Estimate p-still-on titration curve
+ap_limit = [-.02 .02];
+ap_filter = io_ref_wt.mean_ap>=ap_limit(1) & io_ref_wt.mean_ap<=ap_limit(2);
+
+knirps_array = io_ref_wt.knirps_array(:,ap_filter);
+knirps_vec_long = knirps_array(:);
+
+off_flag_array = io_ref_wt.off_flag_array(:,ap_filter);
+off_vec_long = off_flag_array(:);
+
+knirps_index = linspace(nanmin(knirps_vec_long),nanmax(knirps_vec_long),51);
+
+knirps_axis = knirps_index(1:end-1) + diff(knirps_index)/2;
+knirps_groups = discretize(knirps_vec_long,knirps_index);
+fraction_still_on = NaN(size(knirps_axis));
+for k = 1:length(knirps_axis)
+    fraction_still_on(k) = nanmean(off_vec_long(knirps_groups==k));
+end    
+
+io_ref_wt.knirps_axis_still_on = knirps_axis;
+io_ref_wt.knirps_bins_still_on = knirps_index;
+io_ref_wt.fraction_still_on = fraction_still_on;
+io_ref_wt.ap_limits_still_on = ap_limit;
+
+% %% save
+% save([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')

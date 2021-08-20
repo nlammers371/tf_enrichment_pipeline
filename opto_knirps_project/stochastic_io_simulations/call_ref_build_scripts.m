@@ -30,5 +30,4 @@ disp('Saving...')
 save([sweepDir 'io_ref_wt.mat'],'io_ref_wt')
 save([sweepDir 'io_ref_ra.mat'],'io_ref_ra')
 disp('Done.')
-save([sweepDir 'io_ref_wt.mat'],'io_ref_wt')
 

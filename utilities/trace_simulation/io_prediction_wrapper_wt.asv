@@ -20,13 +20,11 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     
     n_traces_per_bin = sweepInfo.n_traces_per_ap;
     trace_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
-    trace_ap_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
     trace_ap_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
     for a = 1:length(ap_axis_mean)
         ind_ref = (a-1)*n_traces_per_bin+1:a*n_traces_per_bin;
         trace_id_vec(ind_ref) = randsample(find(ap_groups==a),n_traces_per_bin,true);
         trace_ap_vec(ind_ref) = ap_axis_mean(a);
-        trace_ap_id_vec(ind_ref) = a;
     end
             
     tf_profile_array = permute(sweepInfo.tf_profile_array_wt(:,trace_id_vec),[1 3 2]);
@@ -86,15 +84,10 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
         still_on_vec = still_on_array(:);
         knirps_array = permute(tf_profile_array(:,:,ap_indices),[1 3 2]);
         knirps_groups = discretize(knirps_array(:),sweepInfo.knirps_bins_still_on);
-        predicted_fraction_still_on = zeros(size(sweepInfo.knirps_axis_still_on));
+        predicted_fraction_still_on = NaN(size(sweepInfo.knirps_axis_still_on));
         for k = 1:length(predicted_fraction_still_on)
-            val = nanmean(still_on_vec(knirps_groups==k));
-            if ~isnan(val)
-                predicted_fraction_still_on(k) = val;
-            end
+            predicted_fraction_still_on(k) = nanmean(still_on_vec(knirps_groups==k));
         end        
-    else
-        predicted_fraction_still_on = zeros(size(sweepInfo.knirps_axis_still_on));
     end
         
     %% calculate average fluorescence over trace lifetime
@@ -104,13 +97,13 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     fluo_vec_ste = NaN(size(ap_axis_mean));
     for a = 1:length(ap_axis_mean)
         ap_ft = average_array;
-        ap_ft(:,trace_ap_id_vec~=a) = false;
+        ap_ft(:,trace_ap_vec~=a) = false;
         if sum(max(ap_ft)>0)>1
             mean_fluo = bootstrp(100,@(x)mean(x),fluo_array_zeros(ap_ft));
             fluo_vec_mean(a) = mean(mean_fluo);
             fluo_vec_ste(a) = std(mean_fluo);
 
-            mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.time_axis_wt(last_i_vec(trace_ap_id_vec==a&~all_off_flags)));
+            mean_off_times = bootstrp(100,@(x)mean(x),sweepInfo.time_axis_wt(last_i_vec(trace_ap_vec==a&~all_off_flags)));
             off_time_vec_mean(a) = mean(mean_off_times);
             off_time_vec_ste(a) = std(mean_off_times);
         else
@@ -123,16 +116,12 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     
     % calcualte differences
     delta_off = off_time_vec_mean-sweepInfo.off_time_ap;
-    delta_off = delta_off ./ nanmean(sweepInfo.off_time_ap);
     delta_fluo = fluo_vec_mean-sweepInfo.mean_fluo_ap;
-    delta_fluo = delta_fluo ./ nanmean(sweepInfo.mean_fluo_ap);
     delta_still_on = predicted_fraction_still_on - sweepInfo.fraction_still_on;
-    delta_still_on = delta_still_on ./ nanmean(sweepInfo.fraction_still_on);
     
     % calculate simple RMS differences          
-    sweepResults.mean_fluo_fit_R2 = mean(delta_off.^2);
-    sweepResults.off_time_fit_R2 = mean(delta_fluo.^2);
-    sweepResults.pon_fit_R2 = mean(delta_still_on.^2);
+    sweepResults.mean_fluo_fit_R2 = sum(delta_off.^2);
+    sweepResults.off_time_fit_R2 = sum(delta_fluo.^2);
     
     % calculate log likelihood of experimental trends assuming gaussian
     % errors
@@ -151,7 +140,6 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
         % basic AP trends
         sweepResults.mean_fluo_predicted = fluo_vec_mean;
         sweepResults.off_time_predicted = off_time_vec_mean;
-        sweepResults.p_still_on_predicted = predicted_fraction_still_on;
         
         % traces
         sweepResults.ms2_traces_observed_wt = fluo_out;

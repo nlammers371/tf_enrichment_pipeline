@@ -22,7 +22,7 @@ load([resultsRoot 'io_ref_wt.mat'])
 
 % set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 25;
+sweepInfoRaw.nParamIncrement = 10;
 sweepInfoRaw.granularity_ra = 1;
 sweepInfoRaw.granularity_wt = 1;
 sweepInfoRaw.n_traces_ra = 100;
@@ -40,7 +40,7 @@ sweepInfoRaw.max_ra_time = 7*60;
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 
-for s = 1:length(simTypeCell)
+for s = 1%:length(simTypeCell)
     sweepInfo = sweepInfoRaw;
     
     simType = simTypeCell{s};
@@ -98,7 +98,7 @@ for s = 1:length(simTypeCell)
     % allow us to extract different versions of "optimal" networks
     sweepInfoBest.fit_fields_to_use = {'ra_full_fit_R2','mean_fluo_fit_R2','off_time_fit_R2'};
     n_fit_fields = length(sweepInfoBest.fit_fields_to_use);
-    sweepInfoBest.n_raw = min([size(sweepInfo.param_val_vec,1) max([100 min([0.01*size(sweepInfo.param_val_vec,1), 1e3])])]);
+    sweepInfoBest.n_raw = min([size(sweepInfo.param_val_vec,1) max([100 min([0.01*size(sweepInfo.param_val_vec,1), 3125])])]);
 %     n_sphere = ceil(sqrt(8*n_raw)-1);
 %     [w1,w2,w3] = sphere(n_sphere);
 %     pos_flags = w1>0&w2>0&w3>0;    

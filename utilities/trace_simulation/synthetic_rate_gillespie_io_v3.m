@@ -54,7 +54,7 @@ for t = 1:length(t_ref_out)
     trend_array_temp(stable_flags) = 1;
     R_array_temp = R_array.*trend_array_temp + offset_array;
 
-    if ismember(t_ref_out(t),t_ref_in)
+    if ismember(t_ref_out(t),t_ref_in) && any(tf_dependent_flags(:))
       rate_curve_in(t_ref_in==t_ref_out(t),1,:) = R_array_temp(trend_flags==1);
     end
     % renormalize    

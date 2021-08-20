@@ -30,7 +30,7 @@ end
 
 % Add third, silent state
 sweepInfo.RateMatrix(2:3,2:3) = sweepInfo.R2;
-if ~contains(sweepInfo.simType,'2')
+if ~contains(sweepInfo.simType,'2') && ~strcmp(sweepInfo.simType,'match_exp') 
     sweepInfo.RateMatrix(:,1) = [0 ; sweepInfo.ka ; 0];
     sweepInfo.RateMatrix(1,:) = [0 sweepInfo.ks 0];
 end    
@@ -49,7 +49,9 @@ end
 
 % dictate which rate is tf-dependent (assume only one possible for now)
 sweepInfo.tf_dependent_flags = false(size(sweepInfo.RateMatrix));
-if contains(sweepInfo.simType,'out')      
+if strcmp(sweepInfo.simType,'match_exp') 
+    % do nothing
+elseif contains(sweepInfo.simType,'out')      
     sweepInfo.tf_dependent_flags(1,2) = true;
 elseif contains(sweepInfo.simType,'in')      
     sweepInfo.HC = -sweepInfo.HC;

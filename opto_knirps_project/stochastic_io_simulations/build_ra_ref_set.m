@@ -240,5 +240,5 @@ io_ref_ra.reactivation_time_cdf_full = mean(ra_time_array_full);
 io_ref_ra.reactivation_time_cdf_ste_full = std(ra_time_array_full);
 io_ref_ra.reactivation_time_axis = ra_time_vec;
 
-% save
-save([resultsRoot 'io_ref_ra.mat'],'io_ref_ra')
+% % save
+% save([resultsRoot 'io_ref_ra.mat'],'io_ref_ra')

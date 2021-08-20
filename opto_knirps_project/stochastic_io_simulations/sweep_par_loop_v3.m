@@ -1,12 +1,13 @@
-function sweepResults = sweep_par_loop_v3(sweepInfo,sweepResults,savePath)
+function sweepResults = sweep_par_loop_v3(sweepInfo,sweepResults)
 
 % make directory to store temporary files
-tempSavePath = [savePath filesep sweepInfo.simType '_tempSweepFiles' filesep];
-mkdir(tempSavePath)
+% tempSavePath = [savePath filesep sweepInfo.simType '_tempSweepFiles' filesep];
+% mkdir(tempSavePath)
 
 % initialize parallel pools
-initializePool(sweepInfo)
-
+if sweepInfo.nIterations > 5
+    initializePool(sweepInfo)
+end
 % initialize stuff for waitbar
 WB = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
@@ -17,19 +18,18 @@ p = 1;
     
 % iterate through different param values
 nIterations = sweepInfo.nIterations;
-for sweep_step = 1:nIterations
+parfor sweep_step = 1:nIterations
 %     waitbar(sweep_step/nIterations,WB);                
-    
-    % conduct RA simulations
-    sweepResults(sweep_step) = io_prediction_wrapper_ra(sweepInfo,sweepResults(sweep_step));
-    
+    if ~strcmp(sweepInfo.simType,'match_exp')
+        % conduct RA simulations
+        sweepResults(sweep_step) = io_prediction_wrapper_ra(sweepInfo,sweepResults(sweep_step));
+    end
     % conduct WT simulations
     sweepResults(sweep_step) = io_prediction_wrapper_wt(sweepInfo,sweepResults(sweep_step));
          
     % update waitbar
     send(D, sweep_step);
 end
-toc
 % delete pool (necessary to clear from RAM)
 delete(gcp) 
  
