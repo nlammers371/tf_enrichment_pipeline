@@ -98,7 +98,7 @@ for s = 1:length(simTypeCell)
     % allow us to extract different versions of "optimal" networks
     sweepInfoBest.fit_fields_to_use = {'ra_full_fit_R2','mean_fluo_fit_R2','off_time_fit_R2'};
     n_fit_fields = length(sweepInfoBest.fit_fields_to_use);
-    sweepInfoBest.n_raw = min([size(sweepInfo.param_val_vec,1) max([100 min([0.01*size(sweepInfo.param_val_vec,1), 1e3])])]);
+    sweepInfoBest.n_raw = min([size(sweepInfo.param_val_vec,1) max([100 min([round(0.01*size(sweepInfo.param_val_vec,1)), 1e3])])]);
 %     n_sphere = ceil(sqrt(8*n_raw)-1);
 %     [w1,w2,w3] = sphere(n_sphere);
 %     pos_flags = w1>0&w2>0&w3>0;    
