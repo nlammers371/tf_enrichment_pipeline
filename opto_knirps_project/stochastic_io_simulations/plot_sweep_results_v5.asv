@@ -1,0 +1,25 @@
+% Script to scan through parameter space for selected biological variables
+clear
+close all
+
+addpath(genpath('../utilities'));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%% Load experimental data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\';
+if ~isfolder(resultsRoot)
+  resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\parameterSweeps\';
+end
+
+% load experimental reference data
+load([resultsRoot 'io_ref_ra.mat'])
+load([resultsRoot 'io_ref_wt.mat'])
+
+
+% designate simulation type
+simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
+tfDependentParamCell = {'koff','kon','ks','ka'};
+
+for s = 1:length(simTypeCell)
