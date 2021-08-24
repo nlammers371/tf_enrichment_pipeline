@@ -130,8 +130,8 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     delta_still_on = delta_still_on ./ nanmean(sweepInfo.fraction_still_on);
     
     % calculate simple RMS differences          
-    sweepResults.mean_fluo_fit_R2 = mean(delta_off.^2);
-    sweepResults.off_time_fit_R2 = mean(delta_fluo.^2);
+    sweepResults.mean_fluo_fit_R2 = mean(delta_fluo.^2);
+    sweepResults.off_time_fit_R2 = mean(delta_off.^2);
     sweepResults.pon_fit_R2 = mean(delta_still_on.^2);
     
     % calculate log likelihood of experimental trends assuming gaussian
