@@ -34,7 +34,7 @@ R_array = repmat(RateMatrix,1,1,n_traces);
 trend_flags = repmat(tf_dependent_flags,1,1,n_traces);
 stable_flags = trend_flags~=1;
 diag_flags = repmat(eye(nStates),1,1,n_traces);
-offset_array = trend_flags*simInfo.k0;
+offset_array = trend_flags*0;%simInfo.k0;
 
 % generate indexing vectors
 trace_ind_vec = (0:n_traces-1)*nStates^2;

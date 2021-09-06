@@ -31,7 +31,7 @@ sweepInfoRaw.n_keep = 5;
 sweepInfoRaw.rate_max = 1; % nothing faster than a second
 sweepInfoRaw.keep_prediction_flag = false;
 sweepInfoRaw.max_ra_time = 7*60;
-
+sweepInfo.calculate_ap_metrics = false;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%% Load cpHMM results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

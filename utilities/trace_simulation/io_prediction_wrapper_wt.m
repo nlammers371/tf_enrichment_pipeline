@@ -5,20 +5,26 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     sweepInfo.KD = sweepResults.param_val_vec(strcmp(paramList,'KD'));
     sweepInfo.ks = sweepResults.param_val_vec(strcmp(paramList,'ks'));
     sweepInfo.ka = sweepResults.param_val_vec(strcmp(paramList,'ka'));
-    sweepInfo.k0 = sweepResults.param_val_vec(strcmp(paramList,'k0'));
-    sweepInfo.F_min = sweepResults.param_val_vec(strcmp(paramList,'F_min'));   
+    sweepInfo.k0 = sweepResults.param_val_vec(strcmp(paramList,'k0'));    
         
     % final model-building step
     sweepInfo = generate_full_model(sweepInfo);                                                     
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
     % randomly draw tf profiles
-    ap_axis_mean = sweepInfo.ap_axis_mean;
-    dAP = ap_axis_mean(2)-ap_axis_mean(1);
-    ap_bins = [ap_axis_mean-dAP/2 ap_axis_mean(end)+dAP/2]; 
+    if sweepInfo.calculate_ap_metrics
+        ap_axis_mean = sweepInfo.ap_axis_mean;
+        dAP = ap_axis_mean(2)-ap_axis_mean(1);
+        ap_bins = [ap_axis_mean-dAP/2 ap_axis_mean(end)+dAP/2];  
+        n_traces_per_bin = sweepInfo.n_traces_per_ap;
+    else
+        ap_bins = [sweepInfo.ap_limits_still_on(1) sweepInfo.ap_limits_still_on(2)];
+        n_traces_per_bin = sweepInfo.n_traces_ra;
+    end
     ap_profile_vec_tf = sweepInfo.ap_profile_vec_tf;
     ap_groups = discretize(ap_profile_vec_tf,ap_bins);
     
-    n_traces_per_bin = sweepInfo.n_traces_per_ap;
+    
     trace_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
     trace_ap_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
     trace_ap_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));

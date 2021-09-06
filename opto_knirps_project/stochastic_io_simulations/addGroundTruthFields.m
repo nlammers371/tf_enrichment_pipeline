@@ -11,7 +11,8 @@ function sweepInfo = addGroundTruthFields(sweepInfo,io_ref_ra,io_ref_wt)
 
         sweepInfo.off_frame_ref = io_ref_ra.off_frame_ref;
     end
-    % detection limit
+    
+    % detection limit info
     sweepInfo.detection_limit = io_ref_wt.F_min_fit;
     if isfield(io_ref_wt, 'fluo_ref_curve')
         sweepInfo.fluo_ref_curve  = io_ref_wt.fluo_ref_curve;
@@ -24,14 +25,16 @@ function sweepInfo = addGroundTruthFields(sweepInfo,io_ref_ra,io_ref_wt)
         sweepInfo.fraction_still_on = io_ref_wt.fraction_still_on;
         sweepInfo.ap_limits_still_on = io_ref_wt.ap_limits_still_on;
     end
-    % mean fluorescence vs. AP
-    sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
-    sweepInfo.mean_fluo_ap_ste = io_ref_wt.fluo_vec_ste;
-    
-    % observed off times
-    sweepInfo.off_time_ap = io_ref_wt.off_time_vec_mean;
-    sweepInfo.off_time_ap_ste = io_ref_wt.off_time_vec_ste;
-    sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;               
+    if sweepInfo.calculate_ap_metrics
+        % mean fluorescence vs. AP
+        sweepInfo.mean_fluo_ap = io_ref_wt.fluo_vec_mean;
+        sweepInfo.mean_fluo_ap_ste = io_ref_wt.fluo_vec_ste;
+
+        % observed off times
+        sweepInfo.off_time_ap = io_ref_wt.off_time_vec_mean;
+        sweepInfo.off_time_ap_ste = io_ref_wt.off_time_vec_ste;
+        sweepInfo.ap_axis_mean = io_ref_wt.ap_axis_mean;               
+    end
     
     % save TF profiles and time vec for RA type
     if ~isempty(io_ref_ra)

@@ -6,14 +6,16 @@ function sweepInfo = generate_full_model(sweepInfo,varargin)
 
 % If we're looking at a model where koff is the concentration-dependent parameter,
 % we need to ensure that the effective ON rate is consistent with cpHMM estimates
-% if strcmp(sweepInfo.simType,'koff_only_2')     
-%     R2 = sweepInfo.R2;
-%     kon_true = R2(2,1)*(sweepInfo.ka + sweepInfo.ks)/sweepInfo.ka;
-%     R2(2,1) = kon_true;
-%     R2(1,1) = -kon_true;
-%     sweepInfo.R2 = R2;
-% 
-% end    
+if strcmp(sweepInfo.simType,'koff_only_2')     
+    R2 = sweepInfo.R2;
+    kon_true = R2(2,1)*(sweepInfo.ka + sweepInfo.ks)/sweepInfo.ka;
+    R2(2,1) = kon_true;
+    R2(1,1) = -kon_true;
+    sweepInfo.R2 = R2;
+    
+    % set the koff value to be the maximum we're considering    
+    sweepInfo.R2(1,2) = sweepInfo.rate_max;
+end    
 
 % Add third, silent state
 sweepInfo.RateMatrix(2:3,2:3) = sweepInfo.R2;
@@ -25,9 +27,14 @@ diag_flags = eye(size(sweepInfo.RateMatrix,1))==1;
 sweepInfo.RateMatrix(diag_flags) = 0;
 sweepInfo.RateMatrix(diag_flags) = -sum(sweepInfo.RateMatrix);
 
-% update other parameters
+
 sweepInfo.r_emission = [0 sweepInfo.r2]; % loading rate for each state
+sweepInfo.noise = sweepInfo.noise;
 sweepInfo.pi0 = [0 sweepInfo.pi0];
+if contains(sweepInfo.simType,'_on') && ~contains(sweepInfo.simType,'2')
+    sweepInfo.pi0(1) = 1;
+end
+% simInfo.noise = 1e4; 
 
 % dictate which rate is tf-dependent (assume only one possible for now)
 sweepInfo.tf_dependent_flags = false(size(sweepInfo.RateMatrix));

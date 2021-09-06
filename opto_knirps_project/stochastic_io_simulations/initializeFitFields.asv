@@ -21,9 +21,8 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
       elseif contains(sweepInfo.simType,'kon')
           sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'koff')) = 0;
       end
-  else
-      % koff is always fixed for 3 state models
-      sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'koff')) = 0;          
+  elseif strcmp(sweepInfo.simType,'out_only')
+    
   end
   sweepInfo.nFit = sum(sweepInfo.fitFlags);
   if strcmp(sweepInfo.simType,'match_exp')
