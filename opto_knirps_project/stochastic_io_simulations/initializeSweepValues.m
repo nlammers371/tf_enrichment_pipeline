@@ -15,7 +15,4 @@ function sweepResults = initializeSweepValues(sweepInfo, sweepResults)
   % assign  to structure
   for j = 1:size(param_fit_array,1)
        sweepResults(j).param_val_vec = param_fit_array(j,:);
-  end
-  
- 
-  
+  end  

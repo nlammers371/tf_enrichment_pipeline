@@ -5,9 +5,9 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     sweepInfo.KD = sweepResults.param_val_vec(strcmp(paramList,'KD'));
     sweepInfo.ks = sweepResults.param_val_vec(strcmp(paramList,'ks'));
     sweepInfo.ka = sweepResults.param_val_vec(strcmp(paramList,'ka'));
-    sweepInfo.k0 = sweepResults.param_val_vec(strcmp(paramList,'k0'));
-    sweepInfo.F_min = sweepResults.param_val_vec(strcmp(paramList,'F_min'));   
-        
+    sweepInfo.kon = sweepResults.param_val_vec(strcmp(paramList,'kon'));
+    sweepInfo.koff = sweepResults.param_val_vec(strcmp(paramList,'koff'));
+              
     % final model-building step
     sweepInfo = generate_full_model(sweepInfo);
 
@@ -40,6 +40,7 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     else
         fluo_array_zeros = ones(size(fluo_array));
     end
+    
     % calculate stats for fraction of traces that actually turn off
     perturbation_frame = ceil(size(tf_profile_array,1)/2);
     window_size = perturbation_frame-1;
@@ -154,7 +155,6 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
         % save basic info
         sweepResults.ra_time_cdf_predicted = ra_cdf_pd_mean;
         sweepResults.ra_time_cdf_full_predicted = ra_cdf_full_mean;
-%         sweepResults.tf_dependent_curve_ra = nanmean(gillespie.rate_curve_in,3)';
         
         % save trace details
         sweepResults.ms2_traces_observed_ra = fluo_out;

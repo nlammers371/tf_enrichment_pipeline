@@ -1,4 +1,4 @@
-function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
+function sweepResults = io_prediction_wrapper_wt_ap(sweepInfo,sweepResults)
 
     paramList = sweepInfo.paramList;
     sweepInfo.HC = sweepResults.param_val_vec(strcmp(paramList,'HC'));
@@ -12,15 +12,35 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     sweepInfo = generate_full_model(sweepInfo);                                                     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-    % randomly draw tf profiles   
-    ap_bins = [sweepInfo.ap_limits_still_on(1) sweepInfo.ap_limits_still_on(2)];
+    % randomly draw tf profiles
+    if sweepInfo.calculate_ap_metrics
+        ap_axis_mean = sweepInfo.ap_axis_mean;
+        dAP = ap_axis_mean(2)-ap_axis_mean(1);
+        ap_bins = [ap_axis_mean-dAP/2 ap_axis_mean(end)+dAP/2];  
+        n_traces_per_bin = sweepInfo.n_traces_per_ap;
+    else
+        ap_bins = [sweepInfo.ap_limits_still_on(1) sweepInfo.ap_limits_still_on(2)];
+        n_traces_per_bin = sweepInfo.n_traces_ra;
+    end
     ap_profile_vec_tf = sweepInfo.ap_profile_vec_tf;
-    ap_filter = ap_profile_vec_tf<=ap_bins(2)&ap_profile_vec_tf>=ap_bins(1);    
-    trace_id_vec = randsample(find(ap_filter),sweepInfo.n_traces_ra,true);                
+    ap_groups = discretize(ap_profile_vec_tf,ap_bins);
+    
+    
+    trace_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
+    trace_ap_id_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
+    trace_ap_vec = NaN(1,n_traces_per_bin*length(ap_axis_mean));
+    for a = 1:length(ap_axis_mean)
+        ind_ref = (a-1)*n_traces_per_bin+1:a*n_traces_per_bin;
+        trace_id_vec(ind_ref) = randsample(find(ap_groups==a),n_traces_per_bin,true);
+        trace_ap_vec(ind_ref) = ap_axis_mean(a);
+        trace_ap_id_vec(ind_ref) = a;
+    end
+            
     tf_profile_array = permute(sweepInfo.tf_profile_array_wt(:,trace_id_vec),[1 3 2]);
     
     %% call simulation function    
-    sweepInfo.granularity = sweepInfo.granularity_ra;    
+    sweepInfo.granularity = sweepInfo.granularity_wt;
+    
     gillespie = synthetic_rate_gillespie_io_v3(sweepInfo,tf_profile_array);        
     
     % use output to generate predicted curves
@@ -41,7 +61,9 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     else
         fluo_array_zeros = ones(size(fluo_array));
     end
-       
+    
+
+    
     % calculate stats for fraction of traces that actually turn off
     index_vec = (1:size(fluo_array_zeros,1))';
     

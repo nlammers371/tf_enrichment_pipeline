@@ -47,14 +47,29 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
   sweepInfo.param_bounds(:,5) = logspace(-3,0,sweepInfo.nParamIncrement);
   sweepInfo.param_bounds(:,6) = logspace(-3,0,sweepInfo.nParamIncrement);
   
+  % indicate which rate is tf-dependent (assume only one possible for now)
+  sweepInfo.tf_dependent_flags = false(size(sweepInfo.RateMatrix));
+  if strcmp(sweepInfo.simType,'match_exp') 
+      % do nothing
+  elseif contains(sweepInfo.simType,'out')      
+      sweepInfo.tf_dependent_flags(1,2) = true;
+  elseif contains(sweepInfo.simType,'in')      
+      sweepInfo.HC = -sweepInfo.HC;
+      sweepInfo.tf_dependent_flags(2,1) = true;
+  elseif contains(sweepInfo.simType,'kon')      
+      sweepInfo.HC = -sweepInfo.HC;
+      sweepInfo.tf_dependent_flags(3,2) = true;
+  elseif contains(sweepInfo.simType,'koff')          
+      sweepInfo.tf_dependent_flags(2,3) = true;    
+  end
+  
  % track fits to observables of interest
   for i = 1:sweepInfo.nIterations
       sweepResults(i).ra_fit = NaN;%(sweepInfo.nIterations,1);
       sweepResults(i).ra_full_fit = NaN;
       sweepResults(i).mean_fluo_fit = NaN;%(sweepInfo.nIterations,1);
       sweepResults(i).off_time_fit = NaN;%(sweepInfo.nIterations,1);
-      
-      
+            
       sweepResults(i).ra_fit_R2 = NaN;
       sweepResults(i).ra_full_fit_R2 = NaN;
       sweepResults(i).mean_fluo_fit_R2 = NaN;

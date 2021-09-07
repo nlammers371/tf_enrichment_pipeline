@@ -179,7 +179,6 @@ io_ref_wt.time_axis = time_index;
 
 % Generate fraction off vs knirps curve
 knirps_vec_long = io_ref_wt.knirps_array(:);
-
 % off_flags_long = io_ref_wt.off_flag_array(:);
 knirps_bins = logspace(log10(prctile(knirps_vec_long,1)),log10(prctile(knirps_vec_long,99)),26);
 knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
