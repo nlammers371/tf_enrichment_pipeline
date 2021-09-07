@@ -18,7 +18,7 @@ p = 1;
     
 % iterate through different param values
 nIterations = sweepInfo.nIterations;
-parfor sweep_step = 1:nIterations
+for sweep_step = 1:nIterations
 %     waitbar(sweep_step/nIterations,WB);                
     if ~strcmp(sweepInfo.simType,'match_exp')
         % conduct RA simulations

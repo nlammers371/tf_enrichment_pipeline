@@ -5,7 +5,7 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
   % set list of parameters to sample   
   sweepInfo.paramList = {'HC','KD','ks','ka','kon','koff'};
   sweepInfo.fitFlags = [1 1 1 1 1 1];
-  sweepInfo.trueVals = [7,6e5,1,1,sweepInfo.R2(2,1),sweepInfo.R2(1,2)]; 
+  sweepInfo.trueVals = [7,6e5,1,1,sweepInfo.R2_orig(2,1),sweepInfo.R2_orig(1,2)]; 
   
   if contains(sweepInfo.simType,'2')      
       ka_index = strcmp(sweepInfo.paramList,'ka');
@@ -48,7 +48,7 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
   sweepInfo.param_bounds(:,6) = logspace(-3,0,sweepInfo.nParamIncrement);
   
   % indicate which rate is tf-dependent (assume only one possible for now)
-  sweepInfo.tf_dependent_flags = false(size(sweepInfo.RateMatrix));
+  sweepInfo.tf_dependent_flags = false(3,3);
   if strcmp(sweepInfo.simType,'match_exp') 
       % do nothing
   elseif contains(sweepInfo.simType,'out')      
