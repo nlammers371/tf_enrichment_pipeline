@@ -22,14 +22,14 @@ function sweepInfo = addGroundTruthFields(sweepInfo,io_ref_ra,io_ref_wt)
     % fluo trend over time
     sweepInfo.time_axis_mf = io_ref_wt.time_axis_mf;
     sweepInfo.fluo_time_mean = io_ref_wt.fluo_time_mean;
-    sweepInfo.time_axis_ste = io_ref_wt.fluo_time_ste;
+    sweepInfo.fluo_time_ste = io_ref_wt.fluo_time_ste;
     sweepInfo.time_axis_wt = io_ref_wt.time_axis;
     
     if isfield(io_ref_wt,'knirps_axis_still_on')      
         sweepInfo.knirps_axis_still_on = io_ref_wt.knirps_axis_still_on;
         sweepInfo.knirps_bins_still_on = io_ref_wt.knirps_bins_still_on;
         sweepInfo.fraction_still_on_ste = io_ref_wt.fraction_still_on_ste;
-        sweepInfo.fraction_still_on_ste = io_ref_wt.fraction_still_on_mean;
+        sweepInfo.fraction_still_on = io_ref_wt.fraction_still_on_mean;
         sweepInfo.ap_limits_still_on = io_ref_wt.ap_limits_still_on;
     end
     if sweepInfo.calculate_ap_metrics

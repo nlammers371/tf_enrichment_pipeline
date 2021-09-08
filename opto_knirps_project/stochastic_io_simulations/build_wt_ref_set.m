@@ -245,7 +245,7 @@ end
 io_ref_wt.knirps_axis_still_on = knirps_axis;
 io_ref_wt.knirps_bins_still_on = knirps_index;
 io_ref_wt.fraction_still_on_mean = nanmean(fraction_still_on_array,2);
-io_ref_wt.fraction_still_on_ste = nanstd(fraction_still_on_array,[],2);
+io_ref_wt.fraction_still_on_ste = nanstd(fraction_still_on_array,[],2)+1e-2;
 io_ref_wt.ap_limits_still_on = ap_limit;
 
 %% estimate mean fluorescence over time amongst active traces

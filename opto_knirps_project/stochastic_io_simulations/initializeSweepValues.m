@@ -11,7 +11,9 @@ function sweepResults = initializeSweepValues(sweepInfo, sweepResults)
 
       iter = iter + 1;
   end
+  
   param_fit_array(:,~sweepInfo.fitFlags) = repmat(sweepInfo.trueVals(~sweepInfo.fitFlags),size(param_fit_array,1),1);
+  
   % assign  to structure
   for j = 1:size(param_fit_array,1)
        sweepResults(j).param_val_vec = param_fit_array(j,:);
