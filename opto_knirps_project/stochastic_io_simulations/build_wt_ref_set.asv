@@ -147,7 +147,7 @@ io_ref_wt.mean_ap = io_ref_wt.mean_ap(keep_flags);
 
 % keep_flags = true(1,sum(keep_flags));
 
-% now calculate mean trends
+% now calculate mean trends vs AP
 ap_bins = linspace(ap_bounds(1),ap_bounds(2),13); % used in mean figure
 ap_groups_mean = discretize(io_ref_wt.mean_ap,ap_bins); 
 
@@ -155,7 +155,6 @@ nBoots = 100;
 off_time_vec_mean = NaN(nBoots,length(ap_bins)-1);
 fluo_vec_mean = NaN(nBoots,length(ap_bins)-1);
 knirps_vec_mean = NaN(nBoots,length(ap_bins)-1);
-
 
 for a = 1:length(ap_bins)-1          
     ap_indices = find(ap_groups_mean==a);
@@ -179,6 +178,7 @@ io_ref_wt.time_axis = time_index;
 
 % Generate fraction off vs knirps curve
 knirps_vec_long = io_ref_wt.knirps_array(:);
+
 % off_flags_long = io_ref_wt.off_flag_array(:);
 knirps_bins = logspace(log10(prctile(knirps_vec_long,1)),log10(prctile(knirps_vec_long,99)),26);
 knirps_axis = knirps_bins(1:end-1) + diff(knirps_bins)/2;
@@ -219,10 +219,6 @@ io_ref_wt.min_spot_values = min_fluo_vec;
 io_ref_wt.F_min_fit = fit_parameters(1);
 io_ref_wt.F_min_std_fit = fit_parameters(2);
 
-% now let's do something a little mor sophisticated: try to to estimate
-% probabilities of missing a detection as a function of spot fluorescence
-io_ref_wt = estimateDetectionThreshold(io_ref_wt,spot_struct);
-
 %% Estimate p-still-on titration curve
 ap_limit = [-.02 .02];
 ap_filter = io_ref_wt.mean_ap>=ap_limit(1) & io_ref_wt.mean_ap<=ap_limit(2);
@@ -237,15 +233,39 @@ knirps_index = linspace(nanmin(knirps_vec_long),nanmax(knirps_vec_long),51);
 
 knirps_axis = knirps_index(1:end-1) + diff(knirps_index)/2;
 knirps_groups = discretize(knirps_vec_long,knirps_index);
-fraction_still_on = NaN(size(knirps_axis));
+fraction_still_on_array = NaN(length(knirps_axis),nBoots);
 for k = 1:length(knirps_axis)
-    fraction_still_on(k) = nanmean(off_vec_long(knirps_groups==k));
+    k_options = find(knirps_groups==k);
+    for n = 1:nBoots
+        boot_indices = randsample(k_options,length(k_options),true);
+        fraction_still_on_array(k,n) = nanmean(off_vec_long(boot_indices));
+    end
 end    
 
 io_ref_wt.knirps_axis_still_on = knirps_axis;
 io_ref_wt.knirps_bins_still_on = knirps_index;
-io_ref_wt.fraction_still_on = fraction_still_on;
+io_ref_wt.fraction_still_on_mean = nanmean(fraction_still_on_array,2);
+io_ref_wt.fraction_still_on_ste = nanstd(fraction_still_on_array,[],2);
 io_ref_wt.ap_limits_still_on = ap_limit;
 
+%% estimate mean fluorescence over time amongst active traces
+boot_options = find(ap_filter);
+mean_fluo_time = NaN(length(time_index),nBoots);
+for n = 1:nBoots
+    boot_indices = randsample(boot_options,length(boot_options),true);
+    mean_fluo_time(:,n) = nanmean(io_ref_wt.fluo_array(:,boot_indices),2);
+end
+% filter 
+time_filter = time_index/60>=time_bounds(1)&time_index/60<=time_bounds(2);
+io_ref_wt.time_axis_mf = time_index(time_filter)/60;
+% calculate mean and standard error
+t_counts = sum(~isnan(io_ref_wt.fluo_array(:,ap_filter)),2);
+mean_fluo_time(t_counts<10,:) = 0;
+io_ref_wt.fluo_time_mean = nanmean(mean_fluo_time(time_filter,:),2);
+io_ref_wt.fluo_time_ste = nanstd(mean_fluo_time(time_filter,:),[],2);
+
+% now let's do something a little mor sophisticated: try to to estimate
+% probabilities of missing a detection as a function of spot fluorescence
+io_ref_wt = estimateDetectionThreshold(io_ref_wt,spot_struct);
 % %% save
 % save([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')

@@ -16,8 +16,8 @@ function sweepInfo = generate_full_model(sweepInfo,varargin)
 
 % Build 2 state network
 sweepInfo.RateMatrix = zeros(3,3);
-sweepInfo.RateMatrix(1:2) = simInfo.koff;
-sweepInfo.RateMatrix(2:1) = simInfo.kon;
+sweepInfo.RateMatrix(2,3) = sweepInfo.koff;
+sweepInfo.RateMatrix(3,2) = sweepInfo.kon;
 
 % Add third, silent state
 sweepInfo.RateMatrix(:,1) = [0 ; sweepInfo.ka ; 0];
