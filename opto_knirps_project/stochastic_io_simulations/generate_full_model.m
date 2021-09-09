@@ -31,3 +31,19 @@ sweepInfo.RateMatrix(diag_flags) = -sum(sweepInfo.RateMatrix);
 % update other parameters
 sweepInfo.r_emission = [0 sweepInfo.r2]; % loading rate for each state
 sweepInfo.pi0 = [0 sweepInfo.pi0];
+
+% indicate which rate is tf-dependent (assume only one possible for now)
+sweepInfo.tf_dependent_flags = false(3,3);
+if strcmp(sweepInfo.simType,'match_exp') 
+    % do nothing
+elseif contains(sweepInfo.simType,'out')      
+    sweepInfo.tf_dependent_flags(1,2) = true;
+elseif contains(sweepInfo.simType,'in')      
+    sweepInfo.HC = -sweepInfo.HC;
+    sweepInfo.tf_dependent_flags(2,1) = true;
+elseif contains(sweepInfo.simType,'kon')      
+    sweepInfo.HC = -sweepInfo.HC;
+    sweepInfo.tf_dependent_flags(3,2) = true;
+elseif contains(sweepInfo.simType,'koff')          
+    sweepInfo.tf_dependent_flags(2,3) = true;    
+end

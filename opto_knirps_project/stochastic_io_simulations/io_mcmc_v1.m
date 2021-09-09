@@ -22,10 +22,12 @@ load([resultsRoot 'io_ref_wt.mat'])
 
 % set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 5;
-sweepInfoRaw.granularity = 1;
-sweepInfoRaw.n_traces = 100;
-% sweepInfoRaw.n_traces_per_ap = 25;
+sweepInfoRaw.n_chains = 1;
+sweepInfoRaw.nParamIncrement = 250; % sets granularity of space to explore
+sweepInfoRaw.granularity_ra = 1;
+sweepInfoRaw.granularity_wt = 1;
+sweepInfoRaw.n_traces_ra = 100;
+sweepInfoRaw.n_traces_per_ap = 25;
 sweepInfoRaw.n_keep = 5;
 sweepInfoRaw.rate_max = 1; % nothing faster than a second
 sweepInfoRaw.keep_prediction_flag = false;
@@ -64,13 +66,13 @@ for s = 1:length(simTypeCell)
     sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt);
 
     % initialize vectors to store results
-    sweepResults = struct;
-    [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults);
-    sweepResults = initializeSweepValues(sweepInfo, sweepResults);              
+%     sweepResults = struct;
+    sweepInfo = initializeFitFieldsMCMC(sweepInfo);
+%     sweepResults = initializeSweepValues(sweepInfo, sweepResults);              
     
     % call parallel sweep script
     tic
-    sweepResults= sweep_par_loop_v3(sweepInfo,sweepResults);    
+    sweepResults = run_mcmc_sampling(sweepInfo,sweepResults);    
     toc
 
     % recombine 
@@ -86,10 +88,13 @@ for s = 1:length(simTypeCell)
     % identify best thousand or best 1% (whichever is less) and run
     % sweeps that save key info
     sweepInfoBest = sweepInfoRaw;
+    
     % save simulation type
     sweepInfoBest.simType = simType;    
+    
     % load markov system parameter info
-    sweepInfoBest = getMarkovSystemInfo(sweepInfoBest);    
+    sweepInfoBest = getMarkovSystemInfo(sweepInfoBest);  
+    
     % generate ground truth reference curves       
     sweepInfoBest = addGroundTruthFields(sweepInfoBest, io_ref_ra, io_ref_wt);
     
@@ -97,8 +102,7 @@ for s = 1:length(simTypeCell)
     % allow us to extract different versions of "optimal" networks
     sweepInfoBest.fit_fields_to_use = {'ra_full_fit_R2','mean_fluo_fit_R2','off_time_fit_R2'};
     n_fit_fields = length(sweepInfoBest.fit_fields_to_use);
-    sweepInfoBest.n_keep = min([size(sweepInfo.param_val_vec,1) max([100 min([round(0.01*size(sweepInfo.param_val_vec,1)), 1e3])])]);
-
+    sweepInfoBest.n_raw = min([size(sweepInfo.param_val_vec,1) max([100 min([round(0.01*size(sweepInfo.param_val_vec,1)), 1e3])])]);
     sweepInfoBest.resultsRoot = resultsRoot;
     
     % now iterate throug and find the best-scoring parameter set for each set

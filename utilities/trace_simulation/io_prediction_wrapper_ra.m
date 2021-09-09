@@ -12,8 +12,8 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     sweepInfo = generate_full_model(sweepInfo);
 
     % extract info
-    n_traces = sweepInfo.n_traces_ra;                                                      
-    sweepInfo.granularity = sweepInfo.granularity_ra;
+    n_traces = sweepInfo.n_traces;                                                      
+%     sweepInfo.granularity = sweepInfo.granularity;
     
     % randomly draw tf profiles
     s_indices = randsample(1:size(sweepInfo.tf_profile_array_ra,2),n_traces,true);
@@ -52,7 +52,6 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     first_i_vec = min(active_indices);
     max_time = max(sweepInfo.reactivation_time);
     before_flags = first_i_vec < 0;
-%     n_ever_on = sum(max(active_indices)>0);
     % was trace OFF immediately preceding ON perturbation?
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
 
@@ -78,7 +77,6 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     end
             
     % construct empirical cdf for ractivation
-%     ra_times = reactivation_time_vec(~isnan(reactivation_time_vec));           
     ra_time_vec = sweepInfo.reactivation_time;
              
     % generate count vec
@@ -119,22 +117,22 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     
     % predicted stats
     ra_cdf_pd_mean = nanmean(ra_array);
-    ra_cdf_pd_ste = nanstd(ra_array)+1e-3;
+%     ra_cdf_pd_ste = nanstd(ra_array)+1e-3;
     
     ra_cdf_full_mean = nanmean(ra_array_full);
-    ra_cdf_full_ste = nanstd(ra_array_full)+1e-3;
+%     ra_cdf_full_ste = nanstd(ra_array_full)+1e-3;
     
     % actual stats
-    ra_cdf_exp_ste = sweepInfo.reactivation_cdf_ste+1e-3;
-    ra_cdf_exp_full_ste = sweepInfo.reactivation_cdf_full_ste+1e-3;
+    ra_cdf_exp_ste = sweepInfo.reactivation_cdf_ste;
+    ra_cdf_exp_full_ste = sweepInfo.reactivation_cdf_full_ste;
     
     % calculate likelihood score
     delta_cdf = ra_cdf_pd_mean-sweepInfo.reactivation_cdf;
-    logL_ra_cdf = -0.25*((delta_cdf./ra_cdf_pd_ste).^2 + (delta_cdf./ra_cdf_exp_ste).^2);
-    sweepResults.ra_fit = mean(logL_ra_cdf);
+    logL_ra_cdf = (delta_cdf./ra_cdf_exp_ste).^2;
+    sweepResults.ra_fit = -sqrt(mean(logL_ra_cdf));
     
     delta_cdf_full = ra_cdf_full_mean-sweepInfo.reactivation_cdf_full;
-    logL_ra_full_cdf = -0.25*((delta_cdf_full./ra_cdf_full_ste).^2 + (delta_cdf_full./ra_cdf_exp_full_ste)).^2;
+    logL_ra_full_cdf = -0.5*(delta_cdf_full./ra_cdf_exp_full_ste).^2;
     sweepResults.ra_full_fit = mean(logL_ra_full_cdf);
     
     % calculate simple R2 metrics

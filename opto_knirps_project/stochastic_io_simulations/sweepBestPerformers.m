@@ -30,8 +30,6 @@ function sweepInfoBest = sweepBestPerformers(sweepInfoBest,sweepInfo)
     sweepInfoBest.bestIndVec = [sweepResultsBest.bestInd]';
     sweepInfoBest.bestScoreVec = [sweepResultsBest.bestScore]';
     
-    
-%     sweepResultsBest = sweepResultsBest(ia);  
     [sweepInfoBest, sweepResultsBest] = initializeFitFields(sweepInfoBest,sweepResultsBest);
     % call sweep script
     sweepResultsBest = sweep_par_loop_v3(sweepInfoBest,sweepResultsBest); 

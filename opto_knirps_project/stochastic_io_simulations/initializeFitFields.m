@@ -1,4 +1,4 @@
-function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
+function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,param_fit_array)
   
 %   sweepResults = struct;
   
@@ -10,12 +10,7 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
   if contains(sweepInfo.simType,'2')      
       ka_index = strcmp(sweepInfo.paramList,'ka');
       ks_index = strcmp(sweepInfo.paramList,'ks');
-      sweepInfo.fitFlags(ks_index) = 0;
-      sweepInfo.trueVals(ks_index) = 0;
-      sweepInfo.fitFlags(ka_index) = 0;
-      sweepInfo.trueVals(ka_index) = 0;
-      sweepInfo.fitFlags([ks_index ka_index]) = 0; 
-      sweepInfo.trueVals([ks_index ka_index]) = 0; 
+      sweepInfo.fitFlags(ks_index | ka_index) = 0; 
       if contains(sweepInfo.simType,'koff')
           sweepInfo.fitFlags(strcmp(sweepInfo.paramList,'kon')) = 0;
       elseif contains(sweepInfo.simType,'kon')
@@ -40,32 +35,13 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
   % hill coefficient
   sweepInfo.param_bounds(:,1) = linspace(0.5, 20, sweepInfo.nParamIncrement);
   % KD
-  sweepInfo.param_bounds(:,2) = linspace(1, 20, sweepInfo.nParamIncrement);
-  % Spot detection threshold
-%   sweepInfo.param_bounds(:,3) =  linspace(1e4, 1e5, sweepInfo.nParamIncrement);  
-  
+  sweepInfo.param_bounds(:,2) = linspace(2, 15, sweepInfo.nParamIncrement); 
   % constrain rates to same range
-  sweepInfo.param_bounds(:,3:6) = logspace(-3,0,sweepInfo.nParamIncrement);%[1e-2 60]';
-  
-  % reset param bounds to true value if not fitting
-%   sweepInfo.param_bounds(:,~sweepInfo.fitFlags) = sweepInfo.trueVals(~sweepInfo.fitFlags);
-  
-  % indicate which rate is tf-dependent (assume only one possible for now)
-  sweepInfo.tf_dependent_flags = false(3,3);
-  if strcmp(sweepInfo.simType,'match_exp') 
-      % do nothing
-  elseif contains(sweepInfo.simType,'out')      
-      sweepInfo.tf_dependent_flags(1,2) = true;
-  elseif contains(sweepInfo.simType,'in')      
-      sweepInfo.HC = -sweepInfo.HC;
-      sweepInfo.tf_dependent_flags(2,1) = true;
-  elseif contains(sweepInfo.simType,'kon')      
-      sweepInfo.HC = -sweepInfo.HC;
-      sweepInfo.tf_dependent_flags(3,2) = true;
-  elseif contains(sweepInfo.simType,'koff')          
-      sweepInfo.tf_dependent_flags(2,3) = true;    
-  end
+  sweepInfo.param_bounds(:,3:6) = repmat(logspace(-3,0,sweepInfo.nParamIncrement),4,1)';%[1e-2 60]';    
 
+  if ~isempty(param_fit_array)
+      sweepInfo.nIterations = size(param_fit_array,1);
+  end
   % track fits to observables of interest
   for i = 1:sweepInfo.nIterations
       sweepResults(i).ra_fit = NaN;%(sweepInfo.nIterations,1);
@@ -94,7 +70,6 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults)
           sweepResults(i).ms2_traces_true_ra = NaN;
           sweepResults(i).knirps_traces_ra = NaN;
           sweepResults(i).reactivation_time_vec = NaN;
-          sweepResults(i).tf_dependent_curves_ra = NaN; 
-          
+          sweepResults(i).tf_dependent_curves_ra = NaN;           
       end
   end

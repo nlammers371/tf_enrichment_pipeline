@@ -1,13 +1,14 @@
-function sweepResults = sweep_par_loop_v3(sweepInfo,sweepResults)
+function sweepResults = run_mcmc_sampling(sweepInfo,sweepResults)
 
 % make directory to store temporary files
 % tempSavePath = [savePath filesep sweepInfo.simType '_tempSweepFiles' filesep];
 % mkdir(tempSavePath)
 
 % initialize parallel pools
-if sweepInfo.nIterations > 5
+if sweepInfo.n_chains > 5
     initializePool(sweepInfo)
 end
+
 % initialize stuff for waitbar
 WB = waitbar(0,'conducting parameter sweeps...');
 D = parallel.pool.DataQueue;    
@@ -17,8 +18,7 @@ N = sweepInfo.nIterations;
 p = 1;
     
 % iterate through different param values
-nIterations = sweepInfo.nIterations;
-for sweep_step = 1:nIterations
+for sweep_step = 1:sweepInfo.n_chains
 %     waitbar(sweep_step/nIterations,WB);                
     if ~strcmp(sweepInfo.simType,'match_exp')
         % conduct RA simulations
@@ -31,7 +31,7 @@ for sweep_step = 1:nIterations
     send(D, sweep_step);
 end
 % delete pool (necessary to clear from RAM)
-% delete(gcp) 
+delete(gcp) 
  
 delete(WB);
 

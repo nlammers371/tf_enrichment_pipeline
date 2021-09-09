@@ -59,7 +59,8 @@ for t = 1:length(t_ref_out)
     end
     % renormalize    
     R_array_temp(diag_flags==1) = 0;
-    R_array_temp(diag_flags==1) = -sum(R_array_temp,1);    
+    R_array_temp(diag_flags==1) = -sum(R_array_temp,1);  
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% Choose next states
     

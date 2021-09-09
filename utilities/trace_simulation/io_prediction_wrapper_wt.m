@@ -74,20 +74,22 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
             predicted_fraction_still_on(k) = val;
         end
     end        
-        
+    predicted_fraction_still_on(1) = 1;    
     %% calculate average fluorescence over trace lifetime 
     fluo_nan = fluo_array_zeros;
-    fluo_nan(~still_on_array) = NaN;    
+    still_on_flags = still_on_array;
+    still_on_flags(isnan(still_on_flags)) = 0;
+    fluo_nan(~still_on_flags) = NaN;    
     time_filter = ismember(round(sweepInfo.time_axis_wt/60,2),round(sweepInfo.time_axis_mf,2));
     mean_fluo_time_predicted = nanmean(fluo_nan(time_filter,:),2);
     mean_fluo_time_predicted(isnan(mean_fluo_time_predicted)) = 0;      
            
     % calcualte differences
     delta_fluo_time = mean_fluo_time_predicted-sweepInfo.fluo_time_mean;
-    delta_fluo_time = delta_fluo_time ./ nanmean(sweepInfo.fluo_time_mean);
+%     delta_fluo_time = delta_fluo_time ./ nanmean(sweepInfo.fluo_time_mean);
 
-    delta_still_on = predicted_fraction_still_on - sweepInfo.fraction_still_on;
-    delta_still_on = delta_still_on ./ nanmean(sweepInfo.fraction_still_on);
+    delta_still_on = predicted_fraction_still_on - sweepInfo.fraction_still_on';
+%     delta_still_on = delta_still_on ./ nanmean(sweepInfo.fraction_still_on);
     
     % calculate simple RMS differences          
     sweepResults.fluo_time_fit_R2 = mean(delta_fluo_time.^2);    
@@ -95,11 +97,11 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     
     % calculate log likelihood of experimental trends assuming gaussian
     % errors
-    logL_fluo_time = -0.5*(delta_fluo_time./sweepInfo.fluo_time_ste).^2;% 
-    sweepResults.fluo_time_fit = mean(logL_fluo_time);
+    logL_fluo_time = (delta_fluo_time./sweepInfo.fluo_time_ste).^2;% 
+    sweepResults.fluo_time_fit = -sqrt(mean(logL_fluo_time));
     
-    logL_stil_on = -0.5*(delta_still_on./sweepInfo.fraction_still_on_ste).^2;% + log(2*pi*fluo_vec_ste.^2));
-    sweepResults.still_on_fit = mean(logL_stil_on);
+    logL_still_on = (delta_still_on./sweepInfo.fraction_still_on_ste').^2;% + log(2*pi*fluo_vec_ste.^2));
+    sweepResults.still_on_fit = -sqrt(mean(logL_still_on));
     
     % save extra simulation info if option is flagged
     if sweepInfo.keep_prediction_flag
