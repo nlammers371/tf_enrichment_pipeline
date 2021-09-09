@@ -13,14 +13,14 @@ end
 % load data
 load([resultsRoot 'io_ref_ra.mat'],'io_ref_ra')
 load([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')
-
+outPath = [resultsRoot 'n' num2str(nParamIncrement)];
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
 
 % set basic parameters
 sweepInfo = struct;
 sweepInfo.nParamIncrement = nParamIncrement;
-sweepInfo.granularity = 1;
+sweepInfo.granularity = granularity;
 sweepInfo.n_traces = n_traces;
 % sweepInfoRaw.n_traces_per_ap = 25;
 sweepInfo.n_keep = 5;

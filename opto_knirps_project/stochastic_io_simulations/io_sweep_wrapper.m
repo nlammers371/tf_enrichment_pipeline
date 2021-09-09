@@ -13,7 +13,8 @@ end
 % load data
 load([resultsRoot 'io_ref_ra.mat'],'io_ref_ra')
 load([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')
-
+outPath = [resultsRoot 'sweeps_n' num2str(nParamIncrement) filesep];
+mkdir(outPath)
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
 
@@ -63,7 +64,7 @@ sweepResults = struct;
 sweepResults = initializeSweepValues(sweepInfo, sweepResults, paramVals);              
 
 % call parallel sweep script
-sweepInfo.NumWorkers = min([min([24 max_workers]), length(sweepInfo)]);
+sweepInfo.NumWorkers = min([min([28 max_workers]), length(sweepResults)]);
 tic
 sweepResults= sweep_par_loop_v3(sweepInfo,sweepResults);    
 toc
@@ -83,4 +84,6 @@ else
     end
 end
 clear sweepResults    
-save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
+if isempty(paramVals)
+    save([outPath 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
+end

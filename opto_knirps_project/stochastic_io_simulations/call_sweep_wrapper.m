@@ -11,17 +11,21 @@ resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\';
 if ~isfolder(resultsRoot)
   resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\parameterSweeps\';
 end
-paramIncVec = [5 5 5 5];
+paramIncVec = [25 25 16 16];
 % keep_prediction_flag = false;
 % designate simulation type
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
-for s = 1%:length(simTypeCell)
+master_struct = struct;
+
+for s = 1:length(simTypeCell)
     simType = simTypeCell{s};
     nParamIncrement = paramIncVec(s);
     % call parameter sweep algorithm to conduct initial search of space
-    sweepInfo = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,[],false,'granularity',1e-1);
+    sweepInfo = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,[],false,'granularity',1);
+    master_struct(s).sweepInfo = sweepInfo;
 end
+
 
 %% now identify best perfomers wrpt each metric
 
@@ -36,29 +40,60 @@ sweepInfoRA = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,param_vec_ra,
 [~,worst_ft_i] = nanmin(sweepInfo.fluo_time_fit);
 param_vec_ft = sweepInfo.param_val_vec([best_ft_i,worst_ft_i],:);
 sweepInfoFT = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,param_vec_ft,true);
-
 %%
+total_score = -sqrt(sweepInfo.fluo_time_fit.^2 + sweepInfo.ra_fit.^2 + sweepInfo.still_on_fit.^2);
+% ra_filter = sweepInfo.ra_fit>-0.5;
+% total_score(~ra_filter) = -Inf;
+[~,best_combined] = nanmax(total_score);
+[~,best_ft_i] = nanmax(sweepInfo.fluo_time_fit);
+[~,best_pon_i] = nanmax(sweepInfo.still_on_fit);
+[~,best_ra_i] = nanmax(sweepInfo.ra_fit);
+param_vec = sweepInfo.param_val_vec([best_combined,best_ft_i,best_ra_i,best_pon_i],:);
+sweepInfoBest = io_sweep_wrapper(resultsRoot,nParamIncrement,sweepInfo.simType,param_vec,true,'n_traces',1e3);
 
-% identify best thousand or best 1% (whichever is less) and run
-% sweeps that save key info
-sweepInfoBest = sweepInfo;
-% save simulation type
-sweepInfoBest.simType = simType;    
-% load markov system parameter info
-sweepInfoBest = getMarkovSystemInfo(sweepInfoBest);    
-% generate ground truth reference curves       
-sweepInfoBest = addGroundTruthFields(sweepInfoBest, io_ref_ra, io_ref_wt);
+figure;
+plot(sweepInfoBest.ra_time_cdf_predicted')
+hold on
+plot(sweepInfoBest.reactivation_cdf,'-k')
 
-% generate array of weights to apply to different metrics. This will
-% allow us to extract different versions of "optimal" networks
-sweepInfoBest.fit_fields_to_use = {'ra_full_fit_R2','mean_fluo_fit_R2','off_time_fit_R2'};
-n_fit_fields = length(sweepInfoBest.fit_fields_to_use);
-sweepInfoBest.n_keep = min([size(sweepInfo.param_val_vec,1) max([100 min([round(0.01*size(sweepInfo.param_val_vec,1)), 1e3])])]);
+figure;
+plot(permute(sweepInfoBest.fluo_time_predicted,[1 3 2]))
+hold on
+plot(sweepInfoBest.fluo_time_mean,'-k')
 
-sweepInfoBest.resultsRoot = resultsRoot;
+figure;
+plot(sweepInfoBest.p_still_on_predicted')
+hold on
+plot(sweepInfoBest.fraction_still_on,'-k')
 
-% now iterate throug and find the best-scoring parameter set for each set
-% of weights
-sweepInfoBest = sweepBestPerformers(sweepInfoBest,sweepInfo);   
+%% identify ranges of parameter space that coincide with optimal performance
+% Let's sweep these regions in more detail
+s = 3;
+sweepInfo = master_struct(s).sweepInfo;
+fit_flags = sweepInfo.fitFlags;
 
-save([resultsRoot 'sweepInfoBest_' simType '.mat'],'sweepInfoBest', '-v7.3');
+% let's take best 5% of each metric and overall
+prctile_cutoff = 99.99;
+% overall
+total_score = -sqrt(sweepInfo.fluo_time_fit.^2 + sweepInfo.ra_fit.^2 + sweepInfo.still_on_fit.^2);
+prctile_total = prctile(total_score,prctile_cutoff);
+best_total_ids = find(total_score>=prctile_total);
+% ra
+prctile_ra = prctile(sweepInfo.ra_fit,prctile_cutoff);
+best_ra_ids = find(sweepInfo.ra_fit>=prctile_ra);
+% ra
+prctile_ft = prctile(sweepInfo.fluo_time_fit,prctile_cutoff);
+best_ft_ids = find(sweepInfo.fluo_time_fit>=prctile_ft);
+% ra
+prctile_pon = prctile(sweepInfo.still_on_fit,prctile_cutoff);
+best_pon_ids = find(sweepInfo.still_on_fit>=prctile_pon);
+
+% get unique list
+best_ids = unique([best_total_ids]);
+
+% calculate ranges
+best_params = sweepInfo.param_val_vec(best_ids,:);
+best_param_max = nanmax(best_params)
+best_param_min = nanmin(best_params)
+
+
