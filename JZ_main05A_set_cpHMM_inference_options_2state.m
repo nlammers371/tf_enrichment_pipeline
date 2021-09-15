@@ -11,9 +11,10 @@ inferenceInfo = struct;
 % set project identifiers (only applicable if running this on savio)
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_WT_FUN'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
+inferenceInfo.projectNameCell = {'optokni_eve4+6_HDAC_WT'};
 
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;

@@ -4,6 +4,8 @@ close all
 
 addpath(genpath('./lib'))
 
+eYFP_background = 375698.13;
+
 %% create color map
 %Green color map v1
 cmap_green = uint8([[247,252,245];[229,245,224];[199,233,192];[161,217,155];[116,196,118];[65,171,93];[35,139,69];[0,109,44];[0,68,27]]);
@@ -277,7 +279,6 @@ else
     CONST.inst_on = frac_inst_on_time_array_mean;
 end
 
-num = 0;
 
 for j = 1:length(spot_struct)
     
@@ -286,8 +287,7 @@ for j = 1:length(spot_struct)
     ap_vec = spot_struct(j).APPosNucleus;
     ap_pos = mean(ap_vec);
     
-    if (ap_pos>=-0.02) && (ap_pos<=0.02)
-        num = num+1;
+    if (ap_pos>=-0.01) && (ap_pos<=0.01)
         spot_fluo = spot_struct(j).fluoInterp;
         frame_start = spot_struct(j).timeInterp(1)/20 + 1;
         frame_final = spot_struct(j).timeInterp(end)/20 + 1;
@@ -306,9 +306,18 @@ end
 
 end
 
+%% quick plot of concentration comparison
+fig = figure(1);
+imagesc(ap_bins_plot,time_bins_plot,WT.knirps_mean-eYFP_background)
+
+CONST.knirps_mean(30:end,:) = convert_from_458(CONST.knirps_mean(30:end,:));
+
+fig = figure(2);
+imagesc(ap_bins_plot,time_bins_plot,CONST.knirps_mean-eYFP_background)
+
 %% plot sample single traces;
 
-sample_num = 153;
+sample_num = 100;
 
 time_vec = (0:150)/3;
 
