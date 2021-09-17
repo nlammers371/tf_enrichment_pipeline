@@ -17,7 +17,7 @@ paramIncVec = [25 25 16 16];
 simTypeCell = {'koff_only_2','kon_only_2','out_only','in_only'};
 tfDependentParamCell = {'koff','kon','ks','ka'};
 master_struct = struct;
-
+%%
 for s = 1:length(simTypeCell)
     simType = simTypeCell{s};
     nParamIncrement = paramIncVec(s);
@@ -25,6 +25,7 @@ for s = 1:length(simTypeCell)
     sweepInfo = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,[],false,'granularity',1);
     master_struct(s).sweepInfo = sweepInfo;
 end
+
 
 
 %% now identify best perfomers wrpt each metric
