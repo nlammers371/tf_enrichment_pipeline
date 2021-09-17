@@ -33,11 +33,11 @@ k_green = brighten([38 142 75]/256,.4);
 color_green = [38 143 75]/256; % color from Jake
 mRNA_red = brighten([212 100 39]/256,.2);
 
-knirps_offset = 2.5e5;%prctile(double(knirps_vec_long),1);
+eYFP_background = 375698.13;
 
 ap_lim = 0.01; % AP range for analysis, 0.02 seems to be a reasonable number
 
-time_threshold = 2; %min
+%time_threshold = 2; %min
 %time_threshold = 1;
 
 % histogram parameters
@@ -111,7 +111,7 @@ for i = 1:length(embryo)
                time_orig_long = [time_orig_long time_vec_orig];
                frame_orig_long = [frame_orig_long frame_vec_orig];
                fluo_orig_long = [fluo_orig_long fluo_vec_orig];
-               knirps_orig_long = [knirps_orig_long knirps_vec_orig-knirps_offset];
+               knirps_orig_long = [knirps_orig_long knirps_vec_orig-eYFP_background];
                
                %if ~isempty(last_off_frame) && ~isempty(first_off_frame)
                if ~isempty(first_off_frame)
@@ -182,7 +182,7 @@ for i = 1:length(embryo)
     end
 
     time_vec_on = time_vec-time_vec(frame_on);
-    knirps_vec_mean(time_vec_on<0) = knirps_vec_mean(time_vec_on<0)/correction_factor;
+    knirps_vec_mean(time_vec_on<0) = convert_from_458(knirps_vec_mean(time_vec_on<0));
     response_time_full = [response_time_full time_vec(first_off_long)-time_vec(frame_on)];
         
     % record the result for this embryo

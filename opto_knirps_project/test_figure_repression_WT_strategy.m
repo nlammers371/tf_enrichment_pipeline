@@ -12,7 +12,7 @@ mRNA_red = brighten([212 100 39]/256,.2);
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_WT_FUN'; 
+projectName = 'optokni_eve4+6_WT'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -50,10 +50,11 @@ ever_on_flags = [];
 for i = 1:length(spot_struct)
   
     % extract core vectors 
-    fluo_vec = spot_struct(i).fluo;
-    time_vec = spot_struct(i).time;
-    knirps_vec = spot_struct(i).rawNCProtein;
+    fluo_vec = spot_struct(i).fluoInterp;
+    time_vec = spot_struct(i).timeInterp;
+    knirps_vec = spot_struct(i).rawNCProteinInterp;
     ap_vec = spot_struct(i).APPosNucleus;
+    ap_vec = mean(ap_vec)*ones(size(fluo_vec));
     
     if time_vec(end) - time_vec(1) >=30*60
         
@@ -161,7 +162,7 @@ for a = 1:length(ap_bins)-1
              
 end
 
-%% Define some colors  
+% Define some colors  
 yw = [234 194 100]/255; % yellow
 bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green

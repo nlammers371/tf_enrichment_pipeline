@@ -3,7 +3,7 @@ close all
 
 addpath(genpath('./lib'))
 
-knirps_offset = 3.75e5;%prctile(double(knirps_vec_long),1);
+eYFP_background = 375698.13;
 
 % knirps green
 k_green = brighten([38 142 75]/256,.4);
@@ -111,7 +111,7 @@ end
 
 %% Figure 2: Plot mean vectors
 
-knirps_vec_long = knirps_vec_long_raw - knirps_offset;
+knirps_vec_long = knirps_vec_long_raw - eYFP_background;
 
 nBoots = 100;
 
@@ -442,8 +442,8 @@ for i = 1:length(spot_struct)
             off_ap_orig = ap_vec_orig(stop_i);
         end
         
-        if (mean_ap_orig > -0.01) && (mean_ap_orig < 0.01)
-           % 0.01  is for the figure
+        if (mean_ap_orig > -0.02) && (mean_ap_orig < 0.02)
+           % 0.02  is for the figure
            time_orig_long = [time_orig_long time_vec_orig-off_time_orig];
            fluo_orig_long = [fluo_orig_long fluo_vec_orig];
            off_time_long = [off_time_long off_time_orig];
@@ -937,8 +937,7 @@ ap_bins_center = [-0.02 0.02];
 
 % Step 1: Calculate using long vectors
 
-knirps_offset = 3.75e5;%prctile(double(knirps_vec_long),1);
-knirps_vec_long = knirps_vec_long_raw - knirps_offset;
+knirps_vec_long = knirps_vec_long_raw - eYFP_background;
 
 nLinBins = 26;
 knirps_bins = linspace(0,17.5e5,nLinBins);
@@ -1036,7 +1035,7 @@ xlabel('[Knirps] (au)');
 
 ax2 = nexttile(t);
 set(gca,'FontSize',14)
-h = histogram((off_knirps_long-knirps_offset)*1e-5,16,'FaceColor',mRNA_red,'Normalization','probability');
+h = histogram((off_knirps_long-eYFP_background)*1e-5,16,'FaceColor',mRNA_red,'Normalization','probability');
 
 % fit with gaussian
 edges = h.BinEdges;

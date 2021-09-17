@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
+projectName = 'optokni_eve4+6_ON_CONST'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -18,28 +18,16 @@ mkdir(FigurePath)
 
 
 % Embryo 18
-%embryo(1).expID = 1;
-%embryo(1).frame_on = 79;
+embryo(1).expID = 1;
+embryo(1).frame_on = 62;
 
 % Embryo 20, good
-embryo(1).expID = 2;
-embryo(1).frame_on = 36;
+embryo(2).expID = 2;
+embryo(2).frame_on = 50;
 
 % Embryo 25, good
-embryo(2).expID = 3;
-embryo(2).frame_on = 43;
-
-% Embryo 26
-%embryo(4).expID = 4;
-%embryo(4).frame_on = 67;
-
-% Embryo 33, good
-embryo(3).expID = 5;
-embryo(3).frame_on = 45;
-
-% Embryo 36, good
-embryo(4).expID = 6;
-embryo(4).frame_on = 43;
+embryo(3).expID = 3;
+embryo(3).frame_on = 42;
 
 
 % color to be used
@@ -51,7 +39,6 @@ eYFP_background = 375698.13; %prctile(double(knirps_vec_long),1);
 
 ap_lim = 0.02; % AP range for analysis, 0.02 seems to be a reasonable number
 
-time_threshold = 2; %min
 
 % histogram parameters
 binNum = 15;% best 14; ok, 15
@@ -71,6 +58,7 @@ edges = linspace(0,binMax,binNum);
 % timerange to analyze for response time
 analysis_range = 8;
 
+time_threshold = 0;
 
 %% Figure: plot mean fluorescence vs time (not aligned)
 
@@ -170,6 +158,8 @@ for i = 1:length(embryo)
     fluo_orig_long_binary = fluo_orig_long;
     fluo_orig_long_binary(isnan(fluo_orig_long)) = 0;
     fluo_orig_long_binary(fluo_orig_long>0) = 1;
+    
+    
 
 
     for j = 1:frame_len
@@ -209,7 +199,7 @@ for i = 1:length(embryo)
     
     
     % record results for combining the traces
-    time_vec_aligned = time_orig_long/60 - time_vec(frame_on);
+    time_vec_aligned = time_orig_long/60; %- time_vec(frame_on);
     time_aligned_full_long = [time_aligned_full_long time_vec_aligned];
     fluo_full_long = [fluo_full_long fluo_orig_long];
     knirps_full_long = [knirps_full_long knirps_orig_long];
@@ -221,27 +211,27 @@ for i = 1:length(embryo)
     nexttile
     hold on
     %time_interp = min(time_vec_on):0.1:max(time_vec_on);
-    time_interp = -10:0.1:10;
+    time_interp = 0:0.1:40;
     frac_on_mean = movmean(frac_on,5);
-    frac_on_interp = interp1(time_vec_on(~isnan(frac_on_mean)),frac_on_mean(~isnan(frac_on_mean)),time_interp,'spline');
+    frac_on_interp = interp1(time_vec(~isnan(frac_on_mean)),frac_on_mean(~isnan(frac_on_mean)),time_interp,'spline');
     frac_on_interp = movmean(frac_on_interp,5);
     %frac_on_interp = interp1(time_vec_on,frac_on,time_interp,'v5cubic');
 
-    errorbar(time_vec_on,knirps_vec_ste,'Color','k','CapSize',0);
-    plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
-    scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
-    xlim([-10 7])
-    ylim([3.75E5 9E5])
+    errorbar(time_vec,knirps_vec_mean,knirps_vec_ste,'Color','k','CapSize',0);
+    plot(time_vec,knirps_vec_mean,'-k','LineWidth',1)
+    scatter(time_vec,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
+    xlim([0 30])
+    ylim([0 9E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
     
     nexttile
     hold on
-    plot(time_vec_on,frac_on,'.')
+    plot(time_vec,frac_on,'.')
     plot(time_interp,frac_on_interp,'-','LineWidth',2);
-    scatter(time_vec_on,frac_on,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
-    xlim([-10 7])
+    scatter(time_vec,frac_on,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
+    xlim([0 30])
     ylim([0 1])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['fraction of nuclei on'])
@@ -258,7 +248,7 @@ end
 fluo_full_long(isnan(fluo_full_long)) = 0;
 
 %time_bin_full = double((0:max(frame_full_long)))+0.5;
-time_bin_full = linspace(-15,15,58);% 58,56, best
+time_bin_full = linspace(0,40,100);% 58,56, best
 time_vec_plot = (time_bin_full(1:end-1) + time_bin_full(2:end))/2;
 time_groups_full = discretize(time_aligned_full_long,time_bin_full);
 %time_vec_full = zeros(1,length(time_bin_full)-1);
@@ -298,8 +288,8 @@ for j = 1:length(time_bin_full)-1
 end
 
 %knirps_vec_full_mean(time_vec_plot>=0) = knirps_vec_full_mean(time_vec_plot>=0)/correction_factor;
-knirps_vec_full_mean(time_vec_plot>=0) = convert_from_458(knirps_vec_full_mean(time_vec_plot>=0));
-knirps_vec_full_mean = knirps_vec_full_mean - eYFP_background;
+%knirps_vec_full_mean(time_vec_plot>=0) = convert_from_458(knirps_vec_full_mean(time_vec_plot>=0));
+%knirps_vec_full_mean = knirps_vec_full_mean - eYFP_background;
 
 combined_traj_fig  = figure('Position',[10 10 800 800]);
 tiledlayout(2,1)
@@ -315,8 +305,8 @@ hold on
 plot(time_vec_plot,knirps_vec_full_mean,'-k','LineWidth',1)
 scatter(time_vec_plot,knirps_vec_full_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
 %plot(time_vec_plot,knirps_vec_full_mean,'o');
-xlim([-10 7])
-ylim([3.75E5 8.75E5])
+xlim([0 35])
+ylim([0 8.75E5])
 xlabel(['time relative to perturbation (min)'])
 ylabel(['Knirps concentration (AU)'])
 pbaspect([3 2 1])
@@ -334,7 +324,7 @@ plot(time_full_interp,frac_on_full_interp,'-','LineWidth',2);
 scatter(time_vec_plot,frac_on_full,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
 xlabel(['time relative to perturbation (min)'])
 ylabel(['fraction of nuclei on'])
-xlim([-10 7])
+xlim([0 35])
 ylim([0.05 0.9])
 pbaspect([3 2 1])
 

@@ -35,7 +35,7 @@ k_green = brighten([38 142 75]/256,.4);
 color_green = [38 143 75]/256; % color from Jake
 mRNA_red = brighten([212 100 39]/256,.2);
 
-knirps_offset = 3.75E5;%prctile(double(knirps_vec_long),1);
+eYFP_background = 375698.13; %prctile(double(knirps_vec_long),1);
 
 %ap_lim = 0.03; % AP range for analysis, 0.02 seems to be a reasonable number
 ap_lim = 0.02;
@@ -54,7 +54,7 @@ edges = linspace(0,binMax,binNum);
 %edges = linspace(0,6,9); % bin for histogram
 
 % temporary correction
-correction_factor = 1.346; % calibration factor
+%correction_factor = 1.346; % calibration factor
 %correction_factor = 1.243;
 %correction_factor = 1;
 
@@ -189,8 +189,9 @@ for i = 1:length(embryo)
 
     time_vec_on = time_vec-time_vec(frame_on);
 
-    knirps_vec_mean(time_vec_on>=0) = knirps_vec_mean(time_vec_on>=0)/correction_factor;
-    knirps_vec_mean = knirps_vec_mean-knirps_offset;
+    %knirps_vec_mean(time_vec_on>=0) = knirps_vec_mean(time_vec_on>=0)/correction_factor;
+    knirps_vec_mean(time_vec_on>=0) = convert_from_458(knirps_vec_mean(time_vec_on>=0));
+    knirps_vec_mean = knirps_vec_mean-eYFP_background;
 
     % record the result for this embryo
     data_filter = (time_vec(last_on_long) <= time_vec(frame_on)-time_threshold);
@@ -223,7 +224,7 @@ for i = 1:length(embryo)
     plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
     scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
     xlim([-10 5])
-    ylim([4E5 9E5])
+    ylim([1E5 9E5])
     xlabel(['time relative to perturbation (min)'])
     ylabel(['Knirps concentration (AU)'])
     pbaspect([3 2 1])
@@ -289,8 +290,9 @@ for j = 1:length(time_bin_full)-1
 
 end
 
-knirps_vec_full_mean(time_vec_plot>=0) = knirps_vec_full_mean(time_vec_plot>=0)/correction_factor;
-knirps_vec_full_mean = knirps_vec_full_mean - knirps_offset;
+%knirps_vec_full_mean(time_vec_plot>=0) = knirps_vec_full_mean(time_vec_plot>=0)/correction_factor;
+knirps_vec_full_mean(time_vec_plot>=0) = convert_from_458(knirps_vec_full_mean(time_vec_plot>=0));
+knirps_vec_full_mean = knirps_vec_full_mean - eYFP_background;
 
 combined_traj_fig  = figure('Position',[10 10 800 800]);
 tiledlayout(2,1)
@@ -307,7 +309,7 @@ plot(time_vec_plot,knirps_vec_full_mean,'-k','LineWidth',1)
 scatter(time_vec_plot,knirps_vec_full_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
 %plot(time_vec_plot,knirps_vec_full_mean,'o');
 xlim([-10 5])
-ylim([4E5 8.75E5])
+ylim([2E5 8.75E5])
 xlabel(['time relative to perturbation (min)'])
 ylabel(['Knirps concentration (AU)'])
 pbaspect([3 2 1])
