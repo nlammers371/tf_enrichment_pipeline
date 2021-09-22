@@ -281,3 +281,8 @@ io_ref_wt.fluo_time_mean = nanmean(mean_fluo_time(time_filter,:),2);
 io_ref_wt.knirps_time_mean = nanmean(mean_knirps_time(time_filter,:),2);
 io_ref_wt.offset_time_mean = nanmean(mean_offset_time(time_filter,:),2);
 io_ref_wt.fluo_time_ste = nanstd(mean_fluo_time(time_filter,:),[],2);
+
+
+% now let's do something a little mor sophisticated: try to to estimate
+% probabilities of missing a detection as a function of spot fluorescence
+io_ref_wt = estimateDetectionThreshold(io_ref_wt,spot_struct);

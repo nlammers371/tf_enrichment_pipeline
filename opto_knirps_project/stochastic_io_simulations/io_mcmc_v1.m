@@ -23,7 +23,7 @@ load([resultsRoot 'io_ref_wt.mat'])
 % set basic parameters
 sweepInfoRaw = struct;
 sweepInfoRaw.n_chains = 1;
-sweepInfoRaw.n_iters_max = 1e2;
+sweepInfoRaw.n_iters_max = 1e4;
 sweepInfoRaw.nParamIncrement = 250; % sets granularity of space to explore
 sweepInfoRaw.granularity = 1;
 sweepInfoRaw.n_traces = 100;
