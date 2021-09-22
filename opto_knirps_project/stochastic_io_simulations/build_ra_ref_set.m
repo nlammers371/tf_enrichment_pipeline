@@ -11,8 +11,9 @@ addpath(genpath('../../utilities'))
 % Load data
 % projectNameRA = 'optokni_eve4+6_ON'; 
 
-liveProject = LiveEnrichmentProject(projectNameRA);
-resultsRoot = [liveProject.dataPath filesep];
+% liveProject = LiveEnrichmentProject(projectNameRA);
+dataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+resultsRoot = [dataRoot projectNameRA filesep];
 
 % load data
 load([resultsRoot 'spot_struct.mat'],'spot_struct')

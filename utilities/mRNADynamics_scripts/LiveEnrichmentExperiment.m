@@ -140,7 +140,11 @@ classdef LiveEnrichmentExperiment
             
             isUnhealthyFile = [this.userResultsFolder,filesep,this.Prefix,filesep, 'isUnhealthy.mat'];
             if exist(isUnhealthyFile, 'file')
-                load(isUnhealthyFile, 'isUnhealthy');
+                try
+                    load(isUnhealthyFile, 'isUnhealthy');
+                catch 
+                    isUnhealthy = NaN;
+                end
             else, isUnhealthy = NaN;
             end
             

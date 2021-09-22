@@ -65,8 +65,8 @@ sweepInfo = addGroundTruthFields(sweepInfo, [], io_ref_wt);
 
 % initialize vectors to store results
 sweepResults = struct;
-[sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults);
-sweepResults = initializeSweepValues(sweepInfo, sweepResults);              
+[sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,[]);
+sweepResults = initializeSweepValues(sweepInfo, sweepResults, []);              
 
 % call parallel sweep script
 tic
