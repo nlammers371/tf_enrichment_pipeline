@@ -7,7 +7,7 @@ function sweepInfo= initializeFitFieldsMCMC(sweepInfo)
   sweepInfo.fitFlags = [1 1 1 1 1 1];
   sweepInfo.priorMean = [6,5,0.1,0.1,sweepInfo.R2_orig(2,1),sweepInfo.R2_orig(1,2)];
   sweepInfo.priorSigma = 10.^[1,log10(3),1,1,1,1];
-  sweepInfo.moveSigma = [.01,.01,.01,.01,.01,.01];
+  sweepInfo.moveSigma = [.01,.05,1,1,1,1];
   
   if contains(sweepInfo.simType,'2')      
       ka_index = strcmp(sweepInfo.paramList,'ka');

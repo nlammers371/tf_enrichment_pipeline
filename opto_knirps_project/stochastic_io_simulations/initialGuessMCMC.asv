@@ -1,0 +1,17 @@
+function [sweepInfo, initial_guess] = initialGuessMCMC(sweepInfo)
+
+    % get fit flags 
+    fitFlags = sweepInfo.fitFlags==1;
+    
+    % get bounds
+    paramBounds = sweepInfo.param_bounds;
+    meanVec = log10(sweepInfo.priorMean(fitFlags));
+    sigmaVec = log10(sweepInfo.priorSigma(fitFlags));
+    % draw initial values from clipped gaussians
+    lb_array = (paramBounds(1,fitFlags)-meanVec)./sigmaVec;
+    ub_array = (paramBounds(2,fitFlags)-meanVec)./sigmaVec;
+    
+    % draw parameters
+    initial_guess = NaN(size(fitFlags));
+    initial_guess(fitFlags) = 10.^(meanVec+sigmaVec.*trandn(lb_array,ub_array)');
+    initial_guess(~fitFlags) = 10.^sweepInfo.priorMean(~fitFlags);
