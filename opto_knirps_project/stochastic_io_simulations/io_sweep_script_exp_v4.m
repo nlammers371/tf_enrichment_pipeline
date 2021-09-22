@@ -8,7 +8,7 @@ addpath(genpath('../utilities'));
 % %%%%%%%%%%%%%%%% Load experimental data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\';
+resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\20210922\';
 if ~isfolder(resultsRoot)
   resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\parameterSweeps\';
 end
@@ -16,6 +16,7 @@ end
 % load data
 load([resultsRoot 'io_ref_ra.mat'])
 load([resultsRoot 'io_ref_wt.mat'])
+load([resultsRoot 'io_ref_ON.mat'])
 
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
@@ -61,12 +62,12 @@ for s = 1:length(simTypeCell)
         
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % generate ground truth reference curves       
-    sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt);
+    sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt, io_ref_ON);
 
     % initialize vectors to store results
     sweepResults = struct;
-    [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults);
-    sweepResults = initializeSweepValues(sweepInfo, sweepResults);              
+    [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,[]);
+    sweepResults = initializeSweepValues(sweepInfo, sweepResults,[]);              
     
     % call parallel sweep script
     tic

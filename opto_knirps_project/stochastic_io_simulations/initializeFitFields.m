@@ -48,7 +48,10 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,
       sweepResults(i).ra_full_fit = NaN;
       sweepResults(i).fluo_time_fit = NaN;%(sweepInfo.nIterations,1);
       sweepResults(i).still_on_fit = NaN;%(sweepInfo.nIterations,1);
-            
+
+      sweepResults(i).fluo_time_ON_fit = NaN;%(sweepInfo.nIterations,1);
+      sweepResults(i).fluo_time_ON_fit_R2 = NaN;
+      
       sweepResults(i).ra_fit_R2 = NaN;
       sweepResults(i).ra_full_fit_R2 = NaN;
       sweepResults(i).fluo_time_fit_R2 = NaN;
@@ -65,6 +68,11 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,
           sweepResults(i).ms2_traces_true_wt = NaN;
           sweepResults(i).knirps_traces_wt = NaN;          
           sweepResults(i).tf_dependent_curves_wt = NaN;
+          
+          sweepResults(i).ms2_traces_observed_ON = NaN;
+          sweepResults(i).ms2_traces_true_ON = NaN;
+          sweepResults(i).knirps_traces_ON = NaN;          
+          sweepResults(i).tf_dependent_curves_ON = NaN;
           
           sweepResults(i).ms2_traces_observed_ra = NaN;
           sweepResults(i).ms2_traces_true_ra = NaN;

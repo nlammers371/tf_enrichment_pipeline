@@ -18,11 +18,14 @@ p = 1;
     
 % iterate through different param values
 nIterations = sweepInfo.nIterations;
-parfor sweep_step = 1:nIterations
+for sweep_step = 1:nIterations
 %     waitbar(sweep_step/nIterations,WB);                
     if ~strcmp(sweepInfo.simType,'match_exp')
         % conduct RA simulations
         sweepResults(sweep_step) = io_prediction_wrapper_ra(sweepInfo,sweepResults(sweep_step));
+        
+        % conduct ON simulations
+        sweepResults(sweep_step) = io_prediction_wrapper_ON(sweepInfo,sweepResults(sweep_step));
     end
     % conduct WT simulations
     sweepResults(sweep_step) = io_prediction_wrapper_wt(sweepInfo,sweepResults(sweep_step));

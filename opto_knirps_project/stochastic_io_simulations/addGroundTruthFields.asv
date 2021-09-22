@@ -25,18 +25,9 @@ function sweepInfo = addGroundTruthFields(sweepInfo,io_ref_ra,io_ref_wt,io_ref_O
     sweepInfo.fluo_time_ste = io_ref_wt.fluo_time_ste;
     sweepInfo.time_axis_wt = io_ref_wt.time_axis;
     
-    % calculate a sensible start time
-    start_time = ceil(nanmean(io_ref_wt.on_time_vec) / 60)*60;
-    [~,start_i] = min(abs(io_ref_wt.time_axis-start_time));
-    
-    % add opto data perturbed to keep stuff ON
     if ~isempty(io_ref_ON)        
         sweepInfo.fluo_time_mean_ON = io_ref_ON.fluo_time_mean;
         sweepInfo.fluo_time_ste_ON = io_ref_ON.fluo_time_ste;        
-        
-        sweepInfo.tf_profile_array_ON = io_ref_ON.knirps_array(start_i:end,:);               
-        sweepInfo.ap_profile_vec_tf_ON = io_ref_ON.mean_ap;               
-        sweepInfo.time_axis_ON = io_ref_ON.time_axis(start_i:end)';
     end
     
     if isfield(io_ref_wt,'knirps_axis_still_on')      
@@ -63,7 +54,11 @@ function sweepInfo = addGroundTruthFields(sweepInfo,io_ref_ra,io_ref_wt,io_ref_O
         sweepInfo.time_axis_ra = io_ref_ra.time_vec';
     end
     
-    % save TF profiles and time vec for WT type       
+    % save TF profiles and time vec for WT type
+    % calculate a sensible start time
+    start_time = ceil(nanmean(io_ref_wt.on_time_vec) / 60)*60;
+    [~,start_i] = min(abs(io_ref_wt.time_axis-start_time));
+    
     sweepInfo.tf_profile_array_wt = io_ref_wt.knirps_array(start_i:end,:);               
     sweepInfo.wt_start_time = start_time;
     sweepInfo.ap_profile_vec_tf = io_ref_wt.mean_ap;               
