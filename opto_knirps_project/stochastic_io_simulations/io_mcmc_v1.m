@@ -63,12 +63,11 @@ for s = 1:length(simTypeCell)
         
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % generate ground truth reference curves       
-    sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt);
+    sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt, []);
 
     % initialize vectors to store results
     sweepInfo = initializeFitFieldsMCMC(sweepInfo);
-         
-    
+             
     % call parallel sweep script
     tic
     sweepInfo = run_mcmc_sampling(sweepInfo);    

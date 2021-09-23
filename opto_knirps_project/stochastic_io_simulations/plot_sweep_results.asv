@@ -80,12 +80,11 @@ for s = 1:length(master_struct)
     master_struct(s).best_ra_i = best_ra_i;
     master_struct(s).best_pon_i = best_pon_i;
 end
-
 %% Make plots
 metricPath = [FigurePath 'metricPlots' filesep];
 mkdir(metricPath)
 labelCell = {'k_{off}','k_{on}','k_{s}','k_{a}'};
-labelCell2 = {'global optima','mean fluo','reactivation time','silencing','mean fluo (opto ON)'};
+labelCell2 = {'global optima','mean fluo','reactivation time','silencing'};
 labelCell3 = [{'data'} labelCell2];
 
 for s = 1:length(simTypeCell)
