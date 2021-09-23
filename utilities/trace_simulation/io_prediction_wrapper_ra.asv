@@ -52,7 +52,6 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
     first_i_vec = min(active_indices);
     max_time = max(sweepInfo.reactivation_time);
     before_flags = first_i_vec < 0;
-    
     % was trace OFF immediately preceding ON perturbation?
     off_flags = all(fluo_array_zeros(ismember(index_vec,off_frames),:)==0);
 
@@ -113,7 +112,7 @@ function sweepResults = io_prediction_wrapper_ra(sweepInfo,sweepResults)
             end
         else
             ra_array(n,:) = zeros(size(ra_time_vec));    
-            ra_array_full(n,:) = ones(size(ra_time_vec));    
+            ra_array_full(n,:) = zeros(size(ra_time_vec));    
         end
     end
     

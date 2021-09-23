@@ -15,7 +15,7 @@ load([resultsRoot 'io_ref_ra.mat'],'io_ref_ra')
 load([resultsRoot 'io_ref_wt.mat'],'io_ref_wt')
 load([resultsRoot 'io_ref_ON.mat'],'io_ref_ON')
 
-outPath = [resultsRoot date filesep 'sweeps_n' num2str(nParamIncrement) filesep];
+outPath = [resultsRoot 'sweeps_n' num2str(nParamIncrement) filesep];
 mkdir(outPath)
 % resultsRoot = [resultsRoot 'temp' filesep];
 % mkdir(resultsRoot);
@@ -58,7 +58,7 @@ sweepInfo.NumWorkers = min([24 max_workers]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % generate ground truth reference curves       
-sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt, io_ref_ON);
+sweepInfo = addGroundTruthFields(sweepInfo, io_ref_ra, io_ref_wt);
 
 % initialize vectors to store results
 sweepResults = struct;
