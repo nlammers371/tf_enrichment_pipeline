@@ -35,7 +35,7 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,
   % hill coefficient
   sweepInfo.param_bounds(:,1) = linspace(0.5, 20, sweepInfo.nParamIncrement);
   % KD
-  sweepInfo.param_bounds(:,2) = linspace(2, 15, sweepInfo.nParamIncrement); 
+  sweepInfo.param_bounds(:,2) = linspace(2, 10, sweepInfo.nParamIncrement); 
   % constrain rates to same range
   sweepInfo.param_bounds(:,3:6) = repmat(logspace(-3,0,sweepInfo.nParamIncrement),4,1)';%[1e-2 60]';    
 
@@ -63,6 +63,8 @@ function [sweepInfo, sweepResults] = initializeFitFields(sweepInfo,sweepResults,
 
           sweepResults(i).p_still_on_predicted = NaN;
           sweepResults(i).fluo_time_predicted = NaN;%(1,length(sweepInfo.ap_axis_mean));          
+          
+          sweepResults(i).fluo_time_predicted_ON = NaN;
           
           sweepResults(i).ms2_traces_observed_wt = NaN;
           sweepResults(i).ms2_traces_true_wt = NaN;

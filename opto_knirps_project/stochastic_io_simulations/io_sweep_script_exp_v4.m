@@ -8,10 +8,12 @@ addpath(genpath('../utilities'));
 % %%%%%%%%%%%%%%%% Load experimental data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\20210922\';
+resultsRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\parameterSweeps\';
 if ~isfolder(resultsRoot)
   resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\parameterSweeps\';
 end
+savePath = [resultsRoot '20210922' filesep];
+mkdir(savePath);
 
 % load data
 load([resultsRoot 'io_ref_ra.mat'])
@@ -23,7 +25,7 @@ load([resultsRoot 'io_ref_ON.mat'])
 
 % set basic parameters
 sweepInfoRaw = struct;
-sweepInfoRaw.nParamIncrement = 5;
+sweepInfoRaw.nParamIncrement = 3;
 sweepInfoRaw.granularity = 1;
 sweepInfoRaw.n_traces = 100;
 % sweepInfoRaw.n_traces_per_ap = 25;
@@ -82,7 +84,7 @@ for s = 1:length(simTypeCell)
     
     clear sweepResults    
 
-    save([resultsRoot 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
+    save([savePath 'sweepInfo_' simType '.mat'],'sweepInfo', '-v7.3');
     
     % identify best thousand or best 1% (whichever is less) and run
     % sweeps that save key info
@@ -106,5 +108,5 @@ for s = 1:length(simTypeCell)
     % of weights
     sweepInfoBest = sweepBestPerformers(sweepInfoBest,sweepInfo);   
 
-    save([resultsRoot 'sweepInfoBest_' simType '.mat'],'sweepInfoBest', '-v7.3');
+    save([savePath 'sweepInfoBest_' simType '.mat'],'sweepInfoBest', '-v7.3');
 end

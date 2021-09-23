@@ -19,7 +19,7 @@ WB = waitbar(0,'conducting parameter sweeps...');
     
 % iterate through different param values
 for chain = 1
-    for sweep_step = 1:n_iters_max%sweepInfo.n_iters_max%sweepInfo.n_iters_max
+    for sweep_step = 1:sweepInfo.n_iters_max%sweepInfo.n_iters_max%sweepInfo.n_iters_max
         % increment waitbar
         waitbar(sweep_step/sweepInfo.n_iters_max,WB);
         sweepInfo.sweep_step = sweep_step;

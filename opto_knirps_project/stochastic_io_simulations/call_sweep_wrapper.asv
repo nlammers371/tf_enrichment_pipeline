@@ -41,8 +41,6 @@ sweepInfoRA = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,param_vec_ra,
 param_vec_ft = sweepInfo.param_val_vec([best_ft_i,worst_ft_i],:);
 sweepInfoFT = io_sweep_wrapper(resultsRoot,nParamIncrement,simType,param_vec_ft,true);
 %%
-s = 4;
-sweepInfo = master_struct(s).sweepInfo;
 total_score = -sqrt(sweepInfo.fluo_time_fit.^2 + sweepInfo.fluo_time_ON_fit.^2 + sweepInfo.ra_fit.^2 + sweepInfo.still_on_fit.^2);
 % ra_filter = sweepInfo.ra_fit>-0.5;
 % total_score(~ra_filter) = -Inf;
@@ -53,8 +51,6 @@ total_score = -sqrt(sweepInfo.fluo_time_fit.^2 + sweepInfo.fluo_time_ON_fit.^2 +
 [~,best_ra_i] = nanmax(sweepInfo.ra_fit);
 param_vec = sweepInfo.param_val_vec([best_combined,best_ft_i,best_ft_ON_i,best_ra_i,best_pon_i],:);
 sweepInfoBest = io_sweep_wrapper(resultsRoot,nParamIncrement,sweepInfo.simType,param_vec,true,'n_traces',1e3);
-%%
-close all
 
 figure;
 plot(sweepInfoBest.ra_time_cdf_predicted')
@@ -67,12 +63,12 @@ hold on
 plot(sweepInfoBest.fluo_time_mean,'-k')
 
 figure;
-plot(permute(sweepInfoBest.fluo_time_predicted_ON,[1 3 2]))
+plot(permute(sweepInfoBest.fluo_time_ONpredicted,[1 3 2]))
 hold on
-plot(sweepInfoBest.fluo_time_mean_ON,'-k')
+plot(sweepInfoBest.fluo_time_mean,'-k')
 
 figure;
-plot(permute(sweepInfoBest.p_still_on_predicted,[2 3 1]))
+plot(sweepInfoBest.p_still_on_predicted')
 hold on
 plot(sweepInfoBest.fraction_still_on,'-k')
 
