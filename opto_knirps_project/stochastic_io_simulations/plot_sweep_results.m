@@ -55,7 +55,7 @@ for s = 1:length(master_struct)
     simType = sweepInfo.simType;
     
     % calculate aggregate score
-    total_score = -sqrt(sweepInfo.fluo_time_fit.^2 + sweepInfo.ra_fit.^2 + sweepInfo.still_on_fit.^2);
+    total_score = -sqrt(sweepInfo.fluo_time_ON_fit.^2 + sweepInfo.fluo_time_fit.^2 + sweepInfo.ra_fit.^2 + sweepInfo.still_on_fit.^2);
 
     % find best overall performers
     [~,score_ids] = sort(total_score,'descend');
@@ -71,7 +71,7 @@ for s = 1:length(master_struct)
     param_vec = sweepInfo.param_val_vec([best_i_list',best_ft_i,best_ra_i,best_pon_i,best_ft_ON_i],:);
     
     % run sweep for selected networks
-    sweepInfoBest = io_sweep_wrapper(resultsPath,2,sweepInfo.simType,param_vec,true,'n_traces',n_traces);
+    sweepInfoBest = io_sweep_wrapper(resultsRoot,2,sweepInfo.simType,param_vec,true,'n_traces',n_traces);
     
     % store
     master_struct(s).sweepInfoBest = sweepInfoBest;
@@ -128,14 +128,15 @@ for s = 1:length(simTypeCell)
     
 
     % plot best N performers
-    plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1:n_best,:)','Color',[cmap(2,:) 0.5])
+    plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, permute(master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,1:n_best),[2,3,1]),'Color',[cmap(2,:) 0.5])
     
     % plot best rep for each metric
-    plots(2) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:)','Color',cmap(2,:),'LineWidth',2);
-    plots(3) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(end-2,:)','--','Color',cmap(3,:),'LineWidth',2);
-    plots(4) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(end-1,:)','--','Color',cmap(4,:),'LineWidth',2);
-    plots(5) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(end,:)','-','Color',cmap(5,:),'LineWidth',2);
-        
+    plots(2) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,1)','Color',cmap(2,:),'LineWidth',2);
+    plots(3) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,end-3)','--','Color',cmap(3,:),'LineWidth',2);
+    plots(4) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,end-2)','--','Color',cmap(4,:),'LineWidth',2);
+    plots(5) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,end-1)','-','Color',cmap(5,:),'LineWidth',2);
+    plots(6) = plot(master_struct(s).sweepInfoBest.knirps_axis_still_on, master_struct(s).sweepInfoBest.p_still_on_predicted(1,:,end)','--','Color',cmap(6,:),'LineWidth',2);    
+    
     legend(plots,labelCell3{:},'Location','southwest','Color','w');
     
     saveas(still_on_fig,[metricPath simType '_still_on_fits.png'])
@@ -188,9 +189,10 @@ for s = 1:length(simTypeCell)
     
     % plot best rep for each metric
     plots(2) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,1),'Color',cmap(2,:),'LineWidth',2);
-    plots(3) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end-2),'-','Color',cmap(3,:),'LineWidth',2);
-    plots(4) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end-1),'--','Color',cmap(4,:),'LineWidth',2);
-    plots(5) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end),'--','Color',cmap(5,:),'LineWidth',2);
+    plots(3) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end-3),'-','Color',cmap(3,:),'LineWidth',2);
+    plots(4) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end-2),'--','Color',cmap(4,:),'LineWidth',2);
+    plots(5) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end-1),'--','Color',cmap(5,:),'LineWidth',2);
+    plots(6) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted(:,:,end),'--','Color',cmap(6,:),'LineWidth',2);
 
     legend(plots,labelCell3{:},'Location','northeast','Color','w');
     
@@ -220,7 +222,7 @@ for s = 1:length(simTypeCell)
 
     
     xlabel('time since perturbation');
-    ylabel('average active spot fluorescence (au)')
+    ylabel('fraction of loci react')
     title(labelCell{s})    
 
     set(gca,'FontSize',14)
@@ -244,15 +246,75 @@ for s = 1:length(simTypeCell)
     
     % plot best rep for each metric
     plots(2) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(1,:),'Color',cmap(2,:),'LineWidth',2);
-    plots(3) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end-2,:),'--','Color',cmap(3,:),'LineWidth',2);
-    plots(4) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end-1,:),'-','Color',cmap(4,:),'LineWidth',2);
-    plots(5) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end,:),'--','Color',cmap(5,:),'LineWidth',2);
+    plots(3) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end-3,:),'--','Color',cmap(3,:),'LineWidth',2);
+    plots(4) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end-2,:),'-','Color',cmap(4,:),'LineWidth',2);
+    plots(5) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end-1,:),'--','Color',cmap(5,:),'LineWidth',2);
+    plots(6) = plot(ra_time_axis, master_struct(s).sweepInfoBest.ra_time_cdf_predicted(end,:),'--','Color',cmap(6,:),'LineWidth',2);
     
     title(labelCell{s});
     
     legend(plots,labelCell3{:},'Location','southeast','Color','w');
     
     saveas(ra_fig,[metricPath simType '_reactivation_time.png'])
+    
+end  
+
+%%
+
+% ON-perturbed mean fluo
+
+for s = 1:length(simTypeCell)
+  
+    % Silencing fig
+    fluo_time_fig = figure;
+    cmap = brewermap([],'Set2');
+    hold on
+    simType = simTypeCell{s};
+    plots = [];
+    
+    % plot experimental data trendsweepInfoBest.time_axis_mf,sweepInfoBest.fluo_time_mean,'-k')
+    errorbar(master_struct(s).sweepInfoBest.time_axis_mf,master_struct(s).sweepInfoBest.fluo_time_mean_ON,...
+                                master_struct(s).sweepInfoBest.fluo_time_ste_ON,'Color','k','Capsize',0);                              
+    
+    plots(1) = scatter(master_struct(s).sweepInfoBest.time_axis_mf,master_struct(s).sweepInfoBest.fluo_time_mean_ON,...
+                        75,'MarkerFaceColor',cmap(8,:),'MarkerEdgeColor','k');
+
+    
+    xlabel('time into nc14 (minutes)');
+    ylabel('average active spot fluorescence (ON-perturbed) (au)')
+    title(labelCell{s})    
+
+    set(gca,'FontSize',14)
+
+    set(gca,'Color',[228,221,209]/255) 
+    grid on
+    ax = gca;
+    ax.YAxis(1).Color = 'k';
+    ax.XAxis(1).Color = 'k';
+    xlim([8 25])
+    ylim([0.5e5 3.5e5])
+    fluo_time_fig.InvertHardcopy = 'off';
+    set(gcf,'color','w');
+    
+    if s == 1
+        saveas(fluo_time_fig,[metricPath 'fluo_time_ON_data_only.png'])
+    end
+    
+    % plot best N performers
+    plot(master_struct(s).sweepInfoBest.time_axis_mf', permute(master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,1,1:n_best),[1 3 2])','Color',[cmap(2,:) 0.5])
+    
+    % plot best rep for each metric
+    plots(2) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,1),'Color',cmap(2,:),'LineWidth',2);
+    plots(3) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,end-3),'--','Color',cmap(3,:),'LineWidth',2);
+    plots(4) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,end-2),'--','Color',cmap(4,:),'LineWidth',2);
+    plots(5) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,end-1),'--','Color',cmap(5,:),'LineWidth',2);
+    plots(6) = plot(master_struct(s).sweepInfoBest.time_axis_mf, master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,end),'-','Color',cmap(6,:),'LineWidth',2);
+
+    legend(plots,labelCell3{:},'Location','northeast','Color','w');
+    
+    title(labelCell{s});
+    
+    saveas(fluo_time_fig,[metricPath simType '_mean_fluo_time_ON.png'])
     
 end  
 
@@ -279,3 +341,79 @@ thresh_fig.InvertHardcopy = 'off';
 set(gcf,'color','w');
 
 saveas(thresh_fig,[metricPath simType '_thresh_fig.png'])
+
+%% Plot optimal kon behaviors
+s = 2;
+% KD_opt = master_struct(s).sweepInfoBest.fluo_time_predicted_ON(:,:,end)
+
+param_plot = figure;
+hold on
+scatter(ones(1,n_best),master_struct(2).sweepInfoBest.param_val_vec(1:n_best,1),...
+         50,'MarkerFaceColor',cmap(2,:),'MarkerEdgeColor','k','MarkerFaceAlpha',0.5);
+scatter(2*ones(1,n_best),master_struct(2).sweepInfoBest.param_val_vec(1:n_best,2),...
+         50,'MarkerFaceColor',cmap(3,:),'MarkerEdgeColor','k','MarkerFaceAlpha',0.5);
+       
+scatter(1,master_struct(2).sweepInfoBest.param_val_vec(1,1),...
+         75,'MarkerFaceColor',cmap(2,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1);
+scatter(2,master_struct(2).sweepInfoBest.param_val_vec(1,2),...
+         75,'MarkerFaceColor',cmap(3,:),'MarkerEdgeColor','k','MarkerFaceAlpha',1);       
+       
+set(gca,'Color',[228,221,209]/255) 
+grid on
+ax = gca;
+set(gca,'xtick',1:2,'xticklabel',{'KD','Hill'})
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+param_plot.InvertHardcopy = 'off';
+set(gcf,'color','w');
+xlim([0.5 2.5])
+set(gca,'FontSize',14)
+xtickangle(-30)
+ylabel('parameter value')
+saveas(param_plot,[metricPath 'kon_param_fig.png'])
+
+%%
+nan_filter = ~isnan(master_struct(s).sweepInfoBest.reactivation_time_vec(1,:,1));
+ra_time_filter = ismember(master_struct(s).sweepInfoBest.time_axis_ra,master_struct(s).sweepInfoBest.reactivation_time);
+ra_time_axis = master_struct(s).sweepInfoBest.reactivation_time/60;
+    
+ra_fig = figure;
+cmap = brewermap([],'Set2');
+hold on
+simType = simTypeCell{s};
+plots = [];
+
+% plot experimental data trendsweepInfoBest.time_axis_mf,sweepInfoBest.fluo_time_mean,'-k')
+errorbar(ra_time_axis,master_struct(s).sweepInfoBest.reactivation_cdf,...
+                            master_struct(s).sweepInfoBest.reactivation_cdf_ste,'Color','k','Capsize',0);                              
+
+plots(1) = scatter(ra_time_axis,master_struct(s).sweepInfoBest.reactivation_cdf,...
+                        75,'MarkerFaceColor',cmap(8,:),'MarkerEdgeColor','k');   
+
+
+xlabel('time since perturbation');
+ylabel('fraction of loci react')
+title(labelCell{s})    
+
+set(gca,'FontSize',14)
+
+set(gca,'Color',[228,221,209]/255) 
+grid on
+ax = gca;
+ax.YAxis(1).Color = 'k';
+ax.XAxis(1).Color = 'k';
+xlim([ra_time_axis(1)-1/3 ra_time_axis(end)])
+ylim([0 1.05])
+ra_fig.InvertHardcopy = 'off';
+set(gcf,'color','w');
+
+if s == 1
+    saveas(ra_fig,[metricPath 'ra_cdf_data_only.png'])
+end
+yyaxis right
+% plot best rep for each metric
+plots(2) = plot([-0.33 ra_time_axis], nanmean(master_struct(s).sweepInfoBest.tf_dependent_curves_ra(40:62,nan_filter,1),2),'Color',cmap(5,:),'LineWidth',2);
+ylabel('predicted k_{on} (s^{-1})')
+
+ax.YAxis(2).Color = cmap(5,:);
+saveas(ra_fig,[metricPath 'kon_ra_with_rate.png'])
