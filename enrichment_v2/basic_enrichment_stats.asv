@@ -1,13 +1,8 @@
 clear
 close all
 
-
 dataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
 FigurePath = 'C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\PipelineOutput\Bcd-GFP_at_hbP2P_comparisons\';
-if ~exist(dataRoot,'dir')
-    dataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
-    FigurePath = 'S:\Nick\Dropbox\LocalEnrichmentFigures\PipelineOutput\Bcd-GFP_at_hbP2P_comparisons\';
-end    
 mkdir(FigurePath);
 
 % designate projects to examine
@@ -54,8 +49,7 @@ minDP = 50;
 for  p = 1:length(master_struct)
     spot_struct_protein = master_struct(p).spot_struct_protein;
     traceQCVec = [spot_struct_protein.TraceQCFlag];
-    spot_struct = master_struct(p).spot_struct;
-    particleIDVec = [spot_struct.particleID];
+    particleIDVec = [spot_struct_prote.particleID];
     
     % basic protein vectors
     spot_protein_vec = [spot_struct_protein(traceQCVec).spot_protein_vec];
@@ -74,8 +68,7 @@ for  p = 1:length(master_struct)
         spot_id_vec = [spot_id_vec repelem(i,length(spot_struct_protein(i).nuclear_protein_vec))];
         nc_sub_lin_vec = [nc_sub_lin_vec 1:length(spot_struct_protein(i).nuclear_protein_vec)];
         % add nuclear cycle info
-        alt_ind = particleIDVec==spot_struct_protein(i).particleID;
-        nuclear_cycle_vec = [nuclear_cycle_vec repelem(spot_struct(alt_ind).nc,length(spot_struct_protein(i).nuclear_protein_vec))];
+        alt_ind = particleIDVec
     end
     % time and position vectors (if present)
     ap_flag = true;
@@ -107,7 +100,7 @@ for  p = 1:length(master_struct)
     master_struct(p).ap_pos_vec = ap_pos_vec(spot_edge_dist_flags&ap_keep_flags&time_keep_flags);
     master_struct(p).spot_id_vec = spot_id_vec(spot_edge_dist_flags&ap_keep_flags&time_keep_flags);  
     master_struct(p).nc_sub_lin_vec = nc_sub_lin_vec(spot_edge_dist_flags&ap_keep_flags&time_keep_flags);  
-    master_struct(p).nuclear_cycle_vec = nuclear_cycle_vec(spot_edge_dist_flags&ap_keep_flags&time_keep_flags);  
+    
     master_keep_indices = find(spot_edge_dist_flags&ap_keep_flags&time_keep_flags);
     
     master_struct(p).ap_flag = ap_flag;

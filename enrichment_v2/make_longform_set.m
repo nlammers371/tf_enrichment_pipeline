@@ -2,7 +2,7 @@
 clear
 close all
 
-projectName = 'Bcd-GFP-McpMcherry-hbP2P-delta6';
+projectName = 'Bcd-GFP_hbMS2-mCh_Airy_fast';%'Bcd-GFP-McpMcherry-hbP2P-delta6';
 liveProject = LiveEnrichmentProject(projectName);
 FigurePath = liveProject.figurePath;
 resultsRoot = [liveProject.dataPath filesep];
@@ -32,14 +32,14 @@ for i = 1:length(spot_struct_trunc)
     ptID = spot_struct_trunc(i).particleID;
     nc = spot_struct(pt_id_vec_trunc==ptID).nc;
     spot_struct_trunc(i).particleID = repelem(ptID,length(spot_struct_trunc(i).fluo));
-    spot_struct_trunc(i).nuclearCycle = repelem(nc,length(spot_struct_trunc(i).fluo));
+    spot_struct_trunc(i).nc = repelem(nc,length(spot_struct_trunc(i).fluo));
 end
 
 spot_array = [];
 kept_flags = false(size(keep_fields));
 kept_flags(1:2) = true;
-iter = 3;
-for k = 3:length(keep_fields)
+iter = 1;
+for k = 1:length(keep_fields)
     try
         spot_array(:,iter) = [spot_struct_trunc.(keep_fields{k})]';
         kept_flags(iter) = true;
