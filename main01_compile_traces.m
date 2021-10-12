@@ -253,6 +253,8 @@ for i = 1:numExperiments
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
                 if hasAPInfo && isfield(schnitzcells,'APpos')
                     compiledSchnitzCells(nucleusCounter).APPosNucleus =  schnitzcells(s).APpos(ncFilter);
+                elseif hasAPInfo
+                    compiledSchnitzCells(nucleusCounter).APPosNucleus =  NaN(1,sum(ncFilter));
                 end
                 
                 % Add protein and nucleus info
