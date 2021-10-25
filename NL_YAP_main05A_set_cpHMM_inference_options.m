@@ -11,10 +11,10 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210430';
+project_prefix = '20210928_Oct4_raw_traces_nz';
 projectList = dir([DataRoot project_prefix '*']);
 
-master_struct=  struct;
+master_struct = struct;
 
 project_index = 2;
 for p = project_index%1:length(projectList)     
@@ -32,7 +32,7 @@ for p = project_index%1:length(projectList)
     inferenceInfo.ProteinBinFlag = 0;
     inferenceInfo.FluoBinFlag = 0;
     %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-    inferenceInfo.timeBins = {[0 Inf*60]}; % should be >= than 15min
+    inferenceInfo.timeBins = {[0 45]*60, [135 195]*60}; % should be >= than 15min
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
@@ -41,7 +41,7 @@ for p = project_index%1:length(projectList)
     inferenceInfo.modelSpecs.alphaFrac =  spot_struct(1).alpha_frac;%1275 / 4670;%
 
     % other info
-    inferenceInfo.AdditionalGroupingVariable = 'setID';%'Stripe'
+    inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
     inferenceInfo.SampleSize = 10000;
     inferenceInfo.useQCFlag = false;
     inferenceInfo.ignoreNDP = true;
