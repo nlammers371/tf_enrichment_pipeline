@@ -122,6 +122,7 @@ for s = 1:length(simTypeCell)
     
     if s == 1
         saveas(still_on_fig,[metricPath 'still_on_dadta_only.png'])
+        saveas(still_on_fig,[metricPath 'still_on_dadta_only.pdf'])
     end
     title(labelCell{s});
     
@@ -140,6 +141,7 @@ for s = 1:length(simTypeCell)
     legend(plots,labelCell3{:},'Location','southwest','Color','w');
     
     saveas(still_on_fig,[metricPath simType '_still_on_fits.png'])
+    saveas(still_on_fig,[metricPath simType '_still_on_fits.pdf'])
     
 end  
 
@@ -182,6 +184,7 @@ for s = 1:length(simTypeCell)
     
     if s == 1
         saveas(fluo_time_fig,[metricPath 'fluo_time_data_only.png'])
+        saveas(fluo_time_fig,[metricPath 'fluo_time_data_only.pdf'])
     end
     
     % plot best N performers
@@ -199,6 +202,7 @@ for s = 1:length(simTypeCell)
     title(labelCell{s});
     
     saveas(fluo_time_fig,[metricPath simType '_mean_fluo_time.png'])
+    saveas(fluo_time_fig,[metricPath simType '_mean_fluo_time.pdf'])
     
 end  
 %%
@@ -239,6 +243,7 @@ for s = 1:length(simTypeCell)
     
     if s == 1
         saveas(ra_fig,[metricPath 'ra_cdf_data_only.png'])
+        saveas(ra_fig,[metricPath 'ra_cdf_data_only.pdf'])
     end
     
     % plot best N performers
@@ -256,6 +261,7 @@ for s = 1:length(simTypeCell)
     legend(plots,labelCell3{:},'Location','southeast','Color','w');
     
     saveas(ra_fig,[metricPath simType '_reactivation_time.png'])
+    saveas(ra_fig,[metricPath simType '_reactivation_time.pdf'])
     
 end  
 
@@ -298,6 +304,7 @@ for s = 1:length(simTypeCell)
     
     if s == 1
         saveas(fluo_time_fig,[metricPath 'fluo_time_ON_data_only.png'])
+        saveas(fluo_time_fig,[metricPath 'fluo_time_ON_data_only.pdf'])
     end
     
     % plot best N performers
@@ -315,6 +322,7 @@ for s = 1:length(simTypeCell)
     title(labelCell{s});
     
     saveas(fluo_time_fig,[metricPath simType '_mean_fluo_time_ON.png'])
+    saveas(fluo_time_fig,[metricPath simType '_mean_fluo_time_ON.pdf'])
     
 end  
 
@@ -341,6 +349,7 @@ thresh_fig.InvertHardcopy = 'off';
 set(gcf,'color','w');
 
 saveas(thresh_fig,[metricPath simType '_thresh_fig.png'])
+saveas(thresh_fig,[metricPath simType '_thresh_fig.pdf'])
 
 %% Plot optimal kon behaviors
 s = 2;
@@ -371,6 +380,7 @@ set(gca,'FontSize',14)
 xtickangle(-30)
 ylabel('parameter value')
 saveas(param_plot,[metricPath 'kon_param_fig.png'])
+saveas(param_plot,[metricPath 'kon_param_fig.pdf'])
 
 %%
 nan_filter = ~isnan(master_struct(s).sweepInfoBest.reactivation_time_vec(1,:,1));
@@ -409,6 +419,7 @@ set(gcf,'color','w');
 
 if s == 1
     saveas(ra_fig,[metricPath 'ra_cdf_data_only.png'])
+    saveas(ra_fig,[metricPath 'ra_cdf_data_only.pdf'])
 end
 yyaxis right
 % plot best rep for each metric
@@ -417,3 +428,4 @@ ylabel('predicted k_{on} (s^{-1})')
 
 ax.YAxis(2).Color = cmap(5,:);
 saveas(ra_fig,[metricPath 'kon_ra_with_rate.png'])
+saveas(ra_fig,[metricPath 'kon_ra_with_rate.pdf'])
