@@ -19,8 +19,8 @@ load([resultsRoot 'proteinSamplingInfo.mat'])
 % specify basic qc constraints
 DistLim = 0.8;
 PixelSize = liveProject.includedExperiments{1}.pixelSize_um;
-nAPBins = 14;
-nBcdBins = 14;
+nAPBins = 16;
+nBcdBins = 16;
 nBoots = 100;
 minDP = 50;
 
@@ -56,8 +56,8 @@ minAP = 18;%prctile(ap_pos_vec_ft,0.5);
 maxAP = 44;%prctile(ap_pos_vec_ft,99.5);
 minBcd = prctile(nucleus_protein_vec_ft,0.5);
 maxBcd = prctile(nucleus_protein_vec_ft,99.5);
-maxTime = 33;
-minTime = 3;
+maxTime = 30;
+minTime = 5;
 dT = 5;
 
 % generate grouping vector
@@ -320,15 +320,15 @@ x_trend = mean_delta_array(t_index,:)/100;
 xlb = -ste_delta_array(t_index,:)/100;
 xub = ste_delta_array(t_index,:)/100;
 
-y_trend = mean_fluo_array(t_index,:)/1e3;
-ylb = -ste_fluo_array(t_index,:)/1e3;
-yub = ste_fluo_array(t_index,:)/1e3;
+y_trend = mean_fluo_array(t_index,:)/1e4;
+ylb = -ste_fluo_array(t_index,:/1e4);
+yub = ste_fluo_array(t_index,:)/1e4;
 
 errorbar(x_trend, y_trend, ylb, yub, xlb, xub,'o','CapSize',0,'Color','k','LineWidth',1);
-scatter(x_trend,y_trend,50,'MarkerFaceColor','k','MarkerEdgeColor','k')
+scatter(x_trend,y_trend,MarkerSize,'MarkerFaceColor','k','MarkerEdgeColor','k')
 
-xlabel('Bcd-GFP enrichment at {\it hbP2P} locus')
-ylabel('{\it hbP2P} fluorescence')
+xlabel('Bcd-GFP enrichment at spot (au)')
+ylabel('hbP2P spot intensity (au)')
 
 % formating
 set(gca,'Fontsize',16);
@@ -338,7 +338,6 @@ corr_scatter.InvertHardcopy = 'off';
 set(gcf,'color','w');
 
 xlim([-.10 .40])
-ylim([140 260])
 saveas(corr_scatter,[FigurePath 'hbP2P_corr_scatter.png'])
 
 %% plot bcd trends
