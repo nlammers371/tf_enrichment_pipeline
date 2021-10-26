@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20210928_Oct4_raw_traces_nz_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_nz_Oct4_opto_raw_trace'};
+projectNameCell = {'20210928_Oct4_raw_traces_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_Oct4_opto_raw_trace'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
@@ -26,7 +26,7 @@ for p = 1:length(projectNameCell)
     infDirList = dir([resultsDir 'w*']);
 
     % iterate through the directories and compile the results
-    for inf = 1%1:length(infDirList)
+    for inf = 1:length(infDirList)
 
         resultsPath = [infDirList(inf).folder filesep infDirList(inf).name filesep];
 
@@ -169,11 +169,17 @@ for p = 1:length(projectNameCell)
                     ss_vec = V(:,di) / sum(V(:,di));
 
                     % generate 2 state initiation rates
-                    init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
-                    if sum(r.*ss_vec) > 1.1*init_array(i)
-                        error('nontrivial "off" state initiation')
-                    end            
-
+                    if nStates == 3
+                        init_array(i) = (r(2) * ss_vec(2) + r(3) * ss_vec(3)) / (ss_vec(2)+ss_vec(3));   
+                        if sum(r.*ss_vec) > 1.1*init_array(i)
+                            error('nontrivial "off" state initiation')
+                        end            
+                    elseif nStates == 2
+                        init_array(i) = r(2);
+                    else
+                        error('Systems with more than 3 states are not currently supported')
+                    end
+                    
                     % burst freq
                     freq_array(i) = -R(1,1);
 
