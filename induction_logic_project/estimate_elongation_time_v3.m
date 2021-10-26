@@ -7,7 +7,7 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210430';
+project_prefix = '20210928_Oct4_raw_traces_nz';
 projectList = dir([DataRoot project_prefix '*']);
 
 master_struct=  struct;
@@ -35,6 +35,8 @@ particle_id_vec = [spot_struct.particleID];
 set_id_vec = [spot_struct.setID];
 set_index = unique(set_id_vec);
 gene_id_vec = [spot_struct.geneID];
+exp_id_vec = [spot_struct.expID];
+exp_key = unique([exp_id_vec' gene_id_vec'],'rows');
 gene_index = unique(gene_id_vec);
 fluo_vec = [spot_struct.fluo];
 non_nan_ids = find(~isnan(particle_id_vec));
@@ -144,7 +146,7 @@ end
 for p = 1:length(projectList)
     DataPath = [DataRoot filesep projectList(p).name filesep];
     spot_struct = master_struct(p).spot_struct;           
-    et_fit_struct_gene = et_fit_struct(p);
+    et_fit_struct_gene = et_fit_struct(exp_key(p,2));
     for s = 1:length(spot_struct)
         spot_struct(s).nStepsEst = et_fit_struct_gene.et_est;
     end

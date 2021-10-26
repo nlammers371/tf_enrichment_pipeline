@@ -75,7 +75,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.timeBinFlag = any(~ismember([inferenceOptions.timeBins{:}],[0 Inf]));
   
   for t = 1:length(inferenceOptions.timeBins)
-    if inferenceOptions.timeBins{t}(1) == 0
+    if false%inferenceOptions.timeBins{t}(1) == 0
       inferenceOptions.truncInference(t) = 0;    
     else
       inferenceOptions.truncInference(t) = 1;    

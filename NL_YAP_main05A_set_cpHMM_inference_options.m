@@ -11,12 +11,12 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210430';
+project_prefix = '20210928_Oct4_raw_traces';
 projectList = dir([DataRoot project_prefix '*']);
+%%
+master_struct = struct;
 
-master_struct=  struct;
-
-project_index = 2;
+project_index = 4;
 for p = project_index%1:length(projectList)     
 
     % load spots struct
@@ -32,21 +32,21 @@ for p = project_index%1:length(projectList)
     inferenceInfo.ProteinBinFlag = 0;
     inferenceInfo.FluoBinFlag = 0;
     %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-    inferenceInfo.timeBins = {[0 Inf*60]}; % should be >= than 15min
+    inferenceInfo.timeBins = {[0 45]*60, [135 195]*60}; % should be >= than 15min
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
-    inferenceInfo.modelSpecs.nStates = 3; % number of states in system
+    inferenceInfo.modelSpecs.nStates = 2; % number of states in system
     inferenceInfo.modelSpecs.nSteps = spot_struct(1).nStepsEst; % number of steps to traverse gene
     inferenceInfo.modelSpecs.alphaFrac =  spot_struct(1).alpha_frac;%1275 / 4670;%
 
     % other info
-    inferenceInfo.AdditionalGroupingVariable = 'setID';%'Stripe'
+    inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
     inferenceInfo.SampleSize = 10000;
     inferenceInfo.useQCFlag = false;
     inferenceInfo.ignoreNDP = true;
     inferenceInfo.n_localEM = 25;
-
+    inferenceInfo.nBoots = 25;
     % Get basic project info and determing file paths
 %     liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
 

@@ -13,28 +13,32 @@ end
 ReadRoot = [DataRoot 'InductionLogic\raw_data\'];
 WriteRoot = [DataRoot 'ProcessedEnrichmentData\'];
 % DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
-project  = '20210430';
-% project = '20200807_opto_chronic';
+project  = '20210928_Oct4_raw_traces';
 ReadPath = [ReadRoot project filesep];
 WritePath = [WriteRoot project filesep];
 
 % get list of data sets
 TraceFileList = dir([ReadPath '*.xlsx']);
+if isempty(TraceFileList)
+    TraceFileList = dir([ReadPath '*.csv']);
+end    
 ProteinFileList = dir([ReadPath '*protein_only.xlsx']);
 expStrings = {TraceFileList.name};
 expStrings = expStrings(~contains(expStrings,'~$'));
 expIDs = 1:length(expStrings);
 
 % specify time res
-dT = 30;
+dT = 60;
 
 % define key model architecture parameters 
 
 ms2_len = 1246;
-gene_len_vec = [2398 6671 2381];
+gene_len_vec = [6671 6671];%[2398  2381];
 elongation_rate = 2000 * dT/60;
 mem_vec = ceil(gene_len_vec ./ elongation_rate);
 alpha_frac_vec = ms2_len ./ gene_len_vec;
+
+gen_id_vec = [1 1];
 
 for e = 1:length(expStrings)
   i_iter = 1;
@@ -58,7 +62,7 @@ for e = 1:length(expStrings)
   end
   
   % iterate through sheets
-  for k = 2:length(data_sheets)
+  for k = 1:length(data_sheets)
     
     % extract table
     raw_array = data_sheets{k};
@@ -75,7 +79,7 @@ for e = 1:length(expStrings)
     end
 
     for i = 1:size(raw_array,2)
-      if true%any(raw_array(:,i))
+      if mean(raw_array(:,i)~=0)>0.1
 
           % generate find first and last nonzero entry
           first_i = 1;%find(raw_array(:,i)'~=0,1);
@@ -95,7 +99,8 @@ for e = 1:length(expStrings)
 
           % ID variables
           spot_struct(i_pass).setID = i_iter;          
-          spot_struct(i_pass).geneID = e;
+          spot_struct(i_pass).geneID = gen_id_vec(e);
+          spot_struct(i_pass).expID = e;
           spot_struct(i_pass).geneName = gene_name;
           spot_struct(i_pass).repName = sheet_names{k};
           if any(raw_array(:,i))
@@ -120,16 +125,16 @@ for e = 1:length(expStrings)
               end
           end
           i_pass = i_pass + 1;
-      end    
+      end
     end
     i_iter = i_iter + 1;
   end
   
   % save
   
-  projectPath = [WriteRoot filesep project '_' gene_name filesep];
+  projectPath = [WriteRoot filesep project '_nz_' gene_name  filesep];
   mkdir(projectPath);
-  save([projectPath 'spot_struct.mat'],'spot_struct')
+  save([projectPath  'spot_struct.mat'],'spot_struct')
   if ~isempty(ProteinFileList)
       save([projectPath 'spot_struct_protein.mat'],'spot_struct_protein')
   end    
