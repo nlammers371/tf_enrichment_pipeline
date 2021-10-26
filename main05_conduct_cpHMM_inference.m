@@ -41,7 +41,7 @@ elseif ~manualInferenceInfo
     if savioFlag
       dataPath = ['~/dat/tf_enrichment/' projectNameCell{1} filesep];
     else % NL: this is just for testing purposes
-      dataPath = ['S:/Nick/Dropbox/ProcessedEnrichmentData/' projectNameCell{1} filesep];
+      dataPath = ['S:/Nick/Dropbox (Personal)/ProcessedEnrichmentData/' projectNameCell{1} filesep];
     end
     customProjectPath = dataPath;
   end

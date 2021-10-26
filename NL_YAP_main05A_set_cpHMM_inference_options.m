@@ -11,12 +11,12 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210928_Oct4_raw_traces_nz';
+project_prefix = '20210928_Oct4_raw_traces';
 projectList = dir([DataRoot project_prefix '*']);
-
+%%
 master_struct = struct;
 
-project_index = 2;
+project_index = 4;
 for p = project_index%1:length(projectList)     
 
     % load spots struct
@@ -36,7 +36,7 @@ for p = project_index%1:length(projectList)
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
-    inferenceInfo.modelSpecs.nStates = 3; % number of states in system
+    inferenceInfo.modelSpecs.nStates = 2; % number of states in system
     inferenceInfo.modelSpecs.nSteps = spot_struct(1).nStepsEst; % number of steps to traverse gene
     inferenceInfo.modelSpecs.alphaFrac =  spot_struct(1).alpha_frac;%1275 / 4670;%
 
@@ -46,7 +46,7 @@ for p = project_index%1:length(projectList)
     inferenceInfo.useQCFlag = false;
     inferenceInfo.ignoreNDP = true;
     inferenceInfo.n_localEM = 25;
-
+    inferenceInfo.nBoots = 25;
     % Get basic project info and determing file paths
 %     liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});
 
