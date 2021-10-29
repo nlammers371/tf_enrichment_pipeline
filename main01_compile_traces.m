@@ -119,7 +119,6 @@ end
 
 [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
 %hasProteinInfo = false;
-hasProteinInfo = false;
 
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 

@@ -6,7 +6,7 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
+projectName = 'optokni_eve4+6_ON_DELAY'; 
 
 liveProject = LiveEnrichmentProject(projectName);
 resultsRoot = [liveProject.dataPath filesep];
@@ -17,29 +17,20 @@ FigurePath = [liveProject.figurePath 'reactivation_dynamics_all' filesep];
 mkdir(FigurePath)
 
 
-% Embryo 18
-%embryo(1).expID = 1;
-%embryo(1).frame_on = 79;
+% Embryo 2
+embryo(1).expID = 1;
+embryo(1).frame_on = 30;
 
-% Embryo 20, good
-embryo(1).expID = 2;
-embryo(1).frame_on = 36;
+% Embryo 3
+embryo(2).expID = 2;
+embryo(2).frame_on = 30;
 
-% Embryo 25, good
-embryo(2).expID = 3;
-embryo(2).frame_on = 43;
+% Embryo 4
+embryo(3).expID = 3;
+embryo(3).frame_on = 30;
 
-% Embryo 26
-%embryo(4).expID = 4;
-%embryo(4).frame_on = 67;
 
-% Embryo 33, good
-embryo(3).expID = 5;
-embryo(3).frame_on = 45;
 
-% Embryo 36, good
-embryo(4).expID = 6;
-embryo(4).frame_on = 43;
 
 
 % color to be used
@@ -433,13 +424,15 @@ pbaspect([4 1 1])
 
 %% calculate silenced duration vs response time
 
+analysis_range_sil_dur = 12;
+
 response_time_final = response_time_full(data_filter_full==1);
 silence_time_final = silence_time_full(data_filter_full==1);
 
 
 x = silence_time_final;
 y = response_time_final;
-filter = (x<analysis_range) & (y<analysis_range);
+filter = (x<analysis_range_sil_dur) & (y<analysis_range);
 
 xFit = x(filter);
 yFit = y(filter);
@@ -476,11 +469,34 @@ plot(xRange,yResult,'-','LineWidth',2)
 %plot(x,mdl)
 xlabel('silenced duration (min) before illumination');
 ylabel('response time (min)');
-xlim([0 analysis_range])
+xlim([time_threshold analysis_range_sil_dur])
 ylim([0 analysis_range])
 pbaspect([3 2 1])
 %saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
 
+%% plot the binned result
+binNum_comp = 9;
+binMax_comp = 11.5;
+edges_comp = linspace(time_threshold,binMax_comp,binNum_comp);
+
+[~,~,loc]=histcounts(xFit,edges_comp);
+meany = accumarray(loc(:),yFit(:))./accumarray(loc(:),1);
+stdy = accumarray(loc(:),yFit(:),[],@std)./sqrt(accumarray(loc(:),1));
+xmid = 0.5*(edges_comp(1:end-1)+edges_comp(2:end));
+
+test_fig = figure;
+%scatter(x(filter),y(filter),30,'filled','MarkerFaceColor','#BFBF99','MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+scatter(x(filter),y(filter),25,'filled','MarkerFaceColor',[200 200 200]/256,'LineWidth',0.5)
+
+hold on
+%errorbar(xmid, meany, stdy,'- .','CapSize',18,'MarkerSize',20,'Color','#D64D4D')
+errorbar(xmid, meany, stdy,'- .','CapSize',18,'MarkerSize',20,'Color','#D64D4D','LineWidth',1)
+
+xlabel('silenced duration (min) before illumination');
+ylabel('response time (min)');
+xlim([time_threshold analysis_range_sil_dur])
+ylim([0 analysis_range])
+pbaspect([3 2 1])
 
 %% fit gamma function
 
@@ -512,7 +528,61 @@ pbaspect([3 2 1])
 
 %saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])
 
+%% Plot mean transcription rate at 4 min after perturbation
 
+edges_mean_fluo = linspace(0,7E5,20);
+
+time_filter_long_1min = (time_aligned_full_long>0.75) & (time_aligned_full_long<1.25);
+time_filter_long_2min = (time_aligned_full_long>1.75) & (time_aligned_full_long<2.25);
+time_filter_long_4min = (time_aligned_full_long>3.75) & (time_aligned_full_long<4.25);
+time_filter_long_5min = (time_aligned_full_long>4.75) & (time_aligned_full_long<5.25);
+time_filter_long_6min = (time_aligned_full_long>5.75) & (time_aligned_full_long<6.25);
+
+fluo_react_1min = fluo_full_long_zero(time_filter_long_1min);
+fluo_react_no_zero_1min = fluo_react_2min(fluo_react_1min>0);
+
+fluo_react_2min = fluo_full_long_zero(time_filter_long_2min);
+fluo_react_no_zero_2min = fluo_react_2min(fluo_react_2min>0);
+
+fluo_react_4min = fluo_full_long_zero(time_filter_long_4min);
+fluo_react_no_zero_4min = fluo_react_4min(fluo_react_4min>0);
+
+fluo_react_5min = fluo_full_long_zero(time_filter_long_5min);
+fluo_react_no_zero_5min = fluo_react_5min(fluo_react_5min>0);
+
+fluo_react_6min = fluo_full_long_zero(time_filter_long_6min);
+fluo_react_no_zero_6min = fluo_react_6min(fluo_react_6min>0);
+
+figure_react_fluo = figure;
+hold on
+
+%h = histogram(fluo_react_no_zero_2min,edges_mean_fluo,'Normalization','probability');
+%h = histogram(fluo_react_no_zero_4min,edges_mean_fluo,'Normalization','probability');
+%h = histogram(fluo_react_1min,edges_mean_fluo,'Normalization','probability');
+%h = histogram(fluo_react_2min,edges_mean_fluo,'Normalization','probability');
+h = histogram(fluo_react_no_zero_2min,edges_mean_fluo,'Normalization','probability');
+h = histogram(fluo_react_no_zero_4min,edges_mean_fluo,'Normalization','probability');
+
+[h,p] = kstest2(fluo_react_no_zero_2min,fluo_react_no_zero_4min)
+
+%data_fluo = [fluo_react_no_zero_4min fluo_react_no_zero_2min];
+%cat_fluo = [ones(1,length(fluo_react_no_zero_4min)) 2*ones(1,length(fluo_react_no_zero_2min))];
+
+data_fluo = [fluo_react_4min fluo_react_2min];
+cat_fluo = [ones(1,length(fluo_react_4min)) 2*ones(1,length(fluo_react_2min))];
+
+violin_plot = figure;
+%vs1 = violinplot(data_fluo,cat_fluo,'BandWidth',3E4,'ShowData',true,'ShowNotches',false);
+vs1 = violinplot(data_fluo,cat_fluo,'ShowData',true,'ShowNotches',false);
+
+%ylim([0 analysis_range_ON])
+ylabel('mean fluorescence after reactivation (AU)')
+pbaspect([3 4 1])
+
+
+
+
+%{
 %% Simulation based on three-state model
 
 % perform simulation
@@ -646,3 +716,4 @@ pbaspect([1 1 1])
 %  histfit(r_final,101,'gamma');
 %  xlim([0 8])
 %  
+%}

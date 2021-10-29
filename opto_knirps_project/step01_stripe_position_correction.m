@@ -98,6 +98,32 @@ mask_ratio = 0.8;
 %analysisFinal = 22.5;
 
 
+%optokni_eve4+6_ON_DELAY
+%Prefix = '2021-10-23-optoknirps_eve4_6_ON_delay_embryo2'; APflip = 0;
+%Prefix = '2021-10-25-optoknirps_eve4_6_ON_delay_embryo3'; APflip = 1;
+Prefix = '2021-10-26-optoknirps_eve4_6_ON_delay_embryo4'; APflip = 1;
+
+% for embryo 2
+%avrInit = 12.5;
+%avrFinal = 15;
+%analysisInit = 0;
+%analysisFinal = 15;
+
+% for embryo 3
+%avrInit = 22.5;
+%avrFinal = 25;
+%analysisInit = 0;
+%analysisFinal = 25;
+
+% for embryo 4
+avrInit = 17.5;
+avrFinal = 20;
+analysisInit = 0;
+analysisFinal = 20;
+
+
+
+
 %optokni_eve4+6_HDAC_WT
 %Prefix = '2021-07-24-optoknirps_eve4_6_HDAC_embryo1'; APflip = '0';
 %Prefix = '2021-07-24-optoknirps_eve4_6_HDAC_embryo2'; APflip = '0';
@@ -138,7 +164,7 @@ mask_ratio = 0.8;
 %Prefix = '2021-08-09-optoknirps_eve4_6_HDAC_embryo9'; APflip = '1';
 %Prefix = '2021-08-10-optoknirps_eve4_6_HDAC_embryo10'; APflip = '0';
 %Prefix = '2021-08-10-optoknirps_eve4_6_HDAC_embryo11'; APflip = '1';
-Prefix = '2021-08-11-optoknirps_eve4_6_HDAC_embryo12'; APflip = '0';
+%Prefix = '2021-08-11-optoknirps_eve4_6_HDAC_embryo12'; APflip = '0';
 
 % for embryo 9
 %avrInit = 30;
@@ -159,10 +185,10 @@ Prefix = '2021-08-11-optoknirps_eve4_6_HDAC_embryo12'; APflip = '0';
 %analysisFinal = 30;
 
 % for embryo 12
-avrInit = 17.5;
-avrFinal = 20;
-analysisInit = 0;
-analysisFinal = 20;
+%avrInit = 17.5;
+%avrFinal = 20;
+%analysisInit = 0;
+%analysisFinal = 20;
 
 
 %%
