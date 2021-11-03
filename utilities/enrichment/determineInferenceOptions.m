@@ -13,6 +13,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.intensityBinVar = '';
   inferenceOptions.FluoBinFlag = 0;
   inferenceOptions.SampleSize = 5000;
+  inferenceOptions.singleTraceInference = 0;
   inferenceOptions.maxWorkers = 20;  
   inferenceOptions.ignoreNDP = 0;
   

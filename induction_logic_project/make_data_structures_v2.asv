@@ -90,10 +90,7 @@ for e = 1:length(expStrings)
           spot_struct(i_pass).fluoInterp = raw_array(first_i:last_i,i)';
           spot_struct(i_pass).fluo = spot_struct(i_pass).fluoInterp;
           spot_struct(i_pass).fluo(spot_struct(i_pass).fluo==0) = NaN; %NL: this mimics HG Lab formatting
-        
-          spot_struct(i_pass).dark_yap = dark_pt(i);
-          spot_struct(i_pass).light_yap = light_pt(i);
-          
+
           if length(ProteinFileList)>=e
             spot_struct_protein(i_pass).nuclear_protein_vecInterp = raw_protein_array_interp(first_i:last_i,i)';
             spot_struct_protein(i_pass).nuclear_protein_vec = spot_struct_protein(i_pass).nuclear_protein_vecInterp;

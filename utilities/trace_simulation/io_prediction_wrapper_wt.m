@@ -116,6 +116,6 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
         % traces
         sweepResults.ms2_traces_observed_wt = fluo_out;
         sweepResults.ms2_traces_true_wt = fluo_array;
-        sweepResults.knirps_traces_wt = sweepInfo.tf_profile_array_wt(:,trace_id_vec);        
+        sweepResults.knirps_traces_wt = permute(gillespie.tf_ref_in,[1 3 2]);        
         sweepResults.tf_dependent_curves_wt = permute(gillespie.rate_curve_in,[1 3 2]);        
     end

@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20210928_Oct4_raw_traces_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_Oct4_opto_raw_trace'};
+projectNameCell = {'20210928_Oct4_raw_traces_nz_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_nz_Oct4_opto_raw_trace'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)

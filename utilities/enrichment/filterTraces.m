@@ -85,11 +85,11 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
           end
       end
   end
-  
-  
+    
   % make new indexing vectors
   ap_group_vec = [trace_struct_filtered.apBin];
   time_group_vec = [trace_struct_filtered.timeBin];
+  
   % initialize dummy grouping variable  
   additional_group_vec = ones(size(ap_group_vec));
   
@@ -103,6 +103,7 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   end
   
   nan_filter1 = isnan(ap_group_vec) | isnan(time_group_vec) | isnan(additional_group_vec);
+  
   % perform protein binning if appropriate
   if inferenceOptions.ProteinBinFlag || inferenceOptions.FluoBinFlag  
     
