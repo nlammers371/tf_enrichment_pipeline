@@ -4,10 +4,11 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20210928_Oct4_raw_traces_nz_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_nz_Oct4_opto_raw_trace'};
+projectNameCell = {'20210928_Oct4_raw_traces_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_Oct4_opto_raw_trace'};
+low_order_flag = 0;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
-for p = 1:length(projectNameCell)
+for p = 2%:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -18,7 +19,11 @@ for p = 1:length(projectNameCell)
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     catch
 %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
-        resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        if isdir('C:\Users\nlamm\Dropbox (Personal)\')
+            resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        else
+           resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
+        end
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end
     % get list of all inference subdirectories. By default, we'll generate
@@ -26,7 +31,7 @@ for p = 1:length(projectNameCell)
     infDirList = dir([resultsDir 'w*']);
 
     % iterate through the directories and compile the results
-    for inf = 1:length(infDirList)
+    for inf = 2%:length(infDirList)
 
         resultsPath = [infDirList(inf).folder filesep infDirList(inf).name filesep];
 
@@ -161,7 +166,11 @@ for p = 1:length(projectNameCell)
                     % convert to transition rate matrix
                     R = logm(A) / Tres;
                     if ~isreal(R) || sum(R(:)<0) > nStates
-                        out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 1);            
+                        if low_order_flag 
+                            out = prob_to_rate_fit_sym(A, Tres, 'low_order', .005, 0.05);            
+                        else
+                            out = prob_to_rate_fit_sym(A, Tres, 'gen', .005, 0.05);            
+                        end
                         R = out.R_out;     
                     end
                     [V,D] = eig(R);

@@ -63,7 +63,11 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
             if inferenceOptions.FluoBinFlag          
                 trace_struct_filtered(i_pass).mean_intensity = nanmean(trace_struct_filtered(i_pass).fluo);
             elseif inferenceOptions.ProteinBinFlag
-                trace_struct_filtered(i_pass).mean_intensity = nanmean(analysis_traces(i).nuclear_protein_vecInterp(time_filter_interp));                            
+                if isfield(analysis_traces,'nuclear_protein_vecInterp')
+                    trace_struct_filtered(i_pass).mean_intensity = nanmean(analysis_traces(i).nuclear_protein_vecInterp(time_filter_interp));                            
+                elseif isfield(analysis_traces,'dark_yap')
+                    trace_struct_filtered(i_pass).mean_intensity = analysis_traces(i).dark_yap;                            
+                end
             end
 
             trace_struct_filtered(i_pass).particleID = analysis_traces(i).particleID;  
@@ -169,9 +173,14 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
   intensity_value_vec = intensity_value_vec(~nan_filter);
   additional_group_vec = additional_group_vec(~nan_filter);
   
+  if inferenceOptions.singleTraceInference
+      trace_id_vec = find(~nan_filter);
+  else
+      trace_id_vec = ones(size(additional_group_vec));
+  end
   % generate indexing structure
   indexInfo = struct;  
-  [indexInfo.indexVarArray, mapTo, indexInfo.indexList] = unique([ap_group_vec' time_group_vec' intensity_group_vec' additional_group_vec'],'rows');
+  [indexInfo.indexVarArray, mapTo, indexInfo.indexList] = unique([ap_group_vec' time_group_vec' intensity_group_vec' additional_group_vec' trace_id_vec'],'rows');
   indexInfo.indexVecUnique = 1:size(indexInfo.indexVarArray,1);
   indexInfo.ap_group_vec = ap_group_vec(mapTo);
   indexInfo.time_group_vec = time_group_vec(mapTo);  

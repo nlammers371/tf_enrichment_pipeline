@@ -21,9 +21,16 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
     if ~isempty(inferenceOptions.dt)
         error('Flexible dt is not currently supported for Protein analysis.')
     end
-    load([InputDataPath '/spot_struct_protein.mat'],'spot_struct_protein') % load data
-    analysis_traces = spot_struct_protein;
-    clear spot_struct_prote in
+    try
+        load([InputDataPath '/spot_struct_protein.mat'],'spot_struct_protein') % load data
+        analysis_traces = spot_struct_protein;
+    catch
+        warning("Couldn't find spot_struct_protein, loading spot_struct instead")
+        load([InputDataPath '/spot_struct.mat'],'spot_struct') % load data
+        analysis_traces = spot_struct;
+    end
+    
+    clear spot_struct_prote
   end
   
   % check for consistency
@@ -108,12 +115,15 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
               inferenceOptions.SampleSize(t) = min([inferenceOptions.SampleSize ceil(set_size/100)*100]);
 
               % randomly draw traces
-              while ndp < inferenceOptions.SampleSize(t)
-                  tr_id = randsample(sample_index,1);
-                  sample_ids = [sample_ids tr_id];
-                  ndp = ndp + length(inference_set(tr_id).time);
+              if length(sample_index) > 1
+                  while ndp < inferenceOptions.SampleSize(t)
+                      tr_id = randsample(sample_index,1);
+                      sample_ids = [sample_ids tr_id];
+                      ndp = ndp + length(inference_set(tr_id).time);
+                  end
+              else
+                  sample_ids = sample_index;
               end
-
               % add them to data cells
               fluo_data = cell([length(sample_ids), 1]);    
               time_data = cell([length(sample_ids), 1]);    

@@ -7,7 +7,7 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210928_Oct4_raw_traces_nz';
+project_prefix = '20210928_Oct4_raw_traces';
 projectList = dir([DataRoot project_prefix '*']);
 
 master_struct=  struct;

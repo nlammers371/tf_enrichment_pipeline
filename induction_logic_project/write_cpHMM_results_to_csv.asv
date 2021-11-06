@@ -6,10 +6,10 @@ addpath(genpath('../utilities'))
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
 projectNameCell = {'20210928_Oct4_raw_traces_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_Oct4_opto_raw_trace'};%};
 geneName = 'Oct4';
-infString = 'K2_p1_ap1_t1_f2D';
+infString = 'K2_p1_ap1_t2_f2D';
 conditionCell = {'control', 'opto'};
 geneCell = {'Oct4','Oct4'};
-nz_flag = 0;
+nz_flag = 1;
 
     
 for p = 1:length(projectNameCell)
@@ -25,11 +25,7 @@ for p = 1:length(projectNameCell)
         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
     catch
 %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
-        if isdir('C:\Users\nlamm\Dropbox (Personal)\')
-            resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
-        else
-           resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
-        end
+        resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
         resultsDir = [resultsRoot filesep projectNameCell{p} filesep 'cpHMM_results' filesep];
     end    
     
@@ -72,12 +68,10 @@ for p = 1:length(projectNameCell)
     varNames = {'time_group','spot_intensity_mean','spot_intensity_ste',...
               'initiation_rate_mean','initiation_rate_ste','burst_duration_mean','burst_duration_ste',...
               'burst_frequency_mean','burst_frequency_ste'};
-            
     if pt_flag
         result_array(:,end+1) = protein_intensity_vec';
-        varNames(end+1) = {'YAP_dark'};
     end
-    result_table = array2table(result_array,'VariableNames',varNames);
+    result_table = array2table(result_array,'VariableNames',);
 %     result_table.experiment_type = condition_key';
 %     result_table = [result_table(:,end) result_table(:,1:end-1)];        
     

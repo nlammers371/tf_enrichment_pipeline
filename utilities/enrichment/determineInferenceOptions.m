@@ -16,6 +16,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.singleTraceInference = 0;
   inferenceOptions.maxWorkers = 20;  
   inferenceOptions.ignoreNDP = 0;
+  inferenceOptions.alwaysTruncInference = 0;
   
   %% Core inference options (these generally remain fixed)
   inferenceOptions.n_localEM = 25; % set num local runs
@@ -68,6 +69,13 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
     inferenceOptions.maxWorkers = 24;%ceil(myCluster.NumWorkers/2);
   end
   
+  % adjust if we're doing single trace inference
+  if inferenceOptions.singleTraceInference
+      inferenceOptions.minDPperInf = 0;
+      inferenceOptions.minDP = 30;%
+      inferenceOptions.SampleSize = 1;
+  end
+  
   % assign binary flags to indicate wheter space or time groupings are used
   if isempty(inferenceOptions.apBins)
       inferenceOptions.apBins = [-Inf Inf];
@@ -75,12 +83,18 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   inferenceOptions.apBinFlag = any(~ismember(inferenceOptions.apBins,[0 Inf -Inf]));
   inferenceOptions.timeBinFlag = any(~ismember([inferenceOptions.timeBins{:}],[0 Inf]));
   
-  for t = 1:length(inferenceOptions.timeBins)
-    if false%inferenceOptions.timeBins{t}(1) == 0
-      inferenceOptions.truncInference(t) = 0;    
-    else
-      inferenceOptions.truncInference(t) = 1;    
-    end
+  if inferenceOptions.alwaysTruncInference
+      for t = 1:length(inferenceOptions.timeBins)       
+          inferenceOptions.truncInference(t) = 1;            
+      end
+  else
+      for t = 1:length(inferenceOptions.timeBins)
+        if inferenceOptions.timeBins{t}(1) == 0
+          inferenceOptions.truncInference(t) = 0;    
+        else
+          inferenceOptions.truncInference(t) = 1;    
+        end
+      end
   end
   
   % set the number of bootstraps
@@ -94,9 +108,9 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   
   % update grouping flags
   if strcmpi(inferenceOptions.intensityBinVar,'fluo')
-    inferenceOptions.ProteinBinFlag = 0;
-    inferenceOptions.FluoBinFlag = 1;
+      inferenceOptions.ProteinBinFlag = 0;
+      inferenceOptions.FluoBinFlag = 1;
   elseif strcmpi(inferenceOptions.intensityBinVar,'')
-    inferenceOptions.ProteinBinFlag = 0;
-    inferenceOptions.FluoBinFlag = 0;
+      inferenceOptions.ProteinBinFlag = 0;
+      inferenceOptions.FluoBinFlag = 0;
   end

@@ -79,6 +79,12 @@ end
 if isfield(inferenceInfo,'ignoreNDP')
     options(end+1:end+2) = {'ignoreNDP',inferenceInfo.ignoreNDP};
 end
+if isfield(inferenceInfo,'singleTraceInference')
+    options(end+1:end+2) = {'singleTraceInference',inferenceInfo.singleTraceInference};
+end
+if isfield(inferenceInfo,'alwaysTruncInference')
+    options(end+1:end+2) = {'alwaysTruncInference',inferenceInfo.alwaysTruncInference};
+end
 
 % intensity binning
 if inferenceInfo.FluoBinFlag
