@@ -15,7 +15,7 @@ resultsRoot = [dataRoot projectNameCONST filesep];
 % load data
 load([resultsRoot 'spot_struct.mat'],'spot_struct')
 
-% indicate frames wheer opto light was turned ON
+% indicate frames where opto light was turned ON
 setID_vec = [1 2 3];
 on_frame_vec = [65 52 43];
 
@@ -25,7 +25,7 @@ time_bounds = [8 30];%[7 30]; % nuclei must have been around for full extent of 
 ap_bounds = [-0.09 0.07];
 knirps_offset = 375000 / 1e5;
 cal_slope = 1.243;
-cal_intercept = 1.079e5 / 1e5; %NL: dividng everything through by 1e5 for simplicity
+cal_intercept = 1.079e5 / 1e5; %NL: dividing everything through by 1e5 for simplicity
 
 TresInterp = 20;
 
