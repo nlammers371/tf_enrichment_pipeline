@@ -19,18 +19,15 @@ mkdir(FigurePath)
 
 % Embryo 2
 embryo(1).expID = 1;
-embryo(1).frame_on = 30;
+embryo(1).frame_on = 52;
 
 % Embryo 3
 embryo(2).expID = 2;
-embryo(2).frame_on = 30;
+embryo(2).frame_on = 46;
 
 % Embryo 4
 embryo(3).expID = 3;
-embryo(3).frame_on = 30;
-
-
-
+embryo(3).frame_on = 38;
 
 
 % color to be used
@@ -307,7 +304,7 @@ plot(time_vec_plot,knirps_vec_full_mean,'-k','LineWidth',1)
 scatter(time_vec_plot,knirps_vec_full_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
 %plot(time_vec_plot,knirps_vec_full_mean,'o');
 xlim([-10 7])
-ylim([3.75E5 8.75E5])
+ylim([3.75E5 10E5])
 xlabel(['time relative to perturbation (min)'])
 ylabel(['Knirps concentration (AU)'])
 pbaspect([3 2 1])
@@ -326,7 +323,7 @@ scatter(time_vec_plot,frac_on_full,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColo
 xlabel(['time relative to perturbation (min)'])
 ylabel(['fraction of nuclei on'])
 xlim([-10 7])
-ylim([0.05 0.9])
+ylim([0 0.9])
 pbaspect([3 2 1])
 
 
@@ -402,13 +399,14 @@ imagesc('XData',time_vec_interp,'CData',sample_traces(I,:))
 xlim([-10 7])
 ylim([1 length(I)])
 xlabel('time relative to perturbation (min)')
-colormap(plasma)
+%colormap(plasma)
 caxis([0 4.5E5])
 colorbar
 pbaspect([3 1 1])
 
 saveas(sample_traces_fig,[FigurePath 'figure_ON_sample_traces.pdf'])
 
+%{
 %% plot single sample trace
 
 trace_num = I(91);%74, 89, 91, 106,107,117???
@@ -421,7 +419,7 @@ xlim([-10 7])
 pbaspect([4 1 1])
 
 %saveas(single_traces_fig,[FigurePath 'figure_ON_single_trace.pdf'])
-
+%}
 %% calculate silenced duration vs response time
 
 analysis_range_sil_dur = 12;
@@ -474,6 +472,7 @@ ylim([0 analysis_range])
 pbaspect([3 2 1])
 %saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
 
+%{
 %% plot the binned result
 binNum_comp = 9;
 binMax_comp = 11.5;
@@ -497,6 +496,7 @@ ylabel('response time (min)');
 xlim([time_threshold analysis_range_sil_dur])
 ylim([0 analysis_range])
 pbaspect([3 2 1])
+%}
 
 %% fit gamma function
 
@@ -539,7 +539,7 @@ time_filter_long_5min = (time_aligned_full_long>4.75) & (time_aligned_full_long<
 time_filter_long_6min = (time_aligned_full_long>5.75) & (time_aligned_full_long<6.25);
 
 fluo_react_1min = fluo_full_long_zero(time_filter_long_1min);
-fluo_react_no_zero_1min = fluo_react_2min(fluo_react_1min>0);
+fluo_react_no_zero_1min = fluo_react_1min(fluo_react_1min>0);
 
 fluo_react_2min = fluo_full_long_zero(time_filter_long_2min);
 fluo_react_no_zero_2min = fluo_react_2min(fluo_react_2min>0);
@@ -578,8 +578,7 @@ vs1 = violinplot(data_fluo,cat_fluo,'ShowData',true,'ShowNotches',false);
 %ylim([0 analysis_range_ON])
 ylabel('mean fluorescence after reactivation (AU)')
 pbaspect([3 4 1])
-
-
+%}
 
 
 %{
