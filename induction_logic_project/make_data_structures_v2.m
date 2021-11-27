@@ -29,6 +29,7 @@ expIDs = 1:length(expStrings);
 
 % specify time res
 dT = 60;
+nz_flag = 1;
 
 % define key model architecture parameters 
 
@@ -65,9 +66,9 @@ for e = 1:length(expStrings)
   for k = 1:length(data_sheets)
     
     % extract table
-    raw_array = data_sheets{k}(4:end,:);
-    dark_pt = raw_array(1,:);
-    light_pt = raw_array(2,:);
+    raw_array = data_sheets{k}(3:end,:);
+    dark_pt = data_sheets{k}(1,:);
+    light_pt = data_sheets{k}(2,:);
 %      = raw_table{:,:};
     time_vec = 0:dT:dT*size(raw_array,1)-1;
     divFactor = 10^ceil(log10(size(raw_array,2)));
@@ -81,7 +82,7 @@ for e = 1:length(expStrings)
     end
 
     for i = 1:size(raw_array,2)
-      if mean(raw_array(:,i)~=0)>0.1
+      if mean(raw_array(:,i)~=0)>0.1 || ~nz_flag
 
           % generate find first and last nonzero entry
           first_i = 1;%find(raw_array(:,i)'~=0,1);
@@ -136,8 +137,11 @@ for e = 1:length(expStrings)
   end
   
   % save
-  
-  projectPath = [WriteRoot filesep project '_nz_' gene_name  filesep];
+  if nz_flag
+      projectPath = [WriteRoot filesep project '_nz_' gene_name  filesep];
+  else
+      projectPath = [WriteRoot filesep project '_' gene_name  filesep];
+  end
   mkdir(projectPath);
   save([projectPath  'spot_struct.mat'],'spot_struct')
   if ~isempty(ProteinFileList)

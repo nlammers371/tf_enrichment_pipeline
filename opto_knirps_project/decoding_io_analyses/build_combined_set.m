@@ -1,0 +1,201 @@
+clear
+close all
+
+addpath(genpath('./lib'))
+addpath(genpath('../../utilities'))
+
+% Load data
+dataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+
+% make new director for combined dataset
+savePath = [dataRoot 'combinedOptoSets' filesep];
+mkdir(savePath)
+
+% indicate projects to use
+projectNameCell = {'optokni_eve4+6_ON_DELAY','optokni_eve4+6_WT','optokni_eve4+6_ON_CONST','optokni_eve4+6_ON'};
+
+% specify correction parameters for blue light
+knirps_offset = 375000 / 1e5;
+cal_slope = 1.243;
+cal_intercept = 1.079e5 / 1e5; %NL: dividing everything through by 1e5 for simplicity
+
+% load data
+spot_struct_full = [];
+for p = 1:length(projectNameCell)
+    projectName = projectNameCell{p};    
+    load([dataRoot projectName filesep 'spot_struct.mat'],'spot_struct')
+    for s = 1:length(spot_struct)
+        spot_struct(s).projectName = projectName;
+        spot_struct(s).projectID = p;
+    end
+    spot_struct_full = [spot_struct_full spot_struct];
+end
+
+spot_struct = spot_struct_full;
+
+% generate a new set of unique identifiers
+set_vec = [spot_struct.setID];
+project_vec = [spot_struct.projectID];
+project_set_array = unique([[spot_struct.setID]' [spot_struct.projectID]'],'rows');
+
+for i = 1:size(project_set_array,1)
+    projectID = project_set_array(i,2);
+    setID = project_set_array(i,1);
+    temp_ids = find(project_vec==projectID&set_vec==setID);
+    for t = temp_ids
+       spot_struct(t).masterID = i;
+       particleID = spot_struct(t).particleID;
+       particleIDNew = particleID - floor(particleID) + i;
+       spot_struct(t).particleID = particleIDNew;
+       spot_struct(t).particleIDOrig = particleID;
+    end
+end    
+
+% identify and correct for effects of blue light laser
+minDP = 20;
+spot_struct_temp = spot_struct;
+master_id_vec = [spot_struct.masterID];
+master_id_index = unique(master_id_vec);
+time_index_interp = 0:spot_struct(1).tresInterp:(50*60);
+
+% NL: obtained these frames via manual inspection of protein trends
+blue_light_frame_vec = [52 NaN 52 73 46 NaN 50 36 38 NaN 42 43 NaN 67 NaN 45 43];% OG
+
+% initialize array to store mean protein trend
+mean_protein_array = NaN(length(time_index_interp),length(master_id_index));
+
+for m = 1:length(master_id_index)
+    master_ids = find(master_id_vec==master_id_index(m));
+    time_index = unique(round([spot_struct(master_ids).time],0));
+    projectName = spot_struct(master_ids(1)).projectName;
+                      
+    % find changepoint  
+    shift_frame = blue_light_frame_vec(m);
+    if ~isnan(shift_frame)
+        shift_time = time_index(shift_frame);               
+    else
+        shift_time = Inf;
+    end
+
+    % check that corrections look reasonable
+    protein_array_temp = NaN(length(time_index),length(master_ids));        
+    for i = master_ids
+        t_vec = round(spot_struct(i).time,0);
+        t_vec_fluo = spot_struct(i).timeInterp;
+        start_i = find(time_index_interp<=t_vec(1)&time_index_interp<=t_vec_fluo(1),1,'last');
+        stop_i = find(time_index_interp>=t_vec(end)&time_index_interp>=t_vec_fluo(end),1);
+        t_vec_interp = time_index_interp(start_i:stop_i);           
+
+        % extract basic vectors
+        pt_vec = spot_struct(i).rawNCProtein/1e5;
+        fluo_vec = spot_struct(i).fluoInterp;        
+        
+        % update time vector            
+%         spot_struct(i).timeInterpOrig = spot_struct(i).timeInterp;
+        spot_struct(i).timeNew = t_vec_interp;
+        
+        if length(t_vec) >= minDP && ~any(isnan(pt_vec)) && sum(~isnan(t_vec_interp)) >= minDP/2
+            spot_struct(i).useFlag = true;
+            spot_struct(i).fluoFlag = false;
+            raw_adjusted = pt_vec;
+            pert_ind = find(t_vec>=shift_time,1);
+%             pert_ind = max([pert_ind,pert_ind-1])
+            if ~isempty(pert_ind) 
+                raw_adjusted(pert_ind:end) = ...
+                (raw_adjusted(pert_ind:end)-cal_intercept)/cal_slope;
+            end
+            pt_interp = interp1(t_vec,raw_adjusted,t_vec_interp,'linear','extrap');
+            spot_struct(i).rawNCProteinNew = pt_interp;
+            spot_struct(i).fluoNew = NaN(size(pt_interp));
+            
+            if sum(~isnan(t_vec_fluo)) >= minDP/2
+                spot_struct(i).fluoFlag = true;
+                fluo_new = zeros(size(t_vec_interp));
+                fluo_new(ismember(t_vec_interp,t_vec_fluo)) = fluo_vec;           
+                spot_struct(i).fluoNew = fluo_new;
+            end
+        else
+            spot_struct(i).useFlag = false;
+            spot_struct(i).fluoFlag = false;
+            spot_struct(i).rawNCProteinNew = NaN(size(t_vec_interp));
+            spot_struct(i).fluoNew = NaN(size(t_vec_interp));
+        end    
+    end        
+
+    % check that corrections look reasonable
+    temp_array = NaN(length(time_index_interp),length(master_ids));    
+    iter = 1;
+    for i = master_ids
+        t_vec = spot_struct(i).timeNew;
+        if spot_struct(i).useFlag
+            temp_array(ismember(time_index_interp,t_vec),iter) = spot_struct(i).rawNCProteinNew;
+        end
+        iter = iter + 1;
+    end
+    mean_protein_array(:,m) = nanmean(temp_array,2);    
+end    
+
+% now, conduct 2 state viterbi fits using generic parameters
+nWorkersMax = 24;
+
+% get parameters to use
+fitParameters = struct;
+fitParameters = getMarkovSystemInfo(fitParameters);
+fitParameters.A = expm(fitParameters.R2_orig*fitParameters.deltaT);
+
+A_log = log(fitParameters.A);
+v = double(fitParameters.r2);
+sigma = fitParameters.noise;
+pi0_log = log(fitParameters.pi0');
+nStates = size(A_log,1);
+nSteps = fitParameters.memory;
+alpha = fitParameters.t_MS2;
+
+% obtain subset of valid traces                
+use_flags = [spot_struct.fluoFlag]==1;
+fit_trace_indices = find(use_flags);                             
+
+fluo_values = cell(length(fit_trace_indices),1);                
+for i = 1:numel(fit_trace_indices)    
+    fluo_values{i} = spot_struct(fit_trace_indices(i)).fluoNew;    
+end    
+
+% initialize pool 
+p = gcp('nocreate'); % If no pool, do not create new one.
+if isempty(p)
+    parpool(nWorkersMax);
+elseif p.NumWorkers~= nWorkersMax
+    delete(p);
+    parpool(nWorkersMax);
+end      
+
+disp('conducting viterbi trace fits...')
+
+v_fits = struct;
+parfor f = 1:length(fluo_values)
+    viterbi_out = viterbi (fluo_values{f}, v, sigma, pi0_log, A_log, nStates, nSteps, alpha);
+    fnames = fieldnames(viterbi_out);
+    for fn = 1:numel(fnames)
+        v_fits(f).(fnames{fn}) = viterbi_out.(fnames{fn});
+    end        
+end
+
+% Add to main structure
+for s = 1:length(spot_struct)
+    fit_filter = ismember(fit_trace_indices,s);
+    if any(fit_filter)
+        ind = find(fit_filter);
+        spot_struct(s).fluo_viterbi = v_fits(ind).fluo_viterbi;
+        spot_struct(s).path_viterbi = v_fits(ind).z_viterbi;
+        spot_struct(s).init_viterbi = v_fits(ind).v_viterbi;
+        spot_struct(s).logL = v_fits(ind).logL;
+    else
+        spot_struct(s).fluo_viterbi = NaN(size(spot_struct(s).fluoNew));
+        spot_struct(s).path_viterbi = NaN(size(spot_struct(s).fluoNew));
+        spot_struct(s).init_viterbi = NaN(size(spot_struct(s).fluoNew));
+        spot_struct(s).logL = NaN;
+    end
+end    
+
+% remove unimportant fields to save space
+save([savePath 'spot_struct.mat'],'spot_struct')

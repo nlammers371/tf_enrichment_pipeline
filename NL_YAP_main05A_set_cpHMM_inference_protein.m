@@ -13,10 +13,10 @@ end
 
 project_prefix = '20210928_Oct4_raw_traces';
 projectList = dir([DataRoot project_prefix '*']);
-%%
+
 master_struct = struct;
 
-project_index = 1;
+project_index = 2;
 for p = project_index%1:length(projectList)     
 
     % load spots struct
@@ -29,13 +29,13 @@ for p = project_index%1:length(projectList)
     inferenceInfo.projectNameCell = {projectList(p).name}; % {'2xDl-Ven_hbP2P-mCh'};
 
     % set inference options
-    inferenceInfo.ProteinBinFlag = 0;
+    inferenceInfo.ProteinBinFlag = 1;
     inferenceInfo.FluoBinFlag = 0;
-    inferenceInfo.singleTraceInference = 1;
+    inferenceInfo.singleTraceInference = 0;
     inferenceInfo.alwaysTruncInference = 1;
     
     %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-    inferenceInfo.timeBins = {[0 45]*60, [135 195]*60}; % should be >= than 15min
+    inferenceInfo.timeBins = {[0 45]*60}; % should be >= than 15min
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
@@ -45,7 +45,7 @@ for p = project_index%1:length(projectList)
 
     % other info
     inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-    inferenceInfo.SampleSize = 10000;
+    inferenceInfo.SampleSize = 1500;
     inferenceInfo.useQCFlag = false;
     inferenceInfo.ignoreNDP = true;
     inferenceInfo.n_localEM = 25;

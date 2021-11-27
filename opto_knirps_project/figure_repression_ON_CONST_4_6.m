@@ -6,42 +6,10 @@ addpath(genpath('./lib'))
 
 %% Initialization
 
-projectName = 'optokni_eve4+6_ON'; 
-
-liveProject = LiveEnrichmentProject(projectName);
-resultsRoot = [liveProject.dataPath filesep];
-
-% load data
-load([resultsRoot 'spot_struct.mat'])
-FigurePath = [liveProject.figurePath 'reactivation_dynamics_all' filesep];
-mkdir(FigurePath)
+projectNameCell = {'optokni_eve4+6_ON_CONST'}; 
 
 
-% Embryo 18
-%embryo(1).expID = 1;
-%embryo(1).frame_on = 79;
-
-% Embryo 20, good
-embryo(1).expID = 2;
-embryo(1).frame_on = 36;
-
-% Embryo 25, good
-embryo(2).expID = 3;
-embryo(2).frame_on = 43;
-
-% Embryo 26
-%embryo(4).expID = 4;
-%embryo(4).frame_on = 67;
-
-% Embryo 33, good
-embryo(3).expID = 5;
-embryo(3).frame_on = 45;
-
-% Embryo 36, good
-embryo(4).expID = 6;
-embryo(4).frame_on = 43;
-
-
+%%
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
 color_green = [38 143 75]/256; % color from Jake
@@ -51,7 +19,7 @@ eYFP_background = 375698.13; %prctile(double(knirps_vec_long),1);
 
 ap_lim = 0.02; % AP range for analysis, 0.02 seems to be a reasonable number
 
-time_threshold = 2; %min
+time_threshold = 2; %2min seems to be reasonable
 
 % histogram parameters
 binNum = 15;% best 14; ok, 15
@@ -71,12 +39,51 @@ edges = linspace(0,binMax,binNum);
 % timerange to analyze for response time
 analysis_range = 8;
 
+condition_filter = [];
+knirps_int_last_on_all_cond = [];
+response_time_all_cond = [];
+fluo_mean_all_cond = [];
+knirps_mean_all_cond = [];
+%data_filter_all_cond = [];
+
+%% Start analysis
+
+for project = 1:length(projectNameCell)
+
+projectName = projectNameCell{project};
+liveProject = LiveEnrichmentProject(projectName);
+resultsRoot = [liveProject.dataPath filesep];
+
+% load data
+load([resultsRoot 'spot_struct.mat'])
+
+embryo = [];
+
+%% For "optokni_eve4+6_ON_CONST"
+% Embryo 21
+embryo(1).expID = 1;
+embryo(1).frame_on = 62;
+
+% Embryo 22
+embryo(2).expID = 2;
+embryo(2).frame_on = 50;
+
+% Embryo 24
+embryo(3).expID = 3;
+embryo(3).frame_on = 42;
+
 
 %% Figure: plot mean fluorescence vs time (not aligned)
 
 data_filter_full = [];
 silence_time_full = [];
 response_time_full = [];
+silence_time_full_frac = [];
+response_time_full_frac = [];
+knirps_last_on_full = [];
+knirps_int_last_on_full = [];
+fluo_mean_full = [];
+knirps_mean_full = [];
 
 time_aligned_full_long = [];
 fluo_full_long = [];
@@ -98,9 +105,17 @@ for i = 1:length(embryo)
     off_time_long = [];
     knirps_orig_long = [];
     last_on_long = [];
+    last_on_long_frac = [];
     first_on_long = [];
+    first_on_long_frac = [];
+    knirps_last_on_long = [];
+    knirps_last_on_long_frac = [];
+    knirps_int_last_on_long = [];
+    fluo_mean_long = [];
+    knirps_mean_long = [];
 
     count = 0;
+    count_zeros = 0;
 
     for j = 1:length(spot_struct)
 
@@ -109,6 +124,9 @@ for i = 1:length(embryo)
 
             % extract core vectors 
             fluo_vec_orig = spot_struct(j).fluo;
+            fluo_vec_orig_zeros = fluo_vec_orig;
+            fluo_vec_orig_zeros(isnan(fluo_vec_orig_zeros)) = 0;
+            
             time_vec_orig = spot_struct(j).time;
             frame_vec_orig = spot_struct(j).frames;
             knirps_vec_orig = spot_struct(j).rawNCProtein;
@@ -120,21 +138,69 @@ for i = 1:length(embryo)
             mean_knirps_orig = nanmean(knirps_vec_orig);
 
             if ever_on_orig
-                last_on_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig <= frame_on),1,'last'));
-                first_on_frame = frame_vec_orig(find(~isnan(fluo_vec_orig) & (frame_vec_orig > frame_on),1));
-                
+                last_on_index = find(~isnan(fluo_vec_orig) & (frame_vec_orig <= frame_on),1,'last');
+                last_on_frame = frame_vec_orig(last_on_index);
+                first_on_index = find(~isnan(fluo_vec_orig) & (frame_vec_orig > frame_on),1);
+                first_on_frame = frame_vec_orig(first_on_index);
+                frame_on_index = find((frame_vec_orig == frame_on));
+                if ~isnan(frame_on_index)
+                    frame_delay_index = find((time_vec_orig-time_vec_orig(frame_on_index))>=5*60,1);
+                    frame_prior_index = find((time_vec_orig-time_vec_orig(frame_on_index))<=-2*60,1,'last');
+                else
+                    frame_delay_index = NaN;
+                end
             end
+            
 
             if (mean_ap_orig > -ap_lim) && (mean_ap_orig < ap_lim)
+               count_zeros = count_zeros + 1;
                time_orig_long = [time_orig_long time_vec_orig];
                frame_orig_long = [frame_orig_long frame_vec_orig];
                fluo_orig_long = [fluo_orig_long fluo_vec_orig];
                knirps_orig_long = [knirps_orig_long knirps_vec_orig];
+               
 
                if ~isempty(last_on_frame) && ~isempty(first_on_frame)
                    last_on_long = [last_on_long last_on_frame];
                    first_on_long = [first_on_long first_on_frame];
+                   knirps_last_on_long = [knirps_last_on_long knirps_orig_long(last_on_index)];
+                   if last_on_frame<frame_on
+                       knirps_int_last_on_long = [knirps_int_last_on_long sum(knirps_orig_long(last_on_index:frame_on_index-1)-eYFP_background)];
+                   else
+                       knirps_int_last_on_long = [knirps_int_last_on_long NaN];
+                   end
+                   
+                   %if ~isnan(frame_delay_index) && (first_on_index < frame_delay_index)
+                   %    fluo_mean_long = [fluo_mean_long mean(fluo_vec_orig_zeros(first_on_index:frame_delay_index))];
+                   %else
+                   %    fluo_mean_long = [fluo_mean_long NaN];
+                   %end
+                   
+                   if ~isnan(frame_delay_index)
+                       fluo_mean_long = [fluo_mean_long mean(fluo_vec_orig_zeros(frame_on_index:frame_delay_index))];
+                   else
+                       fluo_mean_long = [fluo_mean_long NaN];
+                   end
+                   
+                   if ~isnan(frame_prior_index)
+                       knirps_mean_long = [knirps_mean_long mean(knirps_vec_orig(frame_prior_index:frame_on_index-1))];
+                   else
+                       knirps_mean_long = [knirps_mean_long NaN];
+                   end
+                   
+
                end
+               
+               if ~isempty(last_on_frame)
+                   knirps_last_on_long_frac = [knirps_last_on_long knirps_orig_long(last_on_index)];
+                   last_on_long_frac = [last_on_long_frac last_on_frame];
+                   if ~isempty(first_on_frame)
+                       first_on_long_frac = [first_on_long_frac first_on_frame];
+                   else
+                       first_on_long_frac = [first_on_long_frac NaN];
+                   end
+               end
+               
 
                %plot((time_vec_orig)/60,fluo_vec_orig,'Color', [175 175 175]/255);
                count = count + 1;
@@ -199,6 +265,10 @@ for i = 1:length(embryo)
     %knirps_vec_mean(time_vec_on>=0) = knirps_vec_mean(time_vec_on>=0)/correction_factor;
     knirps_vec_mean(time_vec_on>=0) = convert_from_458(knirps_vec_mean(time_vec_on>=0));    
     knirps_vec_mean = knirps_vec_mean-eYFP_background;
+    
+    knirps_last_on_long = knirps_last_on_long - eYFP_background;
+    knirps_last_on_long_frac = knirps_last_on_long_frac - eYFP_background;
+    knirps_mean_long = knirps_mean_long - eYFP_background;
 
     % record the result for this embryo
     data_filter = (time_vec(last_on_long) <= time_vec(frame_on)-time_threshold);
@@ -206,6 +276,20 @@ for i = 1:length(embryo)
     
     silence_time_full = [silence_time_full time_vec(frame_on)-time_vec(last_on_long)];
     response_time_full = [response_time_full time_vec(first_on_long)-time_vec(frame_on)];
+    knirps_last_on_full = [knirps_last_on_full knirps_last_on_long];
+    knirps_int_last_on_full = [knirps_int_last_on_full knirps_int_last_on_long];
+    fluo_mean_full = [fluo_mean_full fluo_mean_long];
+    knirps_mean_full = [knirps_mean_full knirps_mean_long];
+    
+    silence_time_full_frac = [silence_time_full_frac time_vec(frame_on)-time_vec(last_on_long_frac)];
+    for i = 1:length(first_on_long_frac)
+        if (first_on_long_frac(i))>0
+            response_time_full_frac = [response_time_full_frac time_vec(first_on_long_frac(i))-time_vec(frame_on)];
+        else
+            response_time_full_frac = [response_time_full_frac NaN];
+        end
+    end
+    %response_time_full_frac = [response_time_full_frac time_vec(first_on_long_frac)-time_vec(frame_on)];
     
     
     % record results for combining the traces
@@ -247,7 +331,39 @@ for i = 1:length(embryo)
     ylabel(['fraction of nuclei on'])
     pbaspect([3 2 1])
     
-    saveas(temp_traj_fig,[FigurePath 'figure_temporal_trajectory_' num2str(i) '.pdf'])
+    %saveas(temp_traj_fig,[FigurePath 'figure_temporal_trajectory_' num2str(i) '.pdf'])
+    
+    
+    mean_fluo_traj_fig  = figure('Position',[10 10 800 800]);
+    tiledlayout(2,1)
+    nexttile
+    hold on
+    %time_interp = min(time_vec_on):0.1:max(time_vec_on);
+    time_interp = -10:0.1:10;
+    frac_on_mean = movmean(frac_on,5);
+    frac_on_interp = interp1(time_vec_on(~isnan(frac_on_mean)),frac_on_mean(~isnan(frac_on_mean)),time_interp,'spline');
+    frac_on_interp = movmean(frac_on_interp,5);
+    %frac_on_interp = interp1(time_vec_on,frac_on,time_interp,'v5cubic');
+
+    errorbar(time_vec_on,knirps_vec_ste,'Color','k','CapSize',0);
+    plot(time_vec_on,knirps_vec_mean,'-k','LineWidth',1)
+    scatter(time_vec_on,knirps_vec_mean,50,'MarkerFaceColor',k_green,'MarkerEdgeColor','k')
+    xlim([-10 7])
+    ylim([3.75E5 9E5])
+    xlabel(['time relative to perturbation (min)'])
+    ylabel(['Knirps concentration (AU)'])
+    pbaspect([3 2 1])
+    
+    nexttile
+    hold on
+    plot(time_vec_on,fluo_vec_mean,'.')
+    %plot(time_interp,fluo_vec_mean,'-','LineWidth',2);
+    scatter(time_vec_on,fluo_vec_mean,50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k')
+    xlim([-10 7])
+    %ylim([0 1])
+    xlabel(['time relative to perturbation (min)'])
+    ylabel(['mean fluorescence (AU)'])
+    pbaspect([3 2 1])
 
 end
 
@@ -338,6 +454,19 @@ xlim([-10 7])
 ylim([0 0.9])
 pbaspect([3 2 1])
 
+%%
+%data_filter_all_cond = [data_filter_all_cond data_filter_full];
+
+knirps_int_last_on_final = knirps_int_last_on_full(data_filter_full==1);
+response_time_final = response_time_full(data_filter_full==1);
+fluo_mean_final = fluo_mean_full((data_filter_full==1));
+knirps_mean_final = knirps_mean_full((data_filter_full==1));
+
+response_time_all_cond = [response_time_all_cond response_time_final];
+knirps_int_last_on_all_cond = [knirps_int_last_on_all_cond knirps_int_last_on_final];
+fluo_mean_all_cond = [fluo_mean_all_cond fluo_mean_final];
+condition_filter = [condition_filter project*ones(1,length(knirps_int_last_on_final))];
+knirps_mean_all_cond = [knirps_mean_all_cond knirps_mean_final];
 
 
 %% plot single traces
@@ -416,8 +545,9 @@ caxis([0 4.5E5])
 colorbar
 pbaspect([3 1 1])
 
-saveas(sample_traces_fig,[FigurePath 'figure_ON_sample_traces.pdf'])
+%saveas(sample_traces_fig,[FigurePath 'figure_ON_sample_traces.pdf'])
 
+%{
 %% plot single sample trace
 
 trace_num = I(91);%74, 89, 91, 106,107,117???
@@ -430,10 +560,10 @@ xlim([-10 7])
 pbaspect([4 1 1])
 
 %saveas(single_traces_fig,[FigurePath 'figure_ON_single_trace.pdf'])
-
+%}
 %% calculate silenced duration vs response time
 
-analysis_range_sil_dur = 12;
+analysis_range_sil_dur = 20;
 
 response_time_final = response_time_full(data_filter_full==1);
 silence_time_final = silence_time_full(data_filter_full==1);
@@ -483,9 +613,11 @@ ylim([0 analysis_range])
 pbaspect([3 2 1])
 %saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
 
-%% plot the binned result
-binNum_comp = 9;
-binMax_comp = 11.5;
+
+%{
+% plot the binned result
+binNum_comp = 12;
+binMax_comp = 15;
 edges_comp = linspace(time_threshold,binMax_comp,binNum_comp);
 
 [~,~,loc]=histcounts(xFit,edges_comp);
@@ -506,6 +638,7 @@ ylabel('response time (min)');
 xlim([time_threshold analysis_range_sil_dur])
 ylim([0 analysis_range])
 pbaspect([3 2 1])
+%}
 
 %% fit gamma function
 
@@ -533,196 +666,73 @@ xlim([0 8])
 ylim([0 0.23])
 xlabel('response time (min)')
 ylabel('probability')
-pbaspect([3 2 1])
+pbaspect([1 1 1])
 
 %saveas(response_time_fig,[FigurePath 'figure_response_time_hist.pdf'])
 
-%% Plot mean transcription rate at 4 min after perturbation
 
-edges_mean_fluo = linspace(0,7E5,20);
 
-time_filter_long_1min = (time_aligned_full_long>0.75) & (time_aligned_full_long<1.25);
-time_filter_long_2min = (time_aligned_full_long>1.75) & (time_aligned_full_long<2.25);
-time_filter_long_4min = (time_aligned_full_long>3.75) & (time_aligned_full_long<4.25);
-time_filter_long_5min = (time_aligned_full_long>4.75) & (time_aligned_full_long<5.25);
-time_filter_long_6min = (time_aligned_full_long>5.75) & (time_aligned_full_long<6.25);
+%% calculate silenced knirps concentration vs response time
 
-fluo_react_1min = fluo_full_long_zero(time_filter_long_1min);
-fluo_react_no_zero_1min = fluo_react_1min(fluo_react_1min>0);
+%analysis_range_sil_dur = 20;
 
-fluo_react_2min = fluo_full_long_zero(time_filter_long_2min);
-fluo_react_no_zero_2min = fluo_react_2min(fluo_react_2min>0);
+knirps_last_on_final = knirps_last_on_full(data_filter_full==1);
+response_time_final = response_time_full(data_filter_full==1);
+%silence_time_final = silence_time_full(data_filter_full==1);
 
-fluo_react_4min = fluo_full_long_zero(time_filter_long_4min);
-fluo_react_no_zero_4min = fluo_react_4min(fluo_react_4min>0);
 
-fluo_react_5min = fluo_full_long_zero(time_filter_long_5min);
-fluo_react_no_zero_5min = fluo_react_5min(fluo_react_5min>0);
+x = knirps_last_on_final;
+y = response_time_final;
+%filter = (x<analysis_range_sil_dur) & (y<analysis_range);
 
-fluo_react_6min = fluo_full_long_zero(time_filter_long_6min);
-fluo_react_no_zero_6min = fluo_react_6min(fluo_react_6min>0);
+%xFit = x(filter);
+%yFit = y(filter);
 
-figure_react_fluo = figure;
+xFit = double(x);
+yFit = y;
+
+%mdl = fitlm(xFit,yFit,'RobustOpts','on');
+%mdl = fitlm(xFit,yFit);
+mdl = fitlm(x,y)
+p = coefTest(mdl)
+
+b = mdl.Coefficients{1,1};
+k = mdl.Coefficients{2,1};
+%options = fitoptions('poly1');
+%options.Upper = [Inf -3];
+%mdl = fit(x(filter)',y(filter)','poly1',options);
+%k = mdl.p1;
+%b = mdl.p2;
+
+regMdl = regARIMA(0,0,0);
+regMdl.Distribution = struct('Name','t','DoF',3);
+%regMdl is a regARIMA model object. It is a template for estimation.
+
+%Estimate the regression model with ARIMA errors. Plot the regression line.
+estRegMdl = estimate(regMdl,yFit','X',xFit');
+
+
+%xRange = linspace(0,20,1000);
+%yResult = k*xRange + b;
+
+memory_fig = figure;
+%scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[234 194 100]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
+scatter(x(filter),y(filter),50,'filled','MarkerFaceColor',[115 142 193]/255,'MarkerEdgeColor',[0 .5 .5],'LineWidth',0.5)
 hold on
-
-%h = histogram(fluo_react_no_zero_2min,edges_mean_fluo,'Normalization','probability');
-%h = histogram(fluo_react_no_zero_4min,edges_mean_fluo,'Normalization','probability');
-%h = histogram(fluo_react_1min,edges_mean_fluo,'Normalization','probability');
-%h = histogram(fluo_react_2min,edges_mean_fluo,'Normalization','probability');
-h = histogram(fluo_react_no_zero_2min,edges_mean_fluo,'Normalization','probability');
-h = histogram(fluo_react_no_zero_4min,edges_mean_fluo,'Normalization','probability');
-
-[h,p] = kstest2(fluo_react_no_zero_2min,fluo_react_no_zero_4min)
-
-%data_fluo = [fluo_react_no_zero_4min fluo_react_no_zero_2min];
-%cat_fluo = [ones(1,length(fluo_react_no_zero_4min)) 2*ones(1,length(fluo_react_no_zero_2min))];
-
-data_fluo = [fluo_react_4min fluo_react_2min];
-cat_fluo = [ones(1,length(fluo_react_4min)) 2*ones(1,length(fluo_react_2min))];
-
-violin_plot = figure;
-%vs1 = violinplot(data_fluo,cat_fluo,'BandWidth',3E4,'ShowData',true,'ShowNotches',false);
-vs1 = violinplot(data_fluo,cat_fluo,'ShowData',true,'ShowNotches',false);
-
-%ylim([0 analysis_range_ON])
-ylabel('mean fluorescence after reactivation (AU)')
-pbaspect([3 4 1])
-
-
-
-
-%{
-%% Simulation based on three-state model
-
-% perform simulation
-%pd1 = makedist('Gamma','a',muhat(1),'b',muhat(2)); % bursting distribution
-pd1 = makedist('Exponential',1); % bursting distribution
-pd2 = makedist('Exponential',1); % second reactivation step
-pd_delay = makedist('Normal','mu',2/3,'sigma',0.1);
-%const_delay = 2/3;
-
-
-r1 = random(pd1,100000,1);
-r2 = random(pd2,100000,1);
-r_delay = random(pd_delay,100000,1);
-
-r = r1+r2+r_delay;
-r_final = r(r>0);
-%r_final = r1+r2+const_delay;
-
-% fit gamma function
-[muhat,muci] = mle(r_final,'distribution','gamma'); % Generic function
-
-x = 0:0.1:20;
-y1 = gampdf(x,muhat(1),muhat(2))/(binNum/binMax);
-
-% plot the figure first
-response_time_theory_fig = figure;
-hold on
-h = histogram(a,edges,'Normalization','probability');
-h.FaceColor = mRNA_red;
-plot(x,y1,'LineWidth',3,'Color',mRNA_red)
-
-xlim([0 analysis_range])
-xlabel('response time (min)')
-ylabel('probability')
-pbaspect([3 2 1])
-
-%saveas(response_time_theory_fig,[FigurePath 'figure_response_time_hist_theory.pdf'])
-
-% fig_pd1 = figure;
-% histogram(r1,'Normalization','probability');
-% xlim([0 8])
-% 
-% fig_pd2 = figure;
-% histogram(r2,'Normalization','probability');
-% xlim([0 8])
-% 
-
- fig_pd_noise = figure;
- histfit(r_final,101,'gamma');
- xlim([0 8])
-
-%% simulation based on two-state model
-% perform simulation
-%pd1 = makedist('Gamma','a',muhat(1),'b',muhat(2)); % bursting distribution
-pd1 = makedist('Exponential',1); % bursting distribution
-pd_delay = makedist('Normal','mu',2/3,'sigma',0.05);
-
-r1 = random(pd1,100000,1);
-r_delay = random(pd_delay,100000,1);
-
-r = r1+r_delay;
-r_final = r(r>0);
-%r_final = r1+r2+const_delay;
-
-% fit gamma function
-[muhat,muci] = mle(r_final,'distribution','gamma'); % Generic function
-
-x = 0:0.1:20;
-y1 = gampdf(x,muhat(1),muhat(2))/(binNum/binMax);
-
-% plot the figure first
-response_time_fig = figure;
-hold on
-h = histogram(a,edges,'Normalization','probability');
-h.FaceColor = mRNA_red;
-plot(x,y1,'LineWidth',3,'Color',mRNA_red)
-
-xlim([0 analysis_range])
-xlabel('response time (min)')
-ylabel('probability')
-pbaspect([3 2 1])
-
-fig_pd_noise = figure;
-histfit(r_final,101,'gamma');
-xlim([0 8])
- 
- 
- %% plot some cartoon for passage time distribution
- 
-sim_num = 100000;
-
-% perform simulation
-pd1 = makedist('Exponential',1); % bursting distribution
-pd2 = makedist('Normal','mu',2/3,'sigma',0.05);
-
-r1 = random(pd1,sim_num,1);
-r2 = random(pd2,sim_num,1);
-
-
-histogram_exp_fig = figure;
-h1 = histfit(r1,51,'exponential');
-h1(1).FaceColor = '#87B146';
-h1(2).Color = [.2 .2 .2];
-xlabel('time (min)')
-xlim([0 5])
+%plot(xRange,yResult,'-','LineWidth',2)
+%plot(x,mdl)
+xlabel('silenced knirps concentration (AU)');
+ylabel('response time (min)');
+%xlim([time_threshold analysis_range_sil_dur])
+%ylim([0 analysis_range])
 pbaspect([1 1 1])
+%saveas(memory_fig,[FigurePath 'figure_memory.pdf'])
 
-histogram_norm_fig = figure;
-h2 = histfit(r2,21,'normal');
-h2(1).FaceColor = '#87B146';
-h2(2).Color = [.2 .2 .2];
-xlabel('time (min)')
-xlim([0 5])
-pbaspect([1 1 1])
+
+end
 
 
 
-% % plot the figure first
-% response_time_fig = figure;
-% hold on
-% h = histfit(a,edges,'Normalization','probability');
-% h.FaceColor = mRNA_red;
-% plot(x,y1,'LineWidth',3,'Color',mRNA_red)
-% 
-% xlim([0 analysis_range])
-% xlabel('response time (min)')
-% ylabel('probability')
-% pbaspect([3 2 1])
-% 
-%  fig_pd_noise = figure;
-%  histfit(r_final,101,'gamma');
-%  xlim([0 8])
-%  
-%}
+
+
+

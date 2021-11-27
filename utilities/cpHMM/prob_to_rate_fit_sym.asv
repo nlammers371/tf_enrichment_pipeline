@@ -21,7 +21,7 @@ function out = prob_to_rate_fit_sym (A, dT, type, prior, u_bound)
     K = size(A,1);
     k = sym('k%d_%d', [K K]);
     
-    if strcmp(type,'gen')||strcmp(type,'low_order')
+    if strcmp(type,'gen')
         typX = ones(1,K^2-K)*prior;
     elseif strcmp(type,'ladder')
         typX = ones(1,K^2-K-2)*prior;
@@ -42,10 +42,10 @@ function out = prob_to_rate_fit_sym (A, dT, type, prior, u_bound)
         k_bound_u = ones(1,K^2-K)*u_bound;
         k_prior = (ones(1,K^2-K)*prior);
         
-    elseif strcmp(type,'low_order')
+    if strcmp(type,'low_order')
         k_init = k - diag(diag(k));
         k_fun = matlabFunction(k_init - diag(sum(k_init)));
-        k_gen_cost = @(x) (call_on(k_fun,x)*dT)^0 + (call_on(k_fun,x)*dT)^1 + (call_on(k_fun,x)*dT)^2 /2 + (call_on(k_fun,x)*dT)^3 / 6 - A;
+        k_gen_cost = @(x) (call_on(k_fun,x)*dT) - A;
         
         k_bound_l = zeros(1,K^2-K);
         k_bound_u = ones(1,K^2-K)*u_bound;
@@ -61,9 +61,8 @@ function out = prob_to_rate_fit_sym (A, dT, type, prior, u_bound)
         
         k_prior = (ones(1,K^2-K-2)*prior);
         k_bound_l = zeros(1,K^2-K-2);
-        k_bound_u = ones(1,K^2-K-2)*u_bound;  
-        
-    elseif strcmp(type,'2rate') && (K ==3)
+        k_bound_u = ones(1,K^2-K-2)*u_bound;    
+      elseif strcmp(type,'2rate') && (K ==3)
         k_init = k - diag(diag(k));
         k_init(1,K) = 0;
         k_init(K,1) = 0;
