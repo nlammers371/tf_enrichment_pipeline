@@ -17,15 +17,15 @@ FigurePath = [liveProject.figurePath 'reactivation_dynamics_all' filesep];
 mkdir(FigurePath)
 
 
-% Embryo 18
+% Embryo 21
 embryo(1).expID = 1;
 embryo(1).frame_on = 62;
 
-% Embryo 20, good
+% Embryo 22
 embryo(2).expID = 2;
 embryo(2).frame_on = 50;
 
-% Embryo 25, good
+% Embryo 24
 embryo(3).expID = 3;
 embryo(3).frame_on = 42;
 
@@ -95,7 +95,7 @@ for i = 1:length(embryo)
                 
             end
 
-            if (mean_ap_orig > -0.14) && (mean_ap_orig < -0.10)
+            if (mean_ap_orig > -ap_lim) && (mean_ap_orig < ap_lim)
                time_orig_long = [time_orig_long time_vec_orig];
                frame_orig_long = [frame_orig_long frame_vec_orig];
                fluo_orig_long = [fluo_orig_long fluo_vec_orig];
