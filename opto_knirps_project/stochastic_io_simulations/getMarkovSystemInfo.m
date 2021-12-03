@@ -12,4 +12,4 @@ function simInfo = getMarkovSystemInfo(simInfo)
     r2 = 4.6784e4;    
     simInfo.r2 = [0 r2];
     simInfo.pi0 = [0.5 0.5];
-    simInfo.noise = 4e4; % NL: this isn't really doing anything atm
+    simInfo.noise = 3.0894e+04;
