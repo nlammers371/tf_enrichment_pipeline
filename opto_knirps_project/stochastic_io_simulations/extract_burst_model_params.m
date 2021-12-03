@@ -6,6 +6,7 @@ load('S:\Jake\Dropbox\ProcessedEnrichmentData\optokni_eve4+6_MCP-GFP_Homo\cpHMM_
 kon = compiledResults.freq_vec_mean
 koff = 1./compiledResults.dur_vec_mean
 r_gfp = compiledResults.init_vec_mean
+noise_gfp = compiledResults.sigma_vec_mean
 
 % get rough MCP-mCherry cross-calibration 
 load('S:\Jake\Dropbox\ProcessedEnrichmentData\optokni_eve4+6_MCP-GFP_Homo\spot_struct.mat')
@@ -35,4 +36,4 @@ gfp_to_mch_factor = nanmean(fluo_vec_mch_ft)/nanmean(fluo_vec_gfp_ft)
 
 r_mch = gfp_to_mch_factor * r_gfp
 r_mch_per_step = r_mch/3
- 
+noise_mch = gfp_to_mch_factor*noise_gfp

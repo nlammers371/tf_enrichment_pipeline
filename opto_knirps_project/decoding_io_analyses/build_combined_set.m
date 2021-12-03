@@ -5,14 +5,15 @@ addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
 
 % Load data
-dataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+dataRootJake = 'S:\Jake\Dropbox\ProcessedEnrichmentData\';
+dataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 
 % make new director for combined dataset
 savePath = [dataRoot 'combinedOptoSets' filesep];
 mkdir(savePath)
 
 % indicate projects to use
-projectNameCell = {'optokni_eve4+6_ON_DELAY','optokni_eve4+6_WT','optokni_eve4+6_ON_CONST','optokni_eve4+6_ON'};
+projectNameCell = {'optokni_eve4+6_ON_LOW_FULL','optokni_eve4+6_WT','optokni_eve4+6_ON_CONST'};
 
 % specify correction parameters for blue light
 knirps_offset = 375000 / 1e5;
@@ -23,7 +24,7 @@ cal_intercept = 1.079e5 / 1e5; %NL: dividing everything through by 1e5 for simpl
 spot_struct_full = [];
 for p = 1:length(projectNameCell)
     projectName = projectNameCell{p};    
-    load([dataRoot projectName filesep 'spot_struct.mat'],'spot_struct')
+    load([dataRootJake projectName filesep 'spot_struct.mat'],'spot_struct')
     for s = 1:length(spot_struct)
         spot_struct(s).projectName = projectName;
         spot_struct(s).projectID = p;
@@ -36,11 +37,11 @@ spot_struct = spot_struct_full;
 % generate a new set of unique identifiers
 set_vec = [spot_struct.setID];
 project_vec = [spot_struct.projectID];
-project_set_array = unique([[spot_struct.setID]' [spot_struct.projectID]'],'rows');
+project_set_array = unique([[spot_struct.projectID]' [spot_struct.setID]'],'rows');
 
 for i = 1:size(project_set_array,1)
-    projectID = project_set_array(i,2);
-    setID = project_set_array(i,1);
+    projectID = project_set_array(i,1);
+    setID = project_set_array(i,2);
     temp_ids = find(project_vec==projectID&set_vec==setID);
     for t = temp_ids
        spot_struct(t).masterID = i;
@@ -58,8 +59,9 @@ master_id_vec = [spot_struct.masterID];
 master_id_index = unique(master_id_vec);
 time_index_interp = 0:spot_struct(1).tresInterp:(50*60);
 
-% NL: obtained these frames via manual inspection of protein trends
-blue_light_frame_vec = [52 NaN 52 73 46 NaN 50 36 38 NaN 42 43 NaN 67 NaN 45 43];% OG
+%% NL: obtained these frames via manual inspection of protein trends
+blue_light_frame_vec = [NaN(1,8) 41 33 36];
+% blue_light_frame_vec = [52 NaN 52 73 46 NaN 50 36 38 miNaN 42 43 NaN 67 NaN 45 43];% OG
 
 % initialize array to store mean protein trend
 mean_protein_array = NaN(length(time_index_interp),length(master_id_index));
@@ -76,7 +78,6 @@ for m = 1:length(master_id_index)
     else
         shift_time = Inf;
     end
-
     % check that corrections look reasonable
     protein_array_temp = NaN(length(time_index),length(master_ids));        
     for i = master_ids
@@ -89,7 +90,7 @@ for m = 1:length(master_id_index)
         % extract basic vectors
         pt_vec = spot_struct(i).rawNCProtein/1e5;
         fluo_vec = spot_struct(i).fluoInterp;        
-        
+        ap_vec = spot_struct(i).APPosNucleus;
         % update time vector            
 %         spot_struct(i).timeInterpOrig = spot_struct(i).timeInterp;
         spot_struct(i).timeNew = t_vec_interp;
@@ -105,8 +106,10 @@ for m = 1:length(master_id_index)
                 (raw_adjusted(pert_ind:end)-cal_intercept)/cal_slope;
             end
             pt_interp = interp1(t_vec,raw_adjusted,t_vec_interp,'linear','extrap');
+            ap_interp = interp1(t_vec,ap_vec,t_vec_interp,'linear','extrap');
             spot_struct(i).rawNCProteinNew = pt_interp;
             spot_struct(i).fluoNew = NaN(size(pt_interp));
+            spot_struct(i).apPosNucleusNew = ap_interp;
             
             if sum(~isnan(t_vec_fluo)) >= minDP/2
                 spot_struct(i).fluoFlag = true;
@@ -118,6 +121,7 @@ for m = 1:length(master_id_index)
             spot_struct(i).useFlag = false;
             spot_struct(i).fluoFlag = false;
             spot_struct(i).rawNCProteinNew = NaN(size(t_vec_interp));
+            spot_struct(i).apPosNucleusNew = NaN(size(t_vec_interp));
             spot_struct(i).fluoNew = NaN(size(t_vec_interp));
         end    
     end        
@@ -196,6 +200,9 @@ for s = 1:length(spot_struct)
         spot_struct(s).logL = NaN;
     end
 end    
+
+% let's remove entries without viterbi fit for now
+spot_struct = spot_struct(fit_trace_indices);
 
 % remove unimportant fields to save space
 save([savePath 'spot_struct.mat'],'spot_struct')
