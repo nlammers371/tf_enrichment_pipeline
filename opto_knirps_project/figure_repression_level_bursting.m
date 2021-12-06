@@ -14,8 +14,12 @@ gr = [191 213 151]/255; % green
 %% Figure: burst frequency and duration
 
 % load inference results
-HIGH_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_HIGH.mat');
-LOW_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_LOW.mat');
+%HIGH_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_HIGH.mat');
+%LOW_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_LOW.mat');
+
+HIGH_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_HIGH_test.mat');
+LOW_bursting = load('P:\Jake\Pipeline\tf_enrichment_pipeline\opto_knirps_project\bursting_data\compiledResults_w7_K2_p0_ap1_t1_f2D_0.03_15_30_LOW_test.mat');
+
 
 
 % data from HIGH

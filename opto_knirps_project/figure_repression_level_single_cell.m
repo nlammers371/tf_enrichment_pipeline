@@ -55,10 +55,10 @@ bl = [115 143 193]/255; % blue
 gr = [191 213 151]/255; % green
 
 %% initialization
+ap_lim = 0.02;
+eYFP_background = 375698.13; %prctile(double(knirps_vec_long),1);
 
-knirps_offset = 0;
-
-projectName = {'optokni_eve4+6_WT','optokni_eve4+6_ON_CONST','optokni_eve4+6_ON_LOW'}; 
+projectName = {'optokni_eve4+6_WT','optokni_eve4+6_ON_CONST','optokni_eve4+6_ON_LOW_FULL'}; 
 
 spot_traces_WT = [];
 spot_traces_CONST = [];
@@ -77,9 +77,6 @@ resultsRoot = [liveProject.dataPath filesep];
 load([resultsRoot 'spot_struct.mat'])
 %FigurePath = [liveProject.figurePath 'WT_vs_CONST' filesep];
 %mkdir(FigurePath)
-
-% MS2 trace quality looks atrocious. Let's look at on and off times and the
-% like
 
 ever_on_vec = zeros(size(spot_struct));
 off_time_vec = NaN(size(spot_struct));
@@ -181,7 +178,7 @@ time_bins_plot = time_bins(1:end-1)/60;
 %knirps_bins = linspace(0,15e5,nLinBins);
 
 % calculate mean vectors
-knirps_vec_long = knirps_vec_long_raw - knirps_offset;
+knirps_vec_long = knirps_vec_long_raw - eYFP_background;
 
 ap_groups = discretize(ap_vec_long,ap_bins); 
 time_groups = discretize(time_vec_long,time_bins); 
@@ -291,11 +288,12 @@ num = 0;
 for j = 1:length(spot_struct)
     
     temp_trace = zeros(1,151);
+    temp_knirps = NaN(1,151);
     
     ap_vec = spot_struct(j).APPosNucleus;
     ap_pos = mean(ap_vec);
     
-    if (ap_pos>=-0.02) && (ap_pos<=0.02)
+    if (ap_pos>=-ap_lim) && (ap_pos<=ap_lim)
         num = num+1;
         spot_fluo = spot_struct(j).fluoInterp;
         knirps_protein = spot_struct(j).rawNCProteinInterp;
@@ -308,14 +306,14 @@ for j = 1:length(spot_struct)
             temp_knirps(frame_start:frame_final) = knirps_protein;
             if i == 1
                 spot_traces_WT = [spot_traces_WT;temp_trace];
-%                knirps_traces_WT = [knirps_traces_WT;temp_knirps];
+                knirps_traces_WT = [knirps_traces_WT;temp_knirps];
             else
                 if i == 2
                     spot_traces_CONST = [spot_traces_CONST;temp_trace];
-%                    knirps_traces_CONST = [knirps_traces_CONST;temp_knirps];
+                    knirps_traces_CONST = [knirps_traces_CONST;temp_knirps];
                 else
                     spot_traces_LOW = [spot_traces_LOW;temp_trace];
-%                    knirps_traces_LOW = [knirps_traces_LOW;temp_knirps];
+                    knirps_traces_LOW = [knirps_traces_LOW;temp_knirps];
                 end
             end
         end
@@ -327,7 +325,7 @@ end
 
 %% plot sample single traces;
 
-sample_num = 60;
+sample_num = 100;
 
 time_vec = (0:150)/3;
 
@@ -343,76 +341,108 @@ sample_traces_mean_WT = mean(spot_traces_WT,1);
 sample_traces_mean_CONST = mean(spot_traces_CONST,1);
 sample_traces_mean_LOW = mean(spot_traces_LOW,1);
 
+sample_knirps_mean_WT = nanmean(knirps_traces_WT,1)-eYFP_background;
+sample_knirps_mean_CONST = convert_from_458(nanmean(knirps_traces_CONST,1))-eYFP_background;
+sample_knirps_mean_LOW = nanmean(knirps_traces_LOW,1)-eYFP_background;
 
 single_traces_WT = figure;
-imagesc('XData',time_vec,'CData',spot_traces_WT)
+imagesc('XData',time_vec,'CData',random_sample_traces_WT(1:sample_num,:))
+%imagesc('XData',time_vec,'CData',random_sample_traces_WT)
+%imagesc('XData',time_vec,'CData',spot_traces_WT)
 xlabel('time (min)')
-xlim([0 37.5])
-%ylim([1 sample_num])
+xlim([0 30])
+ylim([1 sample_num])
 colorbar
 colormap(plasma)
-caxis([0 4.5E5])
+%colormap(turbo)
+caxis([0 5E5])
 pbaspect([2 1 1])
 
 single_traces_CONST = figure;
-%imagesc('XData',time_vec,'CData',random_sample_traces_CONST(1:sample_num,:))
-imagesc('XData',time_vec,'CData',spot_traces_CONST)
+imagesc('XData',time_vec,'CData',random_sample_traces_CONST(1:sample_num,:))
+%imagesc('XData',time_vec,'CData',ramdom_sample_traces_CONST)
+%imagesc('XData',time_vec,'CData',spot_traces_CONST)
 xlabel('time (min)')
 xlim([0 30])
-%ylim([1 sample_num])
+ylim([1 sample_num])
 colorbar
 colormap(plasma)
-caxis([0 4.5E5])
+%colormap(turbo)
+caxis([0 5E5])
 pbaspect([2 1 1])
 
 single_traces_LOW = figure;
-imagesc('XData',time_vec,'CData',random_sample_traces_LOW)
+imagesc('XData',time_vec,'CData',random_sample_traces_LOW(1:sample_num,:))
+%imagesc('XData',time_vec,'CData',random_sample_traces_LOW)
+%imagesc('XData',time_vec,'CData',spot_traces_LOW)
 xlabel('time (min)')
 xlim([0 30])
-%ylim([1 sample_num])
+ylim([1 sample_num])
 colorbar
 colormap(plasma)
-caxis([0 4.5E5])
+%colormap(turbo)
+caxis([0 5E5])
 pbaspect([2 1 1])
 
 single_traces_mean = figure;
-plot(time_vec,  movmean(sample_traces_mean_WT,3))
+plot(time_vec,  sample_traces_mean_WT)
 hold on
-plot(time_vec,  movmean(sample_traces_mean_CONST,3))
-plot(time_vec,  movmean(sample_traces_mean_LOW,3))
-xlim([0 37.5])
+plot(time_vec,  sample_traces_mean_CONST)
+plot(time_vec,  sample_traces_mean_LOW)
+xlim([0 30])
 %ylim([0 1])
 xlabel('time (min)')
 ylabel('mean spot fluorescence (au)')
 pbaspect([2 1 1])
 
-single_traces_frac_on = figure;
-plot(time_vec, movmean(sample_traces_frac_WT,3))
+
+knirps_traces_mean = figure;
+plot(time_vec,  sample_knirps_mean_WT)
 hold on
-plot(time_vec,  movmean(sample_traces_frac_CONST,3))
-plot(time_vec,  movmean(sample_traces_frac_LOW,3))
-xlim([0 37.5])
+plot(time_vec,  sample_knirps_mean_CONST)
+plot(time_vec,  sample_knirps_mean_LOW)
+xlim([0 30])
+xlabel('time (min)')
+ylabel('mean knirps fluorescence (au)')
+pbaspect([2 1 1])
+
+
+single_traces_movmean = figure;
+plot(time_vec,  movmean(sample_traces_mean_WT,3))
+hold on
+plot(time_vec,  movmean(sample_traces_mean_CONST,3))
+plot(time_vec,  movmean(sample_traces_mean_LOW,3))
+xlim([0 30])
+%ylim([0 1])
+xlabel('time (min)')
+ylabel('mean spot fluorescence (au)')
+pbaspect([2 1 1])
+
+
+single_traces_frac_on = figure;
+plot(time_vec, sample_traces_frac_WT)
+hold on
+plot(time_vec,  sample_traces_frac_CONST)
+plot(time_vec,  sample_traces_frac_LOW)
+xlim([0 30])
 ylim([0 1])
 xlabel('time (min)')
 ylabel('fraction of active nuclei')
 pbaspect([3 1 1])
 legend('WT','HIGH','LOW')
 
+
 single_traces_mean_on = figure;
 plot(time_vec, sample_traces_mean_WT./sample_traces_frac_WT)
 hold on
 plot(time_vec,  sample_traces_mean_CONST./sample_traces_frac_CONST)
 plot(time_vec,  sample_traces_mean_LOW./sample_traces_frac_LOW)
-xlim([0 37.5])
+xlim([0 30])
 ylim([0 3E5])
 xlabel('time (min)')
 %ylabel('fraction of active nuclei')
 pbaspect([3 1 1])
-legend('WT','perturbed')
-
-%saveas(single_traces_WT,[FigurePath 'figure_single_traces_WT.pdf'])
-%saveas(single_traces_CONST,[FigurePath 'figure_single_traces_CONST.pdf'])
-%saveas(single_traces_frac_on, [FigurePath 'figure_single_traces_frac_on.pdf'])
+legend('WT','HIGH','LOW')
 
 
 %% plot calculated mean vector
@@ -433,9 +463,9 @@ WT_mean_eve_fig = figure;
 imagesc(ap_bins_plot,time_bins_plot,WT.eve_mean)
 colorbar
 colormap(cmap_red_new)
-caxis([0 2.5E5])
+caxis([0 3.15E5])
 pbaspect([3 2 1])
-ylim([0 35])
+ylim([5 30])
 xlabel('AP position (% embryo length)')
 ylabel('time (min)')
 
@@ -450,16 +480,27 @@ ylabel('time (min)')
 % xlabel('AP position (% embryo length)')
 % ylabel('time (min)')
 
-
 CONST_mean_eve_fig = figure;
 imagesc(ap_bins_plot,time_bins_plot,CONST.eve_mean)
 colorbar
 colormap(cmap_red_new)
 caxis([0 3.15E5])
 pbaspect([3 2 1])
-ylim([0 35])
+ylim([5 30])
 xlabel('AP position (% embryo length)')
 ylabel('time (min)')
+
+
+LOW_mean_eve_fig = figure;
+imagesc(ap_bins_plot,time_bins_plot,LOW.eve_mean)
+colorbar
+colormap(cmap_red_new)
+caxis([0 3.15E5])
+pbaspect([3 2 1])
+ylim([5 30])
+xlabel('AP position (% embryo length)')
+ylabel('time (min)')
+
 
 WT_frac_eve_fig = figure;
 imagesc(ap_bins_plot,time_bins_plot,WT.inst_on)
@@ -468,7 +509,7 @@ colormap(cmap_red_new)
 %colormap(jet)
 caxis([0 1])
 pbaspect([3 2 1])
-ylim([0 35])
+ylim([5 30])
 xlabel('AP position (% embryo length)')
 ylabel('time (min)')
 
@@ -479,244 +520,65 @@ colormap(cmap_red_new)
 %colormap(jet)
 caxis([0 1])
 pbaspect([3 2 1])
-ylim([0 35])
+ylim([5 30])
 xlabel('AP position (% embryo length)')
 ylabel('time (min)')
 
-%saveas(WT_mean_kni_fig,[FigurePath 'figure_kni_mean_WT.pdf'])
-%saveas(WT_mean_eve_fig,[FigurePath 'figure_eve_mean_WT.pdf'])
-%saveas(CONST_mean_eve_fig,[FigurePath 'figure_eve_mean_CONST.pdf'])
-%saveas(WT_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_WT.pdf'])
-%saveas(CONST_frac_eve_fig,[FigurePath 'figure_eve_fraction_on_CONST.pdf'])
-
-%% Figure: plot protein level comparison between WT and ON_CONST
-
-WT_knirps_mean_ap = (mean(WT.knirps_mean(35:50,:),1)*1e-5)-3.75;
-CONST_knirps_mean_ap = mean(CONST.knirps_mean(35:50,:),1)*1e-5/1.25-3.75;
-
-knirps_mean_ap_fig = figure;
-plot(ap_bins_plot*100,WT_knirps_mean_ap)
-hold on
-plot(ap_bins_plot*100, CONST_knirps_mean_ap)
-
-xlim([-10.6667 10.6667])
-ylim([0.5 9])
+LOW_frac_eve_fig = figure;
+imagesc(ap_bins_plot,time_bins_plot,LOW.inst_on)
+colorbar
+colormap(cmap_red_new)
+%colormap(jet)
+caxis([0 1])
+pbaspect([3 2 1])
+ylim([5 30])
 xlabel('AP position (% embryo length)')
-ylabel('[Knirps] (AU)')
+ylabel('time (min)')
 
+%% plot sample trace together
+
+sample_WT = 104;
+% none?80, 91,95,99,101? 104! 106!
+%sample_CONST = 98; 
+sample_CONST = 119;
+% 55,57,58,150,98!!! 171 173 101! 105! 108! 112!!! 119!!!
+%sample_LOW = 150; 
+sample_LOW = 65;
+% 9? 16, 22, high; 44?; 47!!!, 139!!!  199 146? 65(with high level)!150! sparce: 155!157!
+
+
+test_panel_fig = figure;
+tiledlayout(3,1)
+nexttile
+plot(time_vec,spot_traces_CONST(sample_CONST,:),'- .')
+xlim([14.5 30])
+ylim([-0.25E5 5.75E5 ])
+pbaspect([3 1 1])
+nexttile
+plot(time_vec,spot_traces_LOW(sample_LOW,:),'- .')
+xlim([14.5 30])
+ylim([-0.25E5 5.75E5 ])
+pbaspect([3 1 1])
+nexttile
+plot(time_vec,spot_traces_WT(sample_WT,:),'- .')
+xlim([14.5 30])
+ylim([-0.25E5 5.75E5 ])
 pbaspect([3 1 1])
 
-%saveas(knirps_mean_ap_fig,[FigurePath 'figure_kni_mean_WT_CONST_ap.pdf'])
+
+
+
+test_fig = figure;
+
+hold on
+plot(time_vec,spot_traces_CONST(sample_CONST,:))
+plot(time_vec,spot_traces_LOW(sample_LOW,:))
+plot(time_vec,spot_traces_WT(sample_WT,:))
+xlim([14.5 30])
+ylim([-0.25E5 5.5E5 ])
+pbaspect([3 2 1])
 
 
 
 
 
-%% Plot them together
-
-
-%% Bursting parameters with mRNA pattern
-% which time to plot for knirps
-% time_plot_2 = 27;
-% 
-% % mRNA profile vs burst duration
-% burst_dur_fig = figure;
-% hold on
-% 
-% yyaxis left
-% 
-% eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
-% f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
-% f.FaceAlpha = 0.3;
-% set(gca,'YColor',mRNA_red)
-% ylabel('accumulated {\it eve} mRNA (au)');
-% ylim([0 8])
-% 
-% set(gca,'FontSize',14)
-% 
-% yyaxis right
-% errorbar(burst_axis*100,burst_dur/burst_dur_center,burst_dur_ste/burst_dur_center,'Color','k','CapSize',0)
-% plot(burst_axis*100,burst_dur/burst_dur_center,'-k')
-% scatter(burst_axis*100,burst_dur/burst_dur_center,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-% set(gca,'YColor',bl);
-% ylabel(['burst duration (relative to center)'])
-% ylim([0 2])
-% 
-% 
-% xlabel('AP position (% embryo length)');
-% xlim([ap_axis(1) ap_axis(end)])
-% %mRNA_fig2.InvertHardcopy = 'off';
-% set(gcf,'color','w'); 
-% pbaspect([2 1 1])
-% 
-% 
-% % mRNA profile vs loading rate
-% burst_loading_rate_fig = figure;
-% hold on
-% 
-% yyaxis left
-% 
-% eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
-% f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
-% f.FaceAlpha = 0.3;
-% set(gca,'YColor',mRNA_red)
-% ylabel('accumulated {\it eve} mRNA (au)');
-% ylim([0 8])
-% 
-% set(gca,'FontSize',14)
-% 
-% yyaxis right
-% errorbar(burst_axis*100,burst_rate/burst_rate_center,burst_rate_ste/burst_rate_center,'Color','k','CapSize',0)
-% plot(burst_axis*100,burst_rate/burst_rate_center,'-k')
-% scatter(burst_axis*100,burst_rate/burst_rate_center,50,'MarkerFaceColor',gr,'MarkerEdgeColor','k')
-% set(gca,'YColor',gr);
-% ylabel(['mRNA loading rate (relative to center)'])
-% ylim([0 2])
-% 
-% 
-% xlabel('AP position (% embryo length)');
-% xlim([ap_axis(1) ap_axis(end)])
-% %mRNA_fig2.InvertHardcopy = 'off';
-% set(gcf,'color','w'); 
-% pbaspect([2 1 1])
-% 
-% % mRNA profile vs burst frequency
-% burst_freq_fig = figure;
-% hold on
-% 
-% yyaxis left
-% 
-% eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
-% f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
-% f.FaceAlpha = 0.3;
-% set(gca,'YColor',mRNA_red)
-% ylabel('accumulated {\it eve} mRNA (au)');
-% ylim([0 8])
-% 
-% set(gca,'FontSize',14)
-% 
-% yyaxis right
-% errorbar(burst_axis*100,burst_freq,burst_freq_ste,'Color','k','CapSize',0)
-% plot(burst_axis*100,burst_freq,'-k')
-% scatter(burst_axis*100,burst_freq,50,'MarkerFaceColor',bl,'MarkerEdgeColor','k')
-% set(gca,'YColor',bl);
-% ylabel(['burst frequency (1/min)'])
-% ylim([0 4])
-% 
-% 
-% xlabel('AP position (% embryo length)');
-% xlim([ap_axis(1) ap_axis(end)])
-% %mRNA_fig2.InvertHardcopy = 'off';
-% set(gcf,'color','w'); 
-% pbaspect([2 1 1])
-% 
-% %saveas(burst_loading_rate_fig,[FigurePath 'figure_loading_rate_vs_ap_with_mRNA.pdf'])
-% %saveas(burst_freq_fig,[FigurePath 'figure_burst_freq_vs_ap_with_mRNA.pdf'])
-% %saveas(burst_dur_fig,[FigurePath 'figure_burst_dur_vs_ap_with_mRNA.pdf'])
-
-
-% %% Figure 2: compare predicted mRNA
-% % generate decay kernel
-% close all
-% 
-% % which time to plot for knirps
-% time_plot_1 = 5;
-% time_plot_2 = 27;
-% 
-% eve_half_life = 7;
-% eve_decay_kernel = exp(-time_bins'/eve_half_life/60);
-% eve_decay_kernel = eve_decay_kernel / eve_decay_kernel(1);
-% 
-% % replace missing values with zeros (Need to clean this up, should really
-% % be some kind of interpolation)
-% eve_time_array_full(isnan(eve_time_array_full)) = 0;
-% 
-% predicted_eve_profile_array = convn(eve_decay_kernel,eve_time_array_full,'full');
-% predicted_eve_profile_mean = nanmean(predicted_eve_profile_array,3);
-% predicted_eve_profile_ste = nanstd(predicted_eve_profile_array,[],3);
-% 
-% predicted_eve_profile_mean = predicted_eve_profile_mean(1:length(time_bins),:);
-% predicted_eve_profile_ste = predicted_eve_profile_ste(1:length(time_bins),:);
-% 
-% % knirps green
-% k_green = brighten([38 142 75]/256,.4);
-% color_green = [38 143 75]/256; % color from Jake
-% mRNA_red = brighten([212 100 39]/256,.2);
-% 
-% % mRNA profile plot
-% mRNA_fig1 = figure;
-% hold on
-% 
-% yyaxis left
-% f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(time_plot_1,:)*1e-5 zeros(size(knirps_time_array_mean(time_plot_1,:)))],color_green);
-% %plot(ap_axis,knirps_time_array_mean(time_plot_1,:)*1e-5,'Color',color_green,'LineWidth',3)
-% f.FaceAlpha = 0.5;
-% ylabel('[Knirps] (au)');
-% set(gca,'YColor',color_green)
-% ylim([0 15])
-% 
-% yyaxis right
-% % errorbar(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),predicted_eve_profile_ste(end,:)*1e-5,'Color',mRNA_red,'CapSize',0);
-% %plot(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_1,:)*1e-5,1),'Color',brighten(mRNA_red,0),'LineWidth',1.5) % NL: applying mild smoothing since this is illustrative (not quantitative)
-% % s = scatter(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
-% eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_1,:)*1e-5,1);
-% f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
-% f.FaceAlpha = 0.5;
-% set(gca,'YColor',mRNA_red)
-% xlabel('AP position (% embryo length)');
-% ylabel('accumulated {\it eve} mRNA (au)');
-% ylim([0 7.5])
-% 
-% 
-% %grid on
-% set(gca,'FontSize',14)
-% %set(gca,'Color',[228,221,209]/255) 
-% % ylim([0.9 1.1])
-% 
-% xlim([ap_axis(1) ap_axis(end)])
-% mRNA_fig1.InvertHardcopy = 'off';
-% set(gcf,'color','w'); 
-% pbaspect([3 2 1])
-% 
-% saveas(mRNA_fig1,[FigurePath 'figure2_mRNA_fig_time1.png'])
-% saveas(mRNA_fig1,[FigurePath 'figure2_mRNA_fig_time1.pdf'])
-% 
-% 
-% % mRNA profile plot
-% mRNA_fig2 = figure;
-% hold on
-% 
-% yyaxis left
-% f = fill([ap_axis fliplr(ap_axis)], [knirps_time_array_mean(time_plot_2,:)*1e-5 zeros(size(knirps_time_array_mean(time_plot_1,:)))],color_green);
-% %plot(ap_axis,knirps_time_array_mean(time_plot_2,:)*1e-5,'Color',color_green,'LineWidth',3)
-% %s = scatter(ap_axis,knirps_time_array_mean(time_plot_2,:)*1e-5,50,'MarkerFaceColor',color_green,'MarkerEdgeColor','k');
-% f.FaceAlpha = 0.5;
-% ylabel('[Knirps] (au)');
-% set(gca,'YColor',color_green)
-% ylim([0 15])
-% 
-% yyaxis right
-% % errorbar(ap_axis,imgaussfilt(predicted_eve_profile_mean(end,:)*1e-5,1),predicted_eve_profile_ste(end,:)*1e-5,'Color',mRNA_red,'CapSize',0);
-% %plot(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1),'Color',brighten(mRNA_red,0),'LineWidth',1.5) % NL: applying mild smoothing since this is illustrative (not quantitative)
-% %s = scatter(ap_axis,imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1),50,'MarkerFaceColor',mRNA_red,'MarkerEdgeColor','k');
-% eve_mRNA_sm = imgaussfilt(predicted_eve_profile_mean(time_plot_2,:)*1e-5,1);
-% f = fill([ap_axis fliplr(ap_axis)], [eve_mRNA_sm zeros(size(eve_mRNA_sm))],mRNA_red);
-% f.FaceAlpha = 0.5;
-% set(gca,'YColor',mRNA_red)
-% xlabel('AP position (% embryo length)');
-% ylabel('accumulated {\it eve} mRNA (au)');
-% ylim([0 7.5])
-% 
-% 
-% %grid on
-% set(gca,'FontSize',14)
-% %set(gca,'Color',[228,221,209]/255) 
-% % ylim([0.9 1.1])
-% 
-% xlim([ap_axis(1) ap_axis(end)])
-% mRNA_fig2.InvertHardcopy = 'off';
-% set(gcf,'color','w'); 
-% pbaspect([3 2 1])
-% 
-% saveas(mRNA_fig2,[FigurePath 'figure2_mRNA_fig_time2.png'])
-% saveas(mRNA_fig2,[FigurePath 'figure2_mRNA_fig_time2.pdf'])

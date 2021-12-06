@@ -11,18 +11,31 @@ inferenceInfo = struct;
 % set project identifiers (only applicable if running this on savio)
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Het'};
 %inferenceInfo.projectNameCell = {'optokni_eve4+6_MCP-GFP_Homo'};
-inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
-%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT_FUN'};
-%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
-%inferenceInfo.projectNameCell = {'optokni_eve4+6_HDAC_WT'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_WT_FULL'};
+inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_CONST'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_LOW_FULL'};
+%inferenceInfo.projectNameCell = {'optokni_eve4+6_ON_LOW'};
 
 % set inference options
-inferenceInfo.ProteinBinFlag = 0;
+inferenceInfo.ProteinBinFlag = 1;
 inferenceInfo.FluoBinFlag = 0;
 
+%Inference for HIGH and LOW comparison (v1)
+inferenceInfo.timeBins = {[15*60 30*60]}; % should be longer than 15min
+inferenceInfo.apBins = [-0.03 0.03];
+
+%Inference for HIGH and LOW comparison (v2)
+%inferenceInfo.timeBins = {[15*60 30*60]}; % should be longer than 15min
+%inferenceInfo.apBins = [-0.02 0.02];
+
+%Inference for WT, HIGH and LOW comparison (v2)
+%inferenceInfo.timeBins = {[10*60 30*60]}; % should be longer than 15min
+%inferenceInfo.apBins = [-0.025 0.025];%linspace(-.2,.2,10);
+
 %Long inference, paper figure, optokni_eve4+6_WT and ON_CONST
-inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
-inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
+%inferenceInfo.timeBins = {[6*60 50*60]}; % should be longer than 15min
+%inferenceInfo.apBins = linspace(-0.12,0.12,10);%linspace(-.2,.2,10);
 
 %Shorter range, test: optokni_eve4+6_WT and ON_CONST
 %inferenceInfo.timeBins = {[10*60 25*60]}; % should be longer than 15min
@@ -60,10 +73,10 @@ inferenceInfo.modelSpecs.alphaFrac = 1302/6444;
 
 % other info
 inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-inferenceInfo.SampleSize = 4500;
+inferenceInfo.SampleSize = 2500;
 inferenceInfo.useQCFlag = true;
 
-inferenceInfo.n_localEM = 75;
+inferenceInfo.n_localEM = 25;
 
 % Get basic project info and determing file paths
 liveProject = LiveEnrichmentProject(inferenceInfo.projectNameCell{1});

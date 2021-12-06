@@ -98,13 +98,22 @@ mask_ratio = 0.8;
 %analysisFinal = 22.5;
 
 %optokni_eve4+6_ON_LOW
-Prefix = '2021-11-08-optoknirps_eve4_6_low_ON_embryo6'; APflip = 1;
+%Prefix = '2021-11-08-optoknirps_eve4_6_low_ON_embryo6'; APflip = 1;
+Prefix = '2021-11-10-optoknirps_eve4_6_low_ON_embryo9'; APflip = 1;
+%Prefix = '2021-11-11-optoknirps_eve4_6_low_ON_embryo10'; APflip = 1;
+%Prefix = '2021-11-12-optoknirps_eve4_6_low_ON_embryo11'; APflip = 1;
 
 % for embryo 6
-avrInit = 32.5;
-avrFinal = 35;
+%avrInit = 32.5;
+%avrFinal = 35;
+%analysisInit = 0;
+%analysisFinal = 35;
+
+% for embryo 9, 10, 11
+avrInit = 30;
+avrFinal = 32.5;
 analysisInit = 0;
-analysisFinal = 35;
+analysisFinal = 32.5;
 
 
 

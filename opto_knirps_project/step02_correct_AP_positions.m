@@ -3,7 +3,7 @@
 clear
 close all
 
-projectList = {'optokni_eve4+6_ON_CONST'}; % Cell array containing all projects you wish to process
+projectList = {'optokni_eve4+6_WT'}; % Cell array containing all projects you wish to process
 
 % iterate through list of projects and generate required variables
 for p = 1:length(projectList)
