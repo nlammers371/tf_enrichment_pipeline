@@ -6,13 +6,16 @@ addpath(genpath('../../utilities'))
 
 % Load data
 dataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
+if ~exist(dataRoot)
+    dataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
+end
 readPath = [dataRoot 'combinedOptoSets' filesep];
 load([readPath 'inference_data.mat'],'inference_data')
 
 % set write path
 writePath = [readPath 'cpHMM_results' filesep];
 mkdir(writePath)
-%%
+%
 sampleSize = 2500;
 nBoots = 25;
 inferenceOptions.sampleSize = sampleSize;
@@ -73,7 +76,7 @@ for i = 1:size(project_ap_zero_array)
         inference_struct(i).kni_data{n} = inference_data.knirps_vec_cell(trace_filter(kni_groups==n));
         inference_struct(i).time_data{n} = inference_data.time_vec_cell(trace_filter(kni_groups==n));
         inference_struct(i).particle_id_data{n} = inference_data.particle_id_vec(trace_filter(kni_groups==n));
-        inference_struct(i).particle_sub_id_data{n} = inference_data.rep_id_vec(trace_filter(kni_groups==n));;
+        inference_struct(i).particle_sub_id_data{n} = inference_data.rep_id_vec(trace_filter(kni_groups==n));
     end
     inference_struct(i).ap_id = ap_id;
     inference_struct(i).p_id = p_id;
@@ -82,7 +85,7 @@ for i = 1:size(project_ap_zero_array)
     inference_struct(i).ap_pos = ap_axis(ap_id);
 end    
 
-
+save([readPath 'inference_info.mat'],'inference_struct')
 %%
 group_i = 1;
 for i = 1:length(inference_struct)
