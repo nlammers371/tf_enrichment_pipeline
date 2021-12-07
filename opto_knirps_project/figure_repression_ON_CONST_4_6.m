@@ -8,7 +8,6 @@ addpath(genpath('./lib'))
 
 projectNameCell = {'optokni_eve4+6_ON_CONST'}; 
 
-
 %%
 % color to be used
 k_green = brighten([38 142 75]/256,.4);
@@ -61,12 +60,16 @@ embryo = [];
 
 %% For "optokni_eve4+6_ON_CONST"
 % Embryo 21
-embryo(1).expID = 1;
-embryo(1).frame_on = 62;
+%embryo(1).expID = 1;
+%embryo(1).frame_on = 62;
 
 % Embryo 22
+embryo(1).expID = 1;
+embryo(1).frame_on = 50;
+
+% Embryo 23
 embryo(2).expID = 2;
-embryo(2).frame_on = 50;
+embryo(2).frame_on = 45;
 
 % Embryo 24
 embryo(3).expID = 3;
