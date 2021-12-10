@@ -3,7 +3,7 @@ close all
 
 addpath(genpath('./lib'))
 addpath(genpath('../../utilities'))
-
+nlamn
 % Load data
 dataRootJake = 'S:\Jake\Dropbox\ProcessedEnrichmentData\';
 dataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';

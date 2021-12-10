@@ -13,7 +13,8 @@ if ~exist(dataRoot)
     FigurePath = 'C:\Users\nlamm\Dropbox (Personal)\LocalEnrichmentFigures\combinedOptoSets\';
 end
 mkdir(FigurePath)
-dataPath = [dataRoot 'combinedOptoSets' filesep];
+projectName = 'combinedOptoSets_v2';
+dataPath = [dataRoot projectName filesep];
 load([dataPath 'inference_data.mat'],'inference_data')
 load([dataPath 'inference_info.mat'],'inference_struct')
 
@@ -32,13 +33,14 @@ for i = 1:length(inf_files)
     load([inferencePath inf_files(i).name])
     f_mean = nanmean([output.fluo_data{:}]);
     t_mean = nanmean([output.time_data{:}]);
-%     output = rmfield(output,{'fluo_data','time_data'});
+%     kni_mean = nanmean([output.kni_data{:}]);r
     fnames = fieldnames(output);
     for f = 1:length(fnames)
         inference_results(i).(fnames{f}) = output.(fnames{f});
     end
     inference_results(i).f_mean = f_mean;
     inference_results(i).t_mean = t_mean;
+%     inference_results(i).kni_mean = t_mean;
 end  
 delete(wb)
 %%
@@ -53,24 +55,24 @@ diff_vec = [1 diff(gp_kni_array(:,2))'];
 inf_ids = cumsum(1*(diff_vec<0))+1;
 
 % generate knirps axis vector 
-knirps_axis_vec = NaN(size(group_id_vec));
-for i = 1:length(inference_results)
-    % collect list of relevant entries (this requires a little work)
-    particle_ids = inference_results(i).particle_ids;
-    time_data = inference_results(i).time_data;
-    kni_ids = NaN(size(particle_ids));
-    for p = 1:length(particle_ids)
-        p_options = find(particle_id_vec_long==particle_ids(p));
-        for j = 1:length(p_options)
-            if inference_data.time_vec_cell{p_options(j)}(1) == time_data{p}(1)
-                kni_ids(p) = p_options(j);
-            end
-        end
-    end        
-    knirps_axis_vec(i) = nanmean([inference_data.knirps_vec_cell{kni_ids}]);
-end  
-
-%% generate full inference id vec
+% knirps_axis_vec = NaN(size(group_id_vec));
+% for i = 1:length(inference_results)
+%     % collect list of relevant entries (this requires a little work)
+%     particle_ids = inference_results(i).particle_ids;
+%     time_data = inference_results(i).time_data;
+%     kni_ids = NaN(size(particle_ids));
+%     for p = 1:length(particle_ids)
+%         p_options = find(particle_id_vec_long==particle_ids(p));
+%         for j = 1:length(p_options)
+%             if inference_data.time_vec_cell{p_options(j)}(1) == time_data{p}(1)
+%                 kni_ids(p) = p_options(j);
+%             end
+%         end
+%     end        
+%     knirps_axis_vec(i) = nanmean([inference_data.knirps_vec_cell{kni_ids}]);
+% end  
+knirps_axis_vec = [inference_results.kni_mean];
+% generate full inference id vec
 inf_id_vec = NaN(size(group_id_vec));
 for i = 1:length(inf_id_vec)
     ind = find(group_id_vec(i)==gp_kni_array(:,1) & knirps_id_vec(i)==gp_kni_array(:,2));
@@ -175,7 +177,7 @@ for p = 0:1
             s(end+1) = scatter(knirps_mean_vec(ft),kon_mean,50,'MarkerFaceColor',cmap(inf_index(i)-z*1,:),'MarkerEdgeColor','k');
         end
 
-        legend(s,'WT','ON CONST','ON LOW','Location','southwest')
+        legend(s,'ON LOW','WT','ON CONST','Location','southwest')
         xlabel('average Knirps concentration')
         if p == 0
             ylabel('burst frequency (events per minute)')
@@ -226,7 +228,7 @@ for p = 0:1
             s(end+1) = scatter(knirps_mean_vec(ft),koff_mean,50,'MarkerFaceColor',cmap(inf_index(i)-z*1,:),'MarkerEdgeColor','k');
         end
 
-        legend(s,'WT','ON CONST','ON LOW','Location','southwest')
+        legend(s,'ON LOW','WT','ON CONST','Location','southwest')
 
         xlabel('average Knirps concentration')
         if p == 0
@@ -274,7 +276,7 @@ for p = 0:1
                 s(end+1) = scatter(knirps_mean_vec(ft),r_mean_vec(ft)*60,50,'MarkerFaceColor',cmap(inf_index(i)-z*1,:),'MarkerEdgeColor','k');
             end
 
-            legend(s,'WT','ON CONST','ON LOW','Location','southwest')
+            legend(s,'ON LOW','WT','ON CONST','Location','southwest')
 
             xlabel('average Knirps concentration')
             ylabel('r (au per minute)')
