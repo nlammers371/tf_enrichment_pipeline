@@ -193,15 +193,17 @@ for p = 0:1
         ax.YAxis(1).Color = 'k';
         ax.XAxis(1).Color = 'k';
 
-        H0_vs_f0_fig.InvertHardcopy = 'off';
+        kon_fig.InvertHardcopy = 'off';
         set(gcf,'color','w');
         grid on
         set(gca,'Color',[228,221,209]/255) 
 
         if p == 0
             saveas(kon_fig,[FigurePath 'burst_freq_scatter_z' num2str(z) '.png'])
+            saveas(kon_fig,[FigurePath 'burst_freq_scatter_z' num2str(z) '.pdf'])
         else
             saveas(kon_fig,[FigurePath 'pon_scatter_z' num2str(z) '.png'])
+            saveas(kon_fig,[FigurePath 'pon_scatter_z' num2str(z) '.pdf'])
         end
 
         koff_fig = figure;
@@ -245,15 +247,17 @@ for p = 0:1
         ax.YAxis(1).Color = 'k';
         ax.XAxis(1).Color = 'k';
 
-        H0_vs_f0_fig.InvertHardcopy = 'off';
+        koff_fig.InvertHardcopy = 'off';
         set(gcf,'color','w');
         grid on
         set(gca,'Color',[228,221,209]/255) 
 
         if p == 0
             saveas(koff_fig,[FigurePath 'koff_scatter_z' num2str(z) '.png'])
+            saveas(koff_fig,[FigurePath 'koff_scatter_z' num2str(z) '.pdf'])
         else
             saveas(koff_fig,[FigurePath 'poff_scatter_z' num2str(z) '.png'])
+            saveas(koff_fig,[FigurePath 'poff_scatter_z' num2str(z) '.pdf'])
         end
 
         if p == 0
@@ -288,12 +292,13 @@ for p = 0:1
             ax.YAxis(1).Color = 'k';
             ax.XAxis(1).Color = 'k';
 
-            H0_vs_f0_fig.InvertHardcopy = 'off';
+            r_fig.InvertHardcopy = 'off';
             set(gcf,'color','w');
             grid on
             set(gca,'Color',[228,221,209]/255) 
 
             saveas(r_fig,[FigurePath 'r_scatter_z' num2str(z) '.png'])
+            saveas(r_fig,[FigurePath 'r_scatter_z' num2str(z) '.pdf'])
         end
     end    
 end    
