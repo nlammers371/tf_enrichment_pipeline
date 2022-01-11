@@ -14,20 +14,18 @@ inferenceInfo.projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'}; % {'2xDl-Ven_
 % set inference options
 inferenceInfo.ProteinBinFlag = 0;
 inferenceInfo.FluoBinFlag = 0;
-%inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
 inferenceInfo.timeBins = {[0 40*60]}; % should be >= than 15min
 inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
 % set core model specs
-inferenceInfo.modelSpecs.nStates = 3; % number of states in system
+inferenceInfo.modelSpecs.nStates = 2; % number of states in system
 inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
-inferenceInfo.AdditionalGroupingVariable = 'stripeCenterFlag';%'Stripe'
+inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
 inferenceInfo.SampleSize = 3000;
 inferenceInfo.useQCFlag = true;
-
 inferenceInfo.n_localEM = 25;
 
 % Get basic project info and determing file paths
