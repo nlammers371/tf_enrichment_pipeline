@@ -9,12 +9,12 @@ FigurePath = [liveProject.figurePath filesep 'nucleus_movies'];
 RefPath = [liveProject.dataPath 'refFrames' filesep];
 
 % load data
-load([resultsRoot 'spot_struct.mat'])  
+load([resultsRoot 'spot_struct_protein.mat'])  
 
 % call header function
 [liveProject, ~, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo, hasNucleusProbFiles] = headerFunction(projectName);
 
-
+% spot_struct_protein = spot_struct_protein;
 % determine protein channel 
 proteinChannel = liveProject.includedExperiments{1}.inputChannels;
 
@@ -25,13 +25,13 @@ minSpotDP = 75;
 n_lead_frames = 7;
 z_offset = 1;
 % n_vec = [spot_struct.N];
-% candidate_indices = find(n_vec>=minSpotDP);
+%% candidate_indices = find(n_vec>=minSpotDP);
 spot_struct_trunc = struct;
 qc_kernel = ones(1,5);
 i_pass = 1;
 transfer_fields = {'fluo','time','frames','yPosNucleus','xPosNucleus','APPosNucleus','FrameQCFlags'};
-for i = 1:length(spot_struct)
-    FrameQCFlags = spot_struct(i).FrameQCFlags;
+for i = 1:length(spot_struct_protein)
+    FrameQCFlags = spot_struct_protein(i).FrameQCFlags;
     FrameQCFlags_1 = FrameQCFlags == 1;
     FrameQCFlags_2 = conv(qc_kernel,FrameQCFlags_1,'full');
     FrameQCFlags_2 = FrameQCFlags_2(3:end-2) >= 4;
@@ -42,21 +42,22 @@ for i = 1:length(spot_struct)
         last_i = min([length(FrameQCFlags_2),find(FrameQCFlags_2,1,'last')+n_lead_frames]);
         % add fields
         for f = 1:length(transfer_fields)
-            vec = spot_struct(i).(transfer_fields{f});
+            vec = spot_struct_protein(i).(transfer_fields{f});
             spot_struct_trunc(i_pass).(transfer_fields{f}) = vec(first_i:last_i);
         end
         % basic ID info
-        spot_struct_trunc(i_pass).particleID = spot_struct(i).particleID;
-        spot_struct_trunc(i_pass).setID = spot_struct(i).setID;
-        spot_struct_trunc(i_pass).ncID = spot_struct(i).ncID;
+        spot_struct_trunc(i_pass).particleID = spot_struct_protein(i).particleID;
+        spot_struct_trunc(i_pass).setID = spot_struct_protein(i).setID;
+        spot_struct_trunc(i_pass).ncID = spot_struct_protein(i).ncID;
         % pull kalman inference for particle position
-        xPosInfDS = spot_struct(i).xPosInf(2:2:end);
+        xPosInfDS = spot_struct_protein(i).xPosInf(2:2:end);
         spot_struct_trunc(i_pass).xPosParticle = xPosInfDS(first_i:last_i)';
-        yPosInfDS = spot_struct(i).yPosInf(2:2:end);
+        yPosInfDS = spot_struct_protein(i).yPosInf(2:2:end);
         spot_struct_trunc(i_pass).yPosParticle = yPosInfDS(first_i:last_i)';
-        zPosInfDS = spot_struct(i).zPosInf(2:2:end);
+        zPosInfDS = spot_struct_protein(i).zPosInf(2:2:end);
         spot_struct_trunc(i_pass).zPosParticle = zPosInfDS(first_i:last_i)';
         spot_struct_trunc(i_pass).origID = i;
+        spot_struct_trunc(i_pass).TraceQCFlag = true(size(spot_struct_trunc(i_pass).zPosParticle));
         % increment
         i_pass = i_pass + 1;
     end
@@ -89,7 +90,7 @@ RefStruct.time_ref = [spot_struct_input.time];
 % iterate through all relevant set/frame combinations
 NIter = size(RefStruct.set_frame_array,1);
 tic
-parpool(12);
+parpool(24);
 parfor i_stack = 1:NIter
     
     % extract basic info    
@@ -144,7 +145,7 @@ parfor i_stack = 1:NIter
 end 
 toc
 
-%% save data
+% save data
 disp('Saving...')
 save([resultsRoot 'nucleusMovieData.mat'],'movieData','-v7.3') 
 disp('Done.')

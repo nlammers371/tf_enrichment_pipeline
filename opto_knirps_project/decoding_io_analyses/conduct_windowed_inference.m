@@ -9,15 +9,15 @@ dataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 if ~exist(dataRoot)
     dataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
 end
-readPath = [dataRoot 'combinedOptoSets' filesep];
+readPath = [dataRoot 'combinedOptoSets_v2' filesep];
 load([readPath 'inference_data.mat'],'inference_data')
 
 % set write path
 writePath = [readPath 'cpHMM_results' filesep];
 mkdir(writePath)
-%
+
 sampleSize = 2500;
-nBoots = 25;
+nBoots = 10;
 inferenceOptions.sampleSize = sampleSize;
 inferenceOptions.nBoots = nBoots;
 inferenceOptions.nStates = 2;
@@ -25,7 +25,7 @@ inferenceOptions.Tres = 20;
 inferenceOptions.nSteps = 7;
 inferenceOptions.alpha = 1.4;
 inferenceOptions.eps = 1e-4;
-inferenceOptions.maxWorkers = 24;
+inferenceOptions.maxWorkers = 25;
 inferenceOptions.n_localEM = 25; % set num local runs
 inferenceOptions.nStepsMax = 500; % set max stinferenceOptions.eps per inference
 
@@ -49,6 +49,7 @@ project_ap_zero_array = [combCell{:}];
 
 % calculate kniprs bins for each group
 inference_struct = struct;
+group_i = 1;
 for i = 1:size(project_ap_zero_array)
     % get basic ID info
     ap_id = project_ap_zero_array(i,1);
@@ -71,12 +72,16 @@ for i = 1:size(project_ap_zero_array)
     inference_struct(i).time_data = cell(1,nBins);
     inference_struct(i).particle_id_data = cell(1,nBins);
     inference_struct(i).particle_sub_id_data = cell(1,nBins);
+    inference_struct(i).group_id_vec = NaN(1,nBins);
     for n = 1:nBins
         inference_struct(i).fluo_data{n} = inference_data.fluo_vec_cell(trace_filter(kni_groups==n));
         inference_struct(i).kni_data{n} = inference_data.knirps_vec_cell(trace_filter(kni_groups==n));
         inference_struct(i).time_data{n} = inference_data.time_vec_cell(trace_filter(kni_groups==n));
         inference_struct(i).particle_id_data{n} = inference_data.particle_id_vec(trace_filter(kni_groups==n));
         inference_struct(i).particle_sub_id_data{n} = inference_data.rep_id_vec(trace_filter(kni_groups==n));
+        
+        inference_struct(i).group_id_vec(n) = group_i;
+        group_i = group_i + 1;
     end
     inference_struct(i).ap_id = ap_id;
     inference_struct(i).p_id = p_id;
@@ -86,14 +91,13 @@ for i = 1:size(project_ap_zero_array)
 end    
 
 save([readPath 'inference_info.mat'],'inference_struct')
-%%
-group_i = 1;
-for i = 1:length(inference_struct)
+
+for i = 1:2%length(inference_struct)
         
     knirps_group_vec = 1:length(inference_struct(i).fluo_data);
     
     for k = 1:length(knirps_group_vec)
-        
+        group_i = inference_struct(i).group_id_vec(k);
         % iterate through bootstraps
         for b = 1:nBoots
 
@@ -121,9 +125,9 @@ for i = 1:length(inference_struct)
             % add them to data cells
             fluo_data = fluo_data_full(sample_ids);    
             time_data = inference_struct(i).time_data{k}(sample_ids);
+            kni_data = inference_struct(i).kni_data{k}(sample_ids);
             sample_particles = inference_struct(i).particle_id_data{k}(sample_ids);
-            
-
+            particle_sub_id_data = inference_struct(i).particle_sub_id_data{k}(sample_ids);
             % Random initialization of model parameters
             param_init = initialize_random(inferenceOptions.nStates, inferenceOptions.nSteps, fluo_data);
 
@@ -196,13 +200,15 @@ for i = 1:length(inference_struct)
             
             output.truncInference = 1;
             output.iter_id = b;                        
-            output.particle_ids = sample_particles;            
+            output.particle_ids = sample_particles;    
+            output.particle_sub_ids = particle_sub_id_data;    
+            
             output.N = ndp;
 
             % save inference data used
             output.fluo_data = fluo_data;
+            output.kni_mean = nanmean([kni_data{:}]);
             output.time_data = time_data;
-
 
             % Determine unique filename and sace
 
@@ -214,7 +220,6 @@ for i = 1:length(inference_struct)
             % save
             out_file = [writePath fName_sub rand_string];          
             save([out_file '.mat'], 'output');           
-        end
-        group_i = group_i + 1;
+        end        
     end
 end

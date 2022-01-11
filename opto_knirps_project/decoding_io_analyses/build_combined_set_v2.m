@@ -9,7 +9,7 @@ dataRootJake = 'S:\Jake\Dropbox\ProcessedEnrichmentData\';
 dataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 
 % make new director for combined dataset
-savePath = [dataRoot 'combinedOptoSets' filesep];
+savePath = [dataRoot 'combinedOptoSets_v2' filesep];
 mkdir(savePath)
 
 % indicate projects to use
@@ -141,7 +141,7 @@ end
 
 
 %% Chop traces up into ~15 minute pieces to try and extend the dynamic range
-shift_inc = round(5*60 / spot_struct(1).tresInterp);
+shift_inc = round(1*60 / spot_struct(1).tresInterp);
 window_size = round(15*60 / spot_struct(1).tresInterp);
 ap_bounds = [-0.15 0.15];
 
@@ -199,7 +199,7 @@ for i = inf_ind_vec
           inference_data.mean_knirps_vec(iter) = nanmean(kni_vec(start_i:last_i));
           inference_data.mean_time_vec(iter) = nanmean(time_vec(start_i:last_i));
           inference_data.mean_ap_vec(iter) = ap_mean;
-          % metadata
+          % meta-data
           inference_data.particle_id_vec(iter) = particleID;
           inference_data.project_id_vec(iter) = projectID;
           inference_data.rep_id_vec(iter) = n;
