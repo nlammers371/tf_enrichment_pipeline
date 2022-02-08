@@ -208,7 +208,7 @@ max_ra_time =15*60;%ceil(max(ra_times)*60/Tres)*Tres;
 ra_time_vec = 0:spot_struct(1).tresInterp:max_ra_time;
 ra_time_array = NaN(nBoots,length(ra_time_vec));
 ra_time_array_full = NaN(nBoots,length(ra_time_vec));
-% sample_indices = 1:length(io_ref_ra.reactivation_time_vec);
+sample_indices = 1:length(io_ref_ra.reactivation_time_vec);
 
 for n = 1:nBoots
     % randomly select sets to include
