@@ -16,12 +16,12 @@ mkdir(savePath)
 projectNameCell = {'optokni_eve4+6_ON_LOW_FULL','optokni_eve4+6_WT','optokni_eve4+6_ON_CONST'};
 
 % specify correction parameters for blue light
-knirps_offset = 375000 / 1e5;
+knirps_offset = 375698.13 / 1e5;
 cal_slope = 1.243;
 cal_intercept = 1.079e5 / 1e5; %NL: dividing everything through by 1e5 for simplicity
 
 % define key cleaning parameters
-time_range = [10 35]*60; % all nuclei considered must be observed for full period
+time_range = [10 30]*60; % all nuclei considered must be observed for full period
 use_range = [15 30]*60; % all nuclei considered must be observed for full period
 ap_range = [-0.02 0.02];
 min_dp = 10; % must have at least 10 active frames observed
@@ -67,7 +67,7 @@ master_id_vec = [spot_struct.masterID];
 master_id_index = unique(master_id_vec);
 time_index_interp = 0:spot_struct(1).tresInterp:(40*60);
 
-% NL: obtained these frames via manual inspection of protein trends
+%% NL: obtained these frames via manual inspection of protein trends
 blue_light_frame_vec = [NaN(1,8) 41 33 36];
 
 % initialize arrays to store results
@@ -77,16 +77,18 @@ io_struct_io.time_axis = time_index_interp;
 
 io_struct_io.mean_ap_vec = NaN(1,length(master_id_index));
 io_struct_io.knirps_array_raw = NaN(length(time_index_interp),length(master_id_vec));
+io_struct_io.knirps_array = NaN(length(time_index_interp),length(master_id_vec));
 io_struct_io.fluo_array = NaN(length(time_index_interp),length(master_id_vec));
 io_struct_io.mean_knirps_array = NaN(length(time_index_interp),length(master_id_index));
 io_struct_io.mean_fluo_array = NaN(length(time_index_interp),length(master_id_index));
+io_struct_io.project_id_index = NaN(1,length(master_id_index));
 
 keep_flags = false(1,length(master_id_vec));
 
 for m = 1:length(master_id_index)
     master_ids = find(master_id_vec==master_id_index(m));
     time_index = unique(round([spot_struct(master_ids).time],0));    
-                      
+    io_struct_io.project_id_index(m) = spot_struct(master_ids(1)).projectID;
     % find changepoint  
     shift_frame = blue_light_frame_vec(m);
     if ~isnan(shift_frame)
@@ -117,37 +119,62 @@ for m = 1:length(master_id_index)
         ap_keep_flag = mean_ap>=ap_range(1)&&mean_ap<=ap_range(2);
         dp_keep_flag = sum(~isnan(f_vec_raw))>=min_dp;
         
-        if time_keep_flag && ap_keep_flag && dp_keep_flag
+        if time_keep_flag && ap_keep_flag && dp_keep_flag &&~any(isnan(pt_vec))
             % update keep flag
             keep_flags(i) = true;
-            time_filter = ismember(time_index_interp,time_vec_interp);
+            time_filter = ismember(time_index_interp,t_vec_interp);
             start_i = find(time_filter,1);
             stop_i = find(time_filter,1,'last');
             
             % generate adjusted pt vector
-            raw_adjusted = pt_vec;
+            raw_adjusted = pt_vec - knirps_offset;
             pert_ind = find(t_vec>=shift_time,1);
             if ~isempty(pert_ind) 
                 raw_adjusted(pert_ind:end) = ...
                 (raw_adjusted(pert_ind:end)-cal_intercept)/cal_slope;
             end
+            
             % interpolate protein and asign to array
             pt_interp = interp1(t_vec,raw_adjusted,t_vec_interp,'linear','extrap');
             io_struct_io.knirps_array_raw(time_filter,i) = pt_interp;
             
             % fill obs fowards and backwards
-            io_struct_io.knirps_array = io_struct_io.knirps_array_raw;
+            io_struct_io.knirps_array(:,i) = io_struct_io.knirps_array_raw(:,i);
             io_struct_io.knirps_array(1:start_i-1,i) = io_struct_io.knirps_array(start_i,i);
             io_struct_io.knirps_array(stop_i+1:end,i) = io_struct_io.knirps_array(stop_i,i);
             
             % initialize fluo with zeros
             io_struct_io.fluo_array(:,i) = 0;
-            io_struct_io.fluo_array(ismember(t_vec_interp, t_vec_fluo)) = fluo_vec;                        
+            io_struct_io.fluo_array(ismember(time_index_interp, t_vec_fluo),i) = fluo_vec;                        
         end     
     end        
 
     % check that corrections look reasonable
-    mean_filter = time_index_interp>=use_rate(1)&time_index_interp<=use_rate(2);
-    io_struct_io.mean_protein_array(:,m) = nanmean(io_struct_io.knirps_array(mean_filter,master_ids),2);    
-    io_struct_io.mean_fluo_array(:,m) = nanmean(io_struct_io.fluo_array(mean_filter,master_ids),2);    
+    mean_filter = time_index_interp>=use_range(1)&time_index_interp<=use_range(2);
+    io_struct_io.mean_protein_array(:,m) = nanmean(io_struct_io.knirps_array_raw(:,master_ids),2);    
+    io_struct_io.mean_fluo_array(:,m) = nanmean(io_struct_io.fluo_array(:,master_ids),2);    
 end    
+
+%%
+% io_struct_io.knirps_array = io_struct_io.knirps_array(:,keep_flags==1);
+io_struct_io.cumulative_protein_array = cumsum(io_struct_io.mean_protein_array);
+
+time_array = repmat(time_index_interp',1,length(master_id_index));
+set_id_array = repmat(io_struct_io.project_id_index,length(time_index_interp),1);
+time_filter = time_array>=15*60&time_array<=30*60;
+
+close all
+figure;
+cmap = brewermap(3,'Set2');
+colormap(cmap);
+scatter(io_struct_io.mean_protein_array(time_filter),io_struct_io.mean_fluo_array(time_filter),50,set_id_array(time_filter))
+% h = colorbar('XTick', 1:3);
+xlabel('[Knirps]')
+ylabel('mean activity')
+%%
+close all
+figure;
+cmap = brewermap(3,'Set2');
+colormap(cmap);
+scatter(io_struct_io.mean_protein_array(time_filter),io_struct_io.cumulative_protein_array(time_filter),50,set_id_array(time_filter))
+colorbar
