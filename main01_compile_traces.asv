@@ -138,12 +138,8 @@ for i = 1:numExperiments
     currExperiment = liveProject.includedExperiments{i};
     
     %%%%%%%% Read in processed data from main mRNADyanmics pipeline %%%%%%%
-    if exist([currExperiment.resultsFolder, currExperiment.Prefix, '_lin_dummy.mat'])
-        load([currExperiment.resultsFolder, currExperiment.Prefix, '_lin_dummy.mat'],'schnitzcells')
-    else
-        load([currExperiment.resultsFolder, currExperiment.Prefix, '_lin.mat'],'schnitzcells')
-    end
-    
+    if exist(
+    schnitzcells = getSchnitzcells(currExperiment);
     processedData = getCompiledParticles(currExperiment);   % this structure contains all info compiled for this experiment
     compiledParticles = processedData.CompiledParticles;    % this is the cell array containing the CompiledParticles cell array
     if iscell(compiledParticles)

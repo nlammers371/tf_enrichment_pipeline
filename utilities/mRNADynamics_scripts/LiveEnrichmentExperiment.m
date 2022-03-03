@@ -435,6 +435,7 @@ classdef LiveEnrichmentExperiment
                 load(schnitzcellsFile, 'schnitzcells');
             else
                 warning(['No schnitzcells file (''_lin.mat'') found for prefix: ' this.Prefix '.' ])
+                schnitzcells = [];
             end
             
         end

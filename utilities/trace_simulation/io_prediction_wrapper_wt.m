@@ -20,6 +20,7 @@ function sweepResults = io_prediction_wrapper_wt(sweepInfo,sweepResults)
     tf_profile_array = permute(sweepInfo.tf_profile_array_wt(:,trace_id_vec),[1 3 2]);
     
     %% call simulation function    
+    % generate random inputs for tf and parameters    
     gillespie = synthetic_rate_gillespie_io_v3(sweepInfo,tf_profile_array);        
     
     % use output to generate predicted curves

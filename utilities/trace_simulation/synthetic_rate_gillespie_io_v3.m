@@ -96,7 +96,7 @@ for t = 1:length(t_ref_out)
 end
 
 % perform convolution to obtain predicted fluorescence
-fluo_kernel = ms2_loading_coeff (t_MS2, memory);
+fluo_kernel = ms2_loading_coeff(t_MS2, memory);
 fluo_kernel_full = interp1((0:memory-1)*deltaT,fluo_kernel,0:granularity:(memory-1)*deltaT);
 initiation_state_array = r_emission(promoter_state_array) * length(fluo_kernel) / length(fluo_kernel_full);
 fluo_ms2_array = convn(fluo_kernel_full',initiation_state_array,'full');
