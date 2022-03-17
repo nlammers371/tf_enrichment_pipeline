@@ -3,71 +3,59 @@
 % DESCRIPTION
 % Funcion to compile relevant outputs from image analysis pipeline across
 % multiple experiments
-
+%
 %
 % ARGUMENTS
 % DataStatusTab: master ID variable (should match a tab name in the Data Status
 % sheet)
 % DropboxFolder: full file path to folder containing compiled imaging
 % results
-
+%
 % OPTIONS
-% dropboxFolder: Pass this option, followed by the path to data folder 
-%                where you wish to save
-%                pipeline-generated data sets and figures. If this
-%                var is not specified, output will be saved one level
-%                above git repo in the folder structure
-% first_nc: script defaults to taking only nc14 traces. If you want
-%           earlier traces, pass 'first_nc', followed by desired nuclear cycle
+% firstNC: script defaults to taking only nc14 traces. If you want
+%           earlier traces, pass 'firstNC', followed by desired nuclear cycle
 %           number
 %
-% OUTPUT: nucleus_struct: compiled data set contain key nucleus and
+% OUTPUT
+% nucleus_struct: compiled data set contain key nucleus and
 % particle attributes
 
-function nucleus_struct = main01_compile_traces(DataStatusTab,DropboxFolder,varargin)
+function nucleus_struct = main01_compile_traces(dataStatusTab,dropboxFolder,varargin)
 addpath('./utilities')
-% set defaults
+
+% Set defaults
 firstNC = 14;
 minDP = 15;
 pctSparsity = 50;
-two_spot_flag = contains(DataStatusTab, '2spot');
-min_time = 0*60; % take no fluorescence data prior to this point
-TresInterp = 20; 
+twoSpotFlag = contains(dataStatusTab, '2spot');
+minTime = 0*60; % take no fluorescence data prior to this point
+tresInterp = 20; 
 calculatePSF = false;
-project = DataStatusTab;
+project = dataStatusTab;
+
+% Process input parameters
 for i = 1:numel(varargin)
     if ischar(varargin{i}) && i < numel(varargin) && mod(i,2)==1
         eval([varargin{i} '=varargin{i+1};']);
     end
 end
 
-[RawResultsRoot, ~, ~] =   header_function(DropboxFolder, DataStatusTab);
-[~, DataPath, ~] =   header_function(DropboxFolder, project);
+[RawResultsRoot, ~, ~] =   header_function(dropboxFolder, dataStatusTab);
+[~, DataPath, ~] =   header_function(dropboxFolder, project);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% Set Path Specs, ID Vars %%%%%%%%%%%%%%%%%%%%%%%%
 
-% find sheet
-sheet_path = [RawResultsRoot 'DataStatus.xlsx'];
-[~,sheet_names]=xlsfinfo(sheet_path);
-sheet_index = find(ismember(sheet_names,DataStatusTab));
-if isempty(sheet_index)
+% Find the project tab in DataStatus
+dataStatusPath = [RawResultsRoot 'DataStatus.xlsx'];
+[~,dataStatusTabNames] = xlsfinfo(dataStatusPath);
+dataStatusTabIndex = find(ismember(dataStatusTabNames,dataStatusTab));
+if isempty(dataStatusTabIndex)
     error('no tab matching "DropboxTab" string found in DataStatus')
 end
-[~,~,sheet_cell] = xlsread(sheet_path,sheet_index);
-name_col = sheet_cell(1:33,1); % hard coded for now
-ready_ft = contains(name_col,'ReadyForEnrichment');
-ready_cols = 1 + find([sheet_cell{ready_ft,2:end}]==1);
-sheet_cell = sheet_cell(:,[1 ready_cols]);
-% get list of project names
-prefix_ft = contains(name_col,'Prefix');
-prefix_cell_raw = sheet_cell(prefix_ft,2:end);
-prefix_cell = {};
-for i = 1:numel(prefix_cell_raw)
-    if ~isempty(prefix_cell_raw{i})
-        eval([prefix_cell_raw{i} ';'])
-        prefix_cell = [prefix_cell{:} {Prefix}];
-    end
-end
+[~,~,dataStatusTabContents] = xlsread(dataStatusPath,dataStatusTabIndex);
+
+% Grab only those datasets marked 'ReadyForEnrichment'
+readyPrefixes = getProjectPrefixes(
     
 % make filepath
 mkdir(DataPath);
@@ -201,7 +189,7 @@ for i = 1:length(cp_filenames)
             s_cells(e_pass).ncID = eval([num2str(setID) '.' sprintf('%04d',e)]);
             s_cells(e_pass).ncStart = firstNC;
             s_cells(e_pass).minDP = minDP;
-            s_cells(e_pass).min_time = min_time;
+            s_cells(e_pass).min_time = minTime;
             s_cells(e_pass).pctSparsity = pctSparsity;
             
             % Add time and set info
@@ -235,7 +223,7 @@ for i = 1:length(cp_filenames)
         schnitz = cp_particles(j).schnitz;    
         % Find first and last expression frames, requiring that spots
         % cannot apear earlier than some fixed time (min_time)
-        trace_start = find(time_clean>=min_time&~isnan(raw_trace'),1);
+        trace_start = find(time_clean>=minTime&~isnan(raw_trace'),1);
         trace_stop = find(~isnan(raw_trace),1,'last');        
         %Creat versions with all intervening frames present (missing frames
         %appear as NaNs)
@@ -267,7 +255,7 @@ for i = 1:length(cp_filenames)
         % check to see if a different particle has already been assigned
         % if so, create a new entry
         if ~isnan(s_cells(nc_ind).ParticleID)
-            two_spot_flag = true;
+            twoSpotFlag = true;
             s_cells = [s_cells s_cells(nc_ind)];
             % update cross-reference variables
             s_cells(nc_ind).sister_ParticleID = ParticleID;
@@ -330,7 +318,7 @@ for i = 1:length(cp_filenames)
 end
 % add additional fields
 for i = 1:numel(nucleus_struct)
-    nucleus_struct(i).two_spot_flag = two_spot_flag;
+    nucleus_struct(i).two_spot_flag = twoSpotFlag;
     nucleus_struct(i).threeD_flag = threeD_flag;
     nucleus_struct(i).target_locus_flag = NaN;
     nucleus_struct(i).control_locus_flag = NaN;
@@ -343,7 +331,7 @@ if threeD_flag
 else
     interp_fields = {'fluo'};
 end
-interpGrid = 0:TresInterp:60*60;
+interpGrid = 0:tresInterp:60*60;
 for i = 1:numel(nucleus_struct)
     time_vec = nucleus_struct(i).time;
     fluo_vec = nucleus_struct(i).fluo;
@@ -388,7 +376,7 @@ for i = 1:numel(nucleus_struct)
         end
     end
     nucleus_struct(i).time_interp = time_interp;
-    nucleus_struct(i).TresInterp = TresInterp;
+    nucleus_struct(i).TresInterp = tresInterp;
 end
 % call function to calculate average psf difs
 % save
@@ -396,7 +384,7 @@ save(nucleus_name ,'nucleus_struct')
 
 if calculatePSF
     disp('calculating psf dims...')
-    calculate_average_psf(project,DropboxFolder);
+    calculate_average_psf(project,dropboxFolder);
 end
 
 disp('done.')
