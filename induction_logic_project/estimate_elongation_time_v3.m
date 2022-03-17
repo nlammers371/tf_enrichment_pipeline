@@ -1,0 +1,155 @@
+clear
+close all
+
+% set basic paths
+DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
+if ~exist(DataRoot)
+  DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+end
+
+project_prefix = '20210928_Oct4_raw_traces';
+projectList = dir([DataRoot project_prefix '*']);
+
+master_struct=  struct;
+for p = 1:length(projectList)
+    DataPath = [DataRoot filesep projectList(p).name filesep];
+
+    % load data
+    load([DataPath 'spot_struct.mat'])
+    
+    master_struct(p).spot_struct = spot_struct;
+      
+end
+
+% concatenate
+spot_struct = [master_struct.spot_struct];
+
+Tres = spot_struct(1).Tres;
+
+% set parameters for autocorr analysis
+window_size = 15;
+n_boots = 100;
+
+% define indexing vectors
+particle_id_vec = [spot_struct.particleID];
+set_id_vec = [spot_struct.setID];
+set_index = unique(set_id_vec);
+gene_id_vec = [spot_struct.geneID];
+exp_id_vec = [spot_struct.expID];
+exp_key = unique([exp_id_vec' gene_id_vec'],'rows');
+gene_index = unique(gene_id_vec);
+fluo_vec = [spot_struct.fluo];
+non_nan_ids = find(~isnan(particle_id_vec));
+
+% initialize array
+% trace_array = NaN(length(spot_struct(1).fluoInterp),length(non_nan_ids));
+iter = 1;
+low_thresh = 1e3;
+sm_kernel_size = 0.5;
+
+high_thresh_vec = [];
+% low_thresh_vec = [];
+for s = 1:length(gene_index)
+  fluo_vec = [spot_struct(gene_id_vec==gene_index(s)).fluo];
+  high_thresh_vec(s) = prctile(fluo_vec,85);
+%   low_thresh_vec(s) = prctile(fluo_vec,40);
+end
+low_thresh_vec = high_thresh_vec*.15;
+
+event_mat = NaN(1,2*window_size+1);
+event_id_vec = NaN(1,1);
+gene_id_vec2 = NaN(1,1);
+genes_to_use = [];
+id_vec = [];
+
+
+for i = 1:length(spot_struct)
+  
+    trace = imgaussfilt(spot_struct(i).fluoInterp,sm_kernel_size);
+    geneID = spot_struct(i).geneID;
+    trace_len = length(trace);
+    
+    % identify low and high points
+    low_filter = trace<=low_thresh_vec(geneID) & trace~=0;
+    low_ids = find(low_filter);
+    high_filter = trace>=high_thresh_vec(geneID);
+    high_ids = find(high_filter);
+
+    % iterate through trace to see if we can find any low->high or high->low
+    % transitions
+    id_vec = zeros(size(trace));
+    id_vec(low_filter) = -1;
+    id_vec(high_filter) = 1;
+
+    event_ids = find(id_vec);
+
+    for e = 1:length(event_ids)-1
+        ind1 = event_ids(e);
+        ind2 = event_ids(e+1);
+        current_event = id_vec(ind1);
+        next_event = id_vec(ind2);
+        if ind2-ind1 <= window_size && current_event~=next_event 
+            % extract snip          
+            snip_full = NaN(1,2*window_size+1);
+            indices = max([1,ind1-window_size]):min([trace_len,ind1+window_size]);
+            snip_raw = trace(indices);
+            snip_full(indices-ind1+window_size+1) = snip_raw;
+            event_mat(end+1,:) = snip_full;
+            event_id_vec(end+1) = next_event;
+            gene_id_vec2(end+1) = geneID;
+        end
+    end
+end
+
+%% Perform simple fits to estimate ET
+et_fit_struct = struct;
+index_vec = 1:2*window_size+1;
+
+for g = 1:length(gene_index)
+   % Identify changepoints
+   N = sum(event_id_vec==1&gene_id_vec2==gene_index(g));
+   mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:));
+   cpts = findchangepts(mean_trend,'Statistic','linear','MaxNumChanges',2);
+   
+   %%%%%%%%%%%%%%%%%%%%%
+   % perform simultaneous fit of 3 linear trends broken at identified
+   % changepoints
+   
+   % define vectors to fit
+   x1 = index_vec(1:cpts(1));
+   x2 = index_vec(cpts(1):cpts(2));
+   x3 = index_vec(cpts(2):end);
+   
+   y1 = mean_trend(1:cpts(1));
+   y2 = mean_trend(cpts(1):cpts(2));
+   y3 = mean_trend(cpts(2):end);
+   
+   % define piece-wise functions
+   f1_fun = @(params) (params(1) + params(2)*x1);
+   f2_fun = @(params) (params(1) - x1(end)*(params(3)-params(2))+ params(3)*x2(2:end));
+   f3_fun = @(params) (params(1) - x1(end)*(params(3)-params(2)) - x2(end)*(params(4)-params(3)))+ params(4)*x3(2:end);
+   
+   % define master fit fun
+   pd_fun = @(params) [f1_fun(params) f2_fun(params) f3_fun(params)];
+   objective_fun = @(params) pd_fun(params) - mean_trend;
+   
+   % perform fit (not currently used)
+   et_fit_struct(g).bp_fit = lsqnonlin(objective_fun,[1 1 1 1],-[Inf Inf Inf Inf],[Inf Inf Inf Inf]);
+   % record
+   et_fit_struct(g).mean_trend = mean_trend;
+   et_fit_struct(g).cpts = cpts;
+   et_fit_struct(g).et_est = diff(cpts)+1;
+   et_fit_struct(g).N = N;
+end   
+   
+% save
+for p = 1:length(projectList)
+    DataPath = [DataRoot filesep projectList(p).name filesep];
+    spot_struct = master_struct(p).spot_struct;           
+    et_fit_struct_gene = et_fit_struct(exp_key(p,2));
+    for s = 1:length(spot_struct)
+        spot_struct(s).nStepsEst = et_fit_struct_gene.et_est;
+    end
+    save([DataPath 'et_fit_struct_gene.mat'],'et_fit_struct_gene');
+    save([DataPath 'spot_struct.mat'],'spot_struct');
+end

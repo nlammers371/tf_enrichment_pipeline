@@ -1,0 +1,136 @@
+% Script to conduct 
+clear
+close all
+
+% set path to utilities
+addpath('utilities')
+
+% set project
+project = '20201117'; 
+
+% make figure path 
+n_plot = 10;
+figurePath = ['../fig/' project '/ example_traces/'];
+mkdir(figurePath);
+
+% set path to inference results
+resultsRoot = 'S:\Nick\Dropbox\InductionLogic';
+resultsDir = [resultsRoot filesep project filesep 'cpHMM_results' filesep];
+
+infResultList = dir([resultsDir 'compiledResults*']);
+
+% iterate through the directories and compile the results
+for inf = 1:length(infResultList)
+  
+    % load inference results
+    load([infResultList(inf).folder filesep infResultList(inf).name],'compiledResults')
+    groupID_index = compiledResults.groupID_index;
+    
+    % basic inference hyperparameters
+    nStates = compiledResults.inferenceOptions.nStates;
+    nSteps = compiledResults.inferenceOptions.nSteps;
+    alpha = compiledResults.inferenceOptions.alpha;
+    Tres = compiledResults.inferenceOptions.Tres;
+    
+    % load traces 
+    load([resultsRoot filesep project  filesep 'spot_struct_protein.mat'])
+    
+    viterbi_master = struct;
+    for g = 1:length(groupID_index)
+  
+        fit_indices = 1:length(spot_struct_protein);
+        
+        A_log = log(compiledResults.A_array_mean(:,:,g));
+        v = compiledResults.r_array_mean(:,g)*Tres;
+        sigma = compiledResults.sigma_vec_mean(g);
+        pi0_log = log(compiledResults.pi0_array_mean(:,g));
+        
+       
+        
+        % initialize fits structur
+        viterbi_fits = struct;
+
+        parfor f = 1:length(fit_indices)
+          
+          viterbi_out = viterbi(spot_struct_protein(fit_indices(f)).fluoInterp, v', sigma, ...
+            pi0_log, A_log, nStates, nSteps, alpha);
+          
+          fnames = fieldnames(viterbi_out);
+          
+          for j = 1:numel(fnames)
+              viterbi_fits(f).(fnames{j}) = viterbi_out.(fnames{j});
+          end
+          viterbi_fits(f).fluo_exp = spot_struct_protein(fit_indices(f)).fluoInterp;
+        end
+        viterbi_master(g).viterbi_fits = viterbi_fits;
+        viterbi_master(g).inferenceOptions = compiledResults.inferenceOptions;
+        viterbi_master(g).groupID = groupID_index(g);
+        
+        % create longform dataset if appropriate
+        trace_id_vec = [];
+        protein_vec = [];
+        time_vec = [];
+        for f = fit_indices
+            trace_id_vec = [trace_id_vec repelem(f,length(spot_struct_protein(f).fluoInterp))];
+            protein_vec = [protein_vec spot_struct_protein(f).nuclear_protein_vecInterp];
+            time_vec = [time_vec spot_struct_protein(f).timeInterp];
+        end
+        
+        longTable = [time_vec', [viterbi_fits.fluo_exp]', [viterbi_fits.fluo_viterbi]', [viterbi_fits.z_viterbi]'
+        
+    end
+    
+end
+% make output data table
+for f = 1:length(fit_indices)
+  if f == 1
+    
+  else
+    longTable = vertcat(longTable,...
+      [f*ones(size(trace_structure(fit_indices(f)).time')),...
+      trace_structure(fit_indices(f)).time', trace_structure(fit_indices(f)).fluo',...
+        double(viterbi_fits(f).z_viterbi'),viterbi_fits(f).fluo_viterbi']);
+  end
+end
+
+fitTable = array2table(longTable,'VariableNames',{'column_id','time','raw_fluorescence','promoter_state','predicted_fluorescence'});
+writetable(fitTable,[infDir 'single_trace_fits.csv'])
+
+%% plot example traces
+close all
+time_vec = trace_structure(fit_indices(1)).time;
+rng(123);
+plot_indices = randsample(1:length(fit_indices),n_plot,false);
+for p = plot_indices
+  fluo_fig = figure;
+  cmap = brewermap([],'Set2');
+  hold on
+  plot(time_vec/60,trace_structure(fit_indices(p)).fluo,'Color','k','LineWidth',1.5)
+  plot(time_vec/60,viterbi_fits(p).fluo_viterbi,'Color',cmap(2,:),'LineWidth',1.5)
+%   e = errorbar(time_vec/60,v_fits(p).fluo_viterbi,repelem(sigma_mean,length(time_vec)),'Color',cmap(2,:));
+%   e.CapSize = 0;
+  grid on
+  set(gca,'Fontsize',14);
+  xlabel('time (minutes)')
+  ylabel('fluorescence intensity (au)')
+  saveas(fluo_fig,[figurePath 'trace' sprintf('%03d',p) '_fluo_fit.png'])
+  
+%   z_fig = figure;
+%   cmap = brewermap([],'Set2');
+%   hold on
+%   plot(time_vec/60,trace_structure(fit_indices(p)).fluo,'Color','k','LineWidth',1.5)
+%   ylabel('fluorescence intensity (au)')
+%   
+%   yyaxis right
+%   stairs(time_vec/60,v_fits(p).z_viterbi,'Color',cmap(3,:),'LineWidth',1.5)
+%   ylabel('promoter state')
+%   ylim([1 2.5])
+%   grid on
+%   set(gca,'Fontsize',14);
+%   xlabel('time (minutes)')
+%   
+%   saveas(z_fig,[figurePath 'trace' sprintf('%03d',p) '_promoter_state_fit.png'])
+end 
+  
+  
+  

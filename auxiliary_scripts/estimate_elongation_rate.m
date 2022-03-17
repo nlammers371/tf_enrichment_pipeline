@@ -4,9 +4,9 @@ clear
 close all
 addpath('../utilities')
 % define core ID variables
-% project = 'Dl-Ven_snaBAC-mCh_v3';
-project = 'Dl-Ven_hbP2P-mCh_v2';
-DropboxFolder =  'E:\Nick\LivemRNA\Dropbox (Personal)\';
+% project = 'Dl-Ven_snaBAC-17_5h_v3';
+project = 'hbBAC-MS2-17_5C\NC13\';
+DropboxFolder =  'S:\Gabriella\Dropbox\';
 [~, DataPath, FigureRoot] =   header_function(DropboxFolder, project);
 
 FigPath = [FigureRoot '\elongation_rate\' project '\'];
@@ -15,19 +15,19 @@ mkdir(FigPath)
 % K = 3;
 n_lags = 20;
 n_boots = 100;
-load([DataPath 'nucleus_struct.mat'])
+load([DataPath 'spot_struct_dt80.mat'])
 %%
-qc_indices = find([nucleus_struct.qc_flag]==1);
+qc_indices = find([spot_struct.TraceQCFlag]==1);
 
 % load([DataPath 'hmm_input_output_w' num2str(w) '_K' num2str(K) '.mat'],'hmm_input_output')
 % compile traces into single array
-time_grid = unique([nucleus_struct.time_interp]);
+time_grid = unique([spot_struct.timeInterp]);
 time_grid = time_grid(~isnan(time_grid));
 trace_array = zeros(numel(time_grid),numel(qc_indices));
 for i = 1:numel(qc_indices)
     qc = qc_indices(i);
-    time = nucleus_struct(qc).time_interp;
-    fluo = nucleus_struct(qc).fluo_interp;
+    time = spot_struct(qc).timeInterp;
+    fluo = spot_struct(qc).fluoInterp;
     trace_array(ismember(time_grid,time),i) = fluo;
 end
 
@@ -71,6 +71,6 @@ grid on
 xlabel('time delay (time steps)')
 ylabel('third derivative of ACF')
 set(gca,'Fontsize',12)
-ylim([-.01 .01])
+%ylim([-.01 .01])
 saveas(ddd_elongation_fig, [FigPath 'acf_ddd_plot.tif'])
 saveas(ddd_elongation_fig, [FigPath 'acf_ddd_plot.pdf'])
