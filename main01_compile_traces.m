@@ -119,7 +119,7 @@ end
 
 [liveProject, numExperiments, dataName, hasAPInfo, has3DSpotInfo, hasProteinInfo] = headerFunction(projectName);
 %hasProteinInfo = false;
-
+% hasProteinInfo = false;
 %% %%%%%%%%%%%%%%%%% Extract relevant processed data %%%%%%%%%%%%%%%%%%%%%%
 
 % Generate master structure with info on all nuclei and traces in
@@ -261,8 +261,8 @@ for i = 1:numExperiments
                 end
                 
                 % Add protein and nucleus info
-                if hasProteinInfo
-                    compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';
+                if hasProteinInfo                    
+                    compiledSchnitzCells(nucleusCounter).rawNCProtein = nanmax(schnitzcells(s).Fluo(ncFilter,:),[],2)';                   
                 end
                 compiledSchnitzCells(nucleusCounter).frames = rawNucleusFrames';
                 compiledSchnitzCells(nucleusCounter).nucleusID = s;

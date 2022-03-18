@@ -148,13 +148,13 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
                     end
                 end
                 
-                if inferenceOptions.upsample_protein_flag
+                if upsample_protein_flag
                     id_vec2 = discretize(intensity_list_short,intensity_prctile_vec2);                                
                     i_val_vec2 = intensity_prctile_vec2(1:end-1) + diff(intensity_prctile_vec2)/2; % intensity bin centroids
-                    for i = 1:length(id_vec2)
-                        trace_struct_filtered(group_ids(i)).intensity_bin2 = id_vec2(i);
-                        if ~isnan(id_vec2(i))
-                          trace_struct_filtered(group_ids(i)).intensity_bin_val2 = i_val_vec2(id_vec2(i));
+                    for i = 1:length(id_vec)
+                        trace_struct_filtered(group_ids(i)).intensity_bin2 = id_vec(i);
+                        if ~isnan(id_vec(i))
+                          trace_struct_filtered(group_ids(i)).intensity_bin_val2 = i_val_vec(id_vec(i));
                         else
                           trace_struct_filtered(group_ids(i)).intensity_bin_val2 = NaN;
                         end
@@ -167,10 +167,6 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
         for i = find(nan_filter1)
           trace_struct_filtered(i).intensity_bin = NaN;
           trace_struct_filtered(i).intensity_bin_val = NaN;
-          if upsample_protein_flag
-              trace_struct_filtered(i).intensity_bin2 = NaN;
-              trace_struct_filtered(i).intensity_bin_val2 = NaN;
-          end
         end
     end
   else
@@ -180,20 +176,11 @@ function [trace_struct_filtered, indexInfo, inferenceOptions] = filterTraces(inf
       end
   end
   
-  if inferenceOptions.upsample_protein_flag
-      max_bin = nanmax([trace_struct_filtered.intensity_bin]);
+  if upsample_protein_flag
+      max_bin = nanmax
       trace_struct2 = trace_struct_filtered;
       for i = 1:length(trace_struct2)
-          trace_struct2(i).intensity_bin = trace_struct_filtered(i).intensity_bin2 + max_bin;
-          trace_struct2(i).intensity_bin_val = trace_struct_filtered(i).intensity_bin_val2;
-      end
-      % concatenate groups
-      trace_struct_filtered = [trace_struct_filtered trace_struct2];
-      ap_group_vec = [ap_group_vec ap_group_vec];
-      time_group_vec = [time_group_vec time_group_vec];
-      additional_group_vec = [additional_group_vec additional_group_vec];      
-      nan_filter1 = [nan_filter1 nan_filter1];      
-  end
+          trace_struct2(i).intensity_bin
   % remove traces where one more more ID field in NAN
   intensity_group_vec = [trace_struct_filtered.intensity_bin];
   intensity_value_vec = [trace_struct_filtered.intensity_bin_val];

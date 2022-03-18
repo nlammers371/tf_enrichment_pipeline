@@ -43,6 +43,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   % initialize optional grouping variable
   inferenceOptions.additionalGroupIDs = 1;
   inferenceOptions.AdditionalGroupingVariable = '';
+  inferenceOptions.upsample_protein_flag = 0;
   
   %% Truncated inference (starting mid-trace) or normal inference?  
   inferenceOptions.minDP = 2*inferenceOptions.nSteps; % minimum number of data points for inclusion
