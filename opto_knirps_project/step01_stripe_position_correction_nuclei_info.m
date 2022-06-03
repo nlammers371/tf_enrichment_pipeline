@@ -9,7 +9,10 @@ addpath(genpath('./lib'))
 %% Part 0: Initialization
 % Specify the dataset to analyze
 
-mask_ratio = 0.8;
+mask_ratio = 0.8; % default
+
+%optokni_het
+%mask_ratio = 0.7;
 
 % We need to specify the prefix of the project we wish to analyze
 
@@ -17,12 +20,27 @@ mask_ratio = 0.8;
 %Prefix = '2021-07-06-optoknirps_eve4_6_parameter_embryo1'; APflip = 1;
 %Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo2'; APflip = 0;
 %Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo3'; APflip = 1;
-Prefix = '2021-07-05-optoknirps_eve4_6_multiple_export_embryo1'; APflip = 0;
+%Prefix = '2021-07-05-optoknirps_eve4_6_multiple_export_embryo1'; APflip = 0;
 
-avrInit = 0;%2.5 for embryo3
-avrFinal = 2.5;%5 for embryo3
+%optokni_het
+%Prefix = '2021-09-21-optoknirps_het_control_embryo1'; APflip = 1;
+%Prefix = '2021-09-22-optoknirps_het_control_embryo2'; APflip = 0;
+%Prefix = '2021-09-22-optoknirps_het_control_embryo3'; APflip = 1;
+
+
+%avrInit = 0;%2.5 for embryo3
+%avrFinal = 2.5;%5 for embryo3
+%avrInit = 0;%2.5 for embryo3
+%avrFinal = 2.5;%5 for embryo3
+%analysisInit = 0;
+%analysisFinal = 15;
+
+
+%optokni_het
+avrInit = 32.5;
+avrFinal = 35;
 analysisInit = 0;
-analysisFinal = 15;
+analysisFinal = 35;
 
 
 
