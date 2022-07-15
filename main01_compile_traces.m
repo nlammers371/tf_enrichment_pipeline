@@ -105,6 +105,9 @@ for i = 1:numel(varargin)
             else
                 error(['The ''NC'' option must be followed by an integer from 9 to 14, inclusive. Default NC is ' num2str(firstNC) '.'])
             end
+        elseif strcmpi(varargin{i}, 'dt')
+                dt = varargin{i+1};
+   
         elseif strcmpi(varargin{i}, 'projectName')
             error('Pipeline currently does not support alternate names for projects (otehr than what is on the data status tab)')
         elseif i < numel(varargin)
