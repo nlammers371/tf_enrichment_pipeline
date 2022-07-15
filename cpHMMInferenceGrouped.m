@@ -136,10 +136,10 @@ function cpHMMInferenceGrouped(InputDataPath,OutputDataPath,modelSpecs,varargin)
               %% create parallel pool if one does not already exist
               p = gcp('nocreate');
               if isempty(p)
-                  parpool(24);%inferenceOptions.maxWorkers); %6 is the number of cores the Garcia lab server can reasonably handle per user.
+                  parpool(inferenceOptions.maxWorkers); %6 is the number of cores the Garcia lab server can reasonably handle per user.
               elseif p.NumWorkers > inferenceOptions.maxWorkers
                   delete(gcp('nocreate')); % if pool with too many workers, delete and restart
-                  parpool(24);%parpool(inferenceOptions.maxWorkers);
+                  parpool(inferenceOptions.maxWorkers);
               end
 
               %% conduct cpHMM inference
