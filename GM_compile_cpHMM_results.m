@@ -4,7 +4,7 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'hbBAC-MS2-17_5C'};
+projectNameCell = {'hbBAC-MS2-27_5C'};
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
 for p = 1:length(projectNameCell)
@@ -39,7 +39,7 @@ for p = 1:length(projectNameCell)
     end
     % get list of all inference subdirectories. By default, we'll generate
     % summaries for all non-empty inference sub-directory
-    infDirList = dir([resultsDir 'w9*t6*']);
+    infDirList = dir([resultsDir 'w6*dt29*']);
 
     % iterate through the directories and compile the results
     for inf = 1:length(infDirList)

@@ -543,9 +543,8 @@ for i = 1:length(spot_struct)
         spot_struct(i).truncatedFlag = 1;
     end
     
-       % generate time reference vefctors for interpolation
     % generate time reference vefctors for interpolation
-    timeVec = spot_struct(i).nuclear_time;
+    timeVec = spot_struct(i).time;
     timeVec = timeVec(startIndex:stopIndex);
     
     
@@ -620,26 +619,27 @@ for i = 1:length(spot_struct)
         end
     end  
     spot_struct(i).timeInterp = timeInterp;
-    spot_struct(i).tresInterp = tresInterp;  
+    spot_struct(i).tresInterp = tresInterp;    
+    
     
     % generate time reference vefctors for interpolation
-    timeVec = spot_struct(i).time;
-    timeVec = timeVec(startIndex:stopIndex);
+    nuclearTimeVec = spot_struct(i).nuclear_time;
+    nuclearTimeVec = nuclearTimeVec(startIndex:stopIndex);
     
     
-    if length(timeVec)>1
+    if length(nuclearTimeVec)>1
         
         % add caps before and after
-        first_ind = find(interpGrid>=timeVec(1),1);
+        first_ind = find(interpGrid>=nuclearTimeVec(1),1);
         first_ind = max([1 first_ind-1]);
-        last_ind = find(interpGrid<=timeVec(end),1,'last');
+        last_ind = find(interpGrid<=nuclearTimeVec(end),1,'last');
         last_ind = min([length(interpGrid) last_ind+1]);
-        timeInterp = interpGrid(first_ind:last_ind);
+        nuclear_timeInterp = interpGrid(first_ind:last_ind);
                 
-        if isempty(timeInterp)
-            timeInterp = NaN;
+        if isempty(nuclear_timeInterp)
+            nuclear_timeInterp = NaN;
             for  j = 1:numel(interpFields)
-                spot_struct(i).([interpFields{j} 'OrigInterp']) = NaN;
+                spot_struct(i).([interpFields{j} 'Interp_Nuclear']) = NaN;
             end
         else
             for  j = 1:length(interpFields)
@@ -673,35 +673,32 @@ for i = 1:length(spot_struct)
                 end
                 
                 % interpolate remaining NaNs
-                referenceTime = timeVec(~isnan(vec));
+                nuclearReferenceTime = nuclear_timeInterp(~isnan(vec));
                 referenceVec = vec(~isnan(vec));
                 
-                if length(referenceTime)>1
+                if length(nuclearReferenceTime)>1
                     % Interpolate to standardize spacing
-                    vec_i = interp1(referenceTime,referenceVec,timeInterp,'linear','extrap');
+                    vec_i = interp1(nuclearReferenceTime,referenceVec,nuclear_timeInterp,'linear','extrap');
                     vec_i(vec_i<0) = 0;
-                    spot_struct(i).([interpFields{j} 'OrigInterp']) = vec_i;
-                elseif length(referenceTime)==1 && referenceTime >= timeInterp(1) && referenceTime <= timeInterp(end)
-                    vecTo = NaN(size(timeInterp));
-                    [~,mi] = min(abs(referenceTime-timeInterp));
+                    spot_struct(i).([interpFields{j} 'Interp_Nuclear']) = vec_i;
+                elseif length(nuclearReferenceTime)==1 && nuclearReferenceTime >= nuclear_timeInterp(1) && nuclearReferenceTime <= nuclear_timeInterp(end)
+                    vecTo = NaN(size(nuclear_timeInterp));
+                    [~,mi] = min(abs(nuclearReferenceTime-nuclear_timeInterp));
                     vecTo(mi) = referenceVec;
-                    spot_struct(i).([interpFields{j} 'OrigInterp']) = vecTo;
+                    spot_struct(i).([interpFields{j} 'Interp_Nuclear']) = vecTo;
                 else
-                    spot_struct(i).([interpFields{j} 'OrigInterp']) = NaN(size(timeInterp));
+                    spot_struct(i).([interpFields{j} 'Interp_Nuclear']) = NaN(size(nuclear_timeInterp));
                 end
             end
         end
     else
-        timeInterp = NaN;
+        nuclear_timeInterp = NaN;
         for  j = 1:numel(interpFields)
-            spot_struct(i).([interpFields{j} 'OrigInterp']) = NaN;
+            spot_struct(i).([interpFields{j} 'Interp_Nuclear']) = NaN;
         end
     end  
-    spot_struct(i).origTimeInterp = timeInterp;
-    spot_struct(i).tresInterp = tresInterp;    
-    
-    
- 
+    spot_struct(i).nuclear_timeInterp = nuclear_timeInterp;
+    spot_struct(i).nuclear_tresInterp = nuclear_tresInterp;    
 end
 %%
 
