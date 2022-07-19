@@ -182,8 +182,12 @@ for i = 1:numExperiments
     end
     ncIndices = find(ncRefVec>=firstNC&ncRefVec<=lastNC&~isnan(anaphaseFrames'));
     ncStartFrameVec = anaphaseFrames(ncIndices)';
-    ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]);
-    ncStartFrameVec(end+1) = framesRaw(end)+1;
+    ncStartFrameVec(end) = max([1 ncStartFrameVec(end)]);    
+    if max(ncIndices) == 6
+        ncStartFrameVec(end+1) = framesRaw(end)+1;
+    else
+        ncStartFrameVec(end+1) = anaphaseFrames(max(ncIndices)+1)+1;
+    end
     if ncStartFrameVec(1) == 0 && ncStartFrameVec(2) > 1
         ncStartFrameVec(1) = 1;
     elseif ncStartFrameVec(1) == 0
@@ -227,8 +231,8 @@ for i = 1:numExperiments
             ncFilter = ismember(schnitzFrames,framesNC);
             rawNucleusFrames = schnitzFrames(ncFilter);
             
-            if length(rawNucleusFrames) >= 1 & schnitzcells(s).anaphaseFrame >= firstNCFrame-2    %only grab data from the desired nuclear cycle(s)
-                
+            if length(rawNucleusFrames) >= 1 & (schnitzcells(s).anaphaseFrame >= firstNCFrame-2) & (max(schnitzFrames) <= lastNCFrame+ 10)  %only grab data from the desired nuclear cycle(s)
+               
                 % Add info that's the same for all schnitzcells in this
                 % experiment
                 compiledSchnitzCells(nucleusCounter).setID = setID;
@@ -283,6 +287,12 @@ for i = 1:numExperiments
                 % initialize nucleus qc flag
                 compiledSchnitzCells(nucleusCounter).missingNucleusFrames = 0;
                 
+                % Add schnitz cycle info -- weird errors arising without
+                % this GM 7/18/22
+                compiledSchnitzCells(nucleusCounter).schnitz_cycle = schnitzcells(s).cycle;
+                % Add schnitz and particle approval--to be updated 
+                compiledSchnitzCells(nucleusCounter).schnitz_approved = schnitzcells(s).Approved;
+                compiledSchnitzCells(nucleusCounter).particle_approved = 1;
                 % Add sister spot fields
                 compiledSchnitzCells(nucleusCounter).sisterIndex = NaN;
                 compiledSchnitzCells(nucleusCounter).sisterParticleID = NaN;
@@ -380,6 +390,8 @@ for i = 1:numExperiments
             rawParticleFrames = compiledParticles(j).Frame;
             %             rawParticleFrames = rawParticleFrames(ismember(rawParticleFrames,traceFramesFull));
             
+            % Add Manual Flagging Info for particle approval
+            compiledSchnitzCells(ncIndex).particle_approved = compiledParticles(j).ManualApproved;
             % make filters
             ncSpotFilter1 = ismember(rawNucleusFrames,rawParticleFrames);
             ncSpotFilter2 = ismember(rawParticleFrames,rawNucleusFrames);
@@ -414,11 +426,13 @@ for i = 1:numExperiments
         end
         spot_struct = [spot_struct  compiledSchnitzCells];
     end
-    
+
     waitbar(i/numExperiments,h, ['Compiling data for dataset ' num2str(i) ' of ' num2str(numExperiments)])
 end
 close(h)
 
+spot_struct = spot_struct(ismember([spot_struct(:).schnitz_cycle], firstNC:lastNC));
+spot_struct = spot_struct([spot_struct(:).schnitz_approved] == 1 & [spot_struct(:).particle_approved] == 1);
 % add nucleus AP info if appropriate
 if any(nc_ap_flags)
     for i=1:length(spot_struct)    

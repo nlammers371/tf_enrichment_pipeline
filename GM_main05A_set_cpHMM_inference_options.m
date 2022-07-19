@@ -8,7 +8,7 @@ addpath(genpath('utilities'))
 
 inferenceInfo = struct;
 
-ProjectName = 'hbBAC-MS2-27_5C-Enrich/NC13';
+ProjectName = 'hbBAC-MS2-17_5C-Approved';
 
 inferenceInfo.projectNameCell = {ProjectName};
 
@@ -25,13 +25,13 @@ for i = 1:length(timeBins)
     disp(['i = ' num2str(i), ', Bin Max: ', num2str(timeBins{i}(2)/60)])
 end
 inferenceInfo.timeBins = timeBins; % should be longer than 15min\
-inferenceInfo.timeBins = {[0 Inf]};
-inferenceInfo.apBins = linspace(10, 90, 33);%linspace(-.2,.2,10);
-inferenceInfo.dt = 40; % leave empty [] to use default 
+%inferenceInfo.timeBins = {[0 Inf]};
+inferenceInfo.apBins = linspace(10, 60, 21);%linspace(-.2,.2,10);
+inferenceInfo.dt = 45; % leave empty [] to use default 
 
 % set core model specs
 inferenceInfo.modelSpecs.nStates = 3; %3; % number of states in system
-inferenceInfo.modelSpecs.nSteps = 4; % 7; % number of steps to traverse gen
+inferenceInfo.modelSpecs.nSteps = 7; % 7; % number of steps to traverse gen
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info

@@ -21,7 +21,7 @@
 #SBATCH --ntasks-per-node=1
 #W
 # Wall clock limit:
-#SBATCH --time=4:00:00
+#SBATCH --time=24:00:00
 #
 
 ## NL: This tells Savio to run 10 distinct instances of the job (essentially equivalent to "nBoots")
