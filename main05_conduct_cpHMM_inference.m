@@ -94,7 +94,9 @@ elseif inferenceInfo.ProteinBinFlag
   options(end+1:end+2) = {'intensityBinVar','rawNCProteinInterp'};  
   options(end+1:end+2) = {'ProteinBinFlag',1};
 end
-
+if inferenceInfo.upsample_protein_flag
+  options(end+1:end+2) = {'upsample_protein_flag',1};
+end    
 % additional grouping options
 if ~isempty(inferenceInfo.AdditionalGroupingVariable)
   options(end+1:end+2) = {'AdditionalGroupingVariable',inferenceInfo.AdditionalGroupingVariable};  

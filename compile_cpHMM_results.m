@@ -4,11 +4,11 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20210928_Oct4_raw_traces_Oct4_dark_control_raw_trace','20210928_Oct4_raw_traces_Oct4_opto_raw_trace'};
+projectNameCell = {'2xDl-Ven_twiPEe-mCh'};
 low_order_flag = 0;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
-for p = 2%:length(projectNameCell)
+for p = 1:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -31,7 +31,7 @@ for p = 2%:length(projectNameCell)
     infDirList = dir([resultsDir 'w*']);
 
     % iterate through the directories and compile the results
-    for inf = 2%:length(infDirList)
+    for inf = 1:length(infDirList)
 
         resultsPath = [infDirList(inf).folder filesep infDirList(inf).name filesep];
 

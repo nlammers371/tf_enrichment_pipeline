@@ -9,22 +9,23 @@ addpath(genpath('utilities'))
 inferenceInfo = struct;
 
 % set project identifiers (only applicable if running this on savio)
-inferenceInfo.projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'}; % {'2xDl-Ven_hbP2P-mCh'};
+inferenceInfo.projectNameCell = {'2xDl-Ven_twiPEe-mCh'}; % {'2xDl-Ven_hbP2P-mCh'};
 
 % set inference options
-inferenceInfo.ProteinBinFlag = 0;
+inferenceInfo.ProteinBinFlag = 1;
 inferenceInfo.FluoBinFlag = 0;
 inferenceInfo.timeBins = {[0 40*60]}; % should be >= than 15min
 inferenceInfo.apBins = [];%linspace(-.2,.2,10);
+inferenceInfo.upsample_protein_flag = 1;
 
 % set core model specs
-inferenceInfo.modelSpecs.nStates = 2; % number of states in system
+inferenceInfo.modelSpecs.nStates = 3; % number of states in system
 inferenceInfo.modelSpecs.nSteps = 7; % number of steps to traverse gene
 inferenceInfo.modelSpecs.alphaFrac =  1302/6444;%1275 / 4670;%
 
 % other info
 inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-inferenceInfo.SampleSize = 3000;
+inferenceInfo.SampleSize = 2500;
 inferenceInfo.useQCFlag = true;
 inferenceInfo.n_localEM = 25;
 

@@ -19,20 +19,20 @@ addpath(genpath('./lib'))
 %off_fit_end = 132;
 
 %%
-%Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo2';
-%on_frame = 43;
-%on_fit_end = 62; % 62, after 2min; 71, after 3min
+Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo2';
+on_frame = 43;
+on_fit_end = 62; % 62, after 2min; 71, after 3min
 
-%off_frame = 84;
-%off_fit_end = 119; % after 4min
+off_frame = 84;
+off_fit_end = 119; % after 4min
 
 %%
-Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo3';
-on_frame = 40;
-on_fit_end = 59;
+%Prefix = '2021-07-07-optoknirps_eve4_6_parameter_embryo3';
+%on_frame = 40;
+%on_fit_end = 59;
 
-off_frame = 81;
-off_fit_end = 113;
+%off_frame = 81;
+%off_fit_end = 113;
 
 %%
 
