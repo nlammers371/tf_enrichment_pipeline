@@ -250,8 +250,8 @@ for i = 1:numExperiments
                 compiledSchnitzCells(nucleusCounter).sparsity = NaN;
                 
                 % Add core nucleus info
-                x = schnitzcells(s).cenx;
-                y = schnitzcells(s).ceny;
+                x = double(schnitzcells(s).cenx);
+                y = double(schnitzcells(s).ceny);
                 compiledSchnitzCells(nucleusCounter).xPosNucleus = x(ncFilter);
                 compiledSchnitzCells(nucleusCounter).yPosNucleus = y(ncFilter);
                 if hasAPInfo && isfield(schnitzcells,'APpos')
