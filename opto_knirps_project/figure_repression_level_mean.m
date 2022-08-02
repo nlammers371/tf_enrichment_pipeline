@@ -336,12 +336,12 @@ filter_HIGH = (HIGH.time_vec>=15) & (HIGH.time_vec<=30);
 filter_LOW = (LOW.time_vec>=15) & (LOW.time_vec<=30);
 
 X = [WT.knirps_vec_mean(filter_WT)' HIGH.knirps_vec_mean(filter_HIGH)' LOW.knirps_vec_mean(filter_LOW)'];
-Y = [WT.fluo_vec_mean(filter_WT)' HIGH.fluo_vec_mean(filter_HIGH)' LOW.fluo_vec_mean(filter_LOW)']/fluo_vec_max;
+Y = [WT.fluo_vec_mean(filter_WT)' HIGH.fluo_vec_mean(filter_HIGH)' LOW.fluo_vec_mean(filter_LOW)'];
 
 % fit hill function
 objective_fun = @(x) x(1)^x(2) ./ (x(1)^x(2) + X.^x(2)) - Y;
-x = lsqnonlin(objective_fun,[2E5 5],[1E5 1],[Inf Inf],options); 
 options = optimoptions('lsqnonlin','Display','off');
+x = lsqnonlin(objective_fun,[2E5 5],[1E5 1],[Inf Inf],options); 
 
 %objective_fun = @(x) x(3)*(x(1)^x(2) ./ (x(1)^x(2) + X.^x(2))) - Y;
 %x = lsqnonlin(objective_fun,[9E5 6 1.8E5],[6E5 5 1.6E5],[10E5 8 2E5],options); 

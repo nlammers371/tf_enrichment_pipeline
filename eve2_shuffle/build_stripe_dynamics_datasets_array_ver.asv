@@ -3,7 +3,7 @@
 clear
 close all
 
-projectNameCell = {'MSE-WT','NSv1','Rand1','Rand4'};
+projectNameCell = {'MSE-WT','Array WT','Array D7','Array D8','Array D9', 'Array D78'};
 master_struct = struct;
 hm_info_struct = struct;
 
@@ -23,8 +23,8 @@ slashesData = strfind(liveProject.dataPath,'\');
 DataPath = [liveProject.dataPath(1:slashesData(end-1)) 'eve2_recon_analyses' filesep];
 mkdir(DataPath);
 
-hm_info_struct.legend_str = {'WT-MSE2','Neutral Sequence v1', 'Randomized v1','Randomized v4'};
-hm_info_struct.legend_str_short = {'MSE2','NS v1', 'Rand v1','Rand v4'};
+hm_info_struct.legend_str = {'MSE WT','Array','Array D7', 'Array D8','Array D9','Array D78'};
+hm_info_struct.legend_str_short = {'MSE','Array','D7', 'D8','D9','D78'};
 hm_info_struct.projectNameCell = projectNameCell;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,6 +194,7 @@ stripe_param_struct.std_param_array = std_param_array;
 save([DataPath 'stripe_param_struct.mat'],'stripe_param_struct')
 disp('Done.')
 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at Fraction ON, time ON and OFF, and mean spot intensity
 disp('Performing calculations for cumulative fraction ON/OFF...')
@@ -346,11 +347,14 @@ for p = 1:length(master_struct)
         first_i = find(pop_ids,1);
         last_i = find(pop_ids,1,'last');
         ref_index = 1:size(mean_fluo_act_array,1);
-        gap_filter = all(isnan(mean_fluo_full_array),2) & ref_index' < last_i & ref_index' > first_i;
-        if any(gap_filter)
-            mean_fluo_full_array(gap_filter,:) = interp1(time_axis(~gap_filter)',mean_fluo_full_array(~gap_filter,:),time_axis(gap_filter)');
-            mean_fluo_act_array(gap_filter,:) = interp1(time_axis(~gap_filter)',mean_fluo_act_array(~gap_filter,:),time_axis(gap_filter)');
-        end 
+        
+        if ~isempty(first_i)
+            gap_filter = all(isnan(mean_fluo_full_array),2) & ref_index' < last_i & ref_index' > first_i;
+            if any(gap_filter)
+                mean_fluo_full_array(gap_filter,:) = interp1(time_axis(~gap_filter)',mean_fluo_full_array(~gap_filter,:),time_axis(gap_filter)');
+                mean_fluo_act_array(gap_filter,:) = interp1(time_axis(~gap_filter)',mean_fluo_act_array(~gap_filter,:),time_axis(gap_filter)');
+            end 
+        end
         
         % store results                    
         fraction_on_info.frac_dynamics_array(:,iter_i,2) = nansum(fluo_on_array,2)/max(nansum(fluo_on_array,2));
@@ -394,6 +398,7 @@ for p = 1:length(master_struct)
     end
 end
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % take average for each genotype
 % First calculate average and standard deviation for each genotype
@@ -411,7 +416,6 @@ fraction_on_info.mean_frac_array = mean_frac_array;
 fraction_on_info.std_frac_array = std_frac_array;
 
 
-%{
 %% note that we must extrapolate for one WT MSE set to estimate HM point
 
 % Need to revisit this
@@ -441,7 +445,11 @@ for m = 1:length(master_struct)
         on_times(end+1) = time_axis(on_i);
         % off time
         off_i = find(fraction_on_info.frac_dynamics_array_ex(:,p_ids(p),3)>=0.5,1);
-        off_times(end+1) = time_axis(off_i);
+        if ~isempty(off_i)
+            off_times(end+1) = time_axis(off_i);
+        else
+            off_time(end)
+        end
     end
     on_50{m} = on_times;
     mean_on_50(m) = mean(on_times);
@@ -459,7 +467,7 @@ fraction_on_info.ste_on_50 = ste_on_50;
 fraction_on_info.off_50 = off_50;
 fraction_on_info.mean_off_50 = mean_off_50;
 fraction_on_info.ste_off_50 = ste_off_50;
-%}
+
 
 % save
 save([DataPath 'fraction_on_info.mat'],'fraction_on_info')
