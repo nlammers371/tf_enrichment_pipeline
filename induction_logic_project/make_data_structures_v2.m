@@ -13,7 +13,7 @@ end
 ReadRoot = [DataRoot 'InductionLogic\raw_data\'];
 WriteRoot = [DataRoot 'ProcessedEnrichmentData\'];
 % DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
-project  = '20210928_Oct4_raw_traces';
+project  = '20220701_Oct4_dose';
 ReadPath = [ReadRoot project filesep];
 WritePath = [WriteRoot project filesep];
 
@@ -28,18 +28,18 @@ expStrings = expStrings(~contains(expStrings,'~$'));
 expIDs = 1:length(expStrings);
 
 % specify time res
-dT = 60;
+dT = 90;
 nz_flag = 1;
 
 % define key model architecture parameters 
 
 ms2_len = 1246;
-gene_len_vec = [6671 6671];%[2398  2381];
+gene_len_vec = [6671 6671 6671];%[2398  2381];
 elongation_rate = 2000 * dT/60;
 mem_vec = ceil(gene_len_vec ./ elongation_rate);
 alpha_frac_vec = ms2_len ./ gene_len_vec;
 
-gen_id_vec = [1 1];
+gen_id_vec = [1 1 1];
 
 for e = 1:length(expStrings)
   i_iter = 1;
