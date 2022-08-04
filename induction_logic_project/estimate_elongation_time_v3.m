@@ -4,7 +4,7 @@ close all
 % set basic paths
 DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
 if ~exist(DataRoot)
-  DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+  DataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 end
 
 project_prefix = '20220701_Oct4_dose';

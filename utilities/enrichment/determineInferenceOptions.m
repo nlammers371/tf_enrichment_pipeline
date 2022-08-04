@@ -8,7 +8,7 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   %% INFERENCE PARAMETERS
   inferenceOptions.savioFlag = 1;
   inferenceOptions.fluo3DFlag = 0;
-  inferenceOptions.automaticBinning = 1;
+  inferenceOptions.automaticBinning = 0;
   inferenceOptions.ProteinBinFlag = 0;
   inferenceOptions.intensityBinVar = '';
   inferenceOptions.FluoBinFlag = 0;
@@ -53,6 +53,8 @@ function inferenceOptions = determineInferenceOptions(modelSpecs,varargin)
   for i = 1:2:length(varargin)
     if i ~= length(varargin) && ischar(varargin{i})       
       if isfield(inferenceOptions,varargin{i})
+        inferenceOptions.(varargin{i}) = varargin{i+1};  
+      elseif strcmp(varargin{i},'nBoots')
         inferenceOptions.(varargin{i}) = varargin{i+1};  
       else
         warning(['Unrecognized input option "' varargin{i} '". Ignoring.'])

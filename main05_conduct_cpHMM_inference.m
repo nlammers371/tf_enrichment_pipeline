@@ -76,6 +76,9 @@ end
 if isfield(inferenceInfo,'useQCFlag')
     options(end+1:end+2) = {'useQCFlag',inferenceInfo.useQCFlag};
 end
+if isfield(inferenceInfo,'nBoots')
+    options(end+1:end+2) = {'nBoots',inferenceInfo.nBoots};
+end
 if isfield(inferenceInfo,'ignoreNDP')
     options(end+1:end+2) = {'ignoreNDP',inferenceInfo.ignoreNDP};
 end
@@ -93,10 +96,11 @@ if inferenceInfo.FluoBinFlag
 elseif inferenceInfo.ProteinBinFlag
   options(end+1:end+2) = {'intensityBinVar','rawNCProteinInterp'};  
   options(end+1:end+2) = {'ProteinBinFlag',1};
+  if inferenceInfo.upsample_protein_flag
+    options(end+1:end+2) = {'upsample_protein_flag',1};
+  end   
 end
-if inferenceInfo.upsample_protein_flag
-  options(end+1:end+2) = {'upsample_protein_flag',1};
-end    
+ 
 % additional grouping options
 if ~isempty(inferenceInfo.AdditionalGroupingVariable)
   options(end+1:end+2) = {'AdditionalGroupingVariable',inferenceInfo.AdditionalGroupingVariable};  

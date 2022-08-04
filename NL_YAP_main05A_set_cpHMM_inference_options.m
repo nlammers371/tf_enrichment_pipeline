@@ -8,16 +8,16 @@ addpath(genpath('utilities'))
 % set basic paths
 DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
 if ~exist(DataRoot)
-  DataRoot = 'S:\Nick\Dropbox\ProcessedEnrichmentData\';
+  DataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20210928_Oct4_raw_traces';
+project_prefix = '20220701_Oct4_opto';
 projectList = dir([DataRoot project_prefix '*']);
 %%
 master_struct = struct;
 
 project_index = 1;
-for p = project_index%1:length(projectList)     
+for p = 1:length(projectList)     
 
     % load spots struct
     DataPath = [DataRoot filesep projectList(p).name filesep];
@@ -31,21 +31,25 @@ for p = project_index%1:length(projectList)
     % set inference options
     inferenceInfo.ProteinBinFlag = 0;
     inferenceInfo.FluoBinFlag = 0;
-    inferenceInfo.singleTraceInference = 1;
+    inferenceInfo.singleTraceInference = 0;
     inferenceInfo.alwaysTruncInference = 1;
     
     %inferenceInfo.timeBins = {[0 60*10],[60*10 60*40]};
-    inferenceInfo.timeBins = {[0 45]*60, [135 195]*60}; % should be >= than 15min
+    inferenceInfo.timeBins = {[0 45]*60 [125 170]*60 [255 300]*60}; % should be >= than 15min
     inferenceInfo.apBins = [];%linspace(-.2,.2,10);
 
     % set core model specs
     inferenceInfo.modelSpecs.nStates = 2; % number of states in system
-    inferenceInfo.modelSpecs.nSteps = spot_struct(1).nStepsEst; % number of steps to traverse gene
+    if strcmp(project_prefix,'20220701_Oct4_opto')
+        inferenceInfo.modelSpecs.nSteps = 3; % number of steps to traverse gene
+    else
+        inferenceInfo.modelSpecs.nSteps = spot_struct(1).nStepsEst;
+    end
     inferenceInfo.modelSpecs.alphaFrac =  spot_struct(1).alpha_frac;%1275 / 4670;%
 
     % other info
     inferenceInfo.AdditionalGroupingVariable = '';%'Stripe'
-    inferenceInfo.SampleSize = 10000;
+    inferenceInfo.SampleSize = 5000;
     inferenceInfo.useQCFlag = false;
     inferenceInfo.ignoreNDP = true;
     inferenceInfo.n_localEM = 25;
@@ -59,7 +63,8 @@ for p = project_index%1:length(projectList)
     inferenceDir = [dataDir 'inferenceDirectory' filesep];
     mkdir(inferenceDir)
     save([inferenceDir 'inferenceInfo.mat'],'inferenceInfo')
-
+    
+    main05_conduct_cpHMM_inference({projectList(p).name},'inferenceInfo',inferenceInfo,'customProjectPath',DataPath)
     % copy bash file to inference directory
-    copyfile('run_cpHMM.sh',[inferenceDir 'run_cpHMM.sh'])
+%     copyfile('run_cpHMM.sh',[inferenceDir 'run_cpHMM.sh'])
 end

@@ -6,14 +6,14 @@ close all
 % set basic paths
 DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\';
 if ~exist(DataRoot)
-  DataRoot = 'S:\Nick\Dropbox\';
+  DataRoot = 'S:\Nick\Dropbox (Personal)\';
 end
 
 % set basic paths
 ReadRoot = [DataRoot 'InductionLogic\raw_data\'];
 WriteRoot = [DataRoot 'ProcessedEnrichmentData\'];
 % DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
-project  = '20220701_Oct4_dose';
+project  = '20220701_Oct4_opto';
 ReadPath = [ReadRoot project filesep];
 WritePath = [WriteRoot project filesep];
 
@@ -29,7 +29,7 @@ expIDs = 1:length(expStrings);
 
 % specify time res
 dT = 90;
-nz_flag = 1;
+nz_flag = 0;
 
 % define key model architecture parameters 
 
