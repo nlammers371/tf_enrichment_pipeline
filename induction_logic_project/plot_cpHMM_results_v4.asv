@@ -47,7 +47,7 @@ end
 % Now load opto results
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-optoNameCell = {'20220701_Oct4_opto_opto_LEXY-YA','20220701_Oct4_opto_opto_contro'};
+optoNameCell = {'20220701_Oct4_opto_opto_contro','20220701_Oct4_opto_opto_LEXY-YA'};
 
 iter = 1;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
@@ -87,7 +87,7 @@ for p = 1:length(optoNameCell)
 end
 
 %% Make figures
-dose_fig_path = [resultsRoot filesep 'dose_figs' filesep];
+dose_fig_path = [resultsRoot 'dose_figs' filesep];
 mkdir(dose_fig_path);
 
 cmap = brewermap(10,'Blues');
@@ -148,7 +148,7 @@ saveas(dose_fig,[dose_fig_path 'burst_bar_plot.png'])
 cmap2 = brewermap(12,'Greens');
 cmap3 = brewermap(12,'Greys');
 
-opto_fig_path = [resultsRoot filesep 'opto_figs' filesep];
+opto_fig_path = [resultsRoot 'opto_figs' filesep];
 mkdir(opto_fig_path);
 
 cmap = brewermap(10,'Blues');
@@ -226,22 +226,10 @@ opto_summary_array = cat(2,double(opto_struct(1).timeGroupVec'),...
                       opto_struct(1).dur_vec_mean', opto_struct(1).dur_vec_ste', opto_struct(2).dur_vec_mean', opto_struct(2).dur_vec_ste',...
                       opto_struct(1).init_vec_mean', opto_struct(1).init_vec_ste', opto_struct(2).init_vec_mean', opto_struct(2).init_vec_ste');
                     
-opto_table = array2table(opto_summary_array,'VariableNames',{'time_group','freq_mean_opto' ,'freq_ste_opto','freq_mean_ctrl' ,'freq_ste_ctrl',...
+opt_table = array2table(opto_summary_array,'VariableNames',{'time_group','freq_mean_opto' ,'freq_ste_opto','freq_mean_ctrl' ,'freq_ste_ctrl',...
                                                                          'dur_mean_opto' ,'dur_ste_opto','dur_mean_ctrl' ,'dur_ste_ctrl',...
                                                                          'init_mean_opto' ,'init_ste_opto','init_mean_ctrl' ,'init_ste_ctrl'});
                                                                        
-writetable(opto_table,[opto_fig_path 'opto_summary_table.csv']);
-
-
-dose_summary_array = cat(2,[1:3]',...
-                      [dose_struct.freq_vec_mean]', [dose_struct.freq_vec_ste]',....
-                      [dose_struct.dur_vec_mean]', [dose_struct.dur_vec_ste]',...
-                      [dose_struct.init_vec_mean]', [dose_struct.init_vec_ste]');
-                    
-dose_table = array2table(dose_summary_array,'VariableNames',{'dose_group','freq_mean' ,'freq_ste',...
-                                                                         'dur_mean' ,'dur_ste',...
-                                                                         'init_mean' ,'init_ste'});
-                                                                       
-writetable(dose_table,[dose_fig_path 'dose_summary_table.csv']);
+writetable(opto_table,[opto_fig_path 'opto_summary_table.csv'                                                                      
 
 
