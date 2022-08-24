@@ -24,7 +24,7 @@ ubDiff = [];
 
 
 % make figure path
-FigurePath = [liveProject.figurePath '\basic_figs\'];
+FigurePath = [liveProject.figurePath 'basic_figs\'];
 mkdir(FigurePath);
 
 % % check for optional inputs
@@ -210,6 +210,14 @@ r_control_ste = nanstd(r_control_mat);
 %             'VariableNames',{'radial_distance','mean_locus_protein','ste_locus_protein','mean_control_protein','ste_control_protein'});
 % writetable(radial_table,[DataPath 'radial_profile_data.csv'])
 
+% Set upper and lower bounds for radial plots so they're comparable across
+% projects
+relEnrich_lb = 0.95;
+relEnrich_ub = 1.25;
+relEnrich_bounds = [relEnrich_lb relEnrich_ub];
+relEnrich_ytick_step = 0.05;
+relEnrich_ytickmarks = relEnrich_lb:relEnrich_ytick_step:relEnrich_ub;
+
 % make figure
 cm2 = brewermap([],'Set2');
 
@@ -224,12 +232,15 @@ grid off
 r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
-% title(['Radial Concentration Profile (' inputString ')'])
+title(['Radial Concentration Profile', newline, '(',...
+       projectName ')'], 'Interpreter', 'none')
 r_ax.XLim = [0 1];
-% r_ax.YLim = [.98 1.08];
+r_ax.YLim = relEnrich_bounds;
+set(gca,'ytick', relEnrich_ytickmarks)
+set(gca, 'yticklabels', arrayfun(@num2str, relEnrich_ytickmarks, ...
+                                 'UniformOutput', 0));
+
 StandardFigure([],r_ax);
-% set(gca,'ytick',0.95:0.05:1.25)
-% r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigurePath '_radial_enrichment.png'])
 
 [~,norm_ind] = min(abs(dist_plot_axis-1));
@@ -246,12 +257,16 @@ grid off
 r_ax.XLabel.String = 'radius (\mu m)';
 r_ax.YLabel.String ='relative enrichment';
 legend('control','active locus')
-% title(['Radial Concentration Profile (' inputString ')'])
+title(['Normalized Radial Concentration Profile', newline, '(',...
+       projectName ')'], 'Interpreter', 'none')
 r_ax.XLim = [0 1];
-% r_ax.YLim = [.98 1.08];
+r_ax.YLim = relEnrich_bounds;
+set(gca,'ytick', relEnrich_ytickmarks)
+set(gca, 'yticklabels', arrayfun(@num2str, relEnrich_ytickmarks, ...
+                                 'UniformOutput', 0));
+ 
+
 StandardFigure([],r_ax);
-% set(gca,'ytick',0.95:0.05:1.25)
-% r_ax.YLim = [relEnrich_lb relEnrich_ub];
 saveas(r_fig, [FigurePath '_radial_enrichment_norm.png'])
 
 % %%%%%%% plot relative enrichment at locus as a function of time %%%%%%%%%%%
