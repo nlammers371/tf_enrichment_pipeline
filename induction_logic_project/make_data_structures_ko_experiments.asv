@@ -45,7 +45,7 @@ gen_id_vec = [1 1 2 2];
 
 for e = 1:length(expStrings)
   i_iter = 1;
-  i_pass = 1;
+  
   % initialize structure
   spot_struct = struct;
   if ~isempty(ProteinFileList)
@@ -58,6 +58,9 @@ for e = 1:length(expStrings)
   dash_list = strfind(f_name,'_');
   gene_name = f_name(1:dash_list(1)-1);
   
+  if e == 1
+      
+  elseif gen_id_vec(e)~=gene_id_vec(e-1)
   % load sheets
   is_csv_file = strcmp(f_name(end-2:end),'csv');
   if ~is_csv_file 
@@ -93,7 +96,7 @@ for e = 1:length(expStrings)
     end
 
     for i = 1:size(raw_array,2)
-      if mean(raw_array(:,i)~=0)>0.1 || ~nz_flag
+      if mean(raw_array(:,i)~=0)>0 || ~nz_flag
 
           % generate find first and last nonzero entry
           first_i = 1;%find(raw_array(:,i)'~=0,1);

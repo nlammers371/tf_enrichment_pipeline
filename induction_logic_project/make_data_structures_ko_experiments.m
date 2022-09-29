@@ -41,23 +41,40 @@ elongation_rate = 2000 * dT/60;
 mem_vec = ceil(gene_len_vec ./ elongation_rate);
 alpha_frac_vec = ms2_len ./ gene_len_vec;
 
-gen_id_vec = [1 1 2 2];
-
+gene_id_vec = [1 1 2 2];
+save_flag = false;
 for e = 1:length(expStrings)
-  i_iter = 1;
-  i_pass = 1;
-  % initialize structure
-  spot_struct = struct;
-  if ~isempty(ProteinFileList)
-      spot_struct_protein = struct;
-  end
-  
+
   % get list of sheets
   f_name = TraceFileList(e).name;
   load_string = [TraceFileList(e).folder filesep f_name];
   dash_list = strfind(f_name,'_');
   gene_name = f_name(1:dash_list(1)-1);
   
+  if e == 1
+      i_pass = 1;
+      i_iter = 1;
+      save_flag = false;
+      % initialize structure
+      spot_struct = struct;
+      if ~isempty(ProteinFileList)
+          spot_struct_protein = struct;
+      end
+  elseif gene_id_vec(e)~=gene_id_vec(e-1)
+      i_pass = 1;
+      i_iter = 1;
+      save_flag = false;
+      % initialize structure
+      spot_struct = struct;
+      if ~isempty(ProteinFileList)
+          spot_struct_protein = struct;
+      end
+  end
+  if e==length(gene_id_vec)
+      save_flag = true;
+  elseif gene_id_vec(e)~=gene_id_vec(e+1)
+      save_flag = true;
+  end
   % load sheets
   is_csv_file = strcmp(f_name(end-2:end),'csv');
   if ~is_csv_file 
@@ -116,7 +133,7 @@ for e = 1:length(expStrings)
 
           % ID variables
           spot_struct(i_pass).setID = i_iter;          
-          spot_struct(i_pass).geneID = gen_id_vec(e);
+          spot_struct(i_pass).geneID = gene_id_vec(e);
           spot_struct(i_pass).expID = e;
           spot_struct(i_pass).geneName = gene_name;
           spot_struct(i_pass).repName = sheet_names{k};
@@ -148,15 +165,17 @@ for e = 1:length(expStrings)
   end
   
   % save
-  if nz_flag
-      projectPath = [WriteRoot filesep project '_nz_' gene_name  filesep];
-  else
-      projectPath = [WriteRoot filesep project '_' gene_name  filesep];
+  if save_flag
+      if nz_flag
+          projectPath = [WriteRoot filesep project '_nz_' gene_name  filesep];
+      else
+          projectPath = [WriteRoot filesep project '_' gene_name  filesep];
+      end
+      mkdir(projectPath);
+      save([projectPath  'spot_struct.mat'],'spot_struct')
+      if ~isempty(ProteinFileList)
+          save([projectPath 'spot_struct_protein.mat'],'spot_struct_protein')
+      end   
   end
-  mkdir(projectPath);
-  save([projectPath  'spot_struct.mat'],'spot_struct')
-  if ~isempty(ProteinFileList)
-      save([projectPath 'spot_struct_protein.mat'],'spot_struct_protein')
-  end    
 end
 
