@@ -2,13 +2,14 @@ clear
 close all
 
 % set basic paths
-DataRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData\';
+DataRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
 if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 end
 
-project_prefix = '20220701_Oct4_dose';
+% project_prefix = '20220701_Oct4_dose';
 % project_prefix = '20210928_Oct4_raw';
+project_prefix = '20220912_KO_experiments';
 projectList = dir([DataRoot project_prefix '*']);
 
 master_struct=  struct;
@@ -27,8 +28,8 @@ spot_struct = [master_struct.spot_struct];
 
 Tres = spot_struct(1).Tres;
 
-% set parameters for autocorr analysis
-window_size = 5;
+% set parameters 
+window_size = 5*90/Tres;
 n_boots = 100;
 
 % define indexing vectors
@@ -107,7 +108,7 @@ index_vec = 1:2*window_size+1;
 for g = 1:length(gene_index)
    % Identify changepoints
    N = sum(event_id_vec==1&gene_id_vec2==gene_index(g));
-   mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:));
+   mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:),1);
    cpts = findchangepts(mean_trend,'Statistic','linear','MaxNumChanges',2);
    
    %%%%%%%%%%%%%%%%%%%%%

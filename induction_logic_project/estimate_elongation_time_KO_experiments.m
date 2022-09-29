@@ -29,7 +29,7 @@ spot_struct = [master_struct.spot_struct];
 Tres = spot_struct(1).Tres;
 
 % set parameters 
-window_size = 5;
+window_size = 5*90/Tres;
 n_boots = 100;
 
 % define indexing vectors
@@ -47,13 +47,13 @@ non_nan_ids = find(~isnan(particle_id_vec));
 % trace_array = NaN(length(spot_struct(1).fluoInterp),length(non_nan_ids));
 sm_kernel_size = 0.5;
 
-high_thresh_vec = [];
+high_thresh_vec = [1e4 1.3e4];
 % low_thresh_vec = [];
-for s = 1:length(gene_index)
-  fluo_vec = [spot_struct(gene_id_vec==gene_index(s)).fluo];
-  high_thresh_vec(s) = prctile(fluo_vec,85);
-%   low_thresh_vec(s) = prctile(fluo_vec,40);
-end
+% for s = 1:length(gene_index)
+%   fluo_vec = [spot_struct(gene_id_vec==gene_index(s)).fluo];
+%   high_thresh_vec(s) = prctile(fluo_vec,85);
+% %   low_thresh_vec(s) = prctile(fluo_vec,40);
+% end
 low_thresh_vec = high_thresh_vec*.15;
 
 event_mat = [];%NaN(1,2*window_size+1);
@@ -108,7 +108,7 @@ index_vec = 1:2*window_size+1;
 for g = 1:length(gene_index)
    % Identify changepoints
    N = sum(event_id_vec==1&gene_id_vec2==gene_index(g));
-   mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:));
+   mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:),1);
    cpts = findchangepts(mean_trend,'Statistic','linear','MaxNumChanges',2);
    
    %%%%%%%%%%%%%%%%%%%%%

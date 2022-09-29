@@ -5,6 +5,7 @@ close all
 
 % set basic paths
 DataRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep];
+
 if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox (Personal)\';
 end
@@ -13,8 +14,8 @@ end
 ReadRoot = [DataRoot 'InductionLogic' filesep 'raw_data' filesep];
 WriteRoot = [DataRoot 'ProcessedEnrichmentData' filesep];
 % DataRoot = 'S:\Nick\Dropbox\InductionLogic\';
-project  = '20220701_Oct4_opto';
-
+% project  = '20220701_Oct4_opto';
+project = '20220912_KO_experiments';
 ReadPath = [ReadRoot project filesep];
 WritePath = [WriteRoot project filesep];
 
@@ -29,18 +30,18 @@ expStrings = expStrings(~contains(expStrings,'~$'));
 expIDs = 1:length(expStrings);
 
 % specify time res
-dT = 90;
-nz_flag = 0;
+dT = 30;
+nz_flag = 1;
 
 % define key model architecture parameters 
 
 ms2_len = 1246;
-gene_len_vec = [6671 6671 6671];%[2398  2381];
+gene_len_vec = [2398 2398 6671 6671];%[2398  2381];
 elongation_rate = 2000 * dT/60;
 mem_vec = ceil(gene_len_vec ./ elongation_rate);
 alpha_frac_vec = ms2_len ./ gene_len_vec;
 
-gen_id_vec = [1 1 1];
+gen_id_vec = [1 1 2 2];
 
 for e = 1:length(expStrings)
   i_iter = 1;
@@ -54,7 +55,8 @@ for e = 1:length(expStrings)
   % get list of sheets
   f_name = TraceFileList(e).name;
   load_string = [TraceFileList(e).folder filesep f_name];
-  gene_name = f_name(1:end-5);
+  dash_list = strfind(f_name,'_');
+  gene_name = f_name(1:dash_list(1)-1);
   
   % load sheets
   is_csv_file = strcmp(f_name(end-2:end),'csv');
@@ -71,7 +73,6 @@ for e = 1:length(expStrings)
       data_sheets{1} = table_temp{2:end,:};
       sheet_names{1} = f_name(1:end-3);
   end
-  
   % iterate through sheets
   for k = 1:length(data_sheets)
     
