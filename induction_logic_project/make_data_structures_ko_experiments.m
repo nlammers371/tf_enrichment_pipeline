@@ -31,7 +31,7 @@ expIDs = 1:length(expStrings);
 
 % specify time res
 dT = 30;
-nz_flag = 1;
+nz_flag = 0;
 
 % define key model architecture parameters 
 

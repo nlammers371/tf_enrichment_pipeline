@@ -4,12 +4,13 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-projectNameCell = {'20220701_Oct4_opto_opto_contro','20220701_Oct4_opto_opto_LEXY-YA','20220701_Oct4_dose_dose_response_mid_200-400a',...
-                  '20220701_Oct4_dose_dose_response_low_0-200a','20220701_Oct4_dose_dose_response_high_400-1200a'};
+% projectNameCell = {'20220701_Oct4_opto_opto_contro','20220701_Oct4_opto_opto_LEXY-YA','20220701_Oct4_dose_dose_response_mid_200-400a',...
+%                  '20220701_Oct4_dose_dose_response_low_0-200a','20220701_Oct4_dose_dose_response_high_400-1200a'};
+projectNameCell = {'20220912_KO_experiments_nz_Oct4','20220912_KO_experiments_nz_Nanog'};
 low_order_flag = 0;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
-for p = 1:length(projectNameCell)
+for p = 1%:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};

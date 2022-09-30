@@ -24,7 +24,7 @@ for p = 1:length(projectList)
 end
 
 % concatenate
-spot_struct = [master_struct.spot_struct];
+spot_struct = [master_struct(3:4).spot_struct];
 
 Tres = spot_struct(1).Tres;
 
@@ -101,7 +101,7 @@ for i = 1:length(spot_struct)
     end
 end
 
-%% Perform simple fits to estimate ET
+% Perform simple fits to estimate ET
 et_fit_struct = struct;
 index_vec = 1:2*window_size+1;
 

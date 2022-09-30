@@ -15,8 +15,8 @@ project_prefix = '20220912_KO_experiments';
 projectList = dir([DataRoot project_prefix '*']);
 master_struct = struct;
 
-% project_index = 1;
-for p = 1:length(projectList)     
+%% project_index = 1;
+for p = 1:2%length(projectList)     
 
     % load spots struct
     DataPath = [DataRoot filesep projectList(p).name filesep];
