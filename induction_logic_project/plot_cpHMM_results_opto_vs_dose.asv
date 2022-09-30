@@ -23,6 +23,8 @@ for p = 1:length(doseNameCell)
 %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
         if isdir('C:\Users\nlamm\Dropbox (Personal)\')
             resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        elseif isdir([filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep])
+            resultsRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
         else
            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
         end
@@ -65,6 +67,8 @@ for p = 1:length(optoNameCell)
 %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
         if isdir('C:\Users\nlamm\Dropbox (Personal)\')
             resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        elseif isdir([filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep])
+            resultsRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
         else
            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
         end
@@ -218,6 +222,143 @@ box on
 
 saveas(opto_fig,[opto_fig_path 'opto_burst_bar_plot.pdf'])
 saveas(opto_fig,[opto_fig_path 'opto_burst_bar_plot.png'])
+%%  calculate p-values
+
+rng(123); % seed random number generator for consistency
+n_boots = 100;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% dose response
+%%%%%%%%%%%%%%%%%%%%%%%%%
+p_vec_kon_dose = NaN(1,3);
+p_vec_r_dose = NaN(1,3);
+p_vec_dur_dose = NaN(1,3);
+
+% initialize reference vectors
+high_outlier_flags = dose_struct(3).outlier_flags{1};
+high_kon_vec = dose_struct(3).freq_results{1};
+high_dur_vec = dose_struct(3).dur_results{1};
+high_r_vec = dose_struct(3).r_results{1}(2,:);
+high_options = find(~high_outlier_flags);
+
+for i = 1:2
+    % extract key vectors
+    outlier_flags_opto = dose_struct(i).outlier_flags{1};
+    kon_vec = dose_struct(i).freq_results{1};
+    dur_vec = dose_struct(i).dur_results{1};
+    r_vec = dose_struct(i).r_results{1}(2,:);
+    temp_options = find(~outlier_flags_opto);
+    % calculate value of mean fold qauntities
+    fv = dose_struct(i).freq_vec_mean/dose_struct(3).freq_vec_mean;
+    dv = dose_struct(i).dur_vec_mean/dose_struct(3).dur_vec_mean;
+    rv = dose_struct(i).init_vec_mean/dose_struct(3).init_vec_mean;
+    % initialize arrays
+    kon_boot_vec = NaN(1,n_boots);
+    dur_boot_vec = NaN(1,n_boots);
+    r_boot_vec = NaN(1,n_boots);
+    % perform bootsrapping
+    n_samp = min([length(temp_options) length(high_options)]);
+    for n = 1:n_boots
+        % draw samples
+        high_ids_boot = randsample(high_options,n_samp,true);
+        temp_ids_boot_opto = randsample(temp_options,n_samp,true);
+        % calculate bootsrap values
+        kon_boot_vec(n) = mean(kon_vec(temp_ids_boot_opto))/mean(high_kon_vec(high_ids_boot));
+        dur_boot_vec(n) = mean(dur_vec(temp_ids_boot_opto))/mean(high_dur_vec(high_ids_boot));
+        r_boot_vec(n) = mean(r_vec(temp_ids_boot_opto))/mean(high_r_vec(high_ids_boot));
+    end
+    if fv>1
+        p_vec_kon_dose(i) = mean(kon_boot_vec<=1);
+    else
+        p_vec_kon_dose(i) = mean(kon_boot_vec>1);
+    end
+
+    if dv>1
+        p_vec_dur_dose(i) = mean(dur_boot_vec<=1);
+    else
+        p_vec_dur_dose(i) = mean(dur_boot_vec>1);
+    end
+
+    if rv>1
+        p_vec_r_dose(i) = mean(r_boot_vec<=1);
+    else
+        p_vec_r_dose(i) = mean(r_boot_vec>1);
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% opto response
+%%%%%%%%%%%%%%%%%%%%%%%%%
+p_vec_kon_opto = NaN(1,3);
+p_vec_r_opto = NaN(1,3);
+p_vec_dur_opto = NaN(1,3);
+
+% extract reference vectors
+dark_outlier_flags_opto = opto_struct(1).outlier_flags{1};
+dark_kon_vec_opto = opto_struct(1).freq_results{1};
+dark_dur_vec_opto = opto_struct(1).dur_results{1};
+dark_r_vec_opto = opto_struct(1).r_results{1}(2,:);
+dark_options_opto = find(~dark_outlier_flags_opto);
+
+dark_outlier_flags_ctrl = opto_struct(2).outlier_flags{1};
+dark_kon_vec_ctrl = opto_struct(2).freq_results{1};
+dark_dur_vec_ctrl = opto_struct(2).dur_results{1};
+dark_r_vec_ctrl = opto_struct(2).r_results{1}(2,:);
+dark_options_ctrl = find(~dark_outlier_flags_ctrl);
+
+for i = 2:3
+    % extract key vectors (opto)
+    outlier_flags_opto = opto_struct(1).outlier_flags{i};
+    kon_vec_opto = opto_struct(1).freq_results{i};
+    dur_vec_opto = opto_struct(1).dur_results{i};
+    r_vec_opto = opto_struct(1).r_results{i}(2,:);
+    temp_options_opto = find(~outlier_flags_opto);
+
+    % extract key vectors (ctrl)
+    outlier_flags_ctrl = opto_struct(2).outlier_flags{i};
+    kon_vec_ctrl = opto_struct(2).freq_results{i};
+    dur_vec_ctrl = opto_struct(2).dur_results{i};
+    r_vec_ctrl = opto_struct(2).r_results{i}(2,:);
+    temp_options_ctrl = find(~outlier_flags_ctrl);
+    % calculate value of mean fold qauntities
+    fv = (opto_struct(1).freq_vec_mean(i)/opto_struct(2).freq_vec_mean(i))/(opto_struct(1).freq_vec_mean(1)/opto_struct(2).freq_vec_mean(1));
+    dv = (opto_struct(1).dur_vec_mean(i)/opto_struct(2).dur_vec_mean(i))/(opto_struct(1).dur_vec_mean(1)/opto_struct(2).dur_vec_mean(1));
+    rv = (opto_struct(1).init_vec_mean(i)/opto_struct(2).init_vec_mean(i))/(opto_struct(1).init_vec_mean(1)/opto_struct(2).init_vec_mean(1));
+    % initialize arrays
+    kon_boot_vec = NaN(1,n_boots);
+    dur_boot_vec = NaN(1,n_boots);
+    r_boot_vec = NaN(1,n_boots);
+    % perform bootsrapping
+    for n = 1:n_boots
+        % draw samples
+        dark_ids_boot_opto = randsample(dark_options_opto,length(dark_options_opto),true);
+        dark_ids_boot_ctrl = randsample(dark_options_ctrl,length(dark_options_ctrl),true);
+        temp_ids_boot_opto = randsample(temp_options_opto,length(temp_options_opto),true);
+        temp_ids_boot_ctrl = randsample(temp_options_ctrl,length(temp_options_ctrl),true);
+        % calculate bootsrap values
+        kon_boot_vec(n) = (mean(kon_vec_opto(temp_ids_boot_opto))/mean(kon_vec_ctrl(temp_ids_boot_ctrl)))/...
+                        (mean(dark_kon_vec_opto(temp_ids_boot_opto))/mean(darkon_vec_ctrl(temp_ids_boot_ctrl)));
+        dur_boot_vec(n) = mean(dur_vec(dark_ids_boot_opto))/mean(dark_dur_vec(dark_ids_boot));
+        r_boot_vec(n) = mean(r_vec(temp_ids_boot_opto))/mean(dark_r_vec(dark_ids_boot));
+    end
+    if fv>1
+        p_vec_kon_opto(i) = mean(kon_boot_vec<=1);
+    else
+        p_vec_kon_opto(i) = mean(kon_boot_vec>1);
+    end
+
+    if dv>1
+        p_vec_dur_opto(i) = mean(dur_boot_vec<=1);
+    else
+        p_vec_dur_opto(i) = mean(dur_boot_vec>1);
+    end
+
+    if rv>1
+        p_vec_r_opto(i) = mean(r_boot_vec<=1);
+    else
+        p_vec_r_opto(i) = mean(r_boot_vec>1);
+    end
+end
 
 %%  generate summary datasets
 
