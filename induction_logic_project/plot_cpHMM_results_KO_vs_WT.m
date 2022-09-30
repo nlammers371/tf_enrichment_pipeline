@@ -4,16 +4,15 @@ close all
 addpath(genpath('utilities'))
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-doseNameCell = {'20220701_Oct4_dose_dose_response_low_0-200a','20220701_Oct4_dose_dose_response_mid_200-400a',...
-                '20220701_Oct4_dose_dose_response_high_400-1200a'};
+zeroNameCell = {'20220912_KO_experiments_Oct4','20220912_KO_experiments_Nanog'};
 low_order_flag = 0;
 iter = 1;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
-dose_struct = struct;
-for p = 1:length(doseNameCell)
+zero_struct = struct;
+for p = 1:length(zeroNameCell)
     
     % set project to analyze 
-    projectName = doseNameCell{p};
+    projectName = zeroNameCell{p};
 
     % get path to results
     try
@@ -28,7 +27,7 @@ for p = 1:length(doseNameCell)
         else
            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
         end
-        resultsDir = [resultsRoot filesep doseNameCell{p} filesep 'cpHMM_results' filesep];
+        resultsDir = [resultsRoot filesep zeroNameCell{p} filesep 'cpHMM_results' filesep];
     end
     
     % get list of all inference subdirectories. By default, we'll generate
@@ -40,7 +39,7 @@ for p = 1:length(doseNameCell)
         load([infDirList(inf).folder filesep 'compiledResults_' infDirList(inf).name '.mat'],'compiledResults');
         fnames = fieldnames(compiledResults);
         for f = 1:length(fnames)
-            dose_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
+            zero_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
         end
         iter = iter + 1;
     end
@@ -49,15 +48,15 @@ end
 % Now load opto results
 
 % projectNameCell = {'EveGtSL','EveGtSL-S1Null','EveWt','EveS1Null'};%};
-optoNameCell = {'20220701_Oct4_opto_opto_LEXY-YA','20220701_Oct4_opto_opto_contro'};
+nzNameCell = {'20220912_KO_experiments_nz_Oct4','20220912_KO_experiments_nz_Nanog'};
 
 iter = 1;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
-opto_struct = struct;
-for p = 1:length(optoNameCell)
+nz_struct = struct;
+for p = 1:length(nzNameCell)
     
     % set project to analyze 
-    projectName = optoNameCell{p};
+    projectName = nzNameCell{p};
 
     % get path to results
     try
@@ -72,7 +71,7 @@ for p = 1:length(optoNameCell)
         else
            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
         end
-        resultsDir = [resultsRoot filesep optoNameCell{p} filesep 'cpHMM_results' filesep];
+        resultsDir = [resultsRoot filesep nzNameCell{p} filesep 'cpHMM_results' filesep];
     end
     
     % get list of all inference subdirectories. By default, we'll generate
@@ -84,66 +83,61 @@ for p = 1:length(optoNameCell)
         load([infDirList(inf).folder filesep 'compiledResults_' infDirList(inf).name '.mat'],'compiledResults');
         fnames = fieldnames(compiledResults);
         for f = 1:length(fnames)
-            opto_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
+            nz_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
         end
         iter = iter + 1;
     end
 end
 
-% Make figures
-dose_fig_path = [resultsRoot filesep 'dose_figs_v2' filesep];
-mkdir(dose_fig_path);
+%% Make figures
+fig_path = [resultsRoot filesep 'KO_vs_WT' filesep];
+mkdir(fig_path);
 
-cmap = brewermap(10,'Blues');
+cmap = brewermap(10,'Set2');
 close all
 
-kon_vec_mean = [dose_struct.freq_vec_mean];
-kon_vec_ste = [dose_struct.freq_vec_ste];
+kon_vec_mean_z = [zero_struct.freq_vec_mean];
+kon_vec_ste_z = [zero_struct.freq_vec_ste];
 
-dur_vec_mean = [dose_struct.dur_vec_mean];
-dur_vec_ste = [dose_struct.dur_vec_ste];
+dur_vec_mean_z = [zero_struct.dur_vec_mean];
+dur_vec_ste_z = [zero_struct.dur_vec_ste];
 
-r_vec_mean = [dose_struct.init_vec_mean];
-r_vec_ste = [dose_struct.init_vec_ste];
+r_vec_mean_z = [zero_struct.init_vec_mean];
+r_vec_ste_z = [zero_struct.init_vec_ste];
 
-dose_fig = figure('Position',[100 100 512 256]);
-tiledlayout(1,3)
-nexttile
+dose_fig = figure;
+
 hold on
-bar(1,kon_vec_mean(1),'FaceColor',cmap(2,:))
-bar(2,kon_vec_mean(2),'FaceColor',cmap(5,:))
-bar(3,kon_vec_mean(3),'FaceColor',cmap(8,:))
-errorbar(1:3,kon_vec_mean,kon_vec_ste,'.','Color','k','LineWidth',1.25)
+scatter(3,kon_vec_mean_z(2)/kon_vec_mean_z(1),100,'o','MarkerFaceColor',cmap(1,:),'MarkerEdgeColor','k')
+scatter(2,dur_vec_mean_z(2)/dur_vec_mean_z(1),100,'s','MarkerFaceColor',cmap(2,:),'MarkerEdgeColor','k')
+scatter(1,r_vec_mean_z(2)/r_vec_mean_z(1),100,'^','MarkerFaceColor',cmap(3,:),'MarkerEdgeColor','k')
+
+set(gca,'yscale','log')
+grid on
+
+
+
+kon_vec_mean_nz = [nz_struct.freq_vec_mean];
+kon_vec_ste_nz = [nz_struct.freq_vec_ste];
+
+dur_vec_mean_nz = [nz_struct.dur_vec_mean];
+dur_vec_ste_nz = [nz_struct.dur_vec_ste];
+
+r_vec_mean_nz = [nz_struct.init_vec_mean];
+r_vec_ste_nz = [nz_struct.init_vec_ste];
+
+dose_fig = figure;
+
+hold on
+scatter(3,kon_vec_mean_nz(2)/kon_vec_mean_nz(1),100,'o','MarkerFaceColor',cmap(1,:),'MarkerEdgeColor','k')
+scatter(2,dur_vec_mean_nz(2)/dur_vec_mean_nz(1),100,'s','MarkerFaceColor',cmap(2,:),'MarkerEdgeColor','k')
+scatter(1,r_vec_mean_nz(2)/r_vec_mean_nz(1),100,'^','MarkerFaceColor',cmap(3,:),'MarkerEdgeColor','k')
+
+set(gca,'yscale','log')
+grid on
+% errorbar(1:3,kon_vec_mean,kon_vec_ste,'.','Color','k','LineWidth',1.25)
 % ylim([0 1.5*max(kon_vec_mean)])
-ylabel('burst frequency (min^{-1})')
-set(gca,'xtick',[])
-set(gca,'Fontsize',12)
-box on
-
-nexttile
-hold on
-bar(1,dur_vec_mean(1),'FaceColor',cmap(2,:))
-bar(2,dur_vec_mean(2),'FaceColor',cmap(5,:))
-bar(3,dur_vec_mean(3),'FaceColor',cmap(8,:))
-errorbar(1:3,dur_vec_mean,dur_vec_ste,'.','Color','k','LineWidth',1.25)
-%ylim([0 2.6*dur_avg_low])
-% ylim([0 1.5*max(dur_vec_mean)])
-ylabel('burst duration (min)')
-set(gca,'xtick',[])
-set(gca,'Fontsize',12)
-box on
-
-nexttile
-hold on
-bar(1,r_vec_mean(1),'FaceColor',cmap(2,:))
-bar(2,r_vec_mean(2),'FaceColor',cmap(5,:))
-bar(3,r_vec_mean(3),'FaceColor',cmap(8,:))
-ylabel('initiation rate (au/min)')
-errorbar(1:3,r_vec_mean,r_vec_ste,'.','Color','k','LineWidth',1.25)
-% ylim([0 1.5*max(r_vec_mean)])
-set(gca,'xtick',[])
-set(gca,'Fontsize',12)
-box on
+%%
 
 saveas(dose_fig,[dose_fig_path 'burst_bar_plot.pdf'])
 saveas(dose_fig,[dose_fig_path 'burst_bar_plot.png'])
@@ -163,17 +157,17 @@ opto_fig = figure('Position',[100 100 768 256]);
 tiledlayout(1,3)
 nexttile
 hold on
-bar(1,opto_struct(1).freq_vec_mean(1),'FaceColor',cmap2(2,:))
-bar(2,opto_struct(2).freq_vec_mean(1),'FaceColor',cmap3(3,:))
+bar(1,nz_struct(1).freq_vec_mean(1),'FaceColor',cmap2(2,:))
+bar(2,nz_struct(2).freq_vec_mean(1),'FaceColor',cmap3(3,:))
 
-bar(4,opto_struct(1).freq_vec_mean(2),'FaceColor',cmap2(5,:))
-bar(5,opto_struct(2).freq_vec_mean(2),'FaceColor',cmap3(5,:))
+bar(4,nz_struct(1).freq_vec_mean(2),'FaceColor',cmap2(5,:))
+bar(5,nz_struct(2).freq_vec_mean(2),'FaceColor',cmap3(5,:))
 
-bar(7,opto_struct(1).freq_vec_mean(3),'FaceColor',cmap2(8,:))
-bar(8,opto_struct(2).freq_vec_mean(3),'FaceColor',cmap3(8,:))
+bar(7,nz_struct(1).freq_vec_mean(3),'FaceColor',cmap2(8,:))
+bar(8,nz_struct(2).freq_vec_mean(3),'FaceColor',cmap3(8,:))
 
-errorbar([1 4 7],opto_struct(1).freq_vec_mean,opto_struct(1).freq_vec_ste,'.','Color','k','LineWidth',1.25)
-errorbar([2 5 8],opto_struct(2).freq_vec_mean,opto_struct(2).freq_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([1 4 7],nz_struct(1).freq_vec_mean,nz_struct(1).freq_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([2 5 8],nz_struct(2).freq_vec_mean,nz_struct(2).freq_vec_ste,'.','Color','k','LineWidth',1.25)
 % ylim([0 1.5*max(kon_vec_mean)])
 ylabel('burst frequency (min^{-1})')
 set(gca,'xtick',[])
@@ -182,17 +176,17 @@ box on
 
 nexttile
 hold on
-bar(1,opto_struct(1).dur_vec_mean(1),'FaceColor',cmap2(2,:))
-bar(2,opto_struct(2).dur_vec_mean(1),'FaceColor',cmap3(3,:))
+bar(1,nz_struct(1).dur_vec_mean(1),'FaceColor',cmap2(2,:))
+bar(2,nz_struct(2).dur_vec_mean(1),'FaceColor',cmap3(3,:))
 
-bar(4,opto_struct(1).dur_vec_mean(2),'FaceColor',cmap2(5,:))
-bar(5,opto_struct(2).dur_vec_mean(2),'FaceColor',cmap3(5,:))
+bar(4,nz_struct(1).dur_vec_mean(2),'FaceColor',cmap2(5,:))
+bar(5,nz_struct(2).dur_vec_mean(2),'FaceColor',cmap3(5,:))
 
-bar(7,opto_struct(1).dur_vec_mean(3),'FaceColor',cmap2(8,:))
-bar(8,opto_struct(2).dur_vec_mean(3),'FaceColor',cmap3(8,:))
+bar(7,nz_struct(1).dur_vec_mean(3),'FaceColor',cmap2(8,:))
+bar(8,nz_struct(2).dur_vec_mean(3),'FaceColor',cmap3(8,:))
 
-errorbar([1 4 7],opto_struct(1).dur_vec_mean,opto_struct(1).dur_vec_ste,'.','Color','k','LineWidth',1.25)
-errorbar([2 5 8],opto_struct(2).dur_vec_mean,opto_struct(2).dur_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([1 4 7],nz_struct(1).dur_vec_mean,nz_struct(1).dur_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([2 5 8],nz_struct(2).dur_vec_mean,nz_struct(2).dur_vec_ste,'.','Color','k','LineWidth',1.25)
 %ylim([0 2.6*dur_avg_low])
 % ylim([0 1.5*max(dur_vec_mean)])
 ylabel('burst duration (min)')
@@ -202,17 +196,17 @@ box on
 
 nexttile
 hold on
-bar(1,opto_struct(1).init_vec_mean(1),'FaceColor',cmap2(2,:))
-bar(2,opto_struct(2).init_vec_mean(1),'FaceColor',cmap3(3,:))
+bar(1,nz_struct(1).init_vec_mean(1),'FaceColor',cmap2(2,:))
+bar(2,nz_struct(2).init_vec_mean(1),'FaceColor',cmap3(3,:))
 
-bar(4,opto_struct(1).init_vec_mean(2),'FaceColor',cmap2(5,:))
-bar(5,opto_struct(2).init_vec_mean(2),'FaceColor',cmap3(5,:))
+bar(4,nz_struct(1).init_vec_mean(2),'FaceColor',cmap2(5,:))
+bar(5,nz_struct(2).init_vec_mean(2),'FaceColor',cmap3(5,:))
 
-bar(7,opto_struct(1).init_vec_mean(3),'FaceColor',cmap2(8,:))
-bar(8,opto_struct(2).init_vec_mean(3),'FaceColor',cmap3(8,:))
+bar(7,nz_struct(1).init_vec_mean(3),'FaceColor',cmap2(8,:))
+bar(8,nz_struct(2).init_vec_mean(3),'FaceColor',cmap3(8,:))
 
-errorbar([1 4 7],opto_struct(1).init_vec_mean,opto_struct(1).init_vec_ste,'.','Color','k','LineWidth',1.25)
-errorbar([2 5 8],opto_struct(2).init_vec_mean,opto_struct(2).init_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([1 4 7],nz_struct(1).init_vec_mean,nz_struct(1).init_vec_ste,'.','Color','k','LineWidth',1.25)
+errorbar([2 5 8],nz_struct(2).init_vec_mean,nz_struct(2).init_vec_ste,'.','Color','k','LineWidth',1.25)
 ylabel('initiation rate (au/min)')
 % errorbar(1:3,r_vec_mean,r_vec_ste,'.','Color','k','LineWidth',1.25)
 ylim([0 2e4])
@@ -239,23 +233,23 @@ hyp_vec_r_dose = NaN(1,3);
 hyp_vec_dur_dose = NaN(1,3);
 
 % initialize reference vectors
-high_outlier_flags = dose_struct(3).outlier_flags{1};
-high_kon_vec = dose_struct(3).freq_results{1};
-high_dur_vec = dose_struct(3).dur_results{1};
-high_r_vec = dose_struct(3).r_results{1}(2,:);
+high_outlier_flags = zero_struct(3).outlier_flags{1};
+high_kon_vec = zero_struct(3).freq_results{1};
+high_dur_vec = zero_struct(3).dur_results{1};
+high_r_vec = zero_struct(3).r_results{1}(2,:);
 high_options = find(~high_outlier_flags);
 
 for i = 1:2
     % extract key vectors
-    outlier_flags_opto = dose_struct(i).outlier_flags{1};
-    kon_vec = dose_struct(i).freq_results{1};
-    dur_vec = dose_struct(i).dur_results{1};
-    r_vec = dose_struct(i).r_results{1}(2,:);
+    outlier_flags_opto = zero_struct(i).outlier_flags{1};
+    kon_vec = zero_struct(i).freq_results{1};
+    dur_vec = zero_struct(i).dur_results{1};
+    r_vec = zero_struct(i).r_results{1}(2,:);
     temp_options = find(~outlier_flags_opto);
     % calculate value of mean fold qauntities
-    fv = dose_struct(i).freq_vec_mean/dose_struct(3).freq_vec_mean;
-    dv = dose_struct(i).dur_vec_mean/dose_struct(3).dur_vec_mean;
-    rv = dose_struct(i).init_vec_mean/dose_struct(3).init_vec_mean;
+    fv = zero_struct(i).freq_vec_mean/zero_struct(3).freq_vec_mean;
+    dv = zero_struct(i).dur_vec_mean/zero_struct(3).dur_vec_mean;
+    rv = zero_struct(i).init_vec_mean/zero_struct(3).init_vec_mean;
     % initialize arrays
     kon_boot_vec = NaN(1,n_boots);
     dur_boot_vec = NaN(1,n_boots);
@@ -303,36 +297,36 @@ hyp_vec_r_opto = NaN(1,3);
 hyp_vec_dur_opto = NaN(1,3);
 
 % extract reference vectors
-dark_outlier_flags_opto = opto_struct(1).outlier_flags{1};
-dark_kon_vec_opto = opto_struct(1).freq_results{1};
-dark_dur_vec_opto = opto_struct(1).dur_results{1};
-dark_r_vec_opto = opto_struct(1).r_results{1}(2,:);
+dark_outlier_flags_opto = nz_struct(1).outlier_flags{1};
+dark_kon_vec_opto = nz_struct(1).freq_results{1};
+dark_dur_vec_opto = nz_struct(1).dur_results{1};
+dark_r_vec_opto = nz_struct(1).r_results{1}(2,:);
 dark_options_opto = find(~dark_outlier_flags_opto);
 
-dark_outlier_flags_ctrl = opto_struct(2).outlier_flags{1};
-dark_kon_vec_ctrl = opto_struct(2).freq_results{1};
-dark_dur_vec_ctrl = opto_struct(2).dur_results{1};
-dark_r_vec_ctrl = opto_struct(2).r_results{1}(2,:);
+dark_outlier_flags_ctrl = nz_struct(2).outlier_flags{1};
+dark_kon_vec_ctrl = nz_struct(2).freq_results{1};
+dark_dur_vec_ctrl = nz_struct(2).dur_results{1};
+dark_r_vec_ctrl = nz_struct(2).r_results{1}(2,:);
 dark_options_ctrl = find(~dark_outlier_flags_ctrl);
 
 for i = 2:3
     % extract key vectors (opto)
-    outlier_flags_opto = opto_struct(1).outlier_flags{i};
-    kon_vec_opto = opto_struct(1).freq_results{i};
-    dur_vec_opto = opto_struct(1).dur_results{i};
-    r_vec_opto = opto_struct(1).r_results{i}(2,:);
+    outlier_flags_opto = nz_struct(1).outlier_flags{i};
+    kon_vec_opto = nz_struct(1).freq_results{i};
+    dur_vec_opto = nz_struct(1).dur_results{i};
+    r_vec_opto = nz_struct(1).r_results{i}(2,:);
     temp_options_opto = find(~outlier_flags_opto);
 
     % extract key vectors (ctrl)
-    outlier_flags_ctrl = opto_struct(2).outlier_flags{i};
-    kon_vec_ctrl = opto_struct(2).freq_results{i};
-    dur_vec_ctrl = opto_struct(2).dur_results{i};
-    r_vec_ctrl = opto_struct(2).r_results{i}(2,:);
+    outlier_flags_ctrl = nz_struct(2).outlier_flags{i};
+    kon_vec_ctrl = nz_struct(2).freq_results{i};
+    dur_vec_ctrl = nz_struct(2).dur_results{i};
+    r_vec_ctrl = nz_struct(2).r_results{i}(2,:);
     temp_options_ctrl = find(~outlier_flags_ctrl);
     % calculate value of mean fold qauntities
-    fv = (opto_struct(1).freq_vec_mean(i)/opto_struct(2).freq_vec_mean(i))/(opto_struct(1).freq_vec_mean(1)/opto_struct(2).freq_vec_mean(1));
-    dv = (opto_struct(1).dur_vec_mean(i)/opto_struct(2).dur_vec_mean(i))/(opto_struct(1).dur_vec_mean(1)/opto_struct(2).dur_vec_mean(1));
-    rv = (opto_struct(1).init_vec_mean(i)/opto_struct(2).init_vec_mean(i))/(opto_struct(1).init_vec_mean(1)/opto_struct(2).init_vec_mean(1));
+    fv = (nz_struct(1).freq_vec_mean(i)/nz_struct(2).freq_vec_mean(i))/(nz_struct(1).freq_vec_mean(1)/nz_struct(2).freq_vec_mean(1));
+    dv = (nz_struct(1).dur_vec_mean(i)/nz_struct(2).dur_vec_mean(i))/(nz_struct(1).dur_vec_mean(1)/nz_struct(2).dur_vec_mean(1));
+    rv = (nz_struct(1).init_vec_mean(i)/nz_struct(2).init_vec_mean(i))/(nz_struct(1).init_vec_mean(1)/nz_struct(2).init_vec_mean(1));
     % initialize arrays
     kon_boot_vec = NaN(1,n_boots);
     dur_boot_vec = NaN(1,n_boots);
@@ -376,10 +370,10 @@ end
 
 %%  generate summary datasets
 
-opto_summary_array = cat(2,double(opto_struct(1).timeGroupVec'),...
-                      opto_struct(1).freq_vec_mean', opto_struct(1).freq_vec_ste', opto_struct(2).freq_vec_mean',opto_struct(2).freq_vec_ste',....
-                      opto_struct(1).dur_vec_mean', opto_struct(1).dur_vec_ste', opto_struct(2).dur_vec_mean', opto_struct(2).dur_vec_ste',...
-                      opto_struct(1).init_vec_mean', opto_struct(1).init_vec_ste', opto_struct(2).init_vec_mean', opto_struct(2).init_vec_ste');
+opto_summary_array = cat(2,double(nz_struct(1).timeGroupVec'),...
+                      nz_struct(1).freq_vec_mean', nz_struct(1).freq_vec_ste', nz_struct(2).freq_vec_mean',nz_struct(2).freq_vec_ste',....
+                      nz_struct(1).dur_vec_mean', nz_struct(1).dur_vec_ste', nz_struct(2).dur_vec_mean', nz_struct(2).dur_vec_ste',...
+                      nz_struct(1).init_vec_mean', nz_struct(1).init_vec_ste', nz_struct(2).init_vec_mean', nz_struct(2).init_vec_ste');
                     
 opto_table = array2table(opto_summary_array,'VariableNames',{'time_group','freq_mean_opto' ,'freq_ste_opto','freq_mean_ctrl' ,'freq_ste_ctrl',...
                                                                          'dur_mean_opto' ,'dur_ste_opto','dur_mean_ctrl' ,'dur_ste_ctrl',...
@@ -389,9 +383,9 @@ writetable(opto_table,[opto_fig_path 'opto_summary_table.csv']);
 
 
 dose_summary_array = cat(2,[1:3]',...
-                      [dose_struct.freq_vec_mean]', [dose_struct.freq_vec_ste]',....
-                      [dose_struct.dur_vec_mean]', [dose_struct.dur_vec_ste]',...
-                      [dose_struct.init_vec_mean]', [dose_struct.init_vec_ste]');
+                      [zero_struct.freq_vec_mean]', [zero_struct.freq_vec_ste]',....
+                      [zero_struct.dur_vec_mean]', [zero_struct.dur_vec_ste]',...
+                      [zero_struct.init_vec_mean]', [zero_struct.init_vec_ste]');
                     
 dose_table = array2table(dose_summary_array,'VariableNames',{'dose_group','freq_mean' ,'freq_ste',...
                                                                          'dur_mean' ,'dur_ste',...
