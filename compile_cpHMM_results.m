@@ -9,7 +9,7 @@ projectNameCell = {'20220701_Oct4_opto_opto_contro','20220701_Oct4_opto_opto_LEX
 low_order_flag = 0;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
 
-for p = 3:length(projectNameCell)
+for p = 1:length(projectNameCell)
     
     % set project to analyze 
     projectName = projectNameCell{p};
@@ -22,6 +22,8 @@ for p = 3:length(projectNameCell)
 %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
         if isdir('C:\Users\nlamm\Dropbox (Personal)\')
             resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+        elseif isdir([filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep])
+            resultsRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
         else
            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
         end
@@ -228,14 +230,14 @@ for p = 3:length(projectNameCell)
                 compiledResults.outlier_flags{g} = outlier_filter;
 
                 % calculate average and ste
-                compiledResults.init_vec_mean(g) = nanmean(init_array_filt)*60;
-                compiledResults.init_vec_ste(g) = nanstd(init_array_filt)*60;
+                compiledResults.init_vec_mean(g) = nanmean(init_array(~outlier_filter))*60;
+                compiledResults.init_vec_ste(g) = nanstd(init_array(~outlier_filter))*60;
 
-                compiledResults.freq_vec_mean(g) = nanmean(freq_array_filt)*60;
-                compiledResults.freq_vec_ste(g) = nanstd(freq_array_filt)*60;
+                compiledResults.freq_vec_mean(g) = nanmean(freq_array(~outlier_filter))*60;
+                compiledResults.freq_vec_ste(g) = nanstd(freq_array(~outlier_filter))*60;
 
-                compiledResults.dur_vec_mean(g) = nanmean(dur_array_filt)/60;
-                compiledResults.dur_vec_ste(g) = nanstd(dur_array_filt)/60;
+                compiledResults.dur_vec_mean(g) = nanmean(dur_array(~outlier_filter))/60;
+                compiledResults.dur_vec_ste(g) = nanstd(dur_array(~outlier_filter))/60;
 
                 compiledResults.fluo_mean(g) = nanmean(fluo_array(~outlier_filter));
                 compiledResults.fluo_ste(g) = nanstd(fluo_array(~outlier_filter));
