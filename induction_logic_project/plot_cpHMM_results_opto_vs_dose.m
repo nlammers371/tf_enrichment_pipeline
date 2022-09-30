@@ -399,4 +399,15 @@ dose_table = array2table(dose_summary_array,'VariableNames',{'dose_group','freq_
                                                                        
 writetable(dose_table,[dose_fig_path 'dose_summary_table.csv']);
 
+% now add p value files
+opto_p_summary_array = cat(2,hyp_vec_kon_opto(2), p_vec_kon_opto(2),hyp_vec_kon_opto(3), p_vec_kon_opto(3));
+                    
+opto_p_table = array2table(opto_p_summary_array,'VariableNames',{'opto_min_val','opto_p_val' ,'opto_late_val','opto_late_p'});
+                                                                       
+writetable(opto_p_table,[opto_fig_path 'opto_pvalue_table.csv']);
 
+dose_p_summary_array = cat(2,hyp_vec_kon_dose(1), p_vec_kon_dose(1),hyp_vec_kon_dose(2), p_vec_kon_dose(2));
+                    
+dose_p_table = array2table(dose_p_summary_array,'VariableNames',{'dose_min_val','dose_p_val' ,'dose_late_val','dose_late_p'});
+                                                                       
+writetable(dose_p_table,[dose_fig_path 'dose_pvalue_table.csv']);
