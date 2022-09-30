@@ -109,7 +109,10 @@ for g = 1:length(gene_index)
    % Identify changepoints
    N = sum(event_id_vec==1&gene_id_vec2==gene_index(g));
    mean_trend = nanmean(event_mat(event_id_vec==1&gene_id_vec2==gene_index(g),:),1);
-   cpts = findchangepts(mean_trend,'Statistic','linear','MaxNumChanges',2);
+   if g == 1
+      mean_trend = mean_trend(6:30); % prevent algorithm from fitting spurious early and late events
+   end
+   cpts = findchangepts(imgaussfilt(mean_trend,0.5),'Statistic','linear','MaxNumChanges',2);
    
    %%%%%%%%%%%%%%%%%%%%%
    % perform simultaneous fit of 3 linear trends broken at identified
