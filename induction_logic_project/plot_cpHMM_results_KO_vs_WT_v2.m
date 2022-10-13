@@ -52,46 +52,46 @@ nzNameCell = {'20220912_KO_experiments_nz_Oct4','20220912_KO_experiments_nz_Nano
 
 iter = 1;
 % resultsRoot = 'S:\Nick\Dropbox\InductionLogic\';
-nz_struct = struct;
-for p = 1:length(nzNameCell)
-    
-    % set project to analyze 
-    projectName = nzNameCell{p};
-
-    % get path to results
-    try
-        liveProject = LiveEnrichmentProject(projectName);
-        resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
-    catch
-%         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
-        if isdir('C:\Users\nlamm\Dropbox (Personal)\')
-            resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
-        elseif isdir([filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep])
-            resultsRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
-        else
-           resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
-        end
-        resultsDir = [resultsRoot filesep nzNameCell{p} filesep 'cpHMM_results' filesep];
-    end
-    
-    % get list of all inference subdirectories. By default, we'll generate
-    % summaries for all non-empty inference sub-directory
-    infDirList = dir([resultsDir 'w*']);
-
-    % iterate through the directories and compile the results
-    for inf = 1:length(infDirList)
-        load([infDirList(inf).folder filesep 'compiledResults_' infDirList(inf).name '.mat'],'compiledResults');
-        fnames = fieldnames(compiledResults);
-        for f = 1:length(fnames)
-            nz_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
-        end
-        iter = iter + 1;
-    end
-end
+% nz_struct = struct;
+% for p = 1:length(nzNameCell)
+%     
+%     % set project to analyze 
+%     projectName = nzNameCell{p};
+% 
+%     % get path to results
+%     try
+%         liveProject = LiveEnrichmentProject(projectName);
+%         resultsDir = [liveProject.dataPath 'cpHMM_results' filesep];
+%     catch
+% %         resultsRoot = 'S:/Nick/Dropbox/ProcessedEnrichmentData/';
+%         if isdir('C:\Users\nlamm\Dropbox (Personal)\')
+%             resultsRoot = 'C:\Users\nlamm\Dropbox (Personal)\ProcessedEnrichmentData';
+%         elseif isdir([filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep])
+%             resultsRoot = [filesep 'Users' filesep 'nick' filesep 'Dropbox (Personal)' filesep 'ProcessedEnrichmentData' filesep];
+%         else
+%            resultsRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData';
+%         end
+%         resultsDir = [resultsRoot filesep nzNameCell{p} filesep 'cpHMM_results' filesep];
+%     end
+%     
+%     % get list of all inference subdirectories. By default, we'll generate
+%     % summaries for all non-empty inference sub-directory
+%     infDirList = dir([resultsDir 'w*']);
+% 
+%     % iterate through the directories and compile the results
+%     for inf = 1:length(infDirList)
+%         load([infDirList(inf).folder filesep 'compiledResults_' infDirList(inf).name '.mat'],'compiledResults');
+%         fnames = fieldnames(compiledResults);
+%         for f = 1:length(fnames)
+%             nz_struct(iter).(fnames{f}) = compiledResults.(fnames{f});
+%         end
+%         iter = iter + 1;
+%     end
+% end
 
 %%%%%%%%%%%%%%%
-% Make figures
-fig_path = [resultsRoot filesep 'KO_vs_WT' filesep];
+%% Make figures
+fig_path = [resultsRoot filesep 'KO_vs_WT_v2' filesep];
 mkdir(fig_path);
 
 cmap = brewermap(10,'Set2');
@@ -106,14 +106,14 @@ dur_vec_ste_z = [zero_struct.dur_vec_ste];
 r_vec_mean_z = [zero_struct.init_vec_mean];
 r_vec_ste_z = [zero_struct.init_vec_ste];
 
-kon_vec_mean_nz = [nz_struct.freq_vec_mean];
-kon_vec_ste_nz = [nz_struct.freq_vec_ste];
-
-dur_vec_mean_nz = [nz_struct.dur_vec_mean];
-dur_vec_ste_nz = [nz_struct.dur_vec_ste];
-
-r_vec_mean_nz = [nz_struct.init_vec_mean];
-r_vec_ste_nz = [nz_struct.init_vec_ste];
+% kon_vec_mean_nz = [nz_struct.freq_vec_mean];
+% kon_vec_ste_nz = [nz_struct.freq_vec_ste];
+% 
+% dur_vec_mean_nz = [nz_struct.dur_vec_mean];
+% dur_vec_ste_nz = [nz_struct.dur_vec_ste];
+% 
+% r_vec_mean_nz = [nz_struct.init_vec_mean];
+% r_vec_ste_nz = [nz_struct.init_vec_ste];
 
 oct4_fig = figure;
 
@@ -151,17 +151,19 @@ saveas(nanog_fig,[fig_path 'wt_vs_ko_nanog.png'])
 saveas(nanog_fig,[fig_path 'wt_vs_ko_nanog.pdf'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%  calculate p-values
+%%  calculate p-values
 
 rng(13); % seed random number generator for consistency
 n_boots = 1e4;
-
+minb = 25;
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % nanog WT vs. KO
 %%%%%%%%%%%%%%%%%%%%%%%%%
 p_vec_kon = NaN(1,2);
 p_vec_r = NaN(1,2);
 p_vec_dur = NaN(1,2);
+
+denom_vec = NaN(1,2);
 
 hyp_vec_kon = NaN(1,2);
 hyp_vec_r = NaN(1,2);
@@ -184,48 +186,57 @@ for i = 1:2
     ko_r_vec = zero_struct(i).r_results{2}(2,:);
     ko_options = find(~ko_outlier_flags);
     
+    minb = min([minb length(ko_options) length(wt_options)]);
     % calculate value of mean fold qauntities
     fv = zero_struct(i).freq_vec_mean(2)/zero_struct(i).freq_vec_mean(1);
     dv = zero_struct(i).dur_vec_mean(2)/zero_struct(i).dur_vec_mean(1);
     rv = zero_struct(i).init_vec_mean(2)/zero_struct(i).init_vec_mean(1);
     
+    n_combos = length(wt_options)*length(ko_options);
+    
+    % generate longform reference vectors
+    wt_options_long = repmat(wt_options,1,length(ko_options));
+    ko_options_long = repelem(ko_options,length(wt_options));
+
     % initialize arrays
-    kon_boot_vec = NaN(1,n_boots);
-    dur_boot_vec = NaN(1,n_boots);
-    r_boot_vec = NaN(1,n_boots);
+    kon_boot_vec = NaN(1,n_combos);
+    dur_boot_vec = NaN(1,n_combos);
+    r_boot_vec = NaN(1,n_combos);
     
     % perform bootsrapping
     n_samp = min([length(ko_options) length(wt_options)]);
-    for n = 1:n_boots
+    for n = 1:n_combos
         % draw samples
-        wt_ids_boot = randsample(wt_options,n_samp,true);
-        ko_ids_boot = randsample(ko_options,n_samp,true);
+        wt_id_boot = wt_options_long(n);
+        ko_id_boot = ko_options_long(n);
         % calculate bootsrap values
-        kon_boot_vec(n) = mean(ko_kon_vec(ko_ids_boot))/mean(wt_kon_vec(wt_ids_boot));
-        dur_boot_vec(n) = mean(ko_dur_vec(ko_ids_boot))/mean(wt_dur_vec(wt_ids_boot));
-        r_boot_vec(n) = mean(ko_r_vec(ko_ids_boot))/mean(wt_r_vec(wt_ids_boot));
+        kon_boot_vec(n) = ko_kon_vec(ko_id_boot)/wt_kon_vec(wt_id_boot);
+        dur_boot_vec(n) = ko_dur_vec(ko_id_boot)/wt_dur_vec(wt_id_boot);
+        r_boot_vec(n) = ko_r_vec(ko_id_boot)/wt_r_vec(wt_id_boot);
     end
     hyp_vec_kon(i) = fv;
+    denom_vec(i) = n_combos;
     if fv>1
         p_vec_kon(i) = mean(kon_boot_vec<=1);
     else
-        p_vec_kon(i) = mean(kon_boot_vec>1);
+        p_vec_kon(i) = mean(kon_boot_vec>=1);
     end
     hyp_vec_dur(i) = dv;
     if dv>1
         p_vec_dur(i) = mean(dur_boot_vec<=1);
     else
-        p_vec_dur(i) = mean(dur_boot_vec>1);
+        p_vec_dur(i) = mean(dur_boot_vec>=1);
     end
     hyp_vec_r(i) = rv;
     if rv>1
         p_vec_r(i) = mean(r_boot_vec<=1);
     else
-        p_vec_r(i) = mean(r_boot_vec>1);
+        p_vec_r(i) = mean(r_boot_vec>=1);
     end
 
 end
 
+minb
 %%  generate summary datasets
 gene_cell = {'oct4','oct4','nanog','nanog'};
 
@@ -244,13 +255,13 @@ summary_table = [summary_table(:,end) summary_table(:,1:end-1)];
                                                                        
 writetable(summary_table,[fig_path 'ko_wt_summary_table.csv']);
 
-%% now add p value files
+% now add p value files
 var_cell = {'frequency','duration','initiation'};
-p_summary_array = vertcat(cat(2,hyp_vec_kon(1), p_vec_kon(1),hyp_vec_kon(2), p_vec_kon(2)),...
-                               cat(2,hyp_vec_dur(1), p_vec_dur(1),hyp_vec_dur(2), p_vec_dur(2)),...
-                               cat(2,hyp_vec_r(1), p_vec_r(1),hyp_vec_r(2), p_vec_r(2)));
+p_summary_array = vertcat(cat(2,hyp_vec_kon(1), p_vec_kon(1),1./denom_vec(1),hyp_vec_kon(2), p_vec_kon(2),1./denom_vec(2)),...
+                               cat(2,hyp_vec_dur(1), p_vec_dur(1),1./denom_vec(1),hyp_vec_dur(2), p_vec_dur(2),1./denom_vec(2)),...
+                               cat(2,hyp_vec_r(1), p_vec_r(1),1./denom_vec(1),hyp_vec_r(2), p_vec_r(2),1./denom_vec(2)));
                     
-summary_table = array2table(p_summary_array,'VariableNames',{'oct4_val','oct4_p' ,'nanog_val','nanog_p'});
+summary_table = array2table(p_summary_array,'VariableNames',{'oct4_val','oct4_p','oct4_max_power','nanog_val','nanog_p','nanog_max_power'});
 
 summary_table.var_name = var_cell';
 summary_table = [summary_table(:,end) summary_table(:,1:end-1)];

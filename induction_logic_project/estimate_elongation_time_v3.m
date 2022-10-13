@@ -7,9 +7,9 @@ if ~exist(DataRoot)
   DataRoot = 'S:\Nick\Dropbox (Personal)\ProcessedEnrichmentData\';
 end
 
-% project_prefix = '20220701_Oct4_dose';
+project_prefix = '20220701_Oct4_dose';
 % project_prefix = '20210928_Oct4_raw';
-project_prefix = '20220912_KO_experiments';
+% project_prefix = '20220912_KO_experiments';
 projectList = dir([DataRoot project_prefix '*']);
 
 master_struct=  struct;
@@ -18,9 +18,12 @@ for p = 1:length(projectList)
 
     % load data
     load([DataPath 'spot_struct.mat'])
-    
+    if isfield(spot_struct,'nStepsEst')
+        spot_struct = rmfield(spot_struct,'nStepsEst');
+    end
     master_struct(p).spot_struct = spot_struct;
       
+    
 end
 
 % concatenate
