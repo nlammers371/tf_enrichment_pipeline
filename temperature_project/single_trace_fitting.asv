@@ -1,0 +1,104 @@
+clear
+close all
+
+% set data paths
+dataRoot = 'S:/Gabriella/Dropbox/ProcessedEnrichmentData/';
+subDir = 'hbBAC-MS2-25C-Approved/cpHMM_results/';
+infName = 'w6_K3_p0_ap20_t8_f2D_dt35';
+
+% load compiled data
+load([dataRoot subDir 'compiledResults_' infName '.mat'])
+
+% load individual inference results 
+% read in individual inference results
+inf_files = dir([dataRoot subDir infName  filesep 'hmm_results*.mat']);
+inferenceResults = struct;
+iter = 1;
+for i = 1:length(inf_files)
+  try
+      load([dataRoot subDir infName  filesep inf_files(i).name])
+      if ~output.skip_flag && all(~isnan(output.A))
+          fn_list = fieldnames(output);
+          for f = 1:numel(fn_list)
+              inferenceResults(iter).(fn_list{f}) = output.(fn_list{f});
+          end
+
+          % extract group number from name
+          gInd = strfind(inf_files(i).name,'group');
+          inferenceResults(iter).groupID = str2double(inf_files(i).name(gInd+5:gInd+7));
+         
+          iter = iter + 1;
+      end
+  catch
+      warning(['Could not load ' inf_files(i).name '. File may be corrupt'])
+  end
+end
+% exclude all inference replicates that were flagged as outliers
+inferenceResults = inferenceResults(~[compiledResults.outlier_flags{:}]);
+
+%% iterate through ap positions
+groupID_index = compiledResults.groupID_index;
+apVec = compiledResults.apBins(1:end-1) + diff(compiledResults.apBins)/2;
+timeBins = compiledResults.timeBins;
+timeGroupIndex = timeBins;
+
+% useful indexing vectors
+ap_bin_vec = [inferenceResults.apBin];
+time_bin_vec = [inferenceResults.timeBin];
+
+single_trace_fits = struct;
+iter = 1;
+
+for api = 8
+    % find results for this AP position
+    ap_indices = find(ap_bin_vec==api);
+    
+    % get list of "candidate particles" that appear in inference replicates
+    candidate_particles = unique([inferenceResults(ap_indices).particle_ids]);
+    
+    % iterate through and reconstruct fluorescence traces, along with
+    % corresponding decodings
+    time_cell_ap = vertcat(inferenceResults(ap_indices).time_data);
+    fluo_cell_ap = vertcat(inferenceResults(ap_indices).fluo_data);
+    particle_vec_ap = [inferenceResults(ap_indices).particle_ids];
+    ss_cell_ap = [];
+    for a = 1:length(ap_indices)
+        ss_cell_ap = [ss_cell_ap inferenceResults(ap_indices(a)).soft_struct.p_z_log_soft];
+    end
+    
+    for p = 1:length(candidate_particles)
+        pID = candidate_particles(p);
+        p_instances = find(particle_vec_ap==pID);
+        
+        % extract complete trace
+        f_vec_long = round([fluo_cell_ap{p_instances}],2);
+        t_vec_long = round([time_cell_ap{p_instances}],2);
+        ft_array = unique([t_vec_long' f_vec_long'], 'rows');
+        time_vec = ft_array(:,1);
+        fluo_vec = ft_array(:,2);
+        
+        % generate array to store SS decodings 
+        ss_array = NaN(length(fluo_vec), 3, length(p_instances));
+        
+        % iterate through instances
+        for i = 1:length(p_instances)
+            t_vec = round(time_cell_ap{p_instances(i)},2);
+            ss_array(ismember(time_vec,t_vec), :, p) = exp(ss_cell_ap{p_instances(i)}');
+        end
+        
+        % calculate the mean and re-normalize
+        ss_mean = nanmean(ss_array,3);
+        ss_mean = ss_mean ./ sum(ss_mean,2);
+        [~, ss_max] = max(ss_mean, [], 2);
+        
+        % convert to effectivce 2 state
+        ss_mean2 = [ss_mean(:,1) sum(ss_mean(:,2:3),2)];
+        [~, ss_max2] = max(ss_mean2, [], 2);
+        
+        % record results
+        single_trace_fits(iter).particleID = pID;
+        single_trace_fits(iter).time = time_vec;
+        single_trace_fits(iter).fluo = fluo_vec;
+        single_trace_fits(iter).promoter_probs = ss_mean;
+    end
+end
